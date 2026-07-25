@@ -1,0 +1,206 @@
+{
+  "entities": {
+    "products": {
+      "title": "Store Products",
+      "description": "Footwear and clothing catalog items for Marudhar Fashion Point",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "image": { "type": "string" },
+        "inStock": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "description": { "type": "string", "maxLength": 2000 },
+        "sizes": { "type": "array" },
+        "isNewArrival": { "type": "boolean" },
+        "isBestSeller": { "type": "boolean" }
+      },
+      "required": ["name", "category", "price", "image"]
+    },
+    "reviews": {
+      "title": "Customer Reviews",
+      "description": "Store ratings and customer feedback",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "maxLength": 1000 },
+        "date": { "type": "string" },
+        "verified": { "type": "boolean" }
+      },
+      "required": ["name", "rating", "comment"]
+    },
+    "storeInfo": {
+      "title": "Store Settings",
+      "description": "Marudhar Fashion Point operational details and contact info",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "timing": { "type": "string" }
+      },
+      "required": ["name", "phone"]
+    },
+    "hero": {
+      "title": "Hero Section Content",
+      "description": "Main banner headline, subtitle, and primary promotional image",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "primaryCTA": { "type": "string" },
+        "secondaryCTA": { "type": "string" },
+        "badgeText": { "type": "string" },
+        "backgroundImage": { "type": "string" }
+      },
+      "required": ["title", "subtitle"]
+    },
+    "auditLogs": {
+      "title": "Security & Audit Trail Logs",
+      "description": "Administrative actions, security authentication events, and modification logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "action": { "type": "string" },
+        "category": { "type": "string" },
+        "details": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "status": { "type": "string" },
+        "ipAddress": { "type": "string" }
+      },
+      "required": ["timestamp", "action", "category", "details"]
+    },
+    "backups": {
+      "title": "Database Snapshot Backups",
+      "description": "Full store data snapshots for disaster recovery",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "snapshotJson": { "type": "string" },
+        "dataSizeKb": { "type": "number" }
+      },
+      "required": ["timestamp", "createdBy", "snapshotJson"]
+    },
+    "admins": {
+      "title": "Admin Credentials & Roles",
+      "description": "Authorized admin users with 2FA status and RBAC credentials",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "twoFactorEnabled": { "type": "boolean" },
+        "lastLogin": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    },
+    "inquiries": {
+      "title": "Customer Inquiries",
+      "description": "Inquiries sent by customers through contact forms or WhatsApp",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "category": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "message"]
+    },
+    "appointments": {
+      "title": "Store Fitting Appointments",
+      "description": "Scheduled VIP fitting sessions",
+      "type": "object",
+      "properties": {
+        "userEmail": { "type": "string" },
+        "date": { "type": "string" },
+        "timeSlot": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["userEmail", "date", "timeSlot"]
+    }
+  },
+  "firestore": {
+    "collections": {
+      "products": {
+        "path": "products/{productId}",
+        "allow": {
+          "read": "true",
+          "write": "request.auth != null"
+        }
+      },
+      "reviews": {
+        "path": "reviews/{reviewId}",
+        "allow": {
+          "read": "true",
+          "create": "true",
+          "update": "request.auth != null",
+          "delete": "request.auth != null"
+        }
+      },
+      "storeInfo": {
+        "path": "storeInfo/{infoId}",
+        "allow": {
+          "read": "true",
+          "write": "request.auth != null"
+        }
+      },
+      "hero": {
+        "path": "hero/{heroId}",
+        "allow": {
+          "read": "true",
+          "write": "request.auth != null"
+        }
+      },
+      "auditLogs": {
+        "path": "auditLogs/{logId}",
+        "allow": {
+          "read": "request.auth != null",
+          "create": "true"
+        }
+      },
+      "backups": {
+        "path": "backups/{backupId}",
+        "allow": {
+          "read": "request.auth != null",
+          "write": "request.auth != null"
+        }
+      },
+      "admins": {
+        "path": "admins/{adminId}",
+        "allow": {
+          "read": "request.auth != null",
+          "write": "request.auth != null"
+        }
+      },
+      "inquiries": {
+        "path": "inquiries/{inquiryId}",
+        "allow": {
+          "read": "request.auth != null",
+          "create": "true",
+          "update": "request.auth != null",
+          "delete": "request.auth != null"
+        }
+      },
+      "appointments": {
+        "path": "appointments/{appointmentId}",
+        "allow": {
+          "read": "request.auth != null",
+          "create": "true",
+          "update": "request.auth != null",
+          "delete": "request.auth != null"
+        }
+      }
+    }
+  }
+}

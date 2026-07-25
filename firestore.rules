@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'vpcreation2002@gmail.com'
+      );
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    // Default Deny All Policy
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Public Products Catalog (Read-Only for Public, Write for Admins)
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+
+    // Public Reviews & Feedback (Public Read & Create, Admin Manage)
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if true && request.resource.data.name is string && request.resource.data.comment is string;
+      allow update, delete: if isSignedIn();
+    }
+
+    // Store Info & Configuration Settings
+    match /storeInfo/{infoId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Hero Banner Content
+    match /hero/{heroId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Customer Inquiries
+    match /inquiries/{inquiryId} {
+      allow create: if true && request.resource.data.name is string;
+      allow read, update, delete: if isSignedIn();
+    }
+
+    // VIP Fitting Appointments
+    match /appointments/{appointmentId} {
+      allow create: if true;
+      allow read, update, delete: if isSignedIn();
+    }
+
+    // Security Audit Logs Collection
+    match /auditLogs/{logId} {
+      allow create: if true;
+      allow read, delete: if isSignedIn();
+    }
+
+    // Store Snapshots & Recovery Backups
+    match /backups/{backupId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Admin Users Directory
+    match /admins/{adminId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

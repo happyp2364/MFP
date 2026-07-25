@@ -1,0 +1,6 @@
+{
+  "name": "Marudhar Fashion Point",
+  "description": "Premium Fashion & Footwear website for Marudhar Fashion Point with WhatsApp ordering, rich catalog, and modern luxury design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

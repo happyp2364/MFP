@@ -128,10 +128,36 @@
         "status": { "type": "string" }
       },
       "required": ["userEmail", "date", "timeSlot"]
+    },
+    "users": {
+      "title": "Customer Profiles",
+      "description": "Registered customer details, saved addresses, wishlist, and metadata",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "loginProvider": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "lastLogin": { "type": "string" },
+        "wishlist": { "type": "array" },
+        "savedAddresses": { "type": "array" },
+        "orderHistory": { "type": "array" }
+      },
+      "required": ["uid", "email"]
     }
   },
   "firestore": {
     "collections": {
+      "users": {
+        "path": "users/{userId}",
+        "allow": {
+          "read": "request.auth != null",
+          "write": "request.auth != null"
+        }
+      },
       "products": {
         "path": "products/{productId}",
         "allow": {

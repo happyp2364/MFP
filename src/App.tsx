@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { AnnouncementBar } from './components/Header/AnnouncementBar';
 import { Navbar } from './components/Header/Navbar';
 import { HorizontalCategoryBar } from './components/Header/HorizontalCategoryBar';
@@ -29,7 +30,7 @@ import { useStore } from './context/StoreContext';
 import { Product, FilterState, GenderCategory, CartItem } from './types';
 
 export default function App() {
-  const { products, isAdmin } = useStore();
+  const { products, isAdmin, toastMessage } = useStore();
 
   // --- STATE ---
   const [activeCategory, setActiveCategory] = useState<GenderCategory>('all');
@@ -440,6 +441,42 @@ export default function App() {
         onOpenCalendarModal={() => setCalendarModalOpen(true)}
         onOpenGmailModal={() => setGmailModalOpen(true)}
       />
+
+      {/* Toast Notification Banner */}
+      {toastMessage && (
+        <div
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border backdrop-blur-md animate-in slide-in-from-bottom-5 duration-300 max-w-sm"
+          style={{
+            backgroundColor:
+              toastMessage.type === 'error'
+                ? '#FEF2F2'
+                : toastMessage.type === 'info'
+                ? '#EFF6FF'
+                : '#F0FDF4',
+            borderColor:
+              toastMessage.type === 'error'
+                ? '#FCA5A5'
+                : toastMessage.type === 'info'
+                ? '#BFDBFE'
+                : '#86EFAC',
+            color:
+              toastMessage.type === 'error'
+                ? '#991B1B'
+                : toastMessage.type === 'info'
+                ? '#1E40AF'
+                : '#166534',
+          }}
+        >
+          {toastMessage.type === 'error' ? (
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+          ) : toastMessage.type === 'info' ? (
+            <Info className="w-5 h-5 text-blue-600 shrink-0" />
+          ) : (
+            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+          )}
+          <span className="text-xs font-bold leading-tight">{toastMessage.text}</span>
+        </div>
+      )}
     </div>
   );
 }

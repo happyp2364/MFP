@@ -182,22 +182,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 border-b pb-2">
                         <span className="w-2 h-2 rounded-full bg-[#0B8F63]" />
-                        <h4 className="font-bold text-sm text-neutral-900">Women's Footwear</h4>
+                        <h4 className="font-bold text-sm text-neutral-900">Women's Sports Shoes</h4>
                       </div>
                       <ul className="space-y-2 text-xs text-neutral-600">
                         <li>
-                          <button onClick={() => handleCategoryClick('women')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                            Comfort Heels & Wedges
-                          </button>
-                        </li>
-                        <li>
-                          <button onClick={() => handleCategoryClick('women')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                            Casual Sneakers & Sports Shoes
-                          </button>
-                        </li>
-                        <li>
-                          <button onClick={() => handleCategoryClick('women')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                            Traditional Juttis & Wedding Footwear
+                          <button onClick={() => handleCategoryClick('women')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5 font-medium">
+                            Athletic Running & Sports Shoes
                           </button>
                         </li>
                       </ul>
@@ -419,7 +409,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <span className="flex items-center gap-2">
                   <Search className="w-4 h-4 text-[#0B8F63]" />
-                  <span>Search Sneakers, Shoes, Loafers, Heels...</span>
+                  <span>Search Men's Shoes, Women's Sports Shoes, Kids...</span>
                 </span>
                 <span className="text-[10px] bg-white px-2 py-0.5 rounded text-neutral-600 font-bold border">
                   SEARCH
@@ -459,16 +449,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className="flex items-center gap-2 p-2 rounded-xl bg-neutral-50 hover:bg-[#0B8F63]/10 border border-neutral-200/70 transition-all text-left group"
                   >
                     <img
-                      src="https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=100&q=80"
-                      alt="Women Footwear"
+                      src="https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=100&q=80"
+                      alt="Women Sports Shoes"
                       className="w-9 h-9 rounded-lg object-cover shrink-0"
                       referrerPolicy="no-referrer"
                     />
                     <div className="flex-1 min-w-0">
                       <span className="text-xs font-bold text-neutral-800 group-hover:text-[#0B8F63] block truncate">
-                        Women's Footwear
+                        Women's Sports Shoes
                       </span>
-                      <span className="text-[9px] text-neutral-500 block">Heels, Flats & Juttis</span>
+                      <span className="text-[9px] text-neutral-500 block">Athletic & Running</span>
                     </div>
                     <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-[#0B8F63] shrink-0" />
                   </button>

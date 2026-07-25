@@ -31,8 +31,8 @@ export const HorizontalCategoryBar: React.FC<HorizontalCategoryBarProps> = ({
     {
       id: 'women',
       name: 'Women',
-      tag: 'Heels & Flats',
-      image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=150&q=80',
+      tag: 'Sports Shoes',
+      image: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=150&q=80',
       badge: 'TRENDING',
     },
     {
@@ -48,7 +48,7 @@ export const HorizontalCategoryBar: React.FC<HorizontalCategoryBarProps> = ({
     { label: '⚡ New Launches', action: () => { onSelectCategory('all'); onNavigateToSection('products'); } },
     { label: '👟 Sneakers', action: () => { onSelectCategory('men'); onNavigateToSection('products'); } },
     { label: '🩴 Slip Ons & Slides', action: () => { onSelectCategory('men'); onNavigateToSection('products'); } },
-    { label: '👠 Party Heels', action: () => { onSelectCategory('women'); onNavigateToSection('products'); } },
+    { label: '👟 Women Sports Shoes', action: () => { onSelectCategory('women'); onNavigateToSection('products'); } },
     { label: '🧒 Light-Up Shoes', action: () => { onSelectCategory('kids'); onNavigateToSection('products'); } },
     { label: '🏷️ Clearance Sale', action: () => { onSelectCategory('all'); onNavigateToSection('products'); } },
   ];

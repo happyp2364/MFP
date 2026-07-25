@@ -291,8 +291,7 @@ export const CalendarBookingModal: React.FC<CalendarBookingModalProps> = ({
                 >
                   <option value="Men's Sports & Running Shoes">Men's Sports & Running Shoes</option>
                   <option value="Men's Formal Leather Shoes">Men's Formal Leather Shoes</option>
-                  <option value="Women's Heels & Comfort Sandals">Women's Heels & Comfort Sandals</option>
-                  <option value="Women's Traditional Juttis & Wedding Footwear">Women's Traditional Juttis & Wedding Footwear</option>
+                  <option value="Women's Sports & Athletic Shoes">Women's Sports & Athletic Shoes</option>
                   <option value="Kids' School & Sports Shoes">Kids' School & Sports Shoes</option>
                   <option value="Custom Size Request / Wedding Bulk Fitting">Custom Size / Wedding Bulk Fitting</option>
                 </select>

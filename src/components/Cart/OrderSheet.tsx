@@ -68,7 +68,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
                 Your Bag is Empty
               </h3>
               <p className="text-xs text-neutral-500 max-w-xs mx-auto">
-                Explore our Men, Women, and Kids collections to select your favorite shoes and clothing.
+                Explore our Men's, Women's Sports Shoes, and Kids' collections to select your favorite footwear.
               </p>
             </div>
           ) : (

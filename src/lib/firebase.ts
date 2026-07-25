@@ -4,6 +4,10 @@ import {
   GoogleAuthProvider,
   EmailAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  setPersistence,
+  browserLocalPersistence,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   reauthenticateWithCredential,
@@ -15,6 +19,8 @@ import {
 import {
   getFirestore,
   doc,
+  getDoc,
+  setDoc,
   getDocFromServer,
   collection,
   addDoc,
@@ -24,11 +30,17 @@ import {
   limit,
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
+import { CustomerProfile } from '../types';
 
 // Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Enable persistent auth session across page reloads & tabs
+setPersistence(auth, browserLocalPersistence).catch((err) => {
+  console.warn('Firebase persistence warning:', err);
+});
 
 // Connection test on load
 async function testFirestoreConnection() {
@@ -89,14 +101,22 @@ export function handleFirestoreError(
   return errInfo;
 }
 
-// Google OAuth Provider Setup
+// Google OAuth Provider Setup - Standard Customer Authentication
 export const googleProvider = new GoogleAuthProvider();
-googleProvider.addScope('https://www.googleapis.com/auth/calendar');
-googleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
-googleProvider.addScope('https://www.googleapis.com/auth/gmail.send');
-googleProvider.addScope('https://www.googleapis.com/auth/gmail.readonly');
-googleProvider.addScope('https://www.googleapis.com/auth/gmail.compose');
-googleProvider.addScope('https://mail.google.com/');
+googleProvider.setCustomParameters({
+  prompt: 'select_account',
+});
+
+// Google Workspace Provider Setup (includes additional Calendar & Gmail scopes for store fitting & messaging)
+export const googleWorkspaceProvider = new GoogleAuthProvider();
+googleWorkspaceProvider.setCustomParameters({
+  prompt: 'select_account',
+});
+googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/calendar');
+googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/calendar.events');
+googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/gmail.send');
+googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/gmail.readonly');
+googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/gmail.compose');
 
 // In-memory token store for Google Workspace API calls
 let cachedAccessToken: string | null = localStorage.getItem('mfp_google_access_token');
@@ -114,18 +134,135 @@ export function setCachedAccessToken(token: string | null) {
   }
 }
 
-// Google Sign-In helper
-export async function signInWithGoogle() {
+// Synchronize or create Customer Profile in Firestore (/users/{uid})
+export async function syncCustomerProfileInFirestore(user: FirebaseUser): Promise<CustomerProfile> {
+  const userRef = doc(db, 'users', user.uid);
+  let existingSnap = null;
   try {
-    const result = await signInWithPopup(auth, googleProvider);
+    existingSnap = await getDoc(userRef);
+  } catch (e) {
+    console.warn('Could not read existing customer profile from Firestore:', e);
+  }
+
+  const now = new Date().toISOString();
+
+  if (!existingSnap || !existingSnap.exists()) {
+    // Automatically create a new user profile document in Firestore
+    const newProfile: CustomerProfile = {
+      uid: user.uid,
+      name: user.displayName || user.email?.split('@')[0] || 'Valued Customer',
+      email: user.email || '',
+      photoURL: user.photoURL || '',
+      phoneNumber: user.phoneNumber || '',
+      loginProvider: user.providerData?.[0]?.providerId || 'google.com',
+      createdAt: now,
+      lastLogin: now,
+      wishlist: [],
+      savedAddresses: [],
+      orderHistory: [],
+    };
+
+    try {
+      await setDoc(userRef, newProfile);
+      recordAuditLog('New Customer Profile Created', 'AUTH', `Created Firestore record for ${newProfile.email} (${user.uid})`, 'SUCCESS');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+    }
+
+    return newProfile;
+  } else {
+    // Existing customer - restore profile and update lastLogin
+    const existingData = existingSnap.data() as CustomerProfile;
+    const updatedData: Partial<CustomerProfile> = {
+      lastLogin: now,
+      name: user.displayName || existingData.name,
+      email: user.email || existingData.email,
+      photoURL: user.photoURL || existingData.photoURL,
+    };
+
+    try {
+      await setDoc(userRef, updatedData, { merge: true });
+      recordAuditLog('Customer Profile Synchronized', 'AUTH', `Updated lastLogin for ${user.email}`, 'SUCCESS');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}`);
+    }
+
+    return {
+      ...existingData,
+      ...updatedData,
+    } as CustomerProfile;
+  }
+}
+
+// Process redirect result if customer was redirected back from Google auth
+export async function checkRedirectAuthResult(): Promise<{ user: FirebaseUser; profile: CustomerProfile; token?: string } | null> {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        setCachedAccessToken(credential.accessToken);
+      }
+      const profile = await syncCustomerProfileInFirestore(result.user);
+      return { user: result.user, profile, token: credential?.accessToken };
+    }
+  } catch (err) {
+    console.error('Error handling redirect result:', err);
+  }
+  return null;
+}
+
+// Universal Google Sign-In with automatic fallback (popup -> redirect)
+export async function signInWithGoogle(useWorkspaceScopes: boolean = false): Promise<{ user: FirebaseUser; profile: CustomerProfile; token?: string }> {
+  const provider = useWorkspaceScopes ? googleWorkspaceProvider : googleProvider;
+
+  try {
+    // Primary attempt: signInWithPopup
+    const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     if (credential?.accessToken) {
       setCachedAccessToken(credential.accessToken);
     }
-    return { user: result.user, token: credential?.accessToken };
+    const profile = await syncCustomerProfileInFirestore(result.user);
+    return { user: result.user, profile, token: credential?.accessToken };
   } catch (err: any) {
-    console.error('Google Auth Sign-In error:', err);
-    throw err;
+    console.warn('signInWithPopup error, checking fallback condition:', err?.code || err);
+
+    // Fallback conditions (popup blocked, closed, iframe restriction, or mobile browser)
+    const shouldFallbackToRedirect =
+      err?.code === 'auth/popup-blocked' ||
+      err?.code === 'auth/popup-closed-by-user' ||
+      err?.code === 'auth/cancelled-popup-request' ||
+      err?.code === 'auth/operation-not-supported-in-this-environment';
+
+    if (shouldFallbackToRedirect) {
+      try {
+        console.log('Initiating signInWithRedirect fallback...');
+        await signInWithRedirect(auth, provider);
+        throw new Error('Redirecting to Google Sign-In...');
+      } catch (redirectErr: any) {
+        console.error('signInWithRedirect failed:', redirectErr);
+        throw redirectErr;
+      }
+    }
+
+    // User-friendly error messages
+    let userFriendlyMsg = 'Google Sign-In failed. Please try again.';
+    if (err?.code === 'auth/unauthorized-domain') {
+      userFriendlyMsg = 'This domain is not authorized in Firebase Authentication settings. Please contact the administrator.';
+    } else if (err?.code === 'auth/invalid-api-key') {
+      userFriendlyMsg = 'Invalid Firebase configuration key.';
+    } else if (err?.code === 'auth/network-request-failed') {
+      userFriendlyMsg = 'Network error. Please check your internet connection and try again.';
+    } else if (err?.code === 'auth/account-exists-with-different-credential') {
+      userFriendlyMsg = 'An account already exists with the same email address using a different sign-in method.';
+    } else if (err?.message) {
+      userFriendlyMsg = err.message;
+    }
+
+    const enhancedError = new Error(userFriendlyMsg);
+    (enhancedError as any).code = err?.code;
+    throw enhancedError;
   }
 }
 

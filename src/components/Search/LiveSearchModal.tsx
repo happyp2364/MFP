@@ -136,7 +136,7 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
                   Popular Categories
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {['Running Shoes', 'Leather Loafers', 'Ethnic Juttis', 'Heels & Sandals', 'School Shoes', 'Men Shirts & Jeans'].map((cat) => (
+                  {['Running Shoes', 'Leather Loafers', 'Ethnic Juttis', 'Women Sports Shoes', 'School Shoes', 'Men Shirts & Jeans'].map((cat) => (
                     <button
                       key={cat}
                       onClick={() => {

@@ -143,6 +143,41 @@ export interface AuditLogItem {
   ipAddress?: string;
 }
 
+export interface SavedAddress {
+  id: string;
+  name: string;
+  street: string;
+  city: string;
+  state: string;
+  pincode: string;
+  phone: string;
+  isDefault?: boolean;
+}
+
+export interface CustomerOrder {
+  id: string;
+  date: string;
+  totalAmount: number;
+  items: CartItem[];
+  status: 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  paymentMethod: string;
+  shippingAddress: SavedAddress | string;
+}
+
+export interface CustomerProfile {
+  uid: string;
+  name: string;
+  email: string;
+  photoURL?: string;
+  phoneNumber?: string;
+  loginProvider: string;
+  createdAt: string;
+  lastLogin: string;
+  wishlist?: string[]; // list of product IDs
+  savedAddresses?: SavedAddress[];
+  orderHistory?: CustomerOrder[];
+}
+
 export interface StoreBackupSnapshot {
   id: string;
   timestamp: string;

@@ -471,7 +471,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     >
                       <option value="all">All Categories ({products.length})</option>
                       <option value="men">Men's Shoes</option>
-                      <option value="women">Women's Collection</option>
+                      <option value="women">Women's Sports Shoes</option>
                       <option value="kids">Kids' Collection</option>
                     </select>
 
@@ -1071,17 +1071,63 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Category</label>
+                  <label className="font-bold text-neutral-700 block mb-1">Category *</label>
                   <select
                     value={editingProduct.category}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value as any })}
+                    onChange={(e) => {
+                      const newCat = e.target.value as 'men' | 'women' | 'kids';
+                      let defaultSub = 'Sports Shoes';
+                      if (newCat === 'men') defaultSub = 'Sports Shoes';
+                      if (newCat === 'women') defaultSub = 'Sports Shoes';
+                      if (newCat === 'kids') defaultSub = 'School Shoes';
+                      setEditingProduct({
+                        ...editingProduct,
+                        category: newCat,
+                        subcategory: defaultSub,
+                      });
+                    }}
                     className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63] font-bold"
                   >
-                    <option value="men">Men's Collection (Footwear & Clothing)</option>
-                    <option value="women">Women's Footwear Only</option>
-                    <option value="kids">Kids' Footwear Only</option>
+                    <option value="men">Men's Collection</option>
+                    <option value="women">Women's Sports Shoes ONLY</option>
+                    <option value="kids">Kids' Footwear</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">Subcategory *</label>
+                  <select
+                    value={editingProduct.subcategory}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, subcategory: e.target.value })}
+                    className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63] font-bold"
+                  >
+                    {editingProduct.category === 'men' && (
+                      <>
+                        <option value="Sports Shoes">Sports Shoes</option>
+                        <option value="Casual Shoes">Casual Shoes</option>
+                        <option value="Sneakers">Sneakers</option>
+                        <option value="Formal Shoes">Formal Shoes</option>
+                        <option value="Sandals">Sandals</option>
+                        <option value="Slippers">Slippers</option>
+                        <option value="Clothing">Clothing</option>
+                      </>
+                    )}
+                    {editingProduct.category === 'women' && (
+                      <option value="Sports Shoes">Sports Shoes (ONLY)</option>
+                    )}
+                    {editingProduct.category === 'kids' && (
+                      <>
+                        <option value="School Shoes">School Shoes</option>
+                        <option value="Sports Shoes">Sports Shoes</option>
+                        <option value="Casual Shoes">Casual Shoes</option>
+                        <option value="Sneakers">Sneakers</option>
+                        <option value="Sandals">Sandals</option>
+                        <option value="Slippers">Slippers</option>
+                        <option value="Party Shoes">Party Shoes</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -1097,7 +1143,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Original Price (MRP ₹)</label>
+                  <label className="font-bold text-neutral-700 block mb-1">Original Price (₹)</label>
                   <input
                     type="number"
                     value={editingProduct.originalPrice}

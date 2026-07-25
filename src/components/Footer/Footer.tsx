@@ -33,7 +33,7 @@ export const Footer: React.FC = () => {
               Join Marudhar Family Club
             </div>
             <h3 className="font-serif-heading text-2xl sm:text-3xl font-bold">
-              Get Exclusive Festival Offers & New Arrival Alerts
+              Get Exclusive Special Offers & New Arrival Alerts
             </h3>
             <p className="text-xs sm:text-sm text-neutral-400">
               Subscribe to get seasonal catalog updates directly on WhatsApp & Email.
@@ -148,7 +148,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2 text-xs text-neutral-400">
               <li><span className="hover:text-white transition-colors cursor-pointer">Men's Running Shoes & Sneakers</span></li>
               <li><span className="hover:text-white transition-colors cursor-pointer">Leather Loafers & Formals</span></li>
-              <li><span className="hover:text-white transition-colors cursor-pointer">Women's Block Heels & Wedges</span></li>
+              <li><span className="hover:text-white transition-colors cursor-pointer">Women's Sports Shoes & Sneakers</span></li>
               <li><span className="hover:text-white transition-colors cursor-pointer">Traditional Kolhapuri & Juttis</span></li>
               <li><span className="hover:text-white transition-colors cursor-pointer">Kids' School & Party Shoes</span></li>
               <li><span className="hover:text-white transition-colors cursor-pointer">Men's Shirts & Trousers</span></li>

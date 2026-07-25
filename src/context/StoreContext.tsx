@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { User as FirebaseUser } from 'firebase/auth';
 import {
   Product,
   Review,
@@ -8,6 +9,7 @@ import {
   TrendingCollectionItem,
   AuditLogItem,
   StoreBackupSnapshot,
+  CustomerProfile,
 } from '../types';
 import {
   PRODUCTS_DATA,
@@ -25,9 +27,19 @@ import {
   sanitizePhone,
   securityRateLimiter,
 } from '../lib/security';
-import { recordAuditLog, fetchRemoteAuditLogs, auth, signInWithGoogle, logoutUser, onUserAuthChange, changeAdminPasswordFirebase } from '../lib/firebase';
+import {
+  recordAuditLog,
+  fetchRemoteAuditLogs,
+  auth,
+  signInWithGoogle,
+  logoutUser,
+  onUserAuthChange,
+  changeAdminPasswordFirebase,
+  syncCustomerProfileInFirestore,
+  checkRedirectAuthResult,
+} from '../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { addDoc, collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const STORAGE_KEYS = {
@@ -47,6 +59,11 @@ const STORAGE_KEYS = {
 // 30-minute inactivity limit (1800000 ms)
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 
+export interface ToastState {
+  text: string;
+  type: 'success' | 'error' | 'info';
+}
+
 interface StoreContextType {
   products: Product[];
   reviews: Review[];
@@ -59,6 +76,17 @@ interface StoreContextType {
   isTwoFactorEnabled: boolean;
   auditLogs: AuditLogItem[];
   lastActivityTime: number;
+
+  // Customer Auth State
+  customerUser: FirebaseUser | null;
+  customerProfile: CustomerProfile | null;
+  isCustomerAuthLoading: boolean;
+  customerAuthError: string | null;
+  toastMessage: ToastState | null;
+  showToast: (text: string, type?: 'success' | 'error' | 'info') => void;
+  customerSignInWithGoogle: (useWorkspaceScopes?: boolean) => Promise<boolean>;
+  customerSignOut: () => Promise<void>;
+  updateCustomerProfileInFirestore: (data: Partial<CustomerProfile>) => Promise<boolean>;
   
   // Auth
   loginAdmin: (password: string, twoFactorCode?: string) => Promise<{ success: boolean; requires2FA?: boolean; message?: string }>;
@@ -154,6 +182,67 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
 
+  // Customer Authentication State
+  const [customerUser, setCustomerUser] = useState<FirebaseUser | null>(null);
+  const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
+  const [isCustomerAuthLoading, setIsCustomerAuthLoading] = useState<boolean>(false);
+  const [customerAuthError, setCustomerAuthError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<ToastState | null>(null);
+
+  const showToast = useCallback((text: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage({ text, type });
+    setTimeout(() => {
+      setToastMessage((curr) => (curr?.text === text ? null : curr));
+    }, 4000);
+  }, []);
+
+  const updateCustomerProfileInFirestore = async (data: Partial<CustomerProfile>): Promise<boolean> => {
+    if (!customerUser) return false;
+    try {
+      const userRef = doc(db, 'users', customerUser.uid);
+      await setDoc(userRef, data, { merge: true });
+      setCustomerProfile((prev) => (prev ? { ...prev, ...data } : null));
+      return true;
+    } catch (e) {
+      console.error('Failed to update customer profile in Firestore:', e);
+      return false;
+    }
+  };
+
+  const customerSignInWithGoogle = async (useWorkspaceScopes: boolean = false): Promise<boolean> => {
+    setIsCustomerAuthLoading(true);
+    setCustomerAuthError(null);
+    try {
+      const res = await signInWithGoogle(useWorkspaceScopes);
+      setCustomerUser(res.user);
+      setCustomerProfile(res.profile);
+      showToast(`Welcome back, ${res.profile.name || res.user.displayName || 'Valued Customer'}!`, 'success');
+      return true;
+    } catch (err: any) {
+      console.error('Customer Google sign in failed:', err);
+      const msg = err.message || 'Failed to sign in with Google. Please try again.';
+      setCustomerAuthError(msg);
+      showToast(msg, 'error');
+      return false;
+    } finally {
+      setIsCustomerAuthLoading(false);
+    }
+  };
+
+  const customerSignOut = async () => {
+    setIsCustomerAuthLoading(true);
+    try {
+      await logoutUser();
+      setCustomerUser(null);
+      setCustomerProfile(null);
+      showToast('Signed out successfully.', 'info');
+    } catch (err) {
+      console.error('Sign out error:', err);
+    } finally {
+      setIsCustomerAuthLoading(false);
+    }
+  };
+
   // 2. Local Storage Persistence Sync
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
@@ -196,15 +285,44 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(STORAGE_KEYS.TWO_FACTOR_ENABLED, isTwoFactorEnabled.toString());
   }, [isTwoFactorEnabled]);
 
-  // 3. Listen to Firebase Auth state
+  // 3. Listen to Firebase Auth state & handle redirect logins
   useEffect(() => {
-    const unsubscribe = onUserAuthChange((user) => {
+    let isMounted = true;
+
+    // Process redirect result if returning from Google OAuth redirect flow
+    checkRedirectAuthResult()
+      .then((res) => {
+        if (res && isMounted) {
+          setCustomerUser(res.user);
+          setCustomerProfile(res.profile);
+          showToast(`Welcome back, ${res.profile.name || 'Valued Customer'}!`, 'success');
+        }
+      })
+      .catch((err) => console.warn('Redirect auth check error:', err));
+
+    const unsubscribe = onUserAuthChange(async (user) => {
+      if (!isMounted) return;
+      setCustomerUser(user);
       if (user) {
-        setIsAdmin(true);
+        if (user.email === 'vpcreation2002@gmail.com') {
+          setIsAdmin(true);
+        }
+        try {
+          const prof = await syncCustomerProfileInFirestore(user);
+          if (isMounted) setCustomerProfile(prof);
+        } catch (e) {
+          console.warn('Error syncing customer profile in auth listener:', e);
+        }
+      } else {
+        setCustomerProfile(null);
       }
     });
-    return () => unsubscribe();
-  }, []);
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [showToast]);
 
   // 4. Inactivity Auto-Logout Monitor (30 Minutes)
   const handleUserActivity = useCallback(() => {
@@ -552,6 +670,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isTwoFactorEnabled,
         auditLogs,
         lastActivityTime,
+        customerUser,
+        customerProfile,
+        isCustomerAuthLoading,
+        customerAuthError,
+        toastMessage,
+        showToast,
+        customerSignInWithGoogle,
+        customerSignOut,
+        updateCustomerProfileInFirestore,
         loginAdmin,
         loginWithGoogleAdmin,
         logoutAdmin,

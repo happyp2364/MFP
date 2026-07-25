@@ -70,6 +70,20 @@ service cloud.firestore {
       allow read, delete: if isSignedIn();
     }
 
+    // Customer Profiles Collection (User can read and update their own document, admins can read/write all)
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Customer Orders Collection
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
     // Store Snapshots & Recovery Backups
     match /backups/{backupId} {
       allow read, write: if isSignedIn();

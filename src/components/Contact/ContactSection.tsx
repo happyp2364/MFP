@@ -261,7 +261,7 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
                       className="w-full bg-white border border-neutral-200 rounded-xl p-3 focus:ring-2 focus:ring-[#0B8F63] outline-none font-medium"
                     >
                       <option value="Men Footwear">Men's Footwear & Sneakers</option>
-                      <option value="Women Footwear">Women's Heels & Ethnic Flats</option>
+                      <option value="Women Sports Shoes">Women's Sports Shoes</option>
                       <option value="Kids Shoes">Kids' School & Party Shoes</option>
                       <option value="Wedding Juttis">Wedding / Festive Special</option>
                       <option value="Apparel">Clothing & Apparel</option>

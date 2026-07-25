@@ -33,11 +33,11 @@ export const InstagramFeed: React.FC = () => {
     },
     {
       id: '3',
-      imageUrl: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=600&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=600&q=80',
       likes: '1.8K',
       comments: '112',
-      caption: 'Festive Heel Collections for Women! Cushioned soles for all-day celebrations. 👠💖',
-      category: 'Festive',
+      caption: 'Women\'s High-Performance Sports & Running Shoes! Cloud-foam soles for extreme comfort. 👟💖',
+      category: 'Sports',
     },
     {
       id: '4',

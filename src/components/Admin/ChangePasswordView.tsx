@@ -11,9 +11,10 @@ import {
   ShieldCheck,
   ShieldAlert,
   ArrowLeft,
-  X
+  X,
+  Globe
 } from 'lucide-react';
-import { changeAdminPasswordFirebase, logoutUser } from '../../lib/firebase';
+import { auth, changeAdminPasswordFirebase, logoutUser } from '../../lib/firebase';
 import { useStore } from '../../context/StoreContext';
 
 interface ChangePasswordViewProps {
@@ -26,6 +27,9 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
   onCancel,
 }) => {
   const { logoutAdmin } = useStore();
+
+  const currentUser = auth.currentUser;
+  const isGoogleUser = currentUser?.providerData.some((p) => p.providerId === 'google.com');
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -64,8 +68,9 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
 
   const strengthInfo = getStrengthLabel();
 
+  // For Google users, currentPassword is not required; for Email/Password users, currentPassword is required.
   const isFormValid =
-    currentPassword.trim().length > 0 &&
+    (isGoogleUser || currentPassword.trim().length > 0) &&
     hasMinLength &&
     hasUppercase &&
     hasLowercase &&
@@ -78,7 +83,7 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (!currentPassword) {
+    if (!isGoogleUser && !currentPassword) {
       setErrorMessage('Please enter your current admin password.');
       return;
     }
@@ -91,17 +96,20 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
     setIsSubmitting(true);
 
     try {
-      const res = await changeAdminPasswordFirebase(currentPassword, newPassword);
+      const res = await changeAdminPasswordFirebase(
+        isGoogleUser ? undefined : currentPassword,
+        newPassword
+      );
 
       if (res.success) {
-        setSuccessMessage('Password updated successfully.');
+        setSuccessMessage('Password updated successfully! Force logging out in 2 seconds... Please log in using your new credentials.');
         
-        // Log out admin session after brief pause so toast is visible
+        // Step 4 & 5: Force logout and require login with new password
         setTimeout(async () => {
           await logoutUser();
-          logoutAdmin('Admin Password Changed via Firebase');
+          logoutAdmin('Admin Password Changed via Firebase Auth');
           onSuccess();
-        }, 1500);
+        }, 2000);
       } else {
         setErrorMessage(res.message || 'Failed to update password.');
       }
@@ -126,7 +134,9 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
               Change Admin Password
             </h2>
             <p className="text-xs text-neutral-500">
-              Manage your store credentials securely via Firebase Authentication
+              {isGoogleUser
+                ? `Signed in as Google Admin (${currentUser?.email || 'OAuth Active'})`
+                : 'Manage your store credentials securely via Firebase Authentication'}
             </p>
           </div>
         </div>
@@ -141,16 +151,28 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
         </button>
       </div>
 
-      {/* Security Note */}
-      <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-4 flex items-start gap-3 text-xs text-emerald-900">
-        <ShieldCheck className="w-5 h-5 text-[#0B8F63] shrink-0 mt-0.5" />
-        <div>
-          <span className="font-bold block">Firebase Security Rules & Encryption Active</span>
-          <p className="text-emerald-700 leading-relaxed mt-0.5">
-            Passwords are processed directly through Firebase Authentication with end-to-end encryption. Passwords are <strong>never stored</strong> in local storage, cookies, or plain text.
-          </p>
+      {/* Login Mode Badge Notice */}
+      {isGoogleUser ? (
+        <div className="bg-blue-50 border border-blue-200/80 rounded-2xl p-4 flex items-start gap-3 text-xs text-blue-900">
+          <Globe className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold block">Google OAuth Admin Account</span>
+            <p className="text-blue-700 leading-relaxed mt-0.5">
+              You are signed in via Google OAuth. You do not need to provide a current password. Your Google session will be re-authenticated securely when saving your new password.
+            </p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-4 flex items-start gap-3 text-xs text-emerald-900">
+          <ShieldCheck className="w-5 h-5 text-[#0B8F63] shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold block">Firebase Security Rules & Encryption Active</span>
+            <p className="text-emerald-700 leading-relaxed mt-0.5">
+              Passwords are processed directly through Firebase Authentication with end-to-end encryption. Passwords are <strong>never stored</strong> in local storage, cookies, or plain text.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Main Password Change Form */}
       <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-2xl border border-neutral-200/80 shadow-sm space-y-6">
@@ -161,7 +183,13 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
             <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
             <div className="flex-1">
               <span className="font-bold block">Update Failed</span>
-              <p className="text-rose-700 mt-0.5">{errorMessage}</p>
+              <p className="text-rose-700 mt-0.5 leading-relaxed">{errorMessage}</p>
+              
+              {errorMessage.includes('Firebase Console') && (
+                <div className="mt-2.5 p-2.5 bg-rose-100/70 rounded-lg text-[11px] text-rose-900 font-mono">
+                  <strong>Fix Steps:</strong> Firebase Console → Authentication → Sign-in method → Enable "Email/Password" provider.
+                </div>
+              )}
             </div>
             <button
               type="button"
@@ -184,31 +212,33 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
           </div>
         )}
 
-        {/* 1. Current Password */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-neutral-800 flex items-center gap-1.5">
-            <Lock className="w-3.5 h-3.5 text-neutral-500" />
-            <span>Current Admin Password *</span>
-          </label>
-          <div className="relative flex items-center">
-            <input
-              type={showCurrentPassword ? 'text' : 'password'}
-              required
-              placeholder="Enter current password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl py-3 pl-4 pr-11 text-xs font-medium text-neutral-900 focus:bg-white focus:ring-2 focus:ring-[#0B8F63] outline-none transition-all"
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-              className="absolute right-3.5 text-neutral-400 hover:text-neutral-700 p-1 rounded-lg transition-colors"
-              title={showCurrentPassword ? 'Hide password' : 'Show password'}
-            >
-              {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+        {/* 1. Current Password - Only required for non-Google Email/Password logins */}
+        {!isGoogleUser && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-neutral-800 flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-neutral-500" />
+              <span>Current Admin Password *</span>
+            </label>
+            <div className="relative flex items-center">
+              <input
+                type={showCurrentPassword ? 'text' : 'password'}
+                required={!isGoogleUser}
+                placeholder="Enter current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl py-3 pl-4 pr-11 text-xs font-medium text-neutral-900 focus:bg-white focus:ring-2 focus:ring-[#0B8F63] outline-none transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className="absolute right-3.5 text-neutral-400 hover:text-neutral-700 p-1 rounded-lg transition-colors"
+                title={showCurrentPassword ? 'Hide password' : 'Show password'}
+              >
+                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 2. New Password */}
         <div className="space-y-2">

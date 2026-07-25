@@ -11,6 +11,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  reauthenticateWithRedirect,
   updatePassword,
   signOut,
   onAuthStateChanged,
@@ -349,33 +351,189 @@ export async function fetchRemoteAuditLogs(): Promise<AuditLogItem[]> {
 
 // Change Admin Password using Firebase Authentication
 export async function changeAdminPasswordFirebase(
-  currentPassword: string,
-  newPassword: string
+  currentPassword?: string,
+  newPassword?: string
 ): Promise<{ success: boolean; message: string }> {
   try {
-    let user = auth.currentUser;
+    const user = auth.currentUser;
     const adminEmail = user?.email || 'vpcreation2002@gmail.com';
 
-    // 1. Ensure user is authenticated in Firebase Auth
-    if (!user) {
+    // Check if the current logged-in user authenticated via Google OAuth
+    const isGoogleUser = user?.providerData.some((p) => p.providerId === 'google.com');
+
+    if (user && isGoogleUser) {
+      // GOOGLE AUTH FLOW:
+      // Do NOT ask for current password or use EmailAuthProvider.
+      // Re-authenticate using Google OAuth popup / redirect first.
       try {
-        const cred = await signInWithEmailAndPassword(auth, adminEmail, currentPassword);
-        user = cred.user;
-      } catch (signInErr: any) {
-        if (signInErr.code === 'auth/user-not-found' || signInErr.code === 'auth/invalid-credential') {
+        await reauthenticateWithPopup(user, googleProvider);
+      } catch (reAuthErr: any) {
+        if (
+          reAuthErr.code === 'auth/popup-blocked' ||
+          reAuthErr.code === 'auth/popup-closed-by-user' ||
+          reAuthErr.code === 'auth/cancelled-popup-request' ||
+          reAuthErr.code === 'auth/operation-not-supported-in-this-environment'
+        ) {
           try {
-            const newCred = await createUserWithEmailAndPassword(auth, adminEmail, currentPassword);
-            user = newCred.user;
-          } catch (createErr: any) {
+            await reauthenticateWithRedirect(user, googleProvider);
+          } catch (redirErr: any) {
             return {
               success: false,
-              message: 'Incorrect current password. Please enter your valid current password.',
+              message: 'Google re-authentication failed. Please try again.',
             };
           }
-        } else if (signInErr.code === 'auth/wrong-password') {
+        } else if (reAuthErr.code === 'auth/operation-not-allowed') {
           return {
             success: false,
-            message: 'Incorrect current password. Please enter your valid current password.',
+            message:
+              'Google authentication is not allowed in Firebase Console. Please verify Authentication → Sign-in method in your Firebase Console settings.',
+          };
+        } else if (reAuthErr.code === 'auth/network-request-failed') {
+          return {
+            success: false,
+            message: 'Network error. Please check your internet connection and try again.',
+          };
+        } else {
+          return {
+            success: false,
+            message: `Google re-authentication failed: ${reAuthErr.message || 'Access denied'}`,
+          };
+        }
+      }
+
+      if (!newPassword) {
+        return {
+          success: false,
+          message: 'Please provide a valid new password.',
+        };
+      }
+
+      // Update password for Google-authenticated admin account
+      try {
+        await updatePassword(user, newPassword);
+      } catch (updateErr: any) {
+        if (updateErr.code === 'auth/operation-not-allowed') {
+          return {
+            success: false,
+            message:
+              'Email/Password sign-in is disabled in your Firebase Console. Please enable Email/Password provider under Firebase Console → Authentication → Sign-in method to allow setting account passwords.',
+          };
+        } else if (updateErr.code === 'auth/weak-password') {
+          return {
+            success: false,
+            message: 'The new password is too weak. Please use at least 8 characters with letters, numbers, and special symbols.',
+          };
+        } else if (updateErr.code === 'updateErr/requires-recent-login' || updateErr.code === 'auth/requires-recent-login') {
+          return {
+            success: false,
+            message: 'Your session has expired. Please log out and sign in again before changing your password.',
+          };
+        } else {
+          return {
+            success: false,
+            message: updateErr.message || 'Failed to update password.',
+          };
+        }
+      }
+
+      await recordAuditLog(
+        'Admin Password Changed',
+        'SECURITY',
+        'Password set/updated securely for Google Admin account via Firebase Auth',
+        'SUCCESS'
+      );
+
+      return {
+        success: true,
+        message: 'Password updated successfully.',
+      };
+    }
+
+    // EMAIL / PASSWORD FLOW:
+    if (!currentPassword) {
+      return {
+        success: false,
+        message: 'Please enter your current admin password.',
+      };
+    }
+
+    if (!newPassword) {
+      return {
+        success: false,
+        message: 'Please enter your new admin password.',
+      };
+    }
+
+    let activeUser = user;
+
+    if (activeUser) {
+      // 1. Verify current password using reauthenticateWithCredential()
+      try {
+        const credential = EmailAuthProvider.credential(activeUser.email || adminEmail, currentPassword);
+        await reauthenticateWithCredential(activeUser, credential);
+      } catch (reAuthErr: any) {
+        if (reAuthErr.code === 'auth/operation-not-allowed') {
+          return {
+            success: false,
+            message:
+              'Email/Password authentication is disabled in your Firebase Console. Please enable the Email/Password provider under Firebase Console → Authentication → Sign-in method.',
+          };
+        } else if (
+          reAuthErr.code === 'auth/wrong-password' ||
+          reAuthErr.code === 'auth/invalid-credential' ||
+          reAuthErr.code === 'auth/user-mismatch'
+        ) {
+          return {
+            success: false,
+            message: 'Current password verification failed: Incorrect current password.',
+          };
+        } else if (reAuthErr.code === 'auth/user-not-found') {
+          return {
+            success: false,
+            message: 'Admin user account not found in Firebase Authentication.',
+          };
+        } else if (reAuthErr.code === 'auth/requires-recent-login') {
+          return {
+            success: false,
+            message: 'Your session has expired. Please log in again before updating your password.',
+          };
+        } else if (reAuthErr.code === 'auth/too-many-requests') {
+          return {
+            success: false,
+            message: 'Too many failed attempts. Access temporarily locked for security. Please try again later.',
+          };
+        } else if (reAuthErr.code === 'auth/network-request-failed') {
+          return {
+            success: false,
+            message: 'Network error. Please check your internet connection.',
+          };
+        } else {
+          return {
+            success: false,
+            message: 'Current password verification failed: ' + (reAuthErr.message || 'Invalid credentials'),
+          };
+        }
+      }
+    } else {
+      // User is not active in auth.currentUser, attempt signing in
+      try {
+        const cred = await signInWithEmailAndPassword(auth, adminEmail, currentPassword);
+        activeUser = cred.user;
+      } catch (signInErr: any) {
+        if (signInErr.code === 'auth/operation-not-allowed') {
+          return {
+            success: false,
+            message:
+              'Email/Password authentication is disabled in your Firebase Console. Please enable the Email/Password provider under Firebase Console → Authentication → Sign-in method.',
+          };
+        } else if (
+          signInErr.code === 'auth/wrong-password' ||
+          signInErr.code === 'auth/invalid-credential' ||
+          signInErr.code === 'auth/user-not-found'
+        ) {
+          return {
+            success: false,
+            message: 'Current password verification failed: Incorrect current password.',
           };
         } else if (signInErr.code === 'auth/too-many-requests') {
           return {
@@ -394,42 +552,52 @@ export async function changeAdminPasswordFirebase(
           };
         }
       }
-    } else {
-      // 2. Re-authenticate active user with currentPassword
-      try {
-        const credential = EmailAuthProvider.credential(adminEmail, currentPassword);
-        await reauthenticateWithCredential(user, credential);
-      } catch (reAuthErr: any) {
-        if (reAuthErr.code === 'auth/wrong-password' || reAuthErr.code === 'auth/invalid-credential') {
-          return {
-            success: false,
-            message: 'Incorrect current password. Please enter your valid current password.',
-          };
-        } else if (reAuthErr.code === 'auth/too-many-requests') {
-          return {
-            success: false,
-            message: 'Too many failed attempts. Access temporarily locked for security. Please try again later.',
-          };
-        } else if (reAuthErr.code === 'auth/network-request-failed') {
-          return {
-            success: false,
-            message: 'Network error. Please check your internet connection.',
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Re-authentication failed: ' + (reAuthErr.message || 'Incorrect current password'),
-          };
-        }
+    }
+
+    if (!activeUser) {
+      return {
+        success: false,
+        message: 'Admin authentication session not found. Please log in again.',
+      };
+    }
+
+    // 2. Call updatePassword() only after successful verification
+    try {
+      await updatePassword(activeUser, newPassword);
+    } catch (updateErr: any) {
+      if (updateErr.code === 'auth/operation-not-allowed') {
+        return {
+          success: false,
+          message:
+            'Email/Password authentication is disabled in your Firebase Console. Please enable the Email/Password provider under Firebase Console → Authentication → Sign-in method.',
+        };
+      } else if (updateErr.code === 'auth/weak-password') {
+        return {
+          success: false,
+          message: 'The new password is too weak. Please use at least 8 characters with a mix of uppercase, lowercase, numbers, and symbols.',
+        };
+      } else if (updateErr.code === 'auth/requires-recent-login') {
+        return {
+          success: false,
+          message: 'Your session has expired. Please log in again before updating your password.',
+        };
+      } else if (updateErr.code === 'auth/network-request-failed') {
+        return {
+          success: false,
+          message: 'Network error. Please check your internet connection.',
+        };
+      } else if (updateErr.code === 'auth/too-many-requests') {
+        return {
+          success: false,
+          message: 'Too many requests. Please wait a moment before trying again.',
+        };
+      } else {
+        return {
+          success: false,
+          message: updateErr.message || 'Failed to update password.',
+        };
       }
     }
-
-    if (!user) {
-      return { success: false, message: 'Admin authentication session not found. Please log in again.' };
-    }
-
-    // 3. Call Firebase updatePassword
-    await updatePassword(user, newPassword);
 
     await recordAuditLog(
       'Admin Password Changed',
@@ -445,7 +613,10 @@ export async function changeAdminPasswordFirebase(
   } catch (err: any) {
     console.error('Firebase updatePassword error:', err);
     let errorMsg = 'Failed to update password.';
-    if (err.code === 'auth/weak-password') {
+    if (err.code === 'auth/operation-not-allowed') {
+      errorMsg =
+        'Email/Password authentication is disabled in your Firebase Console. Please enable the Email/Password provider under Firebase Console → Authentication → Sign-in method.';
+    } else if (err.code === 'auth/weak-password') {
       errorMsg = 'The new password is too weak according to Firebase security requirements.';
     } else if (err.code === 'auth/requires-recent-login') {
       errorMsg = 'Your session has expired. Please log out and log in again before updating your password.';

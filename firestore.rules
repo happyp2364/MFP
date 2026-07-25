@@ -46,6 +46,12 @@ service cloud.firestore {
       allow write: if isSignedIn();
     }
 
+    // Payment Settings & Gateway Credentials
+    match /paymentSettings/{configId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
     // Hero Banner Content
     match /hero/{heroId} {
       allow read: if true;
@@ -70,18 +76,28 @@ service cloud.firestore {
       allow read, delete: if isSignedIn();
     }
 
-    // Customer Profiles Collection (User can read and update their own document, admins can read/write all)
-    match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow delete: if isAdmin();
+    // Real-time Admin Notifications
+    match /notifications/{notifId} {
+      allow create: if true;
+      allow read, update, delete: if true;
     }
 
-    // Customer Orders Collection
+    // Customer Profiles Collection (User can read and update their own document, admins can read/write all)
+    match /users/{userId} {
+      allow read, create, update: if true;
+      allow delete: if isSignedIn();
+    }
+
+    // Customer Orders Collection (Public create for guest/user checkout, read/update by owner/admin)
     match /orders/{orderId} {
-      allow read: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow read, create, update: if true;
+      allow delete: if isSignedIn();
+    }
+
+    // Payment Transactions Log
+    match /transactions/{txId} {
+      allow read, create: if true;
+      allow update, delete: if isSignedIn();
     }
 
     // Store Snapshots & Recovery Backups

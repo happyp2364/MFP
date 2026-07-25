@@ -11,6 +11,7 @@ interface OrderSheetProps {
   onUpdateQuantity: (id: string, size: string, color: string, qty: number) => void;
   onRemoveItem: (id: string, size: string, color: string) => void;
   onClearCart: () => void;
+  onProceedToCheckout: () => void;
 }
 
 export const OrderSheet: React.FC<OrderSheetProps> = ({
@@ -20,6 +21,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
+  onProceedToCheckout,
 }) => {
   if (!isOpen) return null;
 
@@ -155,11 +157,22 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
             </div>
 
             <button
-              onClick={handleWhatsAppCheckout}
-              className="w-full bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-sm py-3.5 rounded-2xl shadow-lg shadow-[#0B8F63]/25 flex items-center justify-center gap-2 transition-all"
+              onClick={() => {
+                onClose();
+                onProceedToCheckout();
+              }}
+              className="w-full bg-amber-800 hover:bg-amber-900 text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-lg shadow-amber-800/25 flex items-center justify-center gap-2 transition-all"
             >
-              <MessageCircle className="w-5 h-5 fill-white text-[#0B8F63]" />
-              <span>SEND ORDER TO WHATSAPP</span>
+              <ShoppingBag className="w-4 h-4" />
+              <span>PROCEED TO ONLINE CHECKOUT (UPI / CARDS)</span>
+            </button>
+
+            <button
+              onClick={handleWhatsAppCheckout}
+              className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2.5 rounded-2xl flex items-center justify-center gap-2 transition-all opacity-90"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>Order via WhatsApp Instead</span>
             </button>
 
             <button

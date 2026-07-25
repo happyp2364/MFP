@@ -28,6 +28,7 @@ interface NavbarProps {
   onOpenOrderSheet: () => void;
   onOpenWishlist: () => void;
   onOpenAdmin: () => void;
+  onOpenCustomerAccount?: () => void;
   onOpenCalendarModal?: () => void;
   onOpenGmailModal?: () => void;
   onOpenWorkspaceHub?: () => void;
@@ -43,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenOrderSheet,
   onOpenWishlist,
   onOpenAdmin,
+  onOpenCustomerAccount,
   onOpenCalendarModal,
   onOpenGmailModal,
   onOpenWorkspaceHub,
@@ -266,6 +268,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </span>
                 )}
               </button>
+
+              {/* My Orders & Account Button */}
+              {onOpenCustomerAccount && (
+                <button
+                  onClick={onOpenCustomerAccount}
+                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-amber-800 hover:bg-amber-50 transition-all relative active:scale-95"
+                  aria-label="My Account & Orders"
+                  title="My Account & Live Order Tracking"
+                >
+                  <User className="w-5 h-5 text-amber-900" />
+                </button>
+              )}
 
               {/* Order Bag Icon */}
               <button

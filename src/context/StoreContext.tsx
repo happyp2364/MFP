@@ -10,6 +10,13 @@ import {
   AuditLogItem,
   StoreBackupSnapshot,
   CustomerProfile,
+  CustomerOrder,
+  PaymentSettings,
+  OrderStatus,
+  PaymentMethodType,
+  AdminNotification,
+  TransactionRecord,
+  ShippingAddressInfo,
 } from '../types';
 import {
   PRODUCTS_DATA,
@@ -39,10 +46,18 @@ import {
   checkRedirectAuthResult,
   handleFirestoreError,
   OperationType,
+  DEFAULT_PAYMENT_SETTINGS,
+  fetchPaymentSettingsFromFirestore,
+  savePaymentSettingsInFirestore,
+  saveOrderInFirestore,
+  updateOrderStatusInFirestore,
+  saveTransactionInFirestore,
+  createAdminNotificationInFirestore,
 } from '../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { addDoc, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { playNotificationSound } from '../utils/audio';
 
 const STORAGE_KEYS = {
   PRODUCTS: 'mfp_store_products',
@@ -56,6 +71,9 @@ const STORAGE_KEYS = {
   ADMIN_PASSWORD: 'mfp_admin_password',
   TWO_FACTOR_ENABLED: 'mfp_2fa_enabled',
   AUDIT_LOGS: 'mfp_audit_logs',
+  PAYMENT_SETTINGS: 'mfp_payment_settings',
+  ORDERS: 'mfp_orders',
+  NOTIFICATIONS: 'mfp_notifications',
 };
 
 // 30-minute inactivity limit (1800000 ms)
@@ -78,6 +96,25 @@ interface StoreContextType {
   isTwoFactorEnabled: boolean;
   auditLogs: AuditLogItem[];
   lastActivityTime: number;
+
+  // E-Commerce Orders & Payment Settings
+  paymentSettings: PaymentSettings;
+  orders: CustomerOrder[];
+  notifications: AdminNotification[];
+  updatePaymentSettings: (settings: Partial<PaymentSettings>) => Promise<boolean>;
+  placeOrderAndPay: (
+    shippingInfo: ShippingAddressInfo,
+    items: import('../types').CartItem[],
+    subtotal: number,
+    shippingFee: number,
+    discountAmount: number,
+    paymentMethod: PaymentMethodType,
+    paymentRef?: string
+  ) => Promise<{ success: boolean; orderId?: string; message?: string }>;
+  updateOrderStatus: (orderId: string, newStatus: OrderStatus, note?: string) => Promise<boolean>;
+  cancelCustomerOrder: (orderId: string, reason?: string) => Promise<boolean>;
+  markNotificationRead: (id: string) => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
 
   // Customer Auth State
   customerUser: FirebaseUser | null;
@@ -179,6 +216,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Payment Settings, Orders & Notifications State
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.PAYMENT_SETTINGS);
+    return saved ? JSON.parse(saved) : DEFAULT_PAYMENT_SETTINGS;
+  });
+
+  const [orders, setOrders] = useState<CustomerOrder[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [notifications, setNotifications] = useState<AdminNotification[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -286,6 +339,273 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.TWO_FACTOR_ENABLED, isTwoFactorEnabled.toString());
   }, [isTwoFactorEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(paymentSettings));
+  }, [paymentSettings]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+  }, [orders]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
+  }, [notifications]);
+
+  // Real-time Firestore Sync for Payment Settings
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const configRef = doc(db, 'paymentSettings', 'config');
+      unsubscribe = onSnapshot(configRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setPaymentSettings({ ...DEFAULT_PAYMENT_SETTINGS, ...docSnap.data() } as PaymentSettings);
+        }
+      });
+    } catch (e) {
+      console.warn('Payment settings onSnapshot warning:', e);
+    }
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Real-time Firestore Sync for Orders
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const ordersCol = collection(db, 'orders');
+      const q = query(ordersCol, orderBy('createdAt', 'desc'), limit(100));
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const list: CustomerOrder[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push(docSnap.data() as CustomerOrder);
+          });
+          setOrders(list);
+        }
+      });
+    } catch (e) {
+      console.warn('Orders onSnapshot warning:', e);
+    }
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Real-time Firestore Sync for Admin Notifications
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const notifCol = collection(db, 'notifications');
+      const q = query(notifCol, orderBy('timestamp', 'desc'), limit(50));
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const list: AdminNotification[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push(docSnap.data() as AdminNotification);
+          });
+          setNotifications(list);
+        }
+      });
+    } catch (e) {
+      console.warn('Notifications onSnapshot warning:', e);
+    }
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Update Payment Settings
+  const updatePaymentSettings = async (updated: Partial<PaymentSettings>): Promise<boolean> => {
+    const newSettings = { ...paymentSettings, ...updated };
+    setPaymentSettings(newSettings);
+    const success = await savePaymentSettingsInFirestore(newSettings);
+    if (success) {
+      showToast('Payment & UPI settings updated successfully!', 'success');
+    }
+    return success;
+  };
+
+  // Place Order & Process Payment
+  const placeOrderAndPay = async (
+    shippingInfo: ShippingAddressInfo,
+    items: import('../types').CartItem[],
+    subtotal: number,
+    shippingFee: number,
+    discountAmount: number,
+    paymentMethod: PaymentMethodType,
+    paymentRef?: string
+  ): Promise<{ success: boolean; orderId?: string; message?: string }> => {
+    if (!items || items.length === 0) {
+      return { success: false, message: 'Cart is empty.' };
+    }
+
+    const taxAmount = Math.round((subtotal * (paymentSettings.gstPercent || 5)) / 100);
+    const totalAmount = Math.max(0, subtotal + shippingFee + taxAmount - discountAmount);
+    const orderNum = 1025 + orders.length + Math.floor(Math.random() * 10);
+    const orderId = `#MFP${orderNum}`;
+    const txId = `TXN-${Date.now()}`;
+    const nowISO = new Date().toISOString();
+
+    const newOrder: CustomerOrder = {
+      id: orderId,
+      orderNumber: orderNum,
+      userId: customerUser?.uid,
+      customerName: shippingInfo.name,
+      customerPhone: shippingInfo.phone,
+      customerEmail: shippingInfo.email,
+      shippingAddress: shippingInfo,
+      items,
+      subtotal,
+      shippingFee,
+      discountAmount,
+      taxAmount,
+      totalAmount,
+      paymentMethod,
+      paymentStatus: 'PAID',
+      orderStatus: 'PENDING',
+      transactionId: txId,
+      paymentReference: paymentRef || txId,
+      paymentTimestamp: nowISO,
+      createdAt: nowISO,
+      updatedAt: nowISO,
+      statusHistory: [
+        {
+          status: 'PENDING',
+          timestamp: nowISO,
+          note: `Order placed via ${paymentMethod}. Payment status: PAID`,
+        },
+      ],
+    };
+
+    // Auto-reduce inventory stock size-wise
+    setProducts((prevProducts) =>
+      prevProducts.map((p) => {
+        const matchingCartItems = items.filter((ci) => ci.product.id === p.id);
+        if (matchingCartItems.length === 0) return p;
+
+        let updatedSizeStocks = p.sizeStocks ? [...p.sizeStocks] : [];
+        matchingCartItems.forEach((ci) => {
+          if (updatedSizeStocks.length > 0) {
+            updatedSizeStocks = updatedSizeStocks.map((ss) => {
+              if (ss.size === ci.selectedSize) {
+                const newQty = Math.max(0, ss.stockQuantity - ci.quantity);
+                return {
+                  ...ss,
+                  stockQuantity: newQty,
+                  inStock: newQty > 0,
+                  isAvailable: newQty > 0,
+                };
+              }
+              return ss;
+            });
+          }
+        });
+
+        const hasAnyStock = updatedSizeStocks.length > 0
+          ? updatedSizeStocks.some((ss) => ss.stockQuantity > 0)
+          : false;
+
+        return {
+          ...p,
+          sizeStocks: updatedSizeStocks,
+          inStock: updatedSizeStocks.length > 0 ? hasAnyStock : p.inStock,
+        };
+      })
+    );
+
+    // Save to Firestore & local state
+    await saveOrderInFirestore(newOrder);
+
+    const txRecord: TransactionRecord = {
+      id: txId,
+      orderId,
+      amount: totalAmount,
+      customerName: shippingInfo.name,
+      customerEmail: shippingInfo.email,
+      customerPhone: shippingInfo.phone,
+      paymentMethod,
+      paymentStatus: 'PAID',
+      transactionRef: paymentRef || txId,
+      gatewayProvider: paymentSettings.gatewayProvider,
+      timestamp: nowISO,
+    };
+    await saveTransactionInFirestore(txRecord);
+
+    const newNotif: AdminNotification = {
+      id: `notif-${Date.now()}`,
+      orderId,
+      customerName: shippingInfo.name,
+      totalAmount,
+      productCount: items.length,
+      paymentStatus: 'Successful',
+      timestamp: nowISO,
+      read: false,
+    };
+    await createAdminNotificationInFirestore(newNotif);
+
+    // Trigger audio chime for admin real-time notification
+    playNotificationSound();
+
+    setOrders((prev) => [newOrder, ...prev.filter((o) => o.id !== orderId)]);
+    setNotifications((prev) => [newNotif, ...prev]);
+
+    showToast(`Order ${orderId} placed & payment verified!`, 'success');
+    return { success: true, orderId };
+  };
+
+  // Update Order Status
+  const updateOrderStatus = async (
+    orderId: string,
+    newStatus: OrderStatus,
+    note?: string
+  ): Promise<boolean> => {
+    const success = await updateOrderStatusInFirestore(orderId, newStatus, note);
+    if (success) {
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id === orderId) {
+            const now = new Date().toISOString();
+            return {
+              ...o,
+              orderStatus: newStatus,
+              updatedAt: now,
+              statusHistory: [
+                ...(o.statusHistory || []),
+                { status: newStatus, timestamp: now, note: note || `Status updated to ${newStatus}` },
+              ],
+            };
+          }
+          return o;
+        })
+      );
+      showToast(`Order ${orderId} status updated to ${newStatus}`, 'info');
+    }
+    return success;
+  };
+
+  // Cancel Customer Order
+  const cancelCustomerOrder = async (orderId: string, reason?: string): Promise<boolean> => {
+    return updateOrderStatus(orderId, 'CANCELLED', reason || 'Cancelled by customer');
+  };
+
+  // Mark notification read
+  const markNotificationRead = async (id: string): Promise<void> => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+    try {
+      const docRef = doc(db, 'notifications', id);
+      await setDoc(docRef, { read: true }, { merge: true });
+    } catch (e) {
+      console.warn('Could not mark notification as read in Firestore:', e);
+    }
+  };
+
+  const clearAllNotifications = async (): Promise<void> => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
 
   // 3. Listen to Firebase Auth state & handle redirect logins
   useEffect(() => {
@@ -728,6 +1048,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isTwoFactorEnabled,
         auditLogs,
         lastActivityTime,
+        paymentSettings,
+        orders,
+        notifications,
+        updatePaymentSettings,
+        placeOrderAndPay,
+        updateOrderStatus,
+        cancelCustomerOrder,
+        markNotificationRead,
+        clearAllNotifications,
         customerUser,
         customerProfile,
         isCustomerAuthLoading,

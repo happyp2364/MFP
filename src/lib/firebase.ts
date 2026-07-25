@@ -358,98 +358,16 @@ export async function changeAdminPasswordFirebase(
     const user = auth.currentUser;
     const adminEmail = user?.email || 'vpcreation2002@gmail.com';
 
-    // Check if the current logged-in user authenticated via Google OAuth
+    // 1. Detect if the current logged-in user authenticated via Google OAuth
     const isGoogleUser = user?.providerData.some((p) => p.providerId === 'google.com');
 
     if (user && isGoogleUser) {
-      // GOOGLE AUTH FLOW:
-      // Do NOT ask for current password or use EmailAuthProvider.
-      // Re-authenticate using Google OAuth popup / redirect first.
-      try {
-        await reauthenticateWithPopup(user, googleProvider);
-      } catch (reAuthErr: any) {
-        if (
-          reAuthErr.code === 'auth/popup-blocked' ||
-          reAuthErr.code === 'auth/popup-closed-by-user' ||
-          reAuthErr.code === 'auth/cancelled-popup-request' ||
-          reAuthErr.code === 'auth/operation-not-supported-in-this-environment'
-        ) {
-          try {
-            await reauthenticateWithRedirect(user, googleProvider);
-          } catch (redirErr: any) {
-            return {
-              success: false,
-              message: 'Google re-authentication failed. Please try again.',
-            };
-          }
-        } else if (reAuthErr.code === 'auth/operation-not-allowed') {
-          return {
-            success: false,
-            message:
-              'Google authentication is not allowed in Firebase Console. Please verify Authentication → Sign-in method in your Firebase Console settings.',
-          };
-        } else if (reAuthErr.code === 'auth/network-request-failed') {
-          return {
-            success: false,
-            message: 'Network error. Please check your internet connection and try again.',
-          };
-        } else {
-          return {
-            success: false,
-            message: `Google re-authentication failed: ${reAuthErr.message || 'Access denied'}`,
-          };
-        }
-      }
-
-      if (!newPassword) {
-        return {
-          success: false,
-          message: 'Please provide a valid new password.',
-        };
-      }
-
-      // Update password for Google-authenticated admin account
-      try {
-        await updatePassword(user, newPassword);
-      } catch (updateErr: any) {
-        if (updateErr.code === 'auth/operation-not-allowed') {
-          return {
-            success: false,
-            message:
-              'Email/Password sign-in is disabled in your Firebase Console. Please enable Email/Password provider under Firebase Console → Authentication → Sign-in method to allow setting account passwords.',
-          };
-        } else if (updateErr.code === 'auth/weak-password') {
-          return {
-            success: false,
-            message: 'The new password is too weak. Please use at least 8 characters with letters, numbers, and special symbols.',
-          };
-        } else if (updateErr.code === 'updateErr/requires-recent-login' || updateErr.code === 'auth/requires-recent-login') {
-          return {
-            success: false,
-            message: 'Your session has expired. Please log out and sign in again before changing your password.',
-          };
-        } else {
-          return {
-            success: false,
-            message: updateErr.message || 'Failed to update password.',
-          };
-        }
-      }
-
-      await recordAuditLog(
-        'Admin Password Changed',
-        'SECURITY',
-        'Password set/updated securely for Google Admin account via Firebase Auth',
-        'SUCCESS'
-      );
-
       return {
-        success: true,
-        message: 'Password updated successfully.',
+        success: false,
+        message: 'You are signed in with Google. Your password is managed by your Google Account.',
       };
     }
 
-    // EMAIL / PASSWORD FLOW:
     if (!currentPassword) {
       return {
         success: false,
@@ -466,17 +384,21 @@ export async function changeAdminPasswordFirebase(
 
     let activeUser = user;
 
+    // 2. Re-authenticate the user with Email/Password before updating
     if (activeUser) {
-      // 1. Verify current password using reauthenticateWithCredential()
       try {
         const credential = EmailAuthProvider.credential(activeUser.email || adminEmail, currentPassword);
         await reauthenticateWithCredential(activeUser, credential);
       } catch (reAuthErr: any) {
-        if (reAuthErr.code === 'auth/operation-not-allowed') {
+        console.warn('Re-authentication error:', reAuthErr);
+        if (
+          reAuthErr.code === 'auth/operation-not-allowed' ||
+          reAuthErr.code === 'auth/admin-restricted-operation'
+        ) {
           return {
             success: false,
             message:
-              'Email/Password authentication is disabled in your Firebase Console. Please enable the Email/Password provider under Firebase Console → Authentication → Sign-in method.',
+              'Email/Password sign-in is disabled in your Firebase project. Please enable the Email/Password provider in the Firebase Console under Authentication > Sign-in method.',
           };
         } else if (
           reAuthErr.code === 'auth/wrong-password' ||
@@ -490,7 +412,7 @@ export async function changeAdminPasswordFirebase(
         } else if (reAuthErr.code === 'auth/user-not-found') {
           return {
             success: false,
-            message: 'Admin user account not found in Firebase Authentication.',
+            message: 'Admin account not found in Firebase Authentication.',
           };
         } else if (reAuthErr.code === 'auth/requires-recent-login') {
           return {
@@ -500,7 +422,7 @@ export async function changeAdminPasswordFirebase(
         } else if (reAuthErr.code === 'auth/too-many-requests') {
           return {
             success: false,
-            message: 'Too many failed attempts. Access temporarily locked for security. Please try again later.',
+            message: 'Too many unsuccessful attempts. Access temporarily locked for security. Please try again later.',
           };
         } else if (reAuthErr.code === 'auth/network-request-failed') {
           return {
@@ -510,7 +432,7 @@ export async function changeAdminPasswordFirebase(
         } else {
           return {
             success: false,
-            message: 'Current password verification failed: ' + (reAuthErr.message || 'Invalid credentials'),
+            message: `Current password verification failed: ${reAuthErr.message || 'Invalid current password.'}`,
           };
         }
       }
@@ -520,11 +442,14 @@ export async function changeAdminPasswordFirebase(
         const cred = await signInWithEmailAndPassword(auth, adminEmail, currentPassword);
         activeUser = cred.user;
       } catch (signInErr: any) {
-        if (signInErr.code === 'auth/operation-not-allowed') {
+        if (
+          signInErr.code === 'auth/operation-not-allowed' ||
+          signInErr.code === 'auth/admin-restricted-operation'
+        ) {
           return {
             success: false,
             message:
-              'Email/Password authentication is disabled in your Firebase Console. Please enable the Email/Password provider under Firebase Console → Authentication → Sign-in method.',
+              'Email/Password sign-in is disabled in your Firebase project. Please enable the Email/Password provider in the Firebase Console under Authentication > Sign-in method.',
           };
         } else if (
           signInErr.code === 'auth/wrong-password' ||
@@ -538,7 +463,7 @@ export async function changeAdminPasswordFirebase(
         } else if (signInErr.code === 'auth/too-many-requests') {
           return {
             success: false,
-            message: 'Too many failed login attempts. Access temporarily locked for security. Please try again later.',
+            message: 'Too many unsuccessful attempts. Please try again later.',
           };
         } else if (signInErr.code === 'auth/network-request-failed') {
           return {
@@ -548,7 +473,7 @@ export async function changeAdminPasswordFirebase(
         } else {
           return {
             success: false,
-            message: 'Current password verification failed: ' + (signInErr.message || 'Invalid credentials'),
+            message: `Sign-in failed: ${signInErr.message || 'Invalid credentials.'}`,
           };
         }
       }
@@ -561,15 +486,19 @@ export async function changeAdminPasswordFirebase(
       };
     }
 
-    // 2. Call updatePassword() only after successful verification
+    // 3. Use updatePassword() correctly after re-authentication
     try {
       await updatePassword(activeUser, newPassword);
     } catch (updateErr: any) {
-      if (updateErr.code === 'auth/operation-not-allowed') {
+      console.warn('updatePassword error:', updateErr);
+      if (
+        updateErr.code === 'auth/operation-not-allowed' ||
+        updateErr.code === 'auth/admin-restricted-operation'
+      ) {
         return {
           success: false,
           message:
-            'Email/Password authentication is disabled in your Firebase Console. Please enable the Email/Password provider under Firebase Console → Authentication → Sign-in method.',
+            'Email/Password sign-in is disabled in your Firebase project. Please enable the Email/Password provider in the Firebase Console under Authentication > Sign-in method.',
         };
       } else if (updateErr.code === 'auth/weak-password') {
         return {
@@ -611,11 +540,14 @@ export async function changeAdminPasswordFirebase(
       message: 'Password updated successfully.',
     };
   } catch (err: any) {
-    console.error('Firebase updatePassword error:', err);
+    console.error('Firebase updatePassword exception:', err);
     let errorMsg = 'Failed to update password.';
-    if (err.code === 'auth/operation-not-allowed') {
+    if (
+      err.code === 'auth/operation-not-allowed' ||
+      err.code === 'auth/admin-restricted-operation'
+    ) {
       errorMsg =
-        'Email/Password authentication is disabled in your Firebase Console. Please enable the Email/Password provider under Firebase Console → Authentication → Sign-in method.';
+        'Email/Password sign-in is disabled in your Firebase project. Please enable the Email/Password provider in the Firebase Console under Authentication > Sign-in method.';
     } else if (err.code === 'auth/weak-password') {
       errorMsg = 'The new password is too weak according to Firebase security requirements.';
     } else if (err.code === 'auth/requires-recent-login') {
@@ -630,3 +562,192 @@ export async function changeAdminPasswordFirebase(
     return { success: false, message: errorMsg };
   }
 }
+
+// Default Payment Gateway & UPI Settings
+export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
+  merchantName: 'Marudhar Fashion Point',
+  upiId: 'marudharfashion@upi',
+  upiName: 'Marudhar Fashion Point',
+  gatewayProvider: 'DIRECT_UPI_QR',
+  apiKey: 'rzp_live_marudhar_fashion_key',
+  apiSecret: 'secret_live_mfp_key',
+  enableUPI: true,
+  enableQR: true,
+  enableCards: true,
+  enableNetBanking: true,
+  enableWallets: true,
+  enableCOD: true,
+  isTestMode: false,
+  autoApprovePaidOrders: true,
+  currencySymbol: '₹',
+  gstPercent: 5,
+  flatShippingRate: 0,
+  freeShippingMinAmount: 999,
+};
+
+// Fetch Payment Settings from Firestore
+export async function fetchPaymentSettingsFromFirestore(): Promise<import('../types').PaymentSettings> {
+  try {
+    const docRef = doc(db, 'paymentSettings', 'config');
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return { ...DEFAULT_PAYMENT_SETTINGS, ...snap.data() } as import('../types').PaymentSettings;
+    }
+  } catch (err) {
+    handleFirestoreError(err, OperationType.GET, 'paymentSettings/config');
+  }
+  return DEFAULT_PAYMENT_SETTINGS;
+}
+
+// Save Payment Settings in Firestore
+export async function savePaymentSettingsInFirestore(
+  settings: import('../types').PaymentSettings
+): Promise<boolean> {
+  try {
+    const docRef = doc(db, 'paymentSettings', 'config');
+    await setDoc(docRef, settings, { merge: true });
+    recordAuditLog(
+      'Payment Settings Updated',
+      'SETTINGS',
+      `Updated UPI ID to ${settings.upiId}, Merchant Name to ${settings.merchantName}`,
+      'SUCCESS'
+    );
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, 'paymentSettings/config');
+    return false;
+  }
+}
+
+// Save Order in Firestore
+export async function saveOrderInFirestore(order: import('../types').CustomerOrder): Promise<boolean> {
+  try {
+    const docRef = doc(db, 'orders', order.id);
+    await setDoc(docRef, order);
+
+    // If order is linked to a logged-in user, also sync to customer's order history array
+    if (order.userId) {
+      try {
+        const userRef = doc(db, 'users', order.userId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const profile = userSnap.data() as import('../types').CustomerProfile;
+          const updatedHistory = [order, ...(profile.orderHistory || []).filter((o) => o.id !== order.id)];
+          await setDoc(userRef, { orderHistory: updatedHistory }, { merge: true });
+        }
+      } catch (e) {
+        console.warn('Could not sync order to user profile document:', e);
+      }
+    }
+
+    recordAuditLog(
+      'New Order Placed',
+      'PRODUCT',
+      `Order ${order.id} placed by ${order.customerName} for ₹${order.totalAmount} (${order.paymentStatus})`,
+      'SUCCESS'
+    );
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `orders/${order.id}`);
+    return false;
+  }
+}
+
+// Update Order Status in Firestore
+export async function updateOrderStatusInFirestore(
+  orderId: string,
+  newStatus: import('../types').OrderStatus,
+  note?: string
+): Promise<boolean> {
+  try {
+    const docRef = doc(db, 'orders', orderId);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return false;
+
+    const existing = snap.data() as import('../types').CustomerOrder;
+    const now = new Date().toISOString();
+    const updatedHistory = [
+      ...(existing.statusHistory || []),
+      { status: newStatus, timestamp: now, note: note || `Order status changed to ${newStatus}` },
+    ];
+
+    const updatePayload: Partial<import('../types').CustomerOrder> = {
+      orderStatus: newStatus,
+      updatedAt: now,
+      statusHistory: updatedHistory,
+    };
+
+    await setDoc(docRef, updatePayload, { merge: true });
+
+    // Also sync to user profile orderHistory if userId present
+    if (existing.userId) {
+      try {
+        const userRef = doc(db, 'users', existing.userId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const profile = userSnap.data() as import('../types').CustomerProfile;
+          const updatedHistoryList = (profile.orderHistory || []).map((o) =>
+            o.id === orderId ? { ...o, ...updatePayload } : o
+          );
+          await setDoc(userRef, { orderHistory: updatedHistoryList }, { merge: true });
+        }
+      } catch (e) {
+        console.warn('Could not update user profile order history:', e);
+      }
+    }
+
+    recordAuditLog(
+      'Order Status Updated',
+      'PRODUCT',
+      `Order ${orderId} status changed to ${newStatus}`,
+      'SUCCESS'
+    );
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
+    return false;
+  }
+}
+
+// Fetch Remote Orders from Firestore
+export async function fetchRemoteOrders(): Promise<import('../types').CustomerOrder[]> {
+  try {
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
+    const snap = await getDocs(q);
+    const list: import('../types').CustomerOrder[] = [];
+    snap.forEach((d) => {
+      list.push(d.data() as import('../types').CustomerOrder);
+    });
+    return list;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, 'orders');
+    return [];
+  }
+}
+
+// Save Transaction Record
+export async function saveTransactionInFirestore(tx: import('../types').TransactionRecord): Promise<boolean> {
+  try {
+    const docRef = doc(db, 'transactions', tx.id);
+    await setDoc(docRef, tx);
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `transactions/${tx.id}`);
+    return false;
+  }
+}
+
+// Save Admin Notification in Firestore
+export async function createAdminNotificationInFirestore(
+  notif: import('../types').AdminNotification
+): Promise<boolean> {
+  try {
+    const docRef = doc(db, 'notifications', notif.id);
+    await setDoc(docRef, notif);
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `notifications/${notif.id}`);
+    return false;
+  }
+}
+

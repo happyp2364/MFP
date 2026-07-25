@@ -22,6 +22,8 @@ import { LiveSearchModal } from './components/Search/LiveSearchModal';
 import { WishlistModal } from './components/Wishlist/WishlistModal';
 import { AdminLoginModal } from './components/Admin/AdminLoginModal';
 import { AdminDashboardModal } from './components/Admin/AdminDashboardModal';
+import { CheckoutModal } from './components/Checkout/CheckoutModal';
+import { CustomerAccountModal } from './components/Customer/CustomerAccountModal';
 import { CalendarBookingModal } from './components/GoogleWorkspace/CalendarBookingModal';
 import { GmailInquiryModal } from './components/GoogleWorkspace/GmailInquiryModal';
 import { WorkspaceHubDrawer } from './components/GoogleWorkspace/WorkspaceHubDrawer';
@@ -65,6 +67,8 @@ export default function App() {
   const [wishlistModalOpen, setWishlistModalOpen] = useState(false);
   const [adminLoginOpen, setAdminLoginOpen] = useState(false);
   const [adminDashboardOpen, setAdminDashboardOpen] = useState(false);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [customerAccountOpen, setCustomerAccountOpen] = useState(false);
 
   // Google Workspace Modals
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
@@ -276,6 +280,7 @@ export default function App() {
         onOpenOrderSheet={() => setOrderSheetOpen(true)}
         onOpenWishlist={() => setWishlistModalOpen(true)}
         onOpenAdmin={() => (isAdmin ? setAdminDashboardOpen(true) : setAdminLoginOpen(true))}
+        onOpenCustomerAccount={() => setCustomerAccountOpen(true)}
         onOpenCalendarModal={() => setCalendarModalOpen(true)}
         onOpenGmailModal={() => setGmailModalOpen(true)}
         onOpenWorkspaceHub={() => setWorkspaceHubOpen(true)}
@@ -386,6 +391,26 @@ export default function App() {
         onUpdateQuantity={handleUpdateCartQuantity}
         onRemoveItem={handleRemoveCartItem}
         onClearCart={() => setCartItems([])}
+        onProceedToCheckout={() => setCheckoutModalOpen(true)}
+      />
+
+      {/* Online Checkout Modal (UPI/QR, Cards, Netbanking) */}
+      <CheckoutModal
+        isOpen={checkoutModalOpen}
+        onClose={() => setCheckoutModalOpen(false)}
+        cartItems={cartItems}
+        onOrderComplete={(orderId) => {
+          setCartItems([]);
+          setCheckoutModalOpen(false);
+          setCustomerAccountOpen(true);
+        }}
+      />
+
+      {/* Customer Account & Order Tracking Modal */}
+      <CustomerAccountModal
+        isOpen={customerAccountOpen}
+        onClose={() => setCustomerAccountOpen(false)}
+        onQuickViewProduct={(p) => setQuickViewProduct(p)}
       />
 
       {/* Live Search Modal */}

@@ -30,11 +30,20 @@ import {
   Sparkles,
   Camera,
   Image as ImageIcon,
+  Bell,
+  CreditCard,
+  TrendingUp,
+  ExternalLink,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { auth } from '../../lib/firebase';
 import { Product, Review, StoreInfo, HeroContent, AuditLogItem, StoreBackupSnapshot } from '../../types';
 import { SizeStockManager } from './SizeStockManager';
 import { ChangePasswordView } from './ChangePasswordView';
+import { OrderManagementView } from './OrderManagementView';
+import { PaymentSettingsView } from './PaymentSettingsView';
+import { ReportsAnalyticsView } from './ReportsAnalyticsView';
+import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -43,7 +52,7 @@ interface AdminDashboardModalProps {
   onClose: () => void;
 }
 
-type TabType = 'overview' | 'products' | 'categories' | 'reviews' | 'homepage' | 'settings' | 'audit' | 'backups' | 'password';
+type TabType = 'orders' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'settings' | 'audit' | 'backups' | 'password';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -60,6 +69,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     categoryHighlights,
     trendingCollections,
     auditLogs,
+    orders,
+    notifications,
     isTwoFactorEnabled,
     logoutAdmin,
     addProduct,
@@ -83,8 +94,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     restoreStoreBackup,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<TabType>('products');
+  const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [saveNotification, setSaveNotification] = useState<string | null>(null);
+  const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
+
+  const isGoogleUser = auth.currentUser?.providerData.some((p) => p.providerId === 'google.com');
+
+  const unreadNotifCount = notifications.filter((n) => !n.read).length;
 
   // Search & Filters for Products
   const [adminSearch, setAdminSearch] = useState('');
@@ -308,6 +324,19 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setNotifDrawerOpen(true)}
+              className="p-2 rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 transition-colors relative"
+              title="Real-Time Order Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadNotifCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 bg-amber-500 text-neutral-950 font-bold text-[9px] rounded-full flex items-center justify-center animate-pulse">
+                  {unreadNotifCount}
+                </span>
+              )}
+            </button>
+
+            <button
               onClick={() => {
                 logoutAdmin();
                 onClose();
@@ -339,6 +368,50 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           
           {/* Sidebar Navigation */}
           <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto">
+            
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'orders'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Package className="w-4 h-4 text-amber-500" />
+                <span>Orders & Tracking</span>
+              </div>
+              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 rounded font-bold text-[10px]">
+                {orders.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('payment_settings')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'payment_settings'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <CreditCard className="w-4 h-4 text-emerald-600" />
+              <span>Payment & UPI Setup</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'reports'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 text-indigo-600" />
+              <span>Sales & Reports</span>
+            </button>
+
+            <div className="my-1 border-t border-neutral-200 hidden md:block" />
+
             <button
               onClick={() => setActiveTab('products')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
@@ -438,22 +511,33 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <span>2FA & Security Settings</span>
             </button>
 
-            <button
-              onClick={() => setActiveTab('password')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'password'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <KeyRound className="w-4 h-4 text-emerald-600" />
-              <span>Change Password</span>
-            </button>
+            {!isGoogleUser && (
+              <button
+                onClick={() => setActiveTab('password')}
+                className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                  activeTab === 'password'
+                    ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                    : 'text-neutral-600 hover:bg-neutral-100'
+                }`}
+              >
+                <KeyRound className="w-4 h-4 text-emerald-600" />
+                <span>Change Password</span>
+              </button>
+            )}
           </div>
 
           {/* Main Content Body */}
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-[#F7F7F7]">
             
+            {/* ----------------- TAB: ORDERS & TRACKING ----------------- */}
+            {activeTab === 'orders' && <OrderManagementView />}
+
+            {/* ----------------- TAB: PAYMENT & UPI CONFIGURATION ----------------- */}
+            {activeTab === 'payment_settings' && <PaymentSettingsView />}
+
+            {/* ----------------- TAB: SALES & REPORTS ----------------- */}
+            {activeTab === 'reports' && <ReportsAnalyticsView />}
+
             {/* ----------------- TAB: PRODUCTS & PRICES ----------------- */}
             {activeTab === 'products' && (
               <div className="space-y-4">
@@ -860,18 +944,39 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                           Admin Password & Security
                         </h3>
                         <p className="text-xs text-neutral-500">
-                          Update your admin password securely via Firebase Authentication
+                          {isGoogleUser
+                            ? 'Google Account Authentication Active'
+                            : 'Update your admin password securely via Firebase Authentication'}
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => setActiveTab('password')}
-                      className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all shrink-0"
-                    >
-                      <KeyRound className="w-4 h-4" />
-                      <span>Change Password</span>
-                    </button>
+
+                    {!isGoogleUser ? (
+                      <button
+                        onClick={() => setActiveTab('password')}
+                        className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all shrink-0"
+                      >
+                        <KeyRound className="w-4 h-4" />
+                        <span>Change Password</span>
+                      </button>
+                    ) : (
+                      <a
+                        href="https://myaccount.google.com/security"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all shrink-0"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span>Manage Google Account</span>
+                      </a>
+                    )}
                   </div>
+
+                  {isGoogleUser && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200/80 rounded-xl text-xs text-blue-900 font-medium">
+                      You are signed in with Google. Your password is managed by your Google Account.
+                    </div>
+                  )}
                 </div>
 
                 {/* Factory Reset Card */}
@@ -1332,6 +1437,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           </div>
         </div>
       )}
+
+      {/* Real-time Order Notification Drawer */}
+      <AdminNotificationDrawer
+        isOpen={notifDrawerOpen}
+        onClose={() => setNotifDrawerOpen(false)}
+      />
 
     </div>
   );

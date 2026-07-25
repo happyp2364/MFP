@@ -154,14 +154,106 @@ export interface SavedAddress {
   isDefault?: boolean;
 }
 
+export type OrderStatus =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'PACKING'
+  | 'PACKED'
+  | 'READY_TO_DISPATCH'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'RETURNED';
+
+export type PaymentStatus = 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED';
+
+export type PaymentMethodType = 'UPI' | 'QR_SCAN' | 'CARD' | 'NET_BANKING' | 'WALLET' | 'COD';
+
+export interface PaymentSettings {
+  merchantName: string;
+  upiId: string;
+  upiName: string;
+  gatewayProvider: 'RAZORPAY' | 'PAYU' | 'CASHFREE' | 'DIRECT_UPI_QR';
+  apiKey: string;
+  apiSecret: string;
+  enableUPI: boolean;
+  enableQR: boolean;
+  enableCards: boolean;
+  enableNetBanking: boolean;
+  enableWallets: boolean;
+  enableCOD: boolean;
+  isTestMode: boolean;
+  autoApprovePaidOrders: boolean;
+  currencySymbol: string;
+  gstPercent: number;
+  flatShippingRate: number;
+  freeShippingMinAmount: number;
+}
+
+export interface ShippingAddressInfo {
+  name: string;
+  street: string;
+  city: string;
+  state: string;
+  pincode: string;
+  phone: string;
+  email: string;
+  landmark?: string;
+}
+
 export interface CustomerOrder {
-  id: string;
-  date: string;
-  totalAmount: number;
+  id: string; // e.g. #MFP1025
+  orderNumber: number;
+  userId?: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  shippingAddress: ShippingAddressInfo;
   items: CartItem[];
-  status: 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
-  paymentMethod: string;
-  shippingAddress: SavedAddress | string;
+  subtotal: number;
+  shippingFee: number;
+  discountAmount: number;
+  taxAmount: number;
+  totalAmount: number;
+  paymentMethod: PaymentMethodType;
+  paymentStatus: PaymentStatus;
+  orderStatus: OrderStatus;
+  transactionId: string;
+  paymentReference?: string;
+  paymentTimestamp: string;
+  createdAt: string;
+  updatedAt: string;
+  statusHistory?: {
+    status: OrderStatus;
+    timestamp: string;
+    note?: string;
+  }[];
+  customerNotes?: string;
+}
+
+export interface TransactionRecord {
+  id: string;
+  orderId: string;
+  amount: number;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  paymentMethod: PaymentMethodType;
+  paymentStatus: PaymentStatus;
+  transactionRef: string;
+  gatewayProvider: string;
+  timestamp: string;
+}
+
+export interface AdminNotification {
+  id: string;
+  orderId: string;
+  customerName: string;
+  totalAmount: number;
+  productCount: number;
+  paymentStatus: string;
+  timestamp: string;
+  read: boolean;
 }
 
 export interface CustomerProfile {
@@ -191,5 +283,6 @@ export interface StoreBackupSnapshot {
     announcements: string[];
     categoryHighlights: CategoryHighlight[];
     trendingCollections: TrendingCollectionItem[];
+    paymentSettings?: PaymentSettings;
   };
 }

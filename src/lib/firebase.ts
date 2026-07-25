@@ -117,6 +117,8 @@ googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/calendar.event
 googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/gmail.send');
 googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/gmail.readonly');
 googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/gmail.compose');
+googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.file');
+googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.metadata.readonly');
 
 // In-memory token store for Google Workspace API calls
 let cachedAccessToken: string | null = localStorage.getItem('mfp_google_access_token');

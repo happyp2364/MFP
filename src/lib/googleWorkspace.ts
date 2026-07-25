@@ -157,3 +157,73 @@ export async function sendGmailMessage(input: GmailSendInput): Promise<GmailSend
 
   return await response.json();
 }
+
+export interface DriveFileItem {
+  id: string;
+  name: string;
+  mimeType: string;
+  webViewLink?: string;
+  thumbnailLink?: string;
+  createdTime?: string;
+}
+
+/**
+ * Lists files created by or shared with this application in Google Drive
+ */
+export async function listGoogleDriveFiles(): Promise<DriveFileItem[]> {
+  const token = getCachedAccessToken();
+  if (!token) {
+    throw new Error('Google OAuth Access Token missing.');
+  }
+
+  const url = 'https://www.googleapis.com/drive/v3/files?fields=files(id,name,mimeType,webViewLink,thumbnailLink,createdTime)&pageSize=20&orderBy=createdTime%20desc';
+
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || 'Failed to list Google Drive files');
+  }
+
+  const data = await response.json();
+  return data.files || [];
+}
+
+/**
+ * Uploads a file (product image, measurement sheet, invoice PDF) directly to Google Drive
+ */
+export async function uploadFileToGoogleDrive(file: File): Promise<DriveFileItem> {
+  const token = getCachedAccessToken();
+  if (!token) {
+    throw new Error('Google OAuth Access Token missing. Please sign in with Google first.');
+  }
+
+  const metadata = {
+    name: file.name,
+    mimeType: file.type || 'application/octet-stream',
+  };
+
+  const formData = new FormData();
+  formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  formData.append('file', file);
+
+  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,webViewLink,thumbnailLink,createdTime', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    console.error('Google Drive Upload Error:', errorData);
+    throw new Error(errorData.error?.message || `Drive Upload error (${response.status})`);
+  }
+
+  return await response.json();
+}

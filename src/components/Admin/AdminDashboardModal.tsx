@@ -27,12 +27,16 @@ import {
   Smartphone,
   RefreshCw,
   Lock,
+  Sparkles,
+  Camera,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Product, Review, StoreInfo, HeroContent, AuditLogItem, StoreBackupSnapshot } from '../../types';
 import { SizeStockManager } from './SizeStockManager';
 import { ChangePasswordView } from './ChangePasswordView';
 import { validateFileUpload } from '../../lib/security';
+import { optimizeImageFile } from '../../utils/imageOptimizer';
 
 interface AdminDashboardModalProps {
   isOpen: boolean;
@@ -91,6 +95,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
   const [isCreatingReview, setIsCreatingReview] = useState(false);
+  const [imageInputUrl, setImageInputUrl] = useState('');
+  const [isOptimizingImage, setIsOptimizingImage] = useState(false);
 
   // Forms
   const [storeInfoForm, setStoreInfoForm] = useState<StoreInfo>({ ...storeInfo });
@@ -483,17 +489,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                           name: '',
                           brand: 'Marudhar Fashion',
                           category: 'men',
-                          subcategory: 'Sneakers',
+                          subcategory: 'Sports Shoes',
                           price: 1499,
                           originalPrice: 2499,
                           discountPercent: 40,
                           rating: 5,
                           reviewsCount: 1,
-                          images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80'],
-                          description: 'Premium casual footwear with comfortable cushion sole.',
+                          images: [],
+                          description: 'Real shop product - uploaded directly by admin.',
                           sizes: ['6', '7', '8', '9', '10'],
                           colors: [{ name: 'Black', hex: '#000000' }],
-                          collectionTags: ['Trending'],
+                          collectionTags: ['New Arrival'],
                           inStock: true,
                         });
                       }}
@@ -1150,6 +1156,160 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: Number(e.target.value) })}
                     className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63]"
                   />
+                </div>
+              </div>
+
+              {/* REAL PRODUCT IMAGE UPLOAD & CANVAS ENHANCEMENT SECTION */}
+              <div className="space-y-3 border-t border-neutral-200/80 pt-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-neutral-800 flex items-center gap-1.5 text-xs">
+                    <Sparkles className="w-4 h-4 text-[#0B8F63]" />
+                    Real Product Images & Canvas Auto-Optimizer
+                  </label>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 font-extrabold px-2 py-0.5 rounded-md border border-emerald-200">
+                    Auto-Enhancement & WebP Compression
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-neutral-500">
+                  Upload real product photos taken in shop or from phone camera. Canvas automatically enhances contrast, brightness, and sharpness without modifying shoe design.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Drag & Drop / File Input / Camera Capture */}
+                  <label className="border-2 border-dashed border-[#0B8F63]/40 hover:border-[#0B8F63] bg-[#0B8F63]/5 hover:bg-[#0B8F63]/10 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all text-center group">
+                    <Upload className="w-6 h-6 text-[#0B8F63] mb-1 group-hover:scale-110 transition-transform" />
+                    <span className="font-extrabold text-[#0B8F63] text-xs">Upload Photo / Take Picture</span>
+                    <span className="text-[10px] text-neutral-500 mt-0.5">JPEG, PNG, WEBP (Client Canvas Compressed)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={async (e) => {
+                        if (!e.target.files || e.target.files.length === 0) return;
+                        setIsOptimizingImage(true);
+                        const files = Array.from(e.target.files) as File[];
+                        for (const file of files) {
+                          const validation = validateFileUpload(file);
+                          if (!validation.isValid) {
+                            alert(validation.error || 'Invalid file format');
+                            continue;
+                          }
+                          try {
+                            const optimizedUrl = await optimizeImageFile(file, { enhance: true });
+                            setEditingProduct((prev) =>
+                              prev
+                                ? { ...prev, images: [...(prev.images || []), optimizedUrl] }
+                                : null
+                            );
+                          } catch (err) {
+                            console.error('Error optimizing product image:', err);
+                          }
+                        }
+                        setIsOptimizingImage(false);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+
+                  {/* Image URL Input Option */}
+                  <div className="bg-[#F7F7F7] border border-neutral-200 rounded-2xl p-3 flex flex-col justify-between">
+                    <div>
+                      <span className="font-bold text-neutral-800 text-[11px] mb-1 block">Or Add Image via Direct Web URL</span>
+                      <p className="text-[10px] text-neutral-400 mb-2">Provide direct image link for real shop product.</p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="url"
+                        placeholder="https://..."
+                        value={imageInputUrl}
+                        onChange={(e) => setImageInputUrl(e.target.value)}
+                        className="flex-1 bg-white border border-neutral-200 rounded-xl p-2 text-xs outline-none focus:ring-2 focus:ring-[#0B8F63]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!imageInputUrl.trim()) return;
+                          setEditingProduct((prev) =>
+                            prev
+                              ? { ...prev, images: [...(prev.images || []), imageInputUrl.trim()] }
+                              : null
+                          );
+                          setImageInputUrl('');
+                        }}
+                        className="bg-[#0B8F63] text-white font-extrabold text-xs px-3.5 py-2 rounded-xl hover:bg-[#086F4C] transition-colors"
+                      >
+                        Add URL
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {isOptimizingImage && (
+                  <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-bold flex items-center gap-2 animate-pulse">
+                    <Sparkles className="w-4 h-4 text-[#0B8F63] animate-spin" />
+                    <span>Processing & Canvas auto-enhancing uploaded product photo...</span>
+                  </div>
+                )}
+
+                {/* Uploaded Images List & Thumbnails */}
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[11px] font-bold text-neutral-700 block">
+                    Product Gallery Images ({editingProduct.images?.length || 0}):
+                  </span>
+                  {(!editingProduct.images || editingProduct.images.length === 0) ? (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-[11px] font-medium flex items-center gap-2.5">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                      <span>
+                        No image uploaded yet. A clean <strong>"Real Image Coming Soon"</strong> placeholder will be rendered on the website to ensure customers are never shown fake products.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {editingProduct.images.map((imgUrl, idx) => (
+                        <div
+                          key={idx}
+                          className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-100 group shadow-sm"
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`Product ${idx + 1}`}
+                            style={{ filter: 'brightness(102%) contrast(104%) saturate(105%)' }}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingProduct((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        images: prev.images.filter((_, i) => i !== idx),
+                                      }
+                                    : null
+                                );
+                              }}
+                              className="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-md"
+                              title="Delete Image"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          {idx === 0 ? (
+                            <span className="absolute bottom-1.5 left-1.5 bg-[#0B8F63] text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md shadow">
+                              Primary Cover
+                            </span>
+                          ) : (
+                            <span className="absolute bottom-1.5 left-1.5 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
+                              #{idx + 1}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

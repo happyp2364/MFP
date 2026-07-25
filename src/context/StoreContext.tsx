@@ -37,9 +37,11 @@ import {
   changeAdminPasswordFirebase,
   syncCustomerProfileInFirestore,
   checkRedirectAuthResult,
+  handleFirestoreError,
+  OperationType,
 } from '../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { addDoc, collection, doc, setDoc, getDocs, limit, orderBy, query } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const STORAGE_KEYS = {
@@ -324,6 +326,36 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, [showToast]);
 
+  // Real-time Firestore Sync for Products Catalog
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const productsColRef = collection(db, 'products');
+      unsubscribe = onSnapshot(
+        productsColRef,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const remoteProducts: Product[] = [];
+            snapshot.forEach((docSnap) => {
+              const data = docSnap.data() as Product;
+              remoteProducts.push({ ...data, id: docSnap.id });
+            });
+            setProducts(remoteProducts);
+          }
+        },
+        (err) => {
+          handleFirestoreError(err, OperationType.GET, 'products');
+        }
+      );
+    } catch (e) {
+      console.warn('Products onSnapshot listener setup warning:', e);
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
   // 4. Inactivity Auto-Logout Monitor (30 Minutes)
   const handleUserActivity = useCallback(() => {
     setLastActivityTime(Date.now());
@@ -465,8 +497,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Product CRUD with Sanitization & Audit Trails
-  const addProduct = (p: Omit<Product, 'id'>) => {
+  // Product CRUD with Sanitization, Firestore Sync & Audit Trails
+  const addProduct = async (p: Omit<Product, 'id'>) => {
     const cleanName = sanitizeString(p.name, 200);
     const cleanDesc = sanitizeString(p.description, 2000);
     const cleanBrand = sanitizeString(p.brand, 100) || 'Marudhar Fashion';
@@ -486,9 +518,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setProducts((prev) => [newProduct, ...prev]);
     recordAuditLog('Product Added', 'PRODUCT', `Added "${cleanName}" (ID: ${newId})`, 'SUCCESS');
+
+    try {
+      await setDoc(doc(db, 'products', newId), newProduct);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `products/${newId}`);
+    }
   };
 
-  const updateProduct = (id: string, updated: Partial<Product>) => {
+  const updateProduct = async (id: string, updated: Partial<Product>) => {
     const sanitized: Partial<Product> = { ...updated };
     if (sanitized.name) sanitized.name = sanitizeString(sanitized.name, 200);
     if (sanitized.description) sanitized.description = sanitizeString(sanitized.description, 2000);
@@ -499,25 +537,45 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       prev.map((item) => (item.id === id ? { ...item, ...sanitized } : item))
     );
     recordAuditLog('Product Updated', 'PRODUCT', `Updated product details for ID: ${id}`, 'SUCCESS');
+
+    try {
+      await setDoc(doc(db, 'products', id), sanitized, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+    }
   };
 
-  const deleteProduct = (id: string) => {
+  const deleteProduct = async (id: string) => {
     const target = products.find((p) => p.id === id);
     setProducts((prev) => prev.filter((item) => item.id !== id));
     recordAuditLog('Product Deleted', 'PRODUCT', `Deleted product "${target?.name || id}"`, 'DANGER');
+
+    try {
+      await deleteDoc(doc(db, 'products', id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `products/${id}`);
+    }
   };
 
-  const toggleInStock = (id: string) => {
+  const toggleInStock = async (id: string) => {
     const target = products.find((p) => p.id === id);
+    if (!target) return;
+    const newInStock = !target.inStock;
     setProducts((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, inStock: !item.inStock } : item))
+      prev.map((item) => (item.id === id ? { ...item, inStock: newInStock } : item))
     );
     recordAuditLog(
       'Product Stock Status Toggled',
       'PRODUCT',
-      `Toggled inStock status for "${target?.name}" to ${!target?.inStock}`,
+      `Toggled inStock status for "${target.name}" to ${newInStock}`,
       'WARNING'
     );
+
+    try {
+      await setDoc(doc(db, 'products', id), { inStock: newInStock }, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+    }
   };
 
   // Reviews CRUD

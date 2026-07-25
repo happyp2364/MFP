@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, ArrowRight, Sparkles, Footprints, History } from 'lucide-react';
 import { Product } from '../../types';
+import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 
 interface LiveSearchModalProps {
   isOpen: boolean;
@@ -109,8 +110,11 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
                       className="flex items-center gap-3 p-2.5 rounded-2xl bg-[#F7F7F7] hover:bg-[#0B8F63]/10 border border-neutral-200/60 cursor-pointer transition-colors group"
                     >
                       <img
-                        src={p.images[0]}
+                        src={p.images && p.images.length > 0 ? p.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
                         alt={p.name}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = CLEAN_IMAGE_COMING_SOON_SVG;
+                        }}
                         className="w-12 h-12 rounded-xl object-cover bg-white shrink-0"
                         referrerPolicy="no-referrer"
                       />

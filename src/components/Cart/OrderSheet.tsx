@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Trash2, MessageCircle, ShoppingBag, ArrowRight } from 'lucide-react';
 import { CartItem } from '../../types';
 import { generateCartWhatsAppLink } from '../../utils/whatsapp';
+import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 
 interface OrderSheetProps {
   isOpen: boolean;
@@ -78,8 +79,11 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
                 className="flex items-center gap-3 p-3 rounded-2xl bg-[#F7F7F7] border border-neutral-200/80"
               >
                 <img
-                  src={item.product.images[0]}
+                  src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
                   alt={item.product.name}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = CLEAN_IMAGE_COMING_SOON_SVG;
+                  }}
                   className="w-16 h-16 rounded-xl object-cover bg-white shrink-0"
                   referrerPolicy="no-referrer"
                 />

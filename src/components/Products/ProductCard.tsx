@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Heart, Eye, MessageCircle, Star, Sparkles, Flame, Check, Bell } from 'lucide-react';
+import { Heart, Eye, MessageCircle, Star, Sparkles, Flame, Bell, ImageOff } from 'lucide-react';
 import { Product } from '../../types';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
+import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 import {
   normalizeProductSizeStocks,
   isProductCompletelyOutOfStock,
   getFirstAvailableInStockSize,
-  getSizeStockInfo,
 } from '../../utils/sizeStockUtils';
 
 interface ProductCardProps {
@@ -24,6 +24,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   isWishlisted,
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
   const sizeStocks = normalizeProductSizeStocks(product);
   const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
 
@@ -40,19 +41,41 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     window.open(link, '_blank');
   };
 
+  const rawImageSrc = product.images && product.images.length > 0 
+    ? (product.images[currentImageIndex] || product.images[0])
+    : '';
+
+  const displayImageSrc = (!rawImageSrc || imageError) 
+    ? CLEAN_IMAGE_COMING_SOON_SVG 
+    : rawImageSrc;
+
   return (
     <div
       onClick={() => onQuickView(product)}
-      className="group bg-white rounded-2xl border border-neutral-200/70 overflow-hidden hover:shadow-xl hover:border-neutral-300 transition-all duration-300 flex flex-col justify-between cursor-pointer relative"
+      className="group bg-white/90 backdrop-blur-md rounded-2xl border border-neutral-200/80 shadow-sm hover:shadow-2xl hover:border-[#0B8F63]/30 transition-all duration-300 flex flex-col justify-between cursor-pointer relative overflow-hidden"
     >
       {/* Top Image Box */}
-      <div className="relative aspect-square w-full bg-neutral-100 overflow-hidden">
-        <img
-          src={product.images[currentImageIndex] || product.images[0]}
-          alt={product.name}
-          className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
-          referrerPolicy="no-referrer"
-        />
+      <div className="relative aspect-square w-full bg-gradient-to-br from-neutral-50 to-neutral-100/80 overflow-hidden flex items-center justify-center">
+        {(!rawImageSrc || imageError) ? (
+          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-50/90 border-b border-neutral-100">
+            <div className="w-12 h-12 rounded-2xl bg-[#0B8F63]/10 text-[#0B8F63] flex items-center justify-center mb-2 shadow-inner">
+              <ImageOff className="w-6 h-6" />
+            </div>
+            <span className="text-xs font-bold text-neutral-800 tracking-wide uppercase">Real Image Coming Soon</span>
+            <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Marudhar Fashion Point</span>
+          </div>
+        ) : (
+          <img
+            src={displayImageSrc}
+            alt={product.name}
+            loading="lazy"
+            decoding="async"
+            onError={() => setImageError(true)}
+            style={{ filter: 'brightness(102%) contrast(104%) saturate(105%)' }}
+            className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500 ease-out"
+            referrerPolicy="no-referrer"
+          />
+        )}
 
         {/* Top Badges Left */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">

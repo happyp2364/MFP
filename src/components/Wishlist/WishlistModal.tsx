@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Heart, MessageCircle, Trash2, Eye } from 'lucide-react';
 import { Product } from '../../types';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
+import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 
 interface WishlistModalProps {
   isOpen: boolean;
@@ -66,8 +67,11 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                 className="flex items-center gap-3 p-3 rounded-2xl bg-[#F7F7F7] border border-neutral-200/80 hover:border-neutral-300 transition-colors"
               >
                 <img
-                  src={product.images[0]}
+                  src={product.images && product.images.length > 0 ? product.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
                   alt={product.name}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = CLEAN_IMAGE_COMING_SOON_SVG;
+                  }}
                   className="w-16 h-16 rounded-xl object-cover bg-white shrink-0"
                   referrerPolicy="no-referrer"
                 />

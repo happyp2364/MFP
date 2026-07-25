@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Heart, MessageCircle, Star, Sparkles, ShieldCheck, Truck, RotateCcw, ShoppingBag, Bell } from 'lucide-react';
+import { X, Heart, MessageCircle, Star, Sparkles, ShieldCheck, Truck, RotateCcw, ShoppingBag, Bell, ImageOff } from 'lucide-react';
 import { Product } from '../../types';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
+import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 import {
   normalizeProductSizeStocks,
   isProductCompletelyOutOfStock,
@@ -30,6 +31,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string>(
     getFirstAvailableInStockSize(product)
   );
@@ -55,6 +57,14 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     setTimeout(() => setAddedNotice(false), 2000);
   };
 
+  const rawImageSrc = product.images && product.images.length > 0
+    ? (product.images[activeImageIndex] || product.images[0])
+    : '';
+
+  const displayImageSrc = (!rawImageSrc || imageError)
+    ? CLEAN_IMAGE_COMING_SOON_SVG
+    : rawImageSrc;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
@@ -77,13 +87,27 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         {/* Left Gallery Section */}
         <div className="md:w-1/2 bg-neutral-100 p-6 flex flex-col justify-between">
           {/* Main Display Image */}
-          <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-white shadow-inner mb-4">
-            <img
-              src={product.images[activeImageIndex] || product.images[0]}
-              alt={product.name}
-              className="w-full h-full object-cover object-center"
-              referrerPolicy="no-referrer"
-            />
+          <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-white shadow-inner mb-4 flex items-center justify-center">
+            {(!rawImageSrc || imageError) ? (
+              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-50/90">
+                <div className="w-14 h-14 rounded-2xl bg-[#0B8F63]/10 text-[#0B8F63] flex items-center justify-center mb-2 shadow-inner">
+                  <ImageOff className="w-7 h-7" />
+                </div>
+                <span className="text-xs font-bold text-neutral-800 tracking-wide uppercase">Real Product Image Coming Soon</span>
+                <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Marudhar Fashion Point</span>
+              </div>
+            ) : (
+              <img
+                src={displayImageSrc}
+                alt={product.name}
+                loading="lazy"
+                decoding="async"
+                onError={() => setImageError(true)}
+                style={{ filter: 'brightness(102%) contrast(104%) saturate(105%)' }}
+                className="w-full h-full object-cover object-center"
+                referrerPolicy="no-referrer"
+              />
+            )}
             {product.discountPercent > 0 && (
               <span className="absolute top-4 left-4 bg-red-600 text-white font-extrabold text-xs px-2.5 py-1 rounded shadow-md">
                 Save {product.discountPercent}%

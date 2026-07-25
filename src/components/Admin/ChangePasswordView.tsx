@@ -14,8 +14,9 @@ import {
   X,
   Globe,
   ExternalLink,
+  Mail,
 } from 'lucide-react';
-import { auth, changeAdminPasswordFirebase, logoutUser } from '../../lib/firebase';
+import { auth, changeAdminPasswordFirebase, logoutUser, sendAdminPasswordResetEmail } from '../../lib/firebase';
 import { useStore } from '../../context/StoreContext';
 
 interface ChangePasswordViewProps {
@@ -43,6 +44,13 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Forgot Password inline state
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState(currentUser?.email || 'vpcreation2002@gmail.com');
+  const [resetSuccessMsg, setResetSuccessMsg] = useState<string | null>(null);
+  const [resetErrorMsg, setResetErrorMsg] = useState<string | null>(null);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   // Validation criteria
   const hasMinLength = newPassword.length >= 8;
@@ -77,6 +85,32 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
     hasNumber &&
     hasSpecialChar &&
     passwordsMatch;
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetErrorMsg(null);
+    setResetSuccessMsg(null);
+
+    const cleanEmail = resetEmail.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setResetErrorMsg('Please enter a valid admin email address.');
+      return;
+    }
+
+    setIsSendingReset(true);
+    try {
+      const res = await sendAdminPasswordResetEmail(cleanEmail);
+      if (res.success) {
+        setResetSuccessMsg('A password reset link has been sent to your email. Please check your inbox and spam folder.');
+      } else {
+        setResetErrorMsg(res.message || 'Failed to send password reset email.');
+      }
+    } catch (err: any) {
+      setResetErrorMsg(err.message || 'An error occurred while requesting password reset.');
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,7 +191,7 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
               Google Account Identity
             </h3>
             <p className="text-xs text-neutral-700 leading-relaxed font-semibold">
-              You are signed in with Google. Your password is managed by your Google Account.
+              This account uses Google Sign-In. Password changes must be done through your Google Account.
             </p>
           </div>
 
@@ -258,10 +292,23 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
 
         {/* 1. Current Password */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-neutral-800 flex items-center gap-1.5">
-            <Lock className="w-3.5 h-3.5 text-neutral-500" />
-            <span>Current Admin Password *</span>
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-neutral-800 flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-neutral-500" />
+              <span>Current Admin Password *</span>
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                setShowResetModal(!showResetModal);
+                setResetErrorMsg(null);
+                setResetSuccessMsg(null);
+              }}
+              className="text-xs font-bold text-[#0B8F63] hover:underline"
+            >
+              Forgot Password?
+            </button>
+          </div>
           <div className="relative flex items-center">
             <input
               type={showCurrentPassword ? 'text' : 'password'}
@@ -280,6 +327,56 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
               {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
+
+          {/* Inline Reset Box when Forgot Password is clicked */}
+          {showResetModal && (
+            <div className="mt-3 p-4 bg-emerald-50/90 border border-emerald-200/80 rounded-2xl space-y-3 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                  <Mail className="w-4 h-4 text-[#0B8F63]" />
+                  <span>Send Password Reset Email</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowResetModal(false)}
+                  className="text-neutral-400 hover:text-neutral-700"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {resetErrorMsg && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                  {resetErrorMsg}
+                </div>
+              )}
+
+              {resetSuccessMsg && (
+                <div className="p-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-medium">
+                  {resetSuccessMsg}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="admin email address"
+                  className="flex-1 bg-white border border-neutral-200 rounded-xl py-2 px-3 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-[#0B8F63] outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleResetPasswordSubmit}
+                  disabled={isSendingReset}
+                  className="bg-[#0B8F63] hover:bg-[#086F4C] text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors disabled:opacity-60 shrink-0 flex items-center justify-center gap-1.5"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>{isSendingReset ? 'Sending Link...' : 'Send Reset Link'}</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 2. New Password */}

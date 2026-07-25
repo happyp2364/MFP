@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Lock, User, X, AlertCircle, KeyRound, Smartphone, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, Lock, User, X, AlertCircle, KeyRound, Smartphone, ShieldAlert, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { sendAdminPasswordResetEmail } from '../../lib/firebase';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
@@ -22,13 +23,20 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   const [error, setError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
+  // Forgot Password state
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('vpcreation2002@gmail.com');
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsAuthenticating(true);
 
     try {
-      const res = loginAdmin(password, twoFactorCode);
+      const res = await loginAdmin(password, twoFactorCode);
 
       if (res.requires2FA) {
         setShowTwoFactorInput(true);
@@ -50,6 +58,32 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       setError(err.message || 'Authentication error.');
     } finally {
       setIsAuthenticating(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError(null);
+    setResetSuccess(null);
+
+    const cleanEmail = resetEmail.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setResetError('Please enter a valid admin email address.');
+      return;
+    }
+
+    setIsSendingReset(true);
+    try {
+      const res = await sendAdminPasswordResetEmail(cleanEmail);
+      if (res.success) {
+        setResetSuccess('A password reset link has been sent to your email. Please check your inbox and spam folder.');
+      } else {
+        setResetError(res.message || 'Failed to send password reset email.');
+      }
+    } catch (err: any) {
+      setResetError(err.message || 'An error occurred while requesting password reset.');
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -91,7 +125,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             </div>
             <div>
               <h3 className="font-serif-heading font-bold text-lg text-neutral-900">
-                Enterprise Admin Login
+                {showForgotPassword ? 'Admin Password Recovery' : 'Enterprise Admin Login'}
               </h3>
               <p className="text-[11px] text-neutral-500 font-medium">
                 Marudhar Fashion Point Security Console
@@ -112,75 +146,149 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           <ShieldAlert className="w-5 h-5 text-[#0B8F63] shrink-0" />
           <div>
             <span className="font-bold">Encrypted Session (256-Bit SSL)</span>
-            <p className="text-[10px] text-emerald-700">30-Min Inactivity Auto-Logout & Audit Logging Active</p>
+            <p className="text-[10px] text-emerald-700">Protected by Firebase Authentication & Audit Logging</p>
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs flex items-start gap-2 animate-shake">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
+        {showForgotPassword ? (
+          /* Forgot Password View */
+          <form onSubmit={handleForgotPasswordSubmit} className="space-y-4 animate-in fade-in duration-200">
+            {resetError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{resetError}</span>
+              </div>
+            )}
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-neutral-700 block">Admin Identity</label>
-            <div className="relative flex items-center">
-              <User className="absolute left-3.5 w-4 h-4 text-neutral-400" />
-              <input
-                type="text"
-                disabled
-                value="vpcreation2002@gmail.com (Owner Admin)"
-                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl py-3 pl-10 pr-4 text-xs font-semibold text-neutral-600 outline-none cursor-not-allowed"
-              />
-            </div>
-          </div>
+            {resetSuccess && (
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-[#0B8F63] shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{resetSuccess}</span>
+              </div>
+            )}
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-neutral-700 block">Admin Password</label>
-            <div className="relative flex items-center">
-              <Lock className="absolute left-3.5 w-4 h-4 text-neutral-400" />
-              <input
-                type="password"
-                required
-                autoFocus
-                placeholder="Enter admin password (e.g. admin123)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-4 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-[#0B8F63] outline-none"
-              />
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-neutral-700 block">Admin Email Address *</label>
+              <div className="relative flex items-center">
+                <Mail className="absolute left-3.5 w-4 h-4 text-neutral-400" />
+                <input
+                  type="email"
+                  required
+                  placeholder="enter admin email address"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-4 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-[#0B8F63] outline-none"
+                />
+              </div>
+              <p className="text-[11px] text-neutral-500">
+                Firebase will send an official password reset link to this email address.
+              </p>
             </div>
-          </div>
 
-          {/* 2FA Input Step */}
-          {(showTwoFactorInput || isTwoFactorEnabled) && (
-            <div className="space-y-1.5 pt-1 animate-in fade-in duration-200">
-              <label className="text-xs font-bold text-[#0B8F63] flex items-center gap-1.5">
-                <Smartphone className="w-4 h-4" />
-                <span>6-Digit 2FA Authenticator Code</span>
-              </label>
-              <input
-                type="text"
-                maxLength={6}
-                placeholder="123456"
-                value={twoFactorCode}
-                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
-                className="w-full bg-white border-2 border-[#0B8F63] rounded-xl py-2.5 px-4 text-center text-sm tracking-widest font-mono font-bold text-neutral-900 focus:ring-2 focus:ring-[#0B8F63] outline-none"
-              />
+            <button
+              type="submit"
+              disabled={isSendingReset}
+              className="w-full bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-lg shadow-[#0B8F63]/25 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+            >
+              <Mail className="w-4 h-4" />
+              <span>{isSendingReset ? 'SENDING RESET LINK...' : 'SEND RESET LINK'}</span>
+            </button>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setResetError(null);
+                  setResetSuccess(null);
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Admin Login</span>
+              </button>
             </div>
-          )}
+          </form>
+        ) : (
+          /* Normal Login View */
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs flex items-start gap-2 animate-shake">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
 
-          <button
-            type="submit"
-            disabled={isAuthenticating}
-            className="w-full bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-lg shadow-[#0B8F63]/25 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
-          >
-            <KeyRound className="w-4 h-4" />
-            <span>{isAuthenticating ? 'VERIFYING CREDENTIALS...' : 'VERIFY & ENTER DASHBOARD'}</span>
-          </button>
-        </form>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-neutral-700 block">Admin Identity</label>
+              <div className="relative flex items-center">
+                <User className="absolute left-3.5 w-4 h-4 text-neutral-400" />
+                <input
+                  type="text"
+                  disabled
+                  value="vpcreation2002@gmail.com (Owner Admin)"
+                  className="w-full bg-neutral-100 border border-neutral-200 rounded-xl py-3 pl-10 pr-4 text-xs font-semibold text-neutral-600 outline-none cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-neutral-700 block">Admin Password</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(true);
+                    setResetError(null);
+                    setResetSuccess(null);
+                  }}
+                  className="text-xs font-bold text-[#0B8F63] hover:underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <div className="relative flex items-center">
+                <Lock className="absolute left-3.5 w-4 h-4 text-neutral-400" />
+                <input
+                  type="password"
+                  required
+                  autoFocus
+                  placeholder="Enter admin password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-4 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-[#0B8F63] outline-none"
+                />
+              </div>
+            </div>
+
+            {/* 2FA Input Step */}
+            {(showTwoFactorInput || isTwoFactorEnabled) && (
+              <div className="space-y-1.5 pt-1 animate-in fade-in duration-200">
+                <label className="text-xs font-bold text-[#0B8F63] flex items-center gap-1.5">
+                  <Smartphone className="w-4 h-4" />
+                  <span>6-Digit 2FA Authenticator Code</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  placeholder="123456"
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
+                  className="w-full bg-white border-2 border-[#0B8F63] rounded-xl py-2.5 px-4 text-center text-sm tracking-widest font-mono font-bold text-neutral-900 focus:ring-2 focus:ring-[#0B8F63] outline-none"
+                />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isAuthenticating}
+              className="w-full bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-lg shadow-[#0B8F63]/25 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>{isAuthenticating ? 'VERIFYING CREDENTIALS...' : 'VERIFY & ENTER DASHBOARD'}</span>
+            </button>
+          </form>
+        )}
 
         {/* Divider */}
         <div className="relative flex items-center justify-center">

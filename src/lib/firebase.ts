@@ -14,6 +14,7 @@ import {
   reauthenticateWithPopup,
   reauthenticateWithRedirect,
   updatePassword,
+  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
   User as FirebaseUser,
@@ -349,6 +350,69 @@ export async function fetchRemoteAuditLogs(): Promise<AuditLogItem[]> {
   }
 }
 
+// Send Password Reset Email via Firebase Authentication
+export async function sendAdminPasswordResetEmail(
+  email: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return { success: false, message: 'Please enter a valid admin email address.' };
+    }
+
+    await sendPasswordResetEmail(auth, cleanEmail);
+
+    await recordAuditLog(
+      'Admin Password Reset Email Sent',
+      'SECURITY',
+      `Password reset link sent to ${cleanEmail}`,
+      'SUCCESS'
+    );
+
+    return {
+      success: true,
+      message: 'A password reset link has been sent to your email. Please check your inbox and spam folder.',
+    };
+  } catch (err: any) {
+    console.error('sendPasswordResetEmail error:', err);
+    if (
+      err.code === 'auth/operation-not-allowed' ||
+      err.code === 'auth/admin-restricted-operation'
+    ) {
+      return {
+        success: false,
+        message:
+          'Email/Password authentication is disabled in your Firebase Console. Please enable Email/Password provider under Authentication > Sign-in method.',
+      };
+    } else if (err.code === 'auth/user-not-found') {
+      return {
+        success: false,
+        message: 'No account found with this email address in Firebase Authentication.',
+      };
+    } else if (err.code === 'auth/invalid-email') {
+      return {
+        success: false,
+        message: 'Please enter a valid email address.',
+      };
+    } else if (err.code === 'auth/too-many-requests') {
+      return {
+        success: false,
+        message: 'Too many password reset requests. Please wait a moment before trying again.',
+      };
+    } else if (err.code === 'auth/network-request-failed') {
+      return {
+        success: false,
+        message: 'Network error. Please check your internet connection.',
+      };
+    } else {
+      return {
+        success: false,
+        message: err.message || 'Failed to send password reset email. Please try again.',
+      };
+    }
+  }
+}
+
 // Change Admin Password using Firebase Authentication
 export async function changeAdminPasswordFirebase(
   currentPassword?: string,
@@ -364,7 +428,7 @@ export async function changeAdminPasswordFirebase(
     if (user && isGoogleUser) {
       return {
         success: false,
-        message: 'You are signed in with Google. Your password is managed by your Google Account.',
+        message: 'This account uses Google Sign-In. Password changes must be done through your Google Account.',
       };
     }
 

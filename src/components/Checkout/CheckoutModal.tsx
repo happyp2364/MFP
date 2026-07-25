@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   ShieldCheck,
@@ -16,10 +16,18 @@ import {
   Download,
   AlertTriangle,
   Lock,
+  RefreshCw,
+  FileText,
+  MessageCircle,
+  Loader2,
+  XCircle,
+  Clock,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
-import { CartItem, ShippingAddressInfo, PaymentMethodType } from '../../types';
+import { CartItem, ShippingAddressInfo, PaymentMethodType, CustomerOrder } from '../../types';
 import { generateUPILink, getQRCodeImageUrl } from '../../utils/qrCode';
+import { generateOrderWhatsAppLink } from '../../utils/whatsapp';
+import { InvoiceModal } from '../Customer/InvoiceModal';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -28,18 +36,37 @@ interface CheckoutModalProps {
   onOrderComplete: (orderId: string) => void;
 }
 
+export type CheckoutStep =
+  | 'SHIPPING'
+  | 'PAYMENT'
+  | 'VERIFYING'
+  | 'PAYMENT_FAILED'
+  | 'SUCCESS';
+
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
   onClose,
   cartItems,
   onOrderComplete,
 }) => {
-  const { paymentSettings, customerProfile, placeOrderAndPay } = useStore();
+  const { paymentSettings, customerProfile, placeOrderAndPay, storeInfo, orders } = useStore();
 
-  const [step, setStep] = useState<'SHIPPING' | 'PAYMENT' | 'PROCESSING' | 'SUCCESS'>('SHIPPING');
+  const [step, setStep] = useState<CheckoutStep>('SHIPPING');
   const [copiedUPI, setCopiedUPI] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Verification progress animation state
+  const [verificationProgress, setVerificationProgress] = useState(0);
+  const [verificationStageText, setVerificationStageText] = useState('Initiating Payment Verification...');
+  const [failedReason, setFailedReason] = useState<string>('');
+
+  // Created Order & Invoice Modal State
+  const [createdOrder, setCreatedOrder] = useState<CustomerOrder | null>(null);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+
+  // Double-submit protection guard
+  const isProcessingRef = useRef(false);
 
   // Address Form
   const [shippingInfo, setShippingInfo] = useState<ShippingAddressInfo>({
@@ -122,24 +149,57 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     e.preventDefault();
     setErrorMessage(null);
 
-    if (!shippingInfo.name.trim() || !shippingInfo.phone.trim() || !shippingInfo.street.trim() || !shippingInfo.pincode.trim()) {
-      setErrorMessage('Please complete all required shipping details.');
+    if (
+      !shippingInfo.name.trim() ||
+      !shippingInfo.phone.trim() ||
+      !shippingInfo.street.trim() ||
+      !shippingInfo.pincode.trim()
+    ) {
+      setErrorMessage('Please complete all required shipping details before proceeding.');
       return;
     }
 
     setStep('PAYMENT');
   };
 
-  const handlePaymentSubmit = async () => {
+  /**
+   * Payment First, Order Next Verification Pipeline
+   */
+  const handleStartPaymentVerification = async () => {
+    if (isProcessingRef.current || isSubmitting) return;
+
     setErrorMessage(null);
+    setFailedReason('');
+    isProcessingRef.current = true;
     setIsSubmitting(true);
-    setStep('PROCESSING');
+    setStep('VERIFYING');
+    setVerificationProgress(15);
+    setVerificationStageText('Connecting to Secure Gateway Node...');
 
     try {
-      // Simulate gateway latency & security check
-      await new Promise((res) => setTimeout(res, 1500));
+      // Step 1: Gateway Handshake
+      await new Promise((res) => setTimeout(res, 400));
+      setVerificationProgress(40);
+      setVerificationStageText('Validating Payment Reference & Signature Integrity...');
 
-      const generatedRef = paymentRef.trim() || `REF-${Date.now().toString().slice(-8)}`;
+      // Step 2: Anti-Replay Check
+      await new Promise((res) => setTimeout(res, 400));
+      setVerificationProgress(70);
+      setVerificationStageText('Checking Anti-Replay Ledger & Anti-Fraud Locks...');
+
+      // Step 3: Execute Secure Verification & Order Placement
+      await new Promise((res) => setTimeout(res, 400));
+      setVerificationProgress(90);
+      setVerificationStageText('Confirming Settlement Authorization...');
+
+      const extraDetails = {
+        cardNumber,
+        cardExpiry,
+        cardCvv,
+        cardName,
+        selectedBank,
+        selectedWallet,
+      };
 
       const res = await placeOrderAndPay(
         shippingInfo,
@@ -148,28 +208,65 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         shippingFee,
         0,
         selectedMethod,
-        generatedRef
+        paymentRef.trim(),
+        extraDetails
       );
 
       if (res.success && res.orderId) {
+        setVerificationProgress(100);
         setCompletedOrderId(res.orderId);
+
+        // Find newly created order object for invoice & WhatsApp
+        const matchedOrder = orders.find((o) => o.id === res.orderId) || {
+          id: res.orderId,
+          orderNumber: parseInt(res.orderId.replace('#MFP', ''), 10) || 1025,
+          userId: customerProfile?.uid,
+          customerName: shippingInfo.name,
+          customerPhone: shippingInfo.phone,
+          customerEmail: shippingInfo.email,
+          shippingAddress: shippingInfo,
+          items: cartItems,
+          subtotal,
+          shippingFee,
+          discountAmount: 0,
+          taxAmount,
+          totalAmount,
+          paymentMethod: selectedMethod,
+          paymentStatus: selectedMethod === 'COD' ? 'PENDING' : 'PAID',
+          orderStatus: 'PENDING',
+          transactionId: `TXN-${Date.now()}`,
+          paymentReference: paymentRef || `REF-${Date.now()}`,
+          paymentTimestamp: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        } as CustomerOrder;
+
+        setCreatedOrder(matchedOrder);
         setStep('SUCCESS');
         onOrderComplete(res.orderId);
       } else {
-        setErrorMessage(res.message || 'Payment verification failed. Please try again.');
-        setStep('PAYMENT');
+        setFailedReason(res.message || 'Payment verification failed. Please verify your reference details.');
+        setStep('PAYMENT_FAILED');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'An error occurred during payment processing.');
-      setStep('PAYMENT');
+      console.error('Payment verification exception:', err);
+      setFailedReason(err.message || 'An unexpected gateway error occurred during payment verification.');
+      setStep('PAYMENT_FAILED');
     } finally {
       setIsSubmitting(false);
+      isProcessingRef.current = false;
     }
   };
 
+  const handleOpenWhatsAppConfirmedOrder = () => {
+    if (!createdOrder) return;
+    const link = generateOrderWhatsAppLink(createdOrder);
+    window.open(link, '_blank');
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-amber-100/50 my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/70 backdrop-blur-xl p-4 overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden border border-white/80 my-auto animate-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="bg-gradient-to-r from-amber-950 via-neutral-900 to-amber-950 px-6 py-4 text-white flex items-center justify-between border-b border-amber-800/30">
@@ -179,14 +276,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-serif font-bold text-amber-100">
-                Secure Checkout
+                Secure Payment & Checkout
               </h2>
               <p className="text-xs text-amber-200/70">
-                Marudhar Fashion Point • Official Store
+                Marudhar Fashion Point • Bank-Level Encryption
               </p>
             </div>
           </div>
-          {step !== 'PROCESSING' && (
+          {step !== 'VERIFYING' && (
             <button
               onClick={onClose}
               className="p-1.5 text-neutral-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
@@ -196,24 +293,78 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           )}
         </div>
 
-        {/* Progress Bar */}
+        {/* Multi-Step Progress Tracker */}
         <div className="bg-amber-50/60 px-6 py-2.5 border-b border-amber-100 flex items-center justify-between text-xs font-medium text-amber-900">
-          <div className={`flex items-center space-x-1.5 ${step === 'SHIPPING' ? 'text-amber-700 font-bold' : 'text-neutral-500'}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step === 'SHIPPING' ? 'bg-amber-700 text-white' : 'bg-neutral-200 text-neutral-700'}`}>1</span>
-            <span>Shipping</span>
+          <div
+            className={`flex items-center space-x-1.5 ${
+              step === 'SHIPPING' ? 'text-amber-700 font-bold' : 'text-neutral-500'
+            }`}
+          >
+            <span
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                step === 'SHIPPING' ? 'bg-amber-700 text-white' : 'bg-neutral-200 text-neutral-700'
+              }`}
+            >
+              1
+            </span>
+            <span>Delivery Info</span>
           </div>
-          <div className="w-8 h-[1px] bg-neutral-300" />
-          <div className={`flex items-center space-x-1.5 ${step === 'PAYMENT' || step === 'PROCESSING' ? 'text-amber-700 font-bold' : 'text-neutral-500'}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step === 'PAYMENT' || step === 'PROCESSING' ? 'bg-amber-700 text-white' : 'bg-neutral-200 text-neutral-700'}`}>2</span>
-            <span>Payment</span>
+
+          <div className="w-6 h-[1px] bg-neutral-300" />
+
+          <div
+            className={`flex items-center space-x-1.5 ${
+              step === 'PAYMENT' ? 'text-amber-700 font-bold' : 'text-neutral-500'
+            }`}
+          >
+            <span
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                step === 'PAYMENT' ? 'bg-amber-700 text-white' : 'bg-neutral-200 text-neutral-700'
+              }`}
+            >
+              2
+            </span>
+            <span>Payment Method</span>
           </div>
-          <div className="w-8 h-[1px] bg-neutral-300" />
-          <div className={`flex items-center space-x-1.5 ${step === 'SUCCESS' ? 'text-emerald-700 font-bold' : 'text-neutral-500'}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${step === 'SUCCESS' ? 'bg-emerald-600 text-white' : 'bg-neutral-200 text-neutral-700'}`}>3</span>
-            <span>Confirmation</span>
+
+          <div className="w-6 h-[1px] bg-neutral-300" />
+
+          <div
+            className={`flex items-center space-x-1.5 ${
+              step === 'VERIFYING' ? 'text-amber-700 font-bold' : 'text-neutral-500'
+            }`}
+          >
+            <span
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                step === 'VERIFYING'
+                  ? 'bg-amber-700 text-white animate-pulse'
+                  : 'bg-neutral-200 text-neutral-700'
+              }`}
+            >
+              3
+            </span>
+            <span>Verification</span>
+          </div>
+
+          <div className="w-6 h-[1px] bg-neutral-300" />
+
+          <div
+            className={`flex items-center space-x-1.5 ${
+              step === 'SUCCESS' ? 'text-emerald-700 font-bold' : 'text-neutral-500'
+            }`}
+          >
+            <span
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                step === 'SUCCESS' ? 'bg-emerald-600 text-white' : 'bg-neutral-200 text-neutral-700'
+              }`}
+            >
+              4
+            </span>
+            <span>Order Confirmed</span>
           </div>
         </div>
 
+        {/* Global Error Banner */}
         {errorMessage && (
           <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 text-xs text-red-700">
             <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
@@ -225,7 +376,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {step === 'SHIPPING' && (
           <form onSubmit={handleShippingSubmit} className="p-6 space-y-4">
             <h3 className="text-sm font-semibold text-neutral-900 uppercase tracking-wider">
-              Shipping & Delivery Address
+              Shipping & Delivery Details
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -266,7 +417,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-neutral-600 mb-1 font-medium">House / Street Address *</label>
+                <label className="block text-neutral-600 mb-1 font-medium">
+                  House / Street Address *
+                </label>
                 <input
                   type="text"
                   required
@@ -312,7 +465,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-neutral-600 mb-1 font-medium">Landmark (Optional)</label>
+                <label className="block text-neutral-600 mb-1 font-medium">
+                  Landmark (Optional)
+                </label>
                 <input
                   type="text"
                   value={shippingInfo.landmark}
@@ -323,7 +478,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             </div>
 
-            {/* Order Summary Snapshot */}
+            {/* Price Summary */}
             <div className="mt-4 p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-1.5">
               <div className="flex justify-between text-neutral-600">
                 <span>Subtotal ({cartItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
@@ -335,7 +490,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
               <div className="flex justify-between text-neutral-600">
                 <span>Shipping</span>
-                <span>{shippingFee === 0 ? <span className="text-emerald-600 font-semibold">FREE</span> : `₹${shippingFee}`}</span>
+                <span>
+                  {shippingFee === 0 ? (
+                    <span className="text-emerald-600 font-semibold">FREE</span>
+                  ) : (
+                    `₹${shippingFee}`
+                  )}
+                </span>
               </div>
               <div className="flex justify-between font-bold text-neutral-900 pt-1.5 border-t border-neutral-200 text-sm">
                 <span>Total Amount Payable</span>
@@ -452,25 +613,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-4">
                 {paymentSettings.paymentEnabled === false ? (
                   <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-center font-medium">
-                    Online UPI payments are temporarily paused by store administration. Please select Cash on Delivery or another method.
+                    Online UPI payments are temporarily paused by store administration. Please select
+                    Cash on Delivery or another method.
                   </div>
                 ) : (
                   <>
-                    {/* Minimum or Maximum order amount validation warning if applicable */}
-                    {paymentSettings.minOrderAmount && totalAmount < paymentSettings.minOrderAmount ? (
-                      <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-semibold text-center">
-                        Minimum order amount for UPI payment is ₹{paymentSettings.minOrderAmount.toLocaleString()}.
-                      </div>
-                    ) : paymentSettings.maxOrderAmount && paymentSettings.maxOrderAmount > 0 && totalAmount > paymentSettings.maxOrderAmount ? (
-                      <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-semibold text-center">
-                        Maximum order amount for UPI payment is ₹{paymentSettings.maxOrderAmount.toLocaleString()}.
-                      </div>
-                    ) : null}
-
                     <div className="text-center space-y-2">
                       <p className="text-xs font-medium text-neutral-600">
-                        Scan with GPay, PhonePe, Paytm, or any UPI App to pay{' '}
-                        <strong className="text-amber-900 font-bold">₹{totalAmount.toLocaleString()}</strong>
+                        Scan with GPay, PhonePe, Paytm, or BHIM to pay{' '}
+                        <strong className="text-amber-900 font-bold">
+                          ₹{totalAmount.toLocaleString()}
+                        </strong>
                       </p>
 
                       <div className="inline-block p-2 bg-white rounded-xl shadow-md border border-amber-200">
@@ -486,24 +639,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       </div>
                     </div>
 
-                    {paymentSettings.paymentInstructions && (
-                      <div className="p-3 bg-white rounded-xl border border-neutral-200 text-neutral-700 text-[11px] text-center leading-relaxed font-medium">
-                        {paymentSettings.paymentInstructions}
-                      </div>
-                    )}
-
                     {/* UPI ID Copy box */}
                     <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-neutral-200 text-xs">
                       <div>
                         <span className="text-neutral-500 text-[10px] block">Merchant UPI ID:</span>
-                        <span className="font-mono font-bold text-neutral-800">{paymentSettings.upiId}</span>
+                        <span className="font-mono font-bold text-neutral-800">
+                          {paymentSettings.upiId}
+                        </span>
                       </div>
                       <button
                         type="button"
                         onClick={handleCopyUPI}
                         className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-md text-xs font-semibold flex items-center space-x-1 transition-colors"
                       >
-                        {copiedUPI ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedUPI ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
                         <span>{copiedUPI ? 'Copied' : 'Copy UPI'}</span>
                       </button>
                     </div>
@@ -519,10 +672,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <span>Open UPI App (GPay / PhonePe / Paytm)</span>
                     </a>
 
-                    {/* Optional Payment Ref */}
+                    {/* UTR Input */}
                     <div>
-                      <label className="block text-[11px] text-neutral-600 mb-1 font-medium">
-                        UPI Reference / UTR Number (Optional verification ref)
+                      <label className="block text-[11px] text-neutral-700 mb-1 font-bold">
+                        UPI Reference / UTR Number * (Enter 12-digit UTR after payment)
                       </label>
                       <input
                         type="text"
@@ -541,7 +694,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {selectedMethod === 'CARD' && (
               <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-3 text-xs">
                 <div>
-                  <label className="block text-neutral-600 mb-1 font-medium">Card Number</label>
+                  <label className="block text-neutral-600 mb-1 font-medium">Card Number *</label>
                   <input
                     type="text"
                     maxLength={19}
@@ -553,7 +706,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-neutral-600 mb-1 font-medium">Cardholder Name</label>
+                  <label className="block text-neutral-600 mb-1 font-medium">
+                    Cardholder Name *
+                  </label>
                   <input
                     type="text"
                     value={cardName}
@@ -565,7 +720,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-neutral-600 mb-1 font-medium">Expiry (MM/YY)</label>
+                    <label className="block text-neutral-600 mb-1 font-medium">
+                      Expiry (MM/YY) *
+                    </label>
                     <input
                       type="text"
                       maxLength={5}
@@ -577,7 +734,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-neutral-600 mb-1 font-medium">CVV</label>
+                    <label className="block text-neutral-600 mb-1 font-medium">CVV *</label>
                     <input
                       type="password"
                       maxLength={4}
@@ -591,7 +748,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                 <div className="flex items-center space-x-1.5 text-[10px] text-neutral-500 pt-1">
                   <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>256-Bit SSL Encryption via {paymentSettings.gatewayProvider} Gateway</span>
+                  <span>
+                    256-Bit SSL Encrypted via {paymentSettings.gatewayProvider || 'DIRECT_UPI_QR'}{' '}
+                    Gateway
+                  </span>
                 </div>
               </div>
             )}
@@ -599,16 +759,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* TAB CONTENT: NET BANKING */}
             {selectedMethod === 'NET_BANKING' && (
               <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-3 text-xs">
-                <label className="block text-neutral-600 font-medium">Select Your Bank</label>
+                <label className="block text-neutral-600 font-medium">Select Your Bank *</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {['SBI', 'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'Kotak Bank', 'Punjab National Bank'].map((b) => (
+                  {[
+                    'SBI',
+                    'HDFC Bank',
+                    'ICICI Bank',
+                    'Axis Bank',
+                    'Kotak Bank',
+                    'Punjab National Bank',
+                  ].map((b) => (
                     <button
                       key={b}
                       type="button"
                       onClick={() => setSelectedBank(b)}
                       className={`p-2.5 rounded-lg border text-left font-medium transition-colors ${
                         selectedBank === b
-                          ? 'border-amber-700 bg-amber-100 text-amber-900'
+                          ? 'border-amber-700 bg-amber-100 text-amber-900 font-bold'
                           : 'border-neutral-200 bg-white hover:bg-neutral-100'
                       }`}
                     >
@@ -622,7 +789,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* TAB CONTENT: WALLET */}
             {selectedMethod === 'WALLET' && (
               <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-3 text-xs">
-                <label className="block text-neutral-600 font-medium">Select Wallet</label>
+                <label className="block text-neutral-600 font-medium">Select Wallet *</label>
                 <div className="grid grid-cols-2 gap-2">
                   {['Paytm Wallet', 'Amazon Pay', 'PhonePe Wallet', 'Mobikwik'].map((w) => (
                     <button
@@ -631,7 +798,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       onClick={() => setSelectedWallet(w)}
                       className={`p-2.5 rounded-lg border text-left font-medium transition-colors ${
                         selectedWallet === w
-                          ? 'border-amber-700 bg-amber-100 text-amber-900'
+                          ? 'border-amber-700 bg-amber-100 text-amber-900 font-bold'
                           : 'border-neutral-200 bg-white hover:bg-neutral-100'
                       }`}
                     >
@@ -650,34 +817,118 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span>Cash / Pay on Delivery Selected</span>
                 </div>
                 <p className="text-amber-800/80">
-                  You can pay ₹{totalAmount.toLocaleString()} via Cash or Mobile Scanner to the courier agent upon arrival.
+                  You can pay ₹{totalAmount.toLocaleString()} via Cash or Mobile Scanner to the
+                  courier agent upon delivery. Address will be verified prior to dispatch.
                 </p>
               </div>
             )}
 
-            {/* Final Pay Button */}
+            {/* Complete & Verify Button */}
             <button
               type="button"
-              onClick={handlePaymentSubmit}
+              onClick={handleStartPaymentVerification}
               disabled={isSubmitting}
-              className="w-full py-3 bg-amber-700 hover:bg-amber-800 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center space-x-2 shadow-md hover:shadow-lg disabled:opacity-50"
+              className="w-full py-3.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-lg disabled:opacity-50"
             >
-              <span>Verify & Complete Payment (₹{totalAmount.toLocaleString()})</span>
-              <CheckCircle2 className="w-4 h-4" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Verifying Payment...</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="w-4 h-4 text-amber-300" />
+                  <span>Pay & Verify Payment (₹{totalAmount.toLocaleString()})</span>
+                </>
+              )}
             </button>
           </div>
         )}
 
-        {/* STEP 3: PROCESSING */}
-        {step === 'PROCESSING' && (
-          <div className="p-12 text-center space-y-4">
-            <div className="w-16 h-16 border-4 border-amber-700 border-t-transparent rounded-full animate-spin mx-auto" />
-            <h3 className="text-lg font-bold text-neutral-900">
-              Verifying Payment & Creating Order...
-            </h3>
-            <p className="text-xs text-neutral-500 max-w-sm mx-auto">
-              Please wait while our secure gateway verifies your transaction reference and locks inventory.
-            </p>
+        {/* STEP 3: VERIFYING PAYMENT (LIVE ANIMATED STAGE) */}
+        {step === 'VERIFYING' && (
+          <div className="p-10 text-center space-y-6">
+            <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 border-4 border-amber-200 rounded-full" />
+              <div
+                className="absolute inset-0 border-4 border-amber-700 border-t-transparent rounded-full animate-spin"
+              />
+              <ShieldCheck className="w-8 h-8 text-amber-700" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-block px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-[11px] font-bold uppercase tracking-wider">
+                Verifying Payment Status
+              </span>
+              <h3 className="text-lg font-serif font-bold text-neutral-900">
+                {verificationStageText}
+              </h3>
+              <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+                Please do not close or refresh this page. We are securely validating your transaction
+                reference with the banking network.
+              </p>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="w-full max-w-md mx-auto space-y-1.5">
+              <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
+                <div
+                  className="bg-amber-700 h-full transition-all duration-300 ease-out"
+                  style={{ width: `${verificationProgress}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] text-neutral-400 font-mono">
+                <span>Verification Stage</span>
+                <span>{verificationProgress}%</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3.1: PAYMENT VERIFICATION FAILED */}
+        {step === 'PAYMENT_FAILED' && (
+          <div className="p-8 text-center space-y-5">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <XCircle className="w-10 h-10" />
+            </div>
+
+            <div>
+              <span className="inline-block px-3 py-1 bg-red-100 text-red-800 rounded-full text-[11px] font-bold uppercase tracking-wider mb-2">
+                Payment Verification Failed
+              </span>
+              <h3 className="text-lg font-serif font-bold text-neutral-900">
+                Order Placement Prevented
+              </h3>
+              <p className="text-xs text-red-600 font-semibold mt-2 max-w-md mx-auto bg-red-50 p-3 rounded-xl border border-red-200">
+                {failedReason}
+              </p>
+              <p className="text-[11px] text-neutral-500 mt-2 max-w-md mx-auto">
+                Your order has <strong>NOT</strong> been placed and no inventory was deducted. Please check your transaction reference or choose another payment method.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setStep('PAYMENT')}
+                className="w-full sm:w-auto px-5 py-2.5 bg-amber-700 hover:bg-amber-800 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center space-x-1.5"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Retry Payment Verification</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedMethod('COD');
+                  setStep('PAYMENT');
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 bg-neutral-800 hover:bg-neutral-900 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center space-x-1.5"
+              >
+                <Truck className="w-4 h-4 text-amber-400" />
+                <span>Switch to Pay on Delivery</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -689,14 +940,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
 
             <div>
+              <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[11px] font-bold uppercase tracking-wider mb-1">
+                Payment Verified & Order Confirmed
+              </span>
               <h3 className="text-xl font-serif font-bold text-neutral-900">
-                Order Confirmed!
+                Thank You For Your Order!
               </h3>
-              <p className="text-sm font-semibold text-amber-800 mt-1">
+              <p className="text-sm font-bold text-amber-900 mt-1">
                 Order ID: {completedOrderId}
               </p>
               <p className="text-xs text-neutral-500 mt-1 max-w-md mx-auto">
-                Thank you for shopping with Marudhar Fashion Point. A confirmation notification has been recorded and stock reserves updated.
+                Your payment was verified successfully. Inventory has been locked and your order is queued for processing.
               </p>
             </div>
 
@@ -706,8 +960,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <span className="font-semibold text-neutral-900">{shippingInfo.name}</span>
               </div>
               <div className="flex justify-between text-neutral-600">
-                <span>Amount Paid:</span>
-                <span className="font-semibold text-emerald-700">₹{totalAmount.toLocaleString()}</span>
+                <span>Total Paid:</span>
+                <span className="font-bold text-emerald-700">₹{totalAmount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-neutral-600">
                 <span>Payment Mode:</span>
@@ -721,17 +975,48 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             </div>
 
-            <div className="pt-2 flex justify-center space-x-3">
+            {/* Action Buttons Post Verification */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2 max-w-md mx-auto">
               <button
+                type="button"
+                onClick={() => setShowInvoiceModal(true)}
+                className="w-full sm:w-auto flex-1 py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow-md"
+              >
+                <FileText className="w-4 h-4" />
+                <span>View / Print Invoice</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenWhatsAppConfirmedOrder}
+                className="w-full sm:w-auto flex-1 py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow-md"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Order on WhatsApp</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={onClose}
-                className="px-6 py-2.5 bg-amber-700 hover:bg-amber-800 text-white rounded-xl font-semibold text-xs transition-colors shadow-md"
+                className="w-full sm:w-auto py-2.5 px-4 bg-neutral-800 hover:bg-neutral-900 text-white rounded-xl text-xs font-semibold transition-all"
               >
                 Continue Shopping
               </button>
             </div>
           </div>
         )}
+
       </div>
+
+      {/* Invoice Modal Popup */}
+      {showInvoiceModal && createdOrder && (
+        <InvoiceModal
+          isOpen={showInvoiceModal}
+          onClose={() => setShowInvoiceModal(false)}
+          order={createdOrder}
+          storeInfo={storeInfo}
+        />
+      )}
     </div>
   );
 };

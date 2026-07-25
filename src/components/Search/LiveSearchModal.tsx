@@ -55,12 +55,12 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-md animate-in fade-in duration-300"
         onClick={onClose}
       />
 
       {/* Modal Box */}
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-neutral-100 overflow-hidden z-10 animate-in zoom-in-95 duration-200 space-y-4 p-5 sm:p-6">
+      <div className="relative w-full max-w-2xl bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 space-y-4 p-5 sm:p-6">
         
         {/* Search Input Bar */}
         <div className="relative flex items-center">

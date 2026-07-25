@@ -39,12 +39,12 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-md animate-in fade-in duration-300"
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between z-10 animate-in slide-in-from-right duration-300">
+      <div className="relative w-full max-w-md bg-white/95 backdrop-blur-2xl h-full shadow-2xl border-l border-white/80 flex flex-col justify-between z-10 animate-in slide-in-from-right duration-300">
         
         {/* Drawer Header */}
         <div className="p-5 border-b border-neutral-200 flex items-center justify-between">

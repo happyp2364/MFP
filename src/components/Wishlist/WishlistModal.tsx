@@ -25,12 +25,12 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-md animate-in fade-in duration-300"
         onClick={onClose}
       />
 
       {/* Modal Box */}
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-neutral-100 overflow-hidden z-10 animate-in zoom-in-95 duration-200 p-6 space-y-4 max-h-[85vh] flex flex-col">
+      <div className="relative w-full max-w-2xl bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 p-6 space-y-4 max-h-[85vh] flex flex-col">
         
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-neutral-200">

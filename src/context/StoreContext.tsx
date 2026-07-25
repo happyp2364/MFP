@@ -58,6 +58,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, EmailAuthPr
 import { addDoc, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { playNotificationSound } from '../utils/audio';
+import { verifyPaymentSecurely } from '../utils/paymentVerification';
 
 const STORAGE_KEYS = {
   PRODUCTS: 'mfp_store_products',
@@ -109,7 +110,15 @@ interface StoreContextType {
     shippingFee: number,
     discountAmount: number,
     paymentMethod: PaymentMethodType,
-    paymentRef?: string
+    paymentRef?: string,
+    extraPaymentDetails?: {
+      cardNumber?: string;
+      cardExpiry?: string;
+      cardCvv?: string;
+      cardName?: string;
+      selectedBank?: string;
+      selectedWallet?: string;
+    }
   ) => Promise<{ success: boolean; orderId?: string; message?: string }>;
   updateOrderStatus: (orderId: string, newStatus: OrderStatus, note?: string) => Promise<boolean>;
   cancelCustomerOrder: (orderId: string, reason?: string) => Promise<boolean>;
@@ -427,7 +436,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return success;
   };
 
-  // Place Order & Process Payment
+  // Place Order & Process Payment (Payment First, Order Next)
   const placeOrderAndPay = async (
     shippingInfo: ShippingAddressInfo,
     items: import('../types').CartItem[],
@@ -435,18 +444,59 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     shippingFee: number,
     discountAmount: number,
     paymentMethod: PaymentMethodType,
-    paymentRef?: string
+    paymentRef?: string,
+    extraPaymentDetails?: {
+      cardNumber?: string;
+      cardExpiry?: string;
+      cardCvv?: string;
+      cardName?: string;
+      selectedBank?: string;
+      selectedWallet?: string;
+    }
   ): Promise<{ success: boolean; orderId?: string; message?: string }> => {
     if (!items || items.length === 0) {
-      return { success: false, message: 'Cart is empty.' };
+      return { success: false, message: 'Cart is empty. Order verification aborted.' };
     }
 
     const taxAmount = Math.round((subtotal * (paymentSettings.gstPercent || 5)) / 100);
     const totalAmount = Math.max(0, subtotal + shippingFee + taxAmount - discountAmount);
+
+    // 1. SECURE PAYMENT VERIFICATION ENGINE
+    const verificationRes = await verifyPaymentSecurely({
+      paymentMethod,
+      paymentRef: paymentRef || '',
+      totalAmount,
+      shippingInfo,
+      items,
+      paymentSettings,
+      cardNumber: extraPaymentDetails?.cardNumber,
+      cardExpiry: extraPaymentDetails?.cardExpiry,
+      cardCvv: extraPaymentDetails?.cardCvv,
+      cardName: extraPaymentDetails?.cardName,
+      selectedBank: extraPaymentDetails?.selectedBank,
+      selectedWallet: extraPaymentDetails?.selectedWallet,
+    });
+
+    if (!verificationRes.success) {
+      recordAuditLog(
+        'Payment Verification Failed',
+        'SECURITY',
+        `Verification rejected for ${paymentMethod} (Ref: ${paymentRef || 'N/A'}). Error: ${verificationRes.message}`,
+        'DANGER'
+      );
+      return {
+        success: false,
+        message: verificationRes.message || 'Payment verification failed. Please try again.',
+      };
+    }
+
+    // 2. ONLY AFTER SUCCESSFUL VERIFICATION -> GENERATE ORDER
     const orderNum = 1025 + orders.length + Math.floor(Math.random() * 10);
     const orderId = `#MFP${orderNum}`;
-    const txId = `TXN-${Date.now()}`;
+    const txId = verificationRes.transactionId || `TXN-${Date.now()}`;
+    const verifiedRef = verificationRes.verifiedReference || paymentRef || txId;
     const nowISO = new Date().toISOString();
+    const finalPaymentStatus = paymentMethod === 'COD' ? 'PENDING' : 'PAID';
 
     const newOrder: CustomerOrder = {
       id: orderId,
@@ -463,10 +513,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       taxAmount,
       totalAmount,
       paymentMethod,
-      paymentStatus: 'PAID',
+      paymentStatus: finalPaymentStatus,
       orderStatus: 'PENDING',
       transactionId: txId,
-      paymentReference: paymentRef || txId,
+      paymentReference: verifiedRef,
       paymentTimestamp: nowISO,
       createdAt: nowISO,
       updatedAt: nowISO,
@@ -474,7 +524,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         {
           status: 'PENDING',
           timestamp: nowISO,
-          note: `Order placed via ${paymentMethod}. Payment status: PAID`,
+          note: `Payment Verified (${paymentMethod} - Ref: ${verifiedRef}). Order confirmed.`,
         },
       ],
     };
@@ -526,9 +576,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       customerEmail: shippingInfo.email,
       customerPhone: shippingInfo.phone,
       paymentMethod,
-      paymentStatus: 'PAID',
-      transactionRef: paymentRef || txId,
-      gatewayProvider: paymentSettings.gatewayProvider,
+      paymentStatus: finalPaymentStatus,
+      transactionRef: verifiedRef,
+      gatewayProvider: paymentSettings.gatewayProvider || 'DIRECT_UPI_QR',
       timestamp: nowISO,
     };
     await saveTransactionInFirestore(txRecord);
@@ -539,7 +589,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       customerName: shippingInfo.name,
       totalAmount,
       productCount: items.length,
-      paymentStatus: 'Successful',
+      paymentStatus: 'Verified & Confirmed',
       timestamp: nowISO,
       read: false,
     };

@@ -19,18 +19,93 @@
   scrollbar-width: none;
 }
 
-/* Glassmorphism utility */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* Luxury Soft Glassmorphism Utilities (Apple x Notion x Linear Quality) */
+.glass-panel-luxury {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.5);
 }
 
-.glass-dark {
-  background: rgba(18, 24, 22, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.glass-dark-luxury {
+  background: rgba(13, 20, 36, 0.78);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.5);
 }
+
+.glass-dialog {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.25);
+}
+
+.glass-dialog-dark {
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+}
+
+/* Ambient Reflection / Light Sheen Effect */
+.ambient-reflection {
+  position: relative;
+  overflow: hidden;
+}
+
+.ambient-reflection::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(255, 255, 255, 0.25) 0%,
+    rgba(255, 255, 255, 0.05) 35%,
+    transparent 70%
+  );
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.5s ease;
+}
+
+.ambient-reflection:hover::before {
+  opacity: 1;
+}
+
+/* Micro Press and Hover Animations */
+.micro-press {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease;
+}
+
+.micro-press:active {
+  transform: scale(0.97);
+}
+
+.card-hover-luxury {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.card-hover-luxury:hover {
+  transform: translateY(-5px) scale(1.005);
+  box-shadow: 0 20px 40px -12px rgba(180, 83, 9, 0.12);
+}
+
+/* Custom Slow Rotation for Theme Icon */
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 12s linear infinite;
+}
+
 
 /* Custom Green Glow */
 .green-glow {

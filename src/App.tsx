@@ -27,12 +27,15 @@ import { CustomerAccountModal } from './components/Customer/CustomerAccountModal
 import { CalendarBookingModal } from './components/GoogleWorkspace/CalendarBookingModal';
 import { GmailInquiryModal } from './components/GoogleWorkspace/GmailInquiryModal';
 import { WorkspaceHubDrawer } from './components/GoogleWorkspace/WorkspaceHubDrawer';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { FloatingParticlesCanvas } from './components/Theme/FloatingParticlesCanvas';
 
 import { useStore } from './context/StoreContext';
 import { Product, FilterState, GenderCategory, CartItem } from './types';
 
-export default function App() {
+function AppContent() {
   const { products, isAdmin, toastMessage } = useStore();
+  const { backgroundGradientClass } = useTheme();
 
   // --- STATE ---
   const [activeCategory, setActiveCategory] = useState<GenderCategory>('all');
@@ -267,7 +270,10 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F7F7F7] text-neutral-900 flex flex-col selection:bg-[#0B8F63] selection:text-white">
+    <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
+      {/* Dynamic Ambient Floating Particles Layer */}
+      <FloatingParticlesCanvas />
+
       {/* Premium Decorative Hanging Shoe Lace Animation */}
       <ShoeLaceOverlay />
 
@@ -503,5 +509,13 @@ export default function App() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

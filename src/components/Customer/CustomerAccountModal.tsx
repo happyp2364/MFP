@@ -115,8 +115,8 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-        <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden my-auto border border-neutral-200">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/70 backdrop-blur-xl p-4 overflow-y-auto">
+        <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden my-auto border border-white/80 animate-in zoom-in-95 duration-200">
           
           {/* Header */}
           <div className="bg-gradient-to-r from-amber-950 via-neutral-900 to-amber-950 px-6 py-5 text-white flex items-center justify-between">

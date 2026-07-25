@@ -294,12 +294,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
+        className="fixed inset-0 bg-neutral-950/80 backdrop-blur-2xl animate-in fade-in duration-300"
         onClick={onClose}
       />
 
       {/* Main Admin Panel Container */}
-      <div className="relative w-full max-w-6xl bg-[#F7F7F7] rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-6xl bg-[#F8FAFC]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 h-[92vh] flex flex-col">
         
         {/* Top Admin Header Bar */}
         <div className="bg-[#121816] text-white p-4 sm:p-5 flex items-center justify-between border-b border-white/10 shrink-0">

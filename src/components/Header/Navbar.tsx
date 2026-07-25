@@ -22,6 +22,7 @@ import { GenderCategory } from '../../types';
 import { useStore } from '../../context/StoreContext';
 import { generateGeneralInquiryWhatsAppLink } from '../../utils/whatsapp';
 import { GoogleAuthButton } from '../GoogleWorkspace/GoogleAuthButton';
+import { ThemeToggleWidget } from '../Theme/ThemeToggleWidget';
 
 interface NavbarProps {
   onOpenSearch: () => void;
@@ -246,6 +247,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Right Utilities Icons */}
             <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Dynamic Theme & Time Toggle */}
+              <div className="hidden xs:block">
+                <ThemeToggleWidget compact />
+              </div>
+
               {/* Search Trigger */}
               <button
                 onClick={onOpenSearch}

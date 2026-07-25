@@ -69,12 +69,12 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-md animate-in fade-in duration-300"
         onClick={onClose}
       />
 
       {/* Dialog Window */}
-      <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-neutral-100 overflow-hidden z-10 animate-in zoom-in-95 duration-200 my-auto max-h-[90vh] flex flex-col md:flex-row">
+      <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 my-auto max-h-[90vh] flex flex-col md:flex-row">
         {/* Close Button */}
         <button
           onClick={onClose}

@@ -78,3 +78,37 @@ export function generateGeneralInquiryWhatsAppLink(customQuery?: string): string
   const encodedText = encodeURIComponent(defaultText);
   return `https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodedText}`;
 }
+
+export function generateOrderWhatsAppLink(order: import('../types').CustomerOrder): string {
+  if (!order) return `https://wa.me/${STORE_INFO.whatsappNumber}`;
+
+  let itemsSummary = '';
+  order.items.forEach((item, index) => {
+    const itemTotal = item.product.price * item.quantity;
+    itemsSummary += `${index + 1}. ${item.product.name}\n   Size: ${item.selectedSize} | Color: ${item.selectedColor} | Qty: ${item.quantity} | ₹${itemTotal.toLocaleString('en-IN')}\n`;
+  });
+
+  const text = `Hello Marudhar Fashion Point,
+
+✅ VERIFIED ORDER CONFIRMATION
+
+Order ID: ${order.id}
+Date: ${new Date(order.createdAt).toLocaleDateString('en-IN')}
+Payment Method: ${order.paymentMethod}
+Payment Status: ${order.paymentStatus} (Verified)
+Payment Reference / UTR: ${order.paymentReference || 'N/A'}
+
+📦 ORDERED ITEMS:
+${itemsSummary}
+💰 Total Paid: ₹${order.totalAmount.toLocaleString('en-IN')}
+
+📍 DELIVERY ADDRESS:
+${order.customerName}
+${order.shippingAddress.street}, ${order.shippingAddress.city}, ${order.shippingAddress.state} - ${order.shippingAddress.pincode}
+Phone: ${order.customerPhone}
+
+Please process my order for dispatch. Thank you!`;
+
+  const encodedText = encodeURIComponent(text);
+  return `https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodedText}`;
+}

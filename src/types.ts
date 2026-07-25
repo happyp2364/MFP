@@ -276,6 +276,18 @@ export interface CustomerProfile {
   orderHistory?: CustomerOrder[];
 }
 
+export interface HangingSneakerConfig {
+  enabled: boolean;
+  imageUri: string; // custom uploaded image URL, or empty string to use ultra-realistic default vector/3D engine
+  laceLength: number; // lace drop length in px (e.g. 240)
+  sizePx: number; // shoe height in desktop view (e.g. 250)
+  positionRight: number; // right offset spacing in rem/px (e.g. 14)
+  positionTop: number; // top offset in px
+  swingSpeedSec: number; // pendulum swing speed duration in seconds (e.g. 9.5)
+  enablePhysicsAnimation: boolean;
+  colorTheme?: 'MARUDHAR_HERITAGE' | 'MIDNIGHT_NAVY' | 'GOLD_LUXURY' | 'MONOCHROME_BLACK';
+}
+
 export interface StoreBackupSnapshot {
   id: string;
   timestamp: string;

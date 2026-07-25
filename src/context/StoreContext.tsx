@@ -17,6 +17,7 @@ import {
   AdminNotification,
   TransactionRecord,
   ShippingAddressInfo,
+  HangingSneakerConfig,
 } from '../types';
 import {
   PRODUCTS_DATA,
@@ -75,6 +76,19 @@ const STORAGE_KEYS = {
   PAYMENT_SETTINGS: 'mfp_payment_settings',
   ORDERS: 'mfp_orders',
   NOTIFICATIONS: 'mfp_notifications',
+  HANGING_SNEAKER: 'mfp_hanging_sneaker_config',
+};
+
+export const DEFAULT_HANGING_SNEAKER_CONFIG: HangingSneakerConfig = {
+  enabled: true,
+  imageUri: '', // empty means use ultra-realistic default vector engine
+  laceLength: 240,
+  sizePx: 250,
+  positionRight: 14,
+  positionTop: 0,
+  swingSpeedSec: 9.5,
+  enablePhysicsAnimation: true,
+  colorTheme: 'MARUDHAR_HERITAGE',
 };
 
 // 30-minute inactivity limit (1800000 ms)
@@ -102,6 +116,8 @@ interface StoreContextType {
   paymentSettings: PaymentSettings;
   orders: CustomerOrder[];
   notifications: AdminNotification[];
+  hangingSneakerConfig: HangingSneakerConfig;
+  updateHangingSneakerConfig: (updated: Partial<HangingSneakerConfig>) => void;
   updatePaymentSettings: (settings: Partial<PaymentSettings>) => Promise<boolean>;
   placeOrderAndPay: (
     shippingInfo: ShippingAddressInfo,
@@ -244,6 +260,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [hangingSneakerConfig, setHangingSneakerConfig] = useState<HangingSneakerConfig>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.HANGING_SNEAKER);
+    return saved ? { ...DEFAULT_HANGING_SNEAKER_CONFIG, ...JSON.parse(saved) } : DEFAULT_HANGING_SNEAKER_CONFIG;
+  });
+
   const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
 
   // Customer Authentication State
@@ -361,7 +382,36 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
   }, [notifications]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.HANGING_SNEAKER, JSON.stringify(hangingSneakerConfig));
+  }, [hangingSneakerConfig]);
+
+  const updateHangingSneakerConfig = (updated: Partial<HangingSneakerConfig>) => {
+    setHangingSneakerConfig((prev) => {
+      const newCfg = { ...prev, ...updated };
+      try {
+        setDoc(doc(db, 'hangingSneakerConfig', 'config'), newCfg, { merge: true }).catch(() => {});
+      } catch (e) {}
+      return newCfg;
+    });
+    showToast('Hanging Sneaker settings updated successfully!', 'success');
+  };
+
   // Real-time Firestore Sync for Payment Settings
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const configRef = doc(db, 'hangingSneakerConfig', 'config');
+      unsubscribe = onSnapshot(configRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setHangingSneakerConfig((prev) => ({ ...prev, ...docSnap.data() }));
+        }
+      });
+    } catch (e) {}
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
@@ -1105,6 +1155,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         paymentSettings,
         orders,
         notifications,
+        hangingSneakerConfig,
+        updateHangingSneakerConfig,
         updatePaymentSettings,
         placeOrderAndPay,
         updateOrderStatus,

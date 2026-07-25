@@ -47,6 +47,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
     customerUser,
     customerProfile,
     isCustomerAuthLoading,
+    customerAuthError,
     customerSignInWithGoogle,
     customerSignOut,
     updateCustomerProfileInFirestore,
@@ -164,6 +165,14 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
               </button>
             </div>
           </div>
+
+          {/* Customer Auth Error Banner */}
+          {customerAuthError && (
+            <div className="mx-6 mt-4 p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-start space-x-2.5 font-medium shadow-sm">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div className="flex-1 leading-relaxed">{customerAuthError}</div>
+            </div>
+          )}
 
           {/* Navigation Tabs */}
           <div className="bg-amber-50/50 px-6 border-b border-amber-100 flex space-x-6 text-xs font-medium">

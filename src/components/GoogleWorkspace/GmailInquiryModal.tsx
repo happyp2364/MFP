@@ -177,7 +177,12 @@ export const GmailInquiryModal: React.FC<GmailInquiryModalProps> = ({
                           try {
                             await signInWithGoogle();
                             setErrorMsg(null);
-                          } catch (e) {}
+                          } catch (e: any) {
+                            setErrorMsg(
+                              e?.message ||
+                                'Google Sign-In is temporarily unavailable because this website domain has not yet been authorized. Please contact the website administrator.'
+                            );
+                          }
                         }}
                         className="underline text-red-800 font-bold mt-1 block"
                       >

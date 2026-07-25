@@ -450,64 +450,90 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* TAB CONTENT: UPI / QR SCAN */}
             {selectedMethod === 'UPI' && (
               <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-4">
-                <div className="text-center space-y-2">
-                  <p className="text-xs font-medium text-neutral-600">
-                    Scan with GPay, PhonePe, Paytm, or any UPI App to pay{' '}
-                    <strong className="text-amber-900 font-bold">₹{totalAmount.toLocaleString()}</strong>
-                  </p>
+                {paymentSettings.paymentEnabled === false ? (
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-center font-medium">
+                    Online UPI payments are temporarily paused by store administration. Please select Cash on Delivery or another method.
+                  </div>
+                ) : (
+                  <>
+                    {/* Minimum or Maximum order amount validation warning if applicable */}
+                    {paymentSettings.minOrderAmount && totalAmount < paymentSettings.minOrderAmount ? (
+                      <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-semibold text-center">
+                        Minimum order amount for UPI payment is ₹{paymentSettings.minOrderAmount.toLocaleString()}.
+                      </div>
+                    ) : paymentSettings.maxOrderAmount && paymentSettings.maxOrderAmount > 0 && totalAmount > paymentSettings.maxOrderAmount ? (
+                      <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-semibold text-center">
+                        Maximum order amount for UPI payment is ₹{paymentSettings.maxOrderAmount.toLocaleString()}.
+                      </div>
+                    ) : null}
 
-                  <div className="inline-block p-2 bg-white rounded-xl shadow-md border border-amber-200">
-                    <img
-                      src={qrImageUrl}
-                      alt="UPI QR Code"
-                      className="w-44 h-44 mx-auto object-contain rounded-lg"
-                    />
-                    <div className="mt-1.5 flex items-center justify-center space-x-1 text-[11px] text-amber-900 font-medium">
-                      <QrCode className="w-3.5 h-3.5 text-amber-700" />
-                      <span>{paymentSettings.merchantName}</span>
+                    <div className="text-center space-y-2">
+                      <p className="text-xs font-medium text-neutral-600">
+                        Scan with GPay, PhonePe, Paytm, or any UPI App to pay{' '}
+                        <strong className="text-amber-900 font-bold">₹{totalAmount.toLocaleString()}</strong>
+                      </p>
+
+                      <div className="inline-block p-2 bg-white rounded-xl shadow-md border border-amber-200">
+                        <img
+                          src={paymentSettings.qrCodeCustomImage || qrImageUrl}
+                          alt="UPI QR Code"
+                          className="w-44 h-44 mx-auto object-contain rounded-lg"
+                        />
+                        <div className="mt-1.5 flex items-center justify-center space-x-1 text-[11px] text-amber-900 font-medium">
+                          <QrCode className="w-3.5 h-3.5 text-amber-700" />
+                          <span>{paymentSettings.merchantName || 'Marudhar Fashion Point'}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* UPI ID Copy box */}
-                <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-neutral-200 text-xs">
-                  <div>
-                    <span className="text-neutral-500 text-[10px] block">Merchant UPI ID:</span>
-                    <span className="font-mono font-bold text-neutral-800">{paymentSettings.upiId}</span>
-                  </div>
-                  <button
-                    onClick={handleCopyUPI}
-                    className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-md text-xs font-semibold flex items-center space-x-1 transition-colors"
-                  >
-                    {copiedUPI ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedUPI ? 'Copied' : 'Copy UPI'}</span>
-                  </button>
-                </div>
+                    {paymentSettings.paymentInstructions && (
+                      <div className="p-3 bg-white rounded-xl border border-neutral-200 text-neutral-700 text-[11px] text-center leading-relaxed font-medium">
+                        {paymentSettings.paymentInstructions}
+                      </div>
+                    )}
 
-                {/* Open UPI App Button */}
-                <a
-                  href={upiLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center space-x-2 transition-colors shadow-sm"
-                >
-                  <Smartphone className="w-4 h-4" />
-                  <span>Open UPI App (GPay / PhonePe / Paytm)</span>
-                </a>
+                    {/* UPI ID Copy box */}
+                    <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-neutral-200 text-xs">
+                      <div>
+                        <span className="text-neutral-500 text-[10px] block">Merchant UPI ID:</span>
+                        <span className="font-mono font-bold text-neutral-800">{paymentSettings.upiId}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyUPI}
+                        className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-md text-xs font-semibold flex items-center space-x-1 transition-colors"
+                      >
+                        {copiedUPI ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedUPI ? 'Copied' : 'Copy UPI'}</span>
+                      </button>
+                    </div>
 
-                {/* Optional Payment Ref */}
-                <div>
-                  <label className="block text-[11px] text-neutral-600 mb-1 font-medium">
-                    UPI Reference / UTR Number (Optional verification ref)
-                  </label>
-                  <input
-                    type="text"
-                    value={paymentRef}
-                    onChange={(e) => setPaymentRef(e.target.value)}
-                    placeholder="12-digit UTR/Ref ID (e.g. 420918239012)"
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
-                  />
-                </div>
+                    {/* Open UPI App Button */}
+                    <a
+                      href={upiLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center space-x-2 transition-colors shadow-sm"
+                    >
+                      <Smartphone className="w-4 h-4" />
+                      <span>Open UPI App (GPay / PhonePe / Paytm)</span>
+                    </a>
+
+                    {/* Optional Payment Ref */}
+                    <div>
+                      <label className="block text-[11px] text-neutral-600 mb-1 font-medium">
+                        UPI Reference / UTR Number (Optional verification ref)
+                      </label>
+                      <input
+                        type="text"
+                        value={paymentRef}
+                        onChange={(e) => setPaymentRef(e.target.value)}
+                        placeholder="12-digit UTR/Ref ID (e.g. 420918239012)"
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

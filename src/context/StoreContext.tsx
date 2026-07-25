@@ -129,7 +129,7 @@ interface StoreContextType {
   
   // Auth
   loginAdmin: (password: string, twoFactorCode?: string) => Promise<{ success: boolean; requires2FA?: boolean; message?: string }>;
-  loginWithGoogleAdmin: () => Promise<boolean>;
+  loginWithGoogleAdmin: () => Promise<{ success: boolean; error?: string }>;
   logoutAdmin: (reason?: string) => void;
   changeAdminPassword: (currentPass: string, newPass: string) => Promise<{ success: boolean; message: string }>;
   toggleTwoFactor: (enable: boolean) => void;
@@ -764,19 +764,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return { success: true };
   };
 
-  const loginWithGoogleAdmin = async (): Promise<boolean> => {
+  const loginWithGoogleAdmin = async (): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await signInWithGoogle();
       if (res.user) {
         setIsAdmin(true);
         setLastActivityTime(Date.now());
         recordAuditLog('Admin Logged In via Google Auth', 'AUTH', `Authenticated as ${res.user.email}`, 'SUCCESS');
-        return true;
+        return { success: true };
       }
-      return false;
-    } catch (err) {
+      return { success: false, error: 'Google Authentication failed.' };
+    } catch (err: any) {
+      console.error('Admin Google Sign-In Error:', err);
+      const errorMsg =
+        err.message ||
+        'Google Sign-In is temporarily unavailable because this website domain has not yet been authorized. Please contact the website administrator.';
       recordAuditLog('Google Auth Admin Login Failed', 'AUTH', String(err), 'DANGER');
-      return false;
+      return { success: false, error: errorMsg };
     }
   };
 

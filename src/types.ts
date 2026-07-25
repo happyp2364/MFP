@@ -172,22 +172,28 @@ export type PaymentMethodType = 'UPI' | 'QR_SCAN' | 'CARD' | 'NET_BANKING' | 'WA
 export interface PaymentSettings {
   merchantName: string;
   upiId: string;
-  upiName: string;
-  gatewayProvider: 'RAZORPAY' | 'PAYU' | 'CASHFREE' | 'DIRECT_UPI_QR';
-  apiKey: string;
-  apiSecret: string;
-  enableUPI: boolean;
-  enableQR: boolean;
-  enableCards: boolean;
-  enableNetBanking: boolean;
-  enableWallets: boolean;
-  enableCOD: boolean;
-  isTestMode: boolean;
-  autoApprovePaidOrders: boolean;
-  currencySymbol: string;
-  gstPercent: number;
-  flatShippingRate: number;
-  freeShippingMinAmount: number;
+  upiName?: string;
+  qrCodeCustomImage?: string;
+  qrCodeUrl?: string;
+  paymentInstructions?: string;
+  paymentEnabled?: boolean;
+  minOrderAmount?: number;
+  maxOrderAmount?: number;
+  gatewayProvider?: 'RAZORPAY' | 'PAYU' | 'CASHFREE' | 'DIRECT_UPI_QR';
+  apiKey?: string;
+  apiSecret?: string;
+  enableUPI?: boolean;
+  enableQR?: boolean;
+  enableCards?: boolean;
+  enableNetBanking?: boolean;
+  enableWallets?: boolean;
+  enableCOD?: boolean;
+  isTestMode?: boolean;
+  autoApprovePaidOrders?: boolean;
+  currencySymbol?: string;
+  gstPercent?: number;
+  flatShippingRate?: number;
+  freeShippingMinAmount?: number;
 }
 
 export interface ShippingAddressInfo {

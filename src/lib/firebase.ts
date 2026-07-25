@@ -199,6 +199,24 @@ export async function syncCustomerProfileInFirestore(user: FirebaseUser): Promis
   }
 }
 
+// Helper to identify unauthorized domain errors from Firebase Auth
+export function isUnauthorizedDomainError(err: any): boolean {
+  if (!err) return false;
+  const code = err.code || '';
+  const msg = typeof err.message === 'string' ? err.message.toLowerCase() : '';
+  return (
+    code === 'auth/unauthorized-domain' ||
+    msg.includes('unauthorized-domain') ||
+    msg.includes('unauthorized domain') ||
+    msg.includes('domain is not authorized') ||
+    msg.includes('unauthorized_domain') ||
+    msg.includes('not authorized in firebase')
+  );
+}
+
+const UNAUTHORIZED_DOMAIN_FRIENDLY_MSG =
+  'Google Sign-In is temporarily unavailable because this website domain has not yet been authorized. Please contact the website administrator.';
+
 // Process redirect result if customer was redirected back from Google auth
 export async function checkRedirectAuthResult(): Promise<{ user: FirebaseUser; profile: CustomerProfile; token?: string } | null> {
   try {
@@ -211,8 +229,13 @@ export async function checkRedirectAuthResult(): Promise<{ user: FirebaseUser; p
       const profile = await syncCustomerProfileInFirestore(result.user);
       return { user: result.user, profile, token: credential?.accessToken };
     }
-  } catch (err) {
-    console.error('Error handling redirect result:', err);
+  } catch (err: any) {
+    console.error('Firebase Auth Redirect Result Error:', err);
+    if (isUnauthorizedDomainError(err)) {
+      const domainError = new Error(UNAUTHORIZED_DOMAIN_FRIENDLY_MSG);
+      (domainError as any).code = 'auth/unauthorized-domain';
+      throw domainError;
+    }
   }
   return null;
 }
@@ -231,7 +254,14 @@ export async function signInWithGoogle(useWorkspaceScopes: boolean = false): Pro
     const profile = await syncCustomerProfileInFirestore(result.user);
     return { user: result.user, profile, token: credential?.accessToken };
   } catch (err: any) {
-    console.warn('signInWithPopup error, checking fallback condition:', err?.code || err);
+    // Log complete raw Firebase error ONLY in browser console for debugging
+    console.error('Firebase Auth Error [signInWithGoogle]:', err);
+
+    if (isUnauthorizedDomainError(err)) {
+      const domainError = new Error(UNAUTHORIZED_DOMAIN_FRIENDLY_MSG);
+      (domainError as any).code = 'auth/unauthorized-domain';
+      throw domainError;
+    }
 
     // Fallback conditions (popup blocked, closed, iframe restriction, or mobile browser)
     const shouldFallbackToRedirect =
@@ -247,15 +277,18 @@ export async function signInWithGoogle(useWorkspaceScopes: boolean = false): Pro
         throw new Error('Redirecting to Google Sign-In...');
       } catch (redirectErr: any) {
         console.error('signInWithRedirect failed:', redirectErr);
+        if (isUnauthorizedDomainError(redirectErr)) {
+          const domainError = new Error(UNAUTHORIZED_DOMAIN_FRIENDLY_MSG);
+          (domainError as any).code = 'auth/unauthorized-domain';
+          throw domainError;
+        }
         throw redirectErr;
       }
     }
 
     // User-friendly error messages
     let userFriendlyMsg = 'Google Sign-In failed. Please try again.';
-    if (err?.code === 'auth/unauthorized-domain') {
-      userFriendlyMsg = 'This domain is not authorized in Firebase Authentication settings. Please contact the administrator.';
-    } else if (err?.code === 'auth/invalid-api-key') {
+    if (err?.code === 'auth/invalid-api-key') {
       userFriendlyMsg = 'Invalid Firebase configuration key.';
     } else if (err?.code === 'auth/network-request-failed') {
       userFriendlyMsg = 'Network error. Please check your internet connection and try again.';
@@ -632,9 +665,15 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
   merchantName: 'Marudhar Fashion Point',
   upiId: 'marudharfashion@upi',
   upiName: 'Marudhar Fashion Point',
+  qrCodeCustomImage: '',
+  qrCodeUrl: '',
+  paymentInstructions: 'Scan the QR code using any UPI app (Google Pay, PhonePe, Paytm, BHIM) to make instant payment. Enter your transaction ID after payment.',
+  paymentEnabled: true,
+  minOrderAmount: 1,
+  maxOrderAmount: 0,
   gatewayProvider: 'DIRECT_UPI_QR',
-  apiKey: 'rzp_live_marudhar_fashion_key',
-  apiSecret: 'secret_live_mfp_key',
+  apiKey: '',
+  apiSecret: '',
   enableUPI: true,
   enableQR: true,
   enableCards: true,
@@ -663,21 +702,26 @@ export async function fetchPaymentSettingsFromFirestore(): Promise<import('../ty
   return DEFAULT_PAYMENT_SETTINGS;
 }
 
-// Save Payment Settings in Firestore
+// Save Payment Settings in Firestore (Optimized fast single-document update)
 export async function savePaymentSettingsInFirestore(
   settings: import('../types').PaymentSettings
 ): Promise<boolean> {
   try {
     const docRef = doc(db, 'paymentSettings', 'config');
+    // Direct merge update to single document
     await setDoc(docRef, settings, { merge: true });
+
+    // Non-blocking asynchronous security audit log
     recordAuditLog(
       'Payment Settings Updated',
       'SETTINGS',
-      `Updated UPI ID to ${settings.upiId}, Merchant Name to ${settings.merchantName}`,
+      `Updated UPI ID: ${settings.upiId}, Merchant: ${settings.merchantName}`,
       'SUCCESS'
-    );
+    ).catch((logErr) => console.warn('Non-blocking audit log warning:', logErr));
+
     return true;
   } catch (err) {
+    console.error('Error saving payment settings to Firestore:', err);
     handleFirestoreError(err, OperationType.WRITE, 'paymentSettings/config');
     return false;
   }

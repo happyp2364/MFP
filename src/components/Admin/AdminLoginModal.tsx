@@ -92,15 +92,22 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     setIsAuthenticating(true);
 
     try {
-      const success = await loginWithGoogleAdmin();
-      if (success) {
+      const result = await loginWithGoogleAdmin();
+      if (result && result.success) {
         onLoginSuccess();
         onClose();
       } else {
-        setError('Google Authentication failed or permission denied.');
+        setError(
+          result?.error ||
+            'Google Sign-In is temporarily unavailable because this website domain has not yet been authorized. Please contact the website administrator.'
+        );
       }
     } catch (err: any) {
-      setError('Google Sign-In Error: ' + (err.message || 'Access Denied'));
+      console.error('Google Admin Login Exception:', err);
+      setError(
+        err?.message ||
+          'Google Sign-In is temporarily unavailable because this website domain has not yet been authorized. Please contact the website administrator.'
+      );
     } finally {
       setIsAuthenticating(false);
     }

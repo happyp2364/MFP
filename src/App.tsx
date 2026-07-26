@@ -16,6 +16,7 @@ import { InstagramFeed } from './components/Social/InstagramFeed';
 import { SocialFollowCTA } from './components/Social/SocialFollowCTA';
 import { Footer } from './components/Footer/Footer';
 import { FloatingActionHub } from './components/FloatingActions/FloatingActionHub';
+import { AIPetShoeMascot } from './components/Mascot/AIPetShoeMascot';
 import { QuickViewModal } from './components/Products/QuickViewModal';
 import { OrderSheet } from './components/Cart/OrderSheet';
 import { LiveSearchModal } from './components/Search/LiveSearchModal';
@@ -378,6 +379,9 @@ function AppContent() {
       <FloatingActionHub
         onOpenCalendarModal={() => setCalendarModalOpen(true)}
       />
+
+      {/* Interactive AI Pet Shoe Brand Mascot */}
+      <AIPetShoeMascot />
 
       {/* --- MODALS & DRAWERS --- */}
       {/* Quick View Modal */}

@@ -252,14 +252,26 @@ export const ShoeLaceOverlay: React.FC = () => {
               src={imageUri}
               alt="Ultra Realistic Hanging Sneaker"
               referrerPolicy="no-referrer"
-              className="w-full h-auto object-contain filter contrast-[1.05] brightness-[1.02] drop-shadow-[0_20px_28px_rgba(0,0,0,0.4)]"
+              className="w-full h-auto object-contain filter contrast-[1.05] brightness-[1.02] drop-shadow-[0_22px_32px_rgba(0,0,0,0.45)]"
               loading="lazy"
             />
 
-            {/* Gentle Luxury Glossy Shine Light Sweep Overlay */}
+            {/* Gentle Luxury Glossy Shine Light Sweep Overlay Masked Strictly to Shoe Body */}
             {enableShineEffect && (
-              <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-                <div className="w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent transform -skew-x-25 animate-shine-sweep mix-blend-overlay" />
+              <div
+                className="absolute inset-0 pointer-events-none overflow-hidden"
+                style={{
+                  WebkitMaskImage: `url("${imageUri}")`,
+                  maskImage: `url("${imageUri}")`,
+                  WebkitMaskSize: 'contain',
+                  maskSize: 'contain',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskPosition: 'center',
+                  maskPosition: 'center',
+                }}
+              >
+                <div className="w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent transform -skew-x-25 animate-shine-sweep mix-blend-overlay" />
               </div>
             )}
           </div>

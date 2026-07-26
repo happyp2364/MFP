@@ -276,6 +276,67 @@ export interface CustomerProfile {
   orderHistory?: CustomerOrder[];
 }
 
+export interface InstagramConfig {
+  enabled: boolean;
+  username: string; // default "marudhar_fashion_point"
+  displayName: string; // default "Marudhar Fashion Point"
+  accessToken?: string;
+  appId?: string;
+  postLimit: number; // 6, 8, 12, 16
+  layout: 'grid' | 'carousel' | 'masonry';
+  showBio: boolean;
+  showStats: boolean;
+  autoRefreshMinutes: number;
+  lastSyncedAt?: string;
+}
+
+export interface InstagramProfile {
+  username: string;
+  displayName: string;
+  profilePictureUrl: string;
+  followersCount: string;
+  followingCount: string;
+  postsCount: string;
+  biography: string;
+  verified: boolean;
+  isLiveApiConnected: boolean;
+}
+
+export interface InstagramMediaItem {
+  id: string;
+  permalink: string;
+  mediaUrl: string;
+  mediaType: 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM';
+  thumbnailUrl?: string;
+  caption: string;
+  timestamp: string;
+  likeCount: number;
+  commentsCount: number;
+  category: string;
+}
+
+export interface PetShoeConfig {
+  enabled: boolean;
+  imageUri: string; // custom uploaded or default luxury sneaker
+  wingsEnabled: boolean;
+  wingColor: string; // e.g. '#F59E0B', '#E5E7EB', '#F43F5E', '#10B981', '#3B82F6'
+  glowEnabled: boolean;
+  glowColor: string; // e.g. '#F59E0B', '#06B6D4', '#E11D48'
+  shineEnabled: boolean;
+  movementSpeed: 'slow' | 'medium' | 'fast';
+  sizePx: number; // e.g. 130
+  wingFlapSpeed: 'slow' | 'normal' | 'fast';
+  hoverAmplitude: 'gentle' | 'moderate' | 'dynamic';
+  opacity: number; // 0.5 - 1.0
+  defaultPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'center-right';
+  enableClickInteraction: boolean;
+  enableScrollFollowing: boolean;
+  enableIdleMovement: boolean;
+  enableSpeechBubbles: boolean;
+  speechMessages: string[];
+  scheduleMode: 'always' | 'homepage_only' | 'festival_only';
+}
+
 export interface HangingSneakerConfig {
   enabled: boolean;
   imageUri: string; // custom uploaded image URL, or fallback default studio photograph

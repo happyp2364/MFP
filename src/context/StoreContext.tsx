@@ -18,6 +18,8 @@ import {
   TransactionRecord,
   ShippingAddressInfo,
   HangingSneakerConfig,
+  InstagramConfig,
+  PetShoeConfig,
 } from '../types';
 import {
   PRODUCTS_DATA,
@@ -77,6 +79,50 @@ const STORAGE_KEYS = {
   ORDERS: 'mfp_orders',
   NOTIFICATIONS: 'mfp_notifications',
   HANGING_SNEAKER: 'mfp_hanging_sneaker_config',
+  INSTAGRAM_CONFIG: 'mfp_instagram_config',
+  PET_SHOE_CONFIG: 'mfp_pet_shoe_config',
+};
+
+export const DEFAULT_PET_SHOE_CONFIG: PetShoeConfig = {
+  enabled: true,
+  imageUri: '', // empty fallback = luxury ultra-realistic Burgundy ONE8 sneaker image
+  wingsEnabled: true,
+  wingColor: '#F59E0B',
+  glowEnabled: true,
+  glowColor: '#F59E0B',
+  shineEnabled: true,
+  movementSpeed: 'medium',
+  sizePx: 130,
+  wingFlapSpeed: 'normal',
+  hoverAmplitude: 'moderate',
+  opacity: 0.95,
+  defaultPosition: 'bottom-right',
+  enableClickInteraction: true,
+  enableScrollFollowing: true,
+  enableIdleMovement: true,
+  enableSpeechBubbles: true,
+  speechMessages: [
+    'Welcome to Marudhar Fashion Point! 👟✨',
+    'Step into pure luxury & comfort! 👞',
+    'Handcrafted Leather & Sports Drops! 🔥',
+    'Need help? Tap to explore our top picks! 😊',
+    'Pipar City’s #1 Fashion Companion 👑',
+  ],
+  scheduleMode: 'always',
+};
+
+export const DEFAULT_INSTAGRAM_CONFIG: InstagramConfig = {
+  enabled: true,
+  username: 'marudhar_fashion_point',
+  displayName: 'Marudhar Fashion Point',
+  accessToken: '',
+  appId: '',
+  postLimit: 8,
+  layout: 'grid',
+  showBio: true,
+  showStats: true,
+  autoRefreshMinutes: 30,
+  lastSyncedAt: new Date().toISOString(),
 };
 
 export const DEFAULT_HANGING_SNEAKER_CONFIG: HangingSneakerConfig = {
@@ -121,6 +167,10 @@ interface StoreContextType {
   notifications: AdminNotification[];
   hangingSneakerConfig: HangingSneakerConfig;
   updateHangingSneakerConfig: (updated: Partial<HangingSneakerConfig>) => void;
+  petShoeConfig: PetShoeConfig;
+  updatePetShoeConfig: (updated: Partial<PetShoeConfig>) => void;
+  instagramConfig: InstagramConfig;
+  updateInstagramConfig: (updated: Partial<InstagramConfig>) => Promise<void>;
   updatePaymentSettings: (settings: Partial<PaymentSettings>) => Promise<boolean>;
   placeOrderAndPay: (
     shippingInfo: ShippingAddressInfo,
@@ -268,6 +318,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return saved ? { ...DEFAULT_HANGING_SNEAKER_CONFIG, ...JSON.parse(saved) } : DEFAULT_HANGING_SNEAKER_CONFIG;
   });
 
+  const [petShoeConfig, setPetShoeConfig] = useState<PetShoeConfig>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.PET_SHOE_CONFIG);
+    return saved ? { ...DEFAULT_PET_SHOE_CONFIG, ...JSON.parse(saved) } : DEFAULT_PET_SHOE_CONFIG;
+  });
+
+  const [instagramConfig, setInstagramConfig] = useState<InstagramConfig>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.INSTAGRAM_CONFIG);
+    return saved ? { ...DEFAULT_INSTAGRAM_CONFIG, ...JSON.parse(saved) } : DEFAULT_INSTAGRAM_CONFIG;
+  });
+
   const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
 
   // Customer Authentication State
@@ -389,6 +449,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(STORAGE_KEYS.HANGING_SNEAKER, JSON.stringify(hangingSneakerConfig));
   }, [hangingSneakerConfig]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.PET_SHOE_CONFIG, JSON.stringify(petShoeConfig));
+  }, [petShoeConfig]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(instagramConfig));
+  }, [instagramConfig]);
+
   const updateHangingSneakerConfig = (updated: Partial<HangingSneakerConfig>) => {
     setHangingSneakerConfig((prev) => {
       const newCfg = { ...prev, ...updated };
@@ -399,6 +467,74 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     showToast('Hanging Sneaker settings updated successfully!', 'success');
   };
+
+  const updatePetShoeConfig = (updated: Partial<PetShoeConfig>) => {
+    setPetShoeConfig((prev) => {
+      const newCfg = { ...prev, ...updated };
+      try {
+        setDoc(doc(db, 'petShoeConfig', 'config'), newCfg, { merge: true }).catch(() => {});
+      } catch (e) {}
+      return newCfg;
+    });
+    showToast('AI Pet Shoe Mascot settings updated successfully!', 'success');
+  };
+
+  // Real-time Firestore Sync for Pet Shoe Mascot Settings
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const configRef = doc(db, 'petShoeConfig', 'config');
+      unsubscribe = onSnapshot(configRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setPetShoeConfig((prev) => ({ ...prev, ...docSnap.data() }));
+        }
+      });
+    } catch (e) {}
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  const updateInstagramConfig = async (updated: Partial<InstagramConfig>) => {
+    const newCfg = { ...instagramConfig, ...updated, lastSyncedAt: new Date().toISOString() };
+    setInstagramConfig(newCfg);
+    
+    // Sync with Express backend
+    try {
+      await fetch('/api/instagram/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCfg),
+      });
+    } catch (err) {
+      console.warn('Failed to sync Instagram config with backend API:', err);
+    }
+
+    // Sync with Firestore
+    try {
+      await setDoc(doc(db, 'instagramConfig', 'config'), newCfg, { merge: true });
+    } catch (e) {
+      console.warn('Failed to sync Instagram config with Firestore:', e);
+    }
+
+    showToast('Instagram integration settings updated successfully!', 'success');
+  };
+
+  // Real-time Firestore Sync for Instagram Settings
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const configRef = doc(db, 'instagramConfig', 'config');
+      unsubscribe = onSnapshot(configRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setInstagramConfig((prev) => ({ ...prev, ...docSnap.data() }));
+        }
+      });
+    } catch (e) {}
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   // Real-time Firestore Sync for Payment Settings
   useEffect(() => {
@@ -1160,6 +1296,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         notifications,
         hangingSneakerConfig,
         updateHangingSneakerConfig,
+        petShoeConfig,
+        updatePetShoeConfig,
+        instagramConfig,
+        updateInstagramConfig,
         updatePaymentSettings,
         placeOrderAndPay,
         updateOrderStatus,

@@ -403,27 +403,72 @@ export const HangingSneakerSettingsView: React.FC = () => {
           {useCustomImage && (
             <div className="p-4 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 space-y-3 animate-fade-in mt-3">
               <label className="text-xs font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                <Upload className="w-3.5 h-3.5 text-amber-500" />
-                Upload Shoe Photograph
+                <Scissors className="w-3.5 h-3.5 text-amber-500" />
+                AI Shoe Object Extraction & Transparent PNG Preview
               </label>
 
               {imageUri ? (
-                <div className="flex items-center gap-4 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
-                  <div className="w-20 h-20 rounded-lg bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center overflow-hidden p-1 shadow-inner shrink-0">
-                    <img src={imageUri} alt="Custom hanging shoe" className="max-w-full max-h-full object-contain" />
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+                  {/* Checkered pattern box to clearly show transparency */}
+                  <div
+                    className="w-28 h-28 rounded-xl border border-neutral-300 dark:border-neutral-700 flex items-center justify-center overflow-hidden p-2 shadow-inner shrink-0 relative"
+                    style={{
+                      backgroundImage: `
+                        linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                        linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                        linear-gradient(-45deg, transparent 75%, #e5e7eb 75%)
+                      `,
+                      backgroundSize: '16px 16px',
+                      backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+                    }}
+                  >
+                    <img src={imageUri} alt="Extracted transparent shoe" className="max-w-full max-h-full object-contain filter drop-shadow-md" />
+                    <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-emerald-600 text-[9px] font-bold text-white uppercase tracking-wider">
+                      PNG
+                    </span>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Photo Loaded & Preserved As-Is
+
+                  <div className="space-y-2 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" /> AI Background Removed (Transparent PNG)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                      Only the shoe object is displayed with zero background or poster frame. The original shoe texture, stitching, leather grain, and soles are preserved 100%.
                     </p>
-                    <p className="text-[11px] text-neutral-500">Image is used directly without converting or AI generation.</p>
-                    <button
-                      type="button"
-                      onClick={handleRemoveCustomImage}
-                      className="text-xs text-rose-500 hover:text-rose-600 font-medium flex items-center gap-1 pt-1"
-                    >
-                      <Trash2 className="w-3 h-3" /> Remove Custom Photo
-                    </button>
+
+                    <div className="flex items-center gap-3 pt-1">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setIsUploading(true);
+                          setAiProcessingStage('AI Segmenting Shoe & Clearing Background...');
+                          try {
+                            const res = await extractShoeFromImage(imageUri);
+                            setImageUri(res.transparentPngUrl);
+                          } catch (err: any) {
+                            setErrorMessage('AI Extraction error: ' + (err?.message || 'Failed'));
+                          } finally {
+                            setIsUploading(false);
+                            setAiProcessingStage('');
+                          }
+                        }}
+                        disabled={isUploading}
+                        className="text-xs text-amber-600 dark:text-amber-400 hover:underline font-semibold flex items-center gap-1"
+                      >
+                        <Wand2 className="w-3.5 h-3.5" /> Re-run AI Extraction
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleRemoveCustomImage}
+                        className="text-xs text-rose-500 hover:text-rose-600 font-medium flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Remove Custom Photo
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -444,9 +489,11 @@ export const HangingSneakerSettingsView: React.FC = () => {
                       {isUploading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                     </div>
                     <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-                      {isUploading ? 'Optimizing photo...' : 'Click to select shoe photograph'}
+                      {isUploading ? (aiProcessingStage || 'AI Extracting Shoe Object...') : 'Click to Upload Any Shoe Photograph'}
                     </span>
-                    <span className="text-[11px] text-neutral-400">PNG, JPG or WebP (Max 5MB)</span>
+                    <span className="text-[11px] text-neutral-400">
+                      AI will automatically isolate the shoe and remove backgrounds/text. (PNG, JPG, WebP)
+                    </span>
                   </label>
                 </div>
               )}

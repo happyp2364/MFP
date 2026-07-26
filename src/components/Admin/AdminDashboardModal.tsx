@@ -33,6 +33,7 @@ import {
   Bell,
   CreditCard,
   TrendingUp,
+  Instagram,
   ExternalLink,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
@@ -44,6 +45,8 @@ import { OrderManagementView } from './OrderManagementView';
 import { PaymentSettingsView } from './PaymentSettingsView';
 import { ReportsAnalyticsView } from './ReportsAnalyticsView';
 import { HangingSneakerSettingsView } from './HangingSneakerSettingsView';
+import { AIShoePetSettingsView } from './AIShoePetSettingsView';
+import { InstagramSettingsView } from './InstagramSettingsView';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
@@ -53,7 +56,7 @@ interface AdminDashboardModalProps {
   onClose: () => void;
 }
 
-type TabType = 'orders' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hanging_shoe' | 'overview' | 'settings' | 'audit' | 'backups' | 'password';
+type TabType = 'orders' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -446,7 +449,31 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               }`}
             >
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Hanging Shoe (AI Studio)</span>
+              <span>Hanging Shoe Manager</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('ai_pet_shoe')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'ai_pet_shoe'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>AI Pet Shoe Mascot</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('instagram')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'instagram'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Instagram className="w-4 h-4 text-rose-500" />
+              <span>Live Instagram Integration</span>
             </button>
 
             <button
@@ -553,6 +580,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: HANGING SHOE AI MANAGER ----------------- */}
             {activeTab === 'hanging_shoe' && <HangingSneakerSettingsView />}
+
+            {/* ----------------- TAB: AI PET SHOE MASCOT ----------------- */}
+            {activeTab === 'ai_pet_shoe' && <AIShoePetSettingsView />}
+
+            {/* ----------------- TAB: LIVE INSTAGRAM INTEGRATION ----------------- */}
+            {activeTab === 'instagram' && <InstagramSettingsView />}
 
             {/* ----------------- TAB: PRODUCTS & PRICES ----------------- */}
             {activeTab === 'products' && (

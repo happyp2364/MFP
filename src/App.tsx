@@ -28,6 +28,7 @@ import { CustomerAccountModal } from './components/Customer/CustomerAccountModal
 import { CalendarBookingModal } from './components/GoogleWorkspace/CalendarBookingModal';
 import { GmailInquiryModal } from './components/GoogleWorkspace/GmailInquiryModal';
 import { WorkspaceHubDrawer } from './components/GoogleWorkspace/WorkspaceHubDrawer';
+import { ProductDetailPage } from './components/Products/ProductDetailPage';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { FloatingParticlesCanvas } from './components/Theme/FloatingParticlesCanvas';
 
@@ -81,20 +82,47 @@ function AppContent() {
   const [workspaceHubOpen, setWorkspaceHubOpen] = useState(false);
 
   // --- DYNAMIC PUBLIC PRODUCT URL ROUTING ---
-  React.useEffect(() => {
-    if (!products || products.length === 0) return;
+  const [productRouteSlug, setProductRouteSlug] = useState<string | null>(null);
 
-    const path = window.location.pathname;
-    if (path.startsWith('/product/')) {
-      const slug = path.replace('/product/', '').split('/')[0];
-      if (slug) {
-        const found = findProductBySlugOrId(products, slug);
-        if (found) {
-          setQuickViewProduct(found);
+  React.useEffect(() => {
+    const handleUrlChange = () => {
+      const path = window.location.pathname;
+      if (path.startsWith('/product/')) {
+        const rawSlug = path.replace('/product/', '').split('/')[0].split('?')[0];
+        if (rawSlug) {
+          setProductRouteSlug(decodeURIComponent(rawSlug));
+          return;
         }
       }
-    }
-  }, [products]);
+
+      const searchParams = new URLSearchParams(window.location.search);
+      const queryProduct = searchParams.get('product');
+      if (queryProduct) {
+        setProductRouteSlug(decodeURIComponent(queryProduct));
+        return;
+      }
+
+      if (window.location.hash.startsWith('#/product/')) {
+        const hashSlug = window.location.hash.replace('#/product/', '').split('?')[0];
+        if (hashSlug) {
+          setProductRouteSlug(decodeURIComponent(hashSlug));
+          return;
+        }
+      }
+
+      setProductRouteSlug(null);
+    };
+
+    handleUrlChange();
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
+  }, []);
+
+  // Matched product for active URL route
+  const activeRouteProduct = useMemo(() => {
+    if (!productRouteSlug || !products || products.length === 0) return null;
+    return findProductBySlugOrId(products, productRouteSlug);
+  }, [products, productRouteSlug]);
 
   // Sync address bar URL when quickViewProduct opens or closes
   React.useEffect(() => {
@@ -103,10 +131,6 @@ function AppContent() {
       const targetUrl = `/product/${slug}`;
       if (window.location.pathname !== targetUrl) {
         window.history.pushState({ productId: quickViewProduct.id }, '', targetUrl);
-      }
-    } else {
-      if (window.location.pathname.startsWith('/product/')) {
-        window.history.pushState({}, '', '/');
       }
     }
   }, [quickViewProduct]);
@@ -339,70 +363,92 @@ function AppContent() {
         />
       </div>
 
-      {/* 3. Hero Section */}
-      <HeroSection onExploreClick={() => handleNavigateToSection('products')} />
+      {productRouteSlug !== null ? (
+        <ProductDetailPage
+          product={activeRouteProduct}
+          targetSlug={productRouteSlug}
+          allProducts={products}
+          onBackToHome={() => {
+            setProductRouteSlug(null);
+            setQuickViewProduct(null);
+            if (window.location.pathname.startsWith('/product/')) {
+              window.history.pushState({}, '', '/');
+            }
+          }}
+          onToggleWishlist={handleToggleWishlist}
+          isWishlisted={activeRouteProduct ? wishlistIds.includes(activeRouteProduct.id) : false}
+          onAddToCart={handleAddToCart}
+          onQuickView={(p) => setQuickViewProduct(p)}
+          wishlistIds={wishlistIds}
+        />
+      ) : (
+        <>
+          {/* 3. Hero Section */}
+          <HeroSection onExploreClick={() => handleNavigateToSection('products')} />
 
-      {/* 4. Family Category Cards */}
-      <CategorySection
-        activeCategory={activeCategory}
-        onSelectCategory={handleSelectCategory}
-      />
+          {/* 4. Family Category Cards */}
+          <CategorySection
+            activeCategory={activeCategory}
+            onSelectCategory={handleSelectCategory}
+          />
 
-      {/* 5. Best Sellers Auto Carousel */}
-      <ProductCarousel
-        title="Best Sellers in Store"
-        subtitle="Customer Favorites"
-        products={bestSellers}
-        wishlistIds={wishlistIds}
-        onToggleWishlist={handleToggleWishlist}
-        onQuickView={(p) => setQuickViewProduct(p)}
-        onAddToCart={handleAddToCart}
-      />
+          {/* 5. Best Sellers Auto Carousel */}
+          <ProductCarousel
+            title="Best Sellers in Store"
+            subtitle="Customer Favorites"
+            products={bestSellers}
+            wishlistIds={wishlistIds}
+            onToggleWishlist={handleToggleWishlist}
+            onQuickView={(p) => setQuickViewProduct(p)}
+            onAddToCart={handleAddToCart}
+          />
 
-      {/* 6. Main Interactive Product Catalog */}
-      <ProductGrid
-        products={filteredProducts}
-        filterState={filterState}
-        onUpdateFilter={handleUpdateFilter}
-        onResetFilters={handleResetFilters}
-        availableSubcategories={availableSubcategories}
-        wishlistIds={wishlistIds}
-        onToggleWishlist={handleToggleWishlist}
-        onQuickView={(p) => setQuickViewProduct(p)}
-        onAddToCart={handleAddToCart}
-      />
+          {/* 6. Main Interactive Product Catalog */}
+          <ProductGrid
+            products={filteredProducts}
+            filterState={filterState}
+            onUpdateFilter={handleUpdateFilter}
+            onResetFilters={handleResetFilters}
+            availableSubcategories={availableSubcategories}
+            wishlistIds={wishlistIds}
+            onToggleWishlist={handleToggleWishlist}
+            onQuickView={(p) => setQuickViewProduct(p)}
+            onAddToCart={handleAddToCart}
+          />
 
-      {/* 7. Trending Collections */}
-      <TrendingCollections onSelectCollection={handleSelectCollection} />
+          {/* 7. Trending Collections */}
+          <TrendingCollections onSelectCollection={handleSelectCollection} />
 
-      {/* 8. New Arrivals Carousel */}
-      <ProductCarousel
-        title="New Season Arrivals"
-        subtitle="Fresh Drops"
-        products={newArrivals}
-        wishlistIds={wishlistIds}
-        onToggleWishlist={handleToggleWishlist}
-        onQuickView={(p) => setQuickViewProduct(p)}
-        onAddToCart={handleAddToCart}
-      />
+          {/* 8. New Arrivals Carousel */}
+          <ProductCarousel
+            title="New Season Arrivals"
+            subtitle="Fresh Drops"
+            products={newArrivals}
+            wishlistIds={wishlistIds}
+            onToggleWishlist={handleToggleWishlist}
+            onQuickView={(p) => setQuickViewProduct(p)}
+            onAddToCart={handleAddToCart}
+          />
 
-      {/* 9. Customer Testimonials */}
-      <ReviewsSection />
+          {/* 9. Customer Testimonials */}
+          <ReviewsSection />
 
-      {/* 10. About Us Storytelling */}
-      <AboutSection />
+          {/* 10. About Us Storytelling */}
+          <AboutSection />
 
-      {/* 11. Contact & Store Locator */}
-      <ContactSection
-        onOpenCalendarModal={() => setCalendarModalOpen(true)}
-        onOpenGmailModal={() => setGmailModalOpen(true)}
-      />
+          {/* 11. Contact & Store Locator */}
+          <ContactSection
+            onOpenCalendarModal={() => setCalendarModalOpen(true)}
+            onOpenGmailModal={() => setGmailModalOpen(true)}
+          />
 
-      {/* 12. Instagram Feed */}
-      <InstagramFeed />
+          {/* 12. Instagram Feed */}
+          <InstagramFeed />
 
-      {/* 13. Social Follow CTA */}
-      <SocialFollowCTA />
+          {/* 13. Social Follow CTA */}
+          <SocialFollowCTA />
+        </>
+      )}
 
       {/* 14. Footer */}
       <Footer />

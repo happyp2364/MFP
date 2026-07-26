@@ -289,6 +289,62 @@ export interface AdminNotification {
   read: boolean;
 }
 
+export interface MarketingConsent {
+  accepted: boolean;
+  email: boolean;
+  push: boolean;
+  whatsApp: boolean;
+  updatedAt: string;
+}
+
+export interface MarketingSubscriber {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber?: string;
+  preferences: MarketingConsent;
+  pushPermissionGranted?: boolean;
+  subscribedAt: string;
+}
+
+export type CampaignType = 'EMAIL' | 'PUSH' | 'WHATSAPP';
+
+export type CampaignCategory =
+  | 'DAILY_OFFERS'
+  | 'FESTIVAL_OFFERS'
+  | 'WEEKEND_DEALS'
+  | 'FLASH_SALES'
+  | 'NEW_ARRIVALS'
+  | 'BACK_IN_STOCK'
+  | 'BIRTHDAY_OFFERS'
+  | 'SPECIAL_DISCOUNT'
+  | 'NEW_COLLECTION'
+  | 'EXCLUSIVE_OFFER'
+  | 'LIMITED_STOCK'
+  | 'PRICE_DROP'
+  | 'FESTIVAL_SALE';
+
+export interface MarketingCampaign {
+  id: string;
+  title: string;
+  subject?: string;
+  category: CampaignCategory | string;
+  channel: CampaignType;
+  htmlContent?: string;
+  pushMessage?: string;
+  whatsAppTemplate?: string;
+  whatsAppImage?: string;
+  targetLink?: string;
+  status: 'DRAFT' | 'SCHEDULED' | 'SENT';
+  scheduledAt?: string;
+  sentAt?: string;
+  recipientsCount: number;
+  deliveredCount: number;
+  openCount: number;
+  clickCount: number;
+  createdAt: string;
+}
+
 export interface CustomerProfile {
   uid: string;
   name: string;
@@ -301,6 +357,7 @@ export interface CustomerProfile {
   wishlist?: string[]; // list of product IDs
   savedAddresses?: SavedAddress[];
   orderHistory?: CustomerOrder[];
+  marketingConsent?: MarketingConsent;
 }
 
 export interface InstagramConfig {

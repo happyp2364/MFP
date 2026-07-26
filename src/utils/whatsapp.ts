@@ -28,7 +28,7 @@ I am interested in this product which is currently OUT OF STOCK:
 📦 Product:
 ${product.name}
 
-🏷️ SKU:
+🆔 Product ID:
 ${sku}
 
 📏 Size:
@@ -55,7 +55,7 @@ I want to order this product.
 📦 Product:
 ${product.name}
 
-🏷️ SKU:
+🆔 Product ID:
 ${sku}
 
 📏 Size:

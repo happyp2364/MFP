@@ -22,6 +22,8 @@ import {
   Loader2,
   XCircle,
   Clock,
+  Info,
+  Upload,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { CartItem, ShippingAddressInfo, PaymentMethodType, CustomerOrder } from '../../types';
@@ -107,6 +109,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Payment Selection
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType>('UPI');
   const [paymentRef, setPaymentRef] = useState('');
+  const [directPaymentNotice, setDirectPaymentNotice] = useState<string | null>(null);
+  const [paymentScreenshotName, setPaymentScreenshotName] = useState<string | null>(null);
 
   // Card details
   const [cardNumber, setCardNumber] = useState('');
@@ -137,12 +141,42 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     totalAmount,
     dynamicOrderId
   );
-  const qrImageUrl = getQRCodeImageUrl(upiLink, 280);
+  const qrImageUrl = getQRCodeImageUrl(upiLink, 320);
 
   const handleCopyUPI = () => {
     navigator.clipboard.writeText(paymentSettings.upiId);
     setCopiedUPI(true);
     setTimeout(() => setCopiedUPI(false), 2000);
+  };
+
+  const handlePayWithUPIApp = () => {
+    setDirectPaymentNotice(null);
+    try {
+      // Attempt to launch the native UPI intent deep link
+      window.location.href = upiLink;
+
+      // Gracefully set provider restriction / scan fallback notice if app doesn't open or direct intent is blocked
+      setTimeout(() => {
+        setDirectPaymentNotice(
+          'Your payment app does not allow direct payment to this UPI ID. Please scan the QR Code to complete your payment.'
+        );
+      }, 1000);
+    } catch {
+      // Never display technical errors
+      setDirectPaymentNotice(
+        'Your payment app does not allow direct payment to this UPI ID. Please scan the QR Code to complete your payment.'
+      );
+    }
+  };
+
+  const handleScreenshotSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPaymentScreenshotName(file.name);
+      if (!paymentRef) {
+        setPaymentRef(`IMG-${Date.now().toString().slice(-6)}`);
+      }
+    }
   };
 
   const handleShippingSubmit = (e: React.FormEvent) => {
@@ -610,7 +644,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
             {/* TAB CONTENT: UPI / QR SCAN */}
             {selectedMethod === 'UPI' && (
-              <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-4">
+              <div className="bg-neutral-50 p-4 sm:p-5 rounded-2xl border border-neutral-200/90 space-y-5">
                 {paymentSettings.paymentEnabled === false ? (
                   <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-center font-medium">
                     Online UPI payments are temporarily paused by store administration. Please select
@@ -618,72 +652,157 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </div>
                 ) : (
                   <>
-                    <div className="text-center space-y-2">
-                      <p className="text-xs font-medium text-neutral-600">
-                        Scan with GPay, PhonePe, Paytm, or BHIM to pay{' '}
-                        <strong className="text-amber-900 font-bold">
-                          ₹{totalAmount.toLocaleString()}
-                        </strong>
-                      </p>
+                    {/* 1. Large UPI QR Code Displayed Prominently */}
+                    <div className="bg-white p-5 rounded-2xl border border-amber-200/80 text-center shadow-sm space-y-3">
+                      <div className="flex items-center justify-between text-xs text-neutral-600 border-b border-neutral-100 pb-2.5">
+                        <span className="font-bold text-neutral-900 flex items-center gap-1.5">
+                          <QrCode className="w-4 h-4 text-amber-700" />
+                          Scan & Pay via UPI
+                        </span>
+                        <span className="font-extrabold text-amber-900 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/80 text-xs">
+                          Amount: ₹{totalAmount.toLocaleString()}
+                        </span>
+                      </div>
 
-                      <div className="inline-block p-2 bg-white rounded-xl shadow-md border border-amber-200">
+                      {/* Prominent Large QR Code Card */}
+                      <div className="inline-block p-3.5 bg-gradient-to-b from-white to-amber-50/30 rounded-2xl border-2 border-amber-300/80 shadow-md my-1">
                         <img
                           src={paymentSettings.qrCodeCustomImage || qrImageUrl}
-                          alt="UPI QR Code"
-                          className="w-44 h-44 mx-auto object-contain rounded-lg"
+                          alt="Large Prominent UPI QR Code"
+                          className="w-52 h-52 sm:w-60 sm:h-60 mx-auto object-contain rounded-xl bg-white p-1 border border-neutral-100"
                         />
-                        <div className="mt-1.5 flex items-center justify-center space-x-1 text-[11px] text-amber-900 font-medium">
-                          <QrCode className="w-3.5 h-3.5 text-amber-700" />
+                        <div className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-amber-950 font-bold">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
                           <span>{paymentSettings.merchantName || 'Marudhar Fashion Point'}</span>
                         </div>
                       </div>
+
+                      <p className="text-[11px] text-neutral-500 font-medium">
+                        Scan with GPay, PhonePe, Paytm, BHIM or any Banking UPI App
+                      </p>
                     </div>
 
-                    {/* UPI ID Copy box */}
-                    <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-neutral-200 text-xs">
-                      <div>
-                        <span className="text-neutral-500 text-[10px] block">Merchant UPI ID:</span>
-                        <span className="font-mono font-bold text-neutral-800">
+                    {/* 2. UPI ID below QR Code with Copy Button */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between p-3.5 bg-white rounded-xl border border-neutral-200/90 gap-3 shadow-sm">
+                      <div className="text-left w-full sm:w-auto">
+                        <span className="text-neutral-500 text-[10px] uppercase font-bold tracking-wider block">
+                          Merchant UPI ID
+                        </span>
+                        <span className="font-mono font-bold text-sm text-neutral-900 select-all">
                           {paymentSettings.upiId}
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={handleCopyUPI}
-                        className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-md text-xs font-semibold flex items-center space-x-1 transition-colors"
+                        className="w-full sm:w-auto px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm shrink-0"
                       >
                         {copiedUPI ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <>
+                            <Check className="w-4 h-4 text-emerald-300" />
+                            <span>Copied!</span>
+                          </>
                         ) : (
-                          <Copy className="w-3.5 h-3.5" />
+                          <>
+                            <Copy className="w-4 h-4" />
+                            <span>Copy UPI ID</span>
+                          </>
                         )}
-                        <span>{copiedUPI ? 'Copied' : 'Copy UPI'}</span>
                       </button>
                     </div>
 
-                    {/* Open UPI App Button */}
-                    <a
-                      href={upiLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center space-x-2 transition-colors shadow-sm"
-                    >
-                      <Smartphone className="w-4 h-4" />
-                      <span>Open UPI App (GPay / PhonePe / Paytm)</span>
-                    </a>
+                    {/* 3 & 4 & 5. "Pay with Any UPI App" Button & Friendly Provider Restriction Notice */}
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={handlePayWithUPIApp}
+                        className="w-full py-3 px-4 bg-gradient-to-r from-emerald-700 via-emerald-800 to-emerald-900 hover:from-emerald-800 hover:to-emerald-950 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-[0.99]"
+                      >
+                        <Smartphone className="w-4 h-4 text-emerald-300" />
+                        <span>Pay with Any UPI App</span>
+                      </button>
 
-                    {/* UTR Input */}
-                    <div>
-                      <label className="block text-[11px] text-neutral-700 mb-1 font-bold">
-                        UPI Reference / UTR Number * (Enter 12-digit UTR after payment)
-                      </label>
-                      <input
-                        type="text"
-                        value={paymentRef}
-                        onChange={(e) => setPaymentRef(e.target.value)}
-                        placeholder="12-digit UTR/Ref ID (e.g. 420918239012)"
-                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
-                      />
+                      {/* Friendly Notice for provider restrictions / fallback */}
+                      {directPaymentNotice && (
+                        <div className="p-3 bg-amber-50 border border-amber-200/90 rounded-xl flex items-start gap-2.5 text-xs text-amber-950 animate-fade-in shadow-xs">
+                          <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                          <p className="leading-relaxed font-medium">
+                            {directPaymentNotice}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 7. Clear 5-Step Instructions */}
+                    <div className="bg-white p-4 rounded-xl border border-neutral-200/90 space-y-2.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-800 flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 text-amber-700" />
+                        Step-by-Step Payment Instructions
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 text-[11px] text-neutral-700">
+                        <div className="p-2 bg-neutral-50 rounded-lg border border-neutral-100 space-y-0.5">
+                          <div className="font-extrabold text-amber-800 text-[10px] uppercase">Step 1</div>
+                          <p className="leading-snug font-semibold text-neutral-800">Scan the QR Code.</p>
+                        </div>
+                        <div className="p-2 bg-neutral-50 rounded-lg border border-neutral-100 space-y-0.5">
+                          <div className="font-extrabold text-amber-800 text-[10px] uppercase">Step 2</div>
+                          <p className="leading-snug font-semibold text-neutral-800">Complete the payment.</p>
+                        </div>
+                        <div className="p-2 bg-neutral-50 rounded-lg border border-neutral-100 space-y-0.5">
+                          <div className="font-extrabold text-amber-800 text-[10px] uppercase">Step 3</div>
+                          <p className="leading-snug font-semibold text-neutral-800">Return to the website.</p>
+                        </div>
+                        <div className="p-2 bg-neutral-50 rounded-lg border border-neutral-100 space-y-0.5">
+                          <div className="font-extrabold text-amber-800 text-[10px] uppercase">Step 4</div>
+                          <p className="leading-snug font-semibold text-neutral-800">Enter UTR / Ref Number (or upload screenshot).</p>
+                        </div>
+                        <div className="p-2 bg-neutral-50 rounded-lg border border-neutral-100 space-y-0.5">
+                          <div className="font-extrabold text-amber-800 text-[10px] uppercase">Step 5</div>
+                          <p className="leading-snug font-semibold text-neutral-800">Wait for payment verification.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step 4 Verification Details: UTR Input & Optional Screenshot Upload */}
+                    <div className="bg-white p-4 rounded-xl border border-neutral-200/90 space-y-3">
+                      <div>
+                        <label className="block text-xs text-neutral-900 mb-1 font-bold flex items-center justify-between">
+                          <span>Enter UTR / Transaction Reference Number *</span>
+                          <span className="text-[10px] font-normal text-neutral-500">12-Digit Banking Ref</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={paymentRef}
+                          onChange={(e) => setPaymentRef(e.target.value)}
+                          placeholder="Enter 12-digit UTR (e.g. 420918239012)"
+                          className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
+                        />
+                      </div>
+
+                      {/* Optional Screenshot Upload */}
+                      <div className="pt-1 border-t border-neutral-100">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-neutral-600 font-medium">
+                            Optional Payment Screenshot:
+                          </span>
+                          <label className="cursor-pointer px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 transition-colors">
+                            <Upload className="w-3.5 h-3.5 text-amber-700" />
+                            <span>{paymentScreenshotName ? 'Change Image' : 'Upload Screenshot'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleScreenshotSelect}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                        {paymentScreenshotName && (
+                          <div className="mt-1.5 text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Attached: {paymentScreenshotName}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </>
                 )}

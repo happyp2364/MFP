@@ -81,14 +81,16 @@ const STORAGE_KEYS = {
 
 export const DEFAULT_HANGING_SNEAKER_CONFIG: HangingSneakerConfig = {
   enabled: true,
-  imageUri: '', // empty means use ultra-realistic default vector engine
-  laceLength: 240,
-  sizePx: 250,
-  positionRight: 14,
-  positionTop: 0,
-  swingSpeedSec: 9.5,
+  imageUri: '', // empty means use reference ONE 8 burgundy luxury shoe
+  laceLength: 220,
+  sizePx: 260,
+  positionRight: 10,
+  positionTop: 160,
+  swingSpeedSec: 7.0,
+  swingAngleDeg: 4.0,
+  baseRotationDeg: -18,
   enablePhysicsAnimation: true,
-  colorTheme: 'MARUDHAR_HERITAGE',
+  colorTheme: 'ONE8_BURGUNDY',
 };
 
 // 30-minute inactivity limit (1800000 ms)

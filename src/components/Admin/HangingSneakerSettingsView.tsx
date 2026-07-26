@@ -15,6 +15,7 @@ import {
   Layers,
   Eye,
   Info,
+  RotateCw,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { HangingSneakerConfig } from '../../types';
@@ -27,11 +28,13 @@ export const HangingSneakerSettingsView: React.FC = () => {
   const defaultConfig: HangingSneakerConfig = {
     enabled: true,
     imageUri: '',
-    laceLength: 240,
-    sizePx: 250,
-    positionRight: 14,
-    positionTop: 0,
-    swingSpeedSec: 9.5,
+    laceLength: 220,
+    sizePx: 260,
+    positionRight: 10,
+    positionTop: 160,
+    swingSpeedSec: 7.0,
+    swingAngleDeg: 4.0,
+    baseRotationDeg: -18,
     enablePhysicsAnimation: true,
   };
 
@@ -41,11 +44,13 @@ export const HangingSneakerSettingsView: React.FC = () => {
   const [enabled, setEnabled] = useState<boolean>(current.enabled ?? true);
   const [useCustomImage, setUseCustomImage] = useState<boolean>(Boolean(current.imageUri));
   const [imageUri, setImageUri] = useState<string>(current.imageUri || '');
-  const [laceLength, setLaceLength] = useState<number>(current.laceLength ?? 240);
-  const [sizePx, setSizePx] = useState<number>(current.sizePx ?? 250);
-  const [positionRight, setPositionRight] = useState<number>(current.positionRight ?? 14);
-  const [positionTop, setPositionTop] = useState<number>(current.positionTop ?? 0);
-  const [swingSpeedSec, setSwingSpeedSec] = useState<number>(current.swingSpeedSec ?? 9.5);
+  const [laceLength, setLaceLength] = useState<number>(current.laceLength ?? 220);
+  const [sizePx, setSizePx] = useState<number>(current.sizePx ?? 260);
+  const [positionRight, setPositionRight] = useState<number>(current.positionRight ?? 10);
+  const [positionTop, setPositionTop] = useState<number>(current.positionTop ?? 160);
+  const [swingSpeedSec, setSwingSpeedSec] = useState<number>(current.swingSpeedSec ?? 7.0);
+  const [swingAngleDeg, setSwingAngleDeg] = useState<number>(current.swingAngleDeg ?? 4.0);
+  const [baseRotationDeg, setBaseRotationDeg] = useState<number>(current.baseRotationDeg ?? -18);
   const [enablePhysicsAnimation, setEnablePhysicsAnimation] = useState<boolean>(
     current.enablePhysicsAnimation ?? true
   );
@@ -58,18 +63,20 @@ export const HangingSneakerSettingsView: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Sync state if remote store updates and user isn't saving
+  // Sync state if remote store updates
   useEffect(() => {
     if (saveStatus === 'SAVING') return;
     const cfg = hangingSneakerConfig || defaultConfig;
     setEnabled(cfg.enabled ?? true);
     setUseCustomImage(Boolean(cfg.imageUri));
     setImageUri(cfg.imageUri || '');
-    setLaceLength(cfg.laceLength ?? 240);
-    setSizePx(cfg.sizePx ?? 250);
-    setPositionRight(cfg.positionRight ?? 14);
-    setPositionTop(cfg.positionTop ?? 0);
-    setSwingSpeedSec(cfg.swingSpeedSec ?? 9.5);
+    setLaceLength(cfg.laceLength ?? 220);
+    setSizePx(cfg.sizePx ?? 260);
+    setPositionRight(cfg.positionRight ?? 10);
+    setPositionTop(cfg.positionTop ?? 160);
+    setSwingSpeedSec(cfg.swingSpeedSec ?? 7.0);
+    setSwingAngleDeg(cfg.swingAngleDeg ?? 4.0);
+    setBaseRotationDeg(cfg.baseRotationDeg ?? -18);
     setEnablePhysicsAnimation(cfg.enablePhysicsAnimation ?? true);
   }, [hangingSneakerConfig]);
 
@@ -80,14 +87,14 @@ export const HangingSneakerSettingsView: React.FC = () => {
 
     setErrorMessage(null);
     const valResult = validateFileUpload(file);
-    if (!valResult.valid) {
+    if (!valResult.isValid) {
       setErrorMessage(valResult.error || 'Invalid file format or size');
       return;
     }
 
     setIsUploading(true);
     try {
-      const optimizedUri = await optimizeImageFile(file, { maxWidth: 1024, maxHeight: 1024, quality: 0.88 });
+      const optimizedUri = await optimizeImageFile(file, { maxWidth: 1024, maxHeight: 1024, quality: 0.9 });
       setImageUri(optimizedUri);
       setUseCustomImage(true);
     } catch (err: any) {
@@ -103,39 +110,47 @@ export const HangingSneakerSettingsView: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Reset to Built-in Signature Original Sneaker
+  // Reset to ONE 8 Burgundy Reference Sneaker
   const handleResetToBuiltin = () => {
     setEnabled(true);
     setUseCustomImage(false);
     setImageUri('');
-    setLaceLength(240);
-    setSizePx(250);
-    setPositionRight(14);
-    setPositionTop(0);
-    setSwingSpeedSec(9.5);
+    setLaceLength(220);
+    setSizePx(260);
+    setPositionRight(10);
+    setPositionTop(160);
+    setSwingSpeedSec(7.0);
+    setSwingAngleDeg(4.0);
+    setBaseRotationDeg(-18);
     setEnablePhysicsAnimation(true);
   };
 
   // Apply Presets
-  const applyPreset = (preset: 'hero' | 'compact' | 'dramatic') => {
+  const applyPreset = (preset: 'hero' | 'compact' | 'subtle') => {
     if (preset === 'hero') {
-      setLaceLength(260);
+      setLaceLength(220);
       setSizePx(260);
-      setPositionRight(14);
-      setPositionTop(0);
-      setSwingSpeedSec(9.5);
+      setPositionRight(10);
+      setPositionTop(160);
+      setSwingSpeedSec(7.0);
+      setSwingAngleDeg(4.0);
+      setBaseRotationDeg(-18);
     } else if (preset === 'compact') {
       setLaceLength(180);
-      setSizePx(190);
-      setPositionRight(8);
-      setPositionTop(10);
-      setSwingSpeedSec(7.5);
-    } else if (preset === 'dramatic') {
-      setLaceLength(320);
+      setSizePx(200);
+      setPositionRight(6);
+      setPositionTop(120);
+      setSwingSpeedSec(6.0);
+      setSwingAngleDeg(3.0);
+      setBaseRotationDeg(-12);
+    } else if (preset === 'subtle') {
+      setLaceLength(250);
       setSizePx(280);
-      setPositionRight(16);
-      setPositionTop(0);
-      setSwingSpeedSec(12);
+      setPositionRight(12);
+      setPositionTop(200);
+      setSwingSpeedSec(8.0);
+      setSwingAngleDeg(3.5);
+      setBaseRotationDeg(-22);
     }
   };
 
@@ -154,7 +169,10 @@ export const HangingSneakerSettingsView: React.FC = () => {
       positionRight,
       positionTop,
       swingSpeedSec,
+      swingAngleDeg,
+      baseRotationDeg,
       enablePhysicsAnimation,
+      colorTheme: 'ONE8_BURGUNDY',
     };
 
     try {
@@ -172,20 +190,20 @@ export const HangingSneakerSettingsView: React.FC = () => {
   return (
     <div className="space-y-6 text-neutral-800 dark:text-neutral-100">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-br from-emerald-950/80 via-neutral-900 to-neutral-950 text-white border border-emerald-500/30 shadow-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-br from-amber-950/90 via-neutral-900 to-neutral-950 text-white border border-amber-500/30 shadow-xl">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-inner">
+          <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-inner">
             <Sparkles className="w-6 h-6 animate-pulse" />
           </div>
           <div>
             <h2 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-              Hanging Signature Sneaker Manager
-              <span className="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Live Interactive
+              Hanging Decorative Shoe Manager
+              <span className="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                ONE 8 Edition
               </span>
             </h2>
             <p className="text-xs text-neutral-300 mt-0.5">
-              Customize the hanging photorealistic sneaker position, swing physics, scale, and custom upload.
+              Customize position, scale, swing angle, physics speed, and replace image for the hero hanging shoe.
             </p>
           </div>
         </div>
@@ -195,8 +213,8 @@ export const HangingSneakerSettingsView: React.FC = () => {
           type="button"
           className="px-3 py-1.5 rounded-lg bg-neutral-800/80 hover:bg-neutral-700 text-xs font-medium text-neutral-200 border border-neutral-700 transition flex items-center gap-1.5 self-end sm:self-auto"
         >
-          <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Reset Signature Defaults</span>
+          <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+          <span>Reset ONE 8 Defaults</span>
         </button>
       </div>
 
@@ -205,7 +223,7 @@ export const HangingSneakerSettingsView: React.FC = () => {
         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2 animate-fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
           <span className="font-medium">
-            Hanging sneaker configuration updated & synchronized across storefront!
+            Hanging shoe configuration updated & synchronized across storefront!
           </span>
         </div>
       )}
@@ -224,11 +242,11 @@ export const HangingSneakerSettingsView: React.FC = () => {
           <div className="p-5 rounded-2xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between">
             <div className="space-y-1">
               <label className="text-sm font-semibold flex items-center gap-2 text-neutral-900 dark:text-white">
-                <Eye className="w-4 h-4 text-emerald-500" />
-                Enable Hanging Sneaker
+                <Eye className="w-4 h-4 text-amber-500" />
+                Enable Decorative Hanging Shoe
               </label>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Display hanging high-top sneaker overlay on desktop header.
+                Display the decorative hanging sneaker in the top-right Hero section.
               </p>
             </div>
             <button
@@ -250,11 +268,11 @@ export const HangingSneakerSettingsView: React.FC = () => {
           <div className="p-5 rounded-2xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between">
             <div className="space-y-1">
               <label className="text-sm font-semibold flex items-center gap-2 text-neutral-900 dark:text-white">
-                <Activity className="w-4 h-4 text-emerald-500" />
-                Physics Pendulum Swing
+                <Activity className="w-4 h-4 text-amber-500" />
+                Gentle Pendulum Swing Animation
               </label>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Enable multi-axis pendulum swing & interactive click-kick physics.
+                Enable subtle luxury swinging motion (3°–5° angle, 6–8s cycle).
               </p>
             </div>
             <button
@@ -273,22 +291,22 @@ export const HangingSneakerSettingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Sneaker Source Selection: Built-In 3D Vector vs Custom Image */}
+        {/* Sneaker Graphic Source Selection */}
         <div className="p-6 rounded-2xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-emerald-500" />
-                Sneaker Graphic Source
+                <Layers className="w-4 h-4 text-amber-500" />
+                Shoe Graphic Source
               </h3>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                Choose between Marudhar's built-in photorealistic leather high-top sneaker or upload a custom brand sneaker photo.
+                Choose between the reference ONE 8 burgundy wine leather sneaker or upload your custom product photo.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            {/* Option 1: Built-In Original Luxury High-Top */}
+            {/* Option 1: Reference ONE 8 Burgundy Leather Shoe */}
             <button
               type="button"
               onClick={() => {
@@ -296,20 +314,20 @@ export const HangingSneakerSettingsView: React.FC = () => {
               }}
               className={`p-4 rounded-xl text-left border transition-all flex items-start gap-3 ${
                 !useCustomImage
-                  ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-950 dark:text-emerald-100 ring-2 ring-emerald-500/30'
+                  ? 'bg-amber-500/10 border-amber-500/50 text-amber-950 dark:text-amber-100 ring-2 ring-amber-500/30'
                   : 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
               }`}
             >
-              <div className="w-8 h-8 rounded-lg bg-[#0B8F63] text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 shadow">
-                3D
+              <div className="w-8 h-8 rounded-lg bg-[#58111A] text-amber-300 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 shadow">
+                ONE8
               </div>
               <div>
                 <div className="text-xs font-bold flex items-center gap-1.5">
-                  Built-in Original Luxury High-Top
-                  {!useCustomImage && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                  Reference ONE 8 Burgundy Leather Shoe
+                  {!useCustomImage && <CheckCircle2 className="w-3.5 h-3.5 text-amber-500" />}
                 </div>
                 <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-snug">
-                  Photorealistic tumbled leather upper, light grey suede overlays, metallic gold aglets, and forest green accents.
+                  Rich burgundy leather finish, white woven laces, gum sole, double-loop infinity stitching, and gold foil signature stamp.
                 </p>
               </div>
             </button>
@@ -322,7 +340,7 @@ export const HangingSneakerSettingsView: React.FC = () => {
               }}
               className={`p-4 rounded-xl text-left border transition-all flex items-start gap-3 ${
                 useCustomImage
-                  ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-950 dark:text-emerald-100 ring-2 ring-emerald-500/30'
+                  ? 'bg-amber-500/10 border-amber-500/50 text-amber-950 dark:text-amber-100 ring-2 ring-amber-500/30'
                   : 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
               }`}
             >
@@ -331,11 +349,11 @@ export const HangingSneakerSettingsView: React.FC = () => {
               </div>
               <div>
                 <div className="text-xs font-bold flex items-center gap-1.5">
-                  Custom Uploaded Sneaker Image
-                  {useCustomImage && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                  Custom Uploaded Product Photo
+                  {useCustomImage && <CheckCircle2 className="w-3.5 h-3.5 text-amber-500" />}
                 </div>
                 <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 leading-snug">
-                  Upload a PNG/JPEG product image of your own original sneaker. Hanging suspension laces will automatically attach.
+                  Upload your own high-resolution product photograph. The image will be displayed exactly as uploaded with white hanging laces.
                 </p>
               </div>
             </button>
@@ -345,20 +363,20 @@ export const HangingSneakerSettingsView: React.FC = () => {
           {useCustomImage && (
             <div className="p-4 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 space-y-3 animate-fade-in mt-3">
               <label className="text-xs font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                <Upload className="w-3.5 h-3.5 text-emerald-500" />
-                Upload Custom High-Top Sneaker Photo
+                <Upload className="w-3.5 h-3.5 text-amber-500" />
+                Upload Shoe Photograph
               </label>
 
               {imageUri ? (
                 <div className="flex items-center gap-4 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                   <div className="w-20 h-20 rounded-lg bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center overflow-hidden p-1 shadow-inner shrink-0">
-                    <img src={imageUri} alt="Sneaker preview" className="max-w-full max-h-full object-contain" />
+                    <img src={imageUri} alt="Custom hanging shoe" className="max-w-full max-h-full object-contain" />
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Image Loaded & Optimized
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Photo Loaded & Preserved As-Is
                     </p>
-                    <p className="text-[11px] text-neutral-500">Transparent background PNG recommended for best results.</p>
+                    <p className="text-[11px] text-neutral-500">Image is used directly without converting or AI generation.</p>
                     <button
                       type="button"
                       onClick={handleRemoveCustomImage}
@@ -369,7 +387,7 @@ export const HangingSneakerSettingsView: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl p-6 text-center hover:border-emerald-500 transition-colors bg-neutral-50/50 dark:bg-neutral-900/30">
+                <div className="border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl p-6 text-center hover:border-amber-500 transition-colors bg-neutral-50/50 dark:bg-neutral-900/30">
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -382,11 +400,11 @@ export const HangingSneakerSettingsView: React.FC = () => {
                     htmlFor="sneaker-upload-input"
                     className="cursor-pointer flex flex-col items-center justify-center space-y-2"
                   >
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center">
                       {isUploading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                     </div>
                     <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-                      {isUploading ? 'Optimizing photo...' : 'Click to select sneaker photo'}
+                      {isUploading ? 'Optimizing photo...' : 'Click to select shoe photograph'}
                     </span>
                     <span className="text-[11px] text-neutral-400">PNG, JPG or WebP (Max 5MB)</span>
                   </label>
@@ -396,16 +414,16 @@ export const HangingSneakerSettingsView: React.FC = () => {
           )}
         </div>
 
-        {/* Dimension & Position Controls */}
+        {/* Dimension, Angle, Speed & Position Tuning */}
         <div className="p-6 rounded-2xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800 space-y-6">
           <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-3">
             <div>
               <h3 className="text-sm font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-emerald-500" />
-                Dimensions, Laces & Position Tuning
+                <Sliders className="w-4 h-4 text-amber-500" />
+                Position, Size, Swing Speed & Rotation Controls
               </h3>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                Adjust suspension lace length, shoe scale, and screen placement.
+                Fine-tune placement, scale, base tilt rotation, swing cycle speed, and swing amplitude.
               </p>
             </div>
 
@@ -415,112 +433,152 @@ export const HangingSneakerSettingsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => applyPreset('hero')}
-                className="px-2.5 py-1 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[11px] font-medium text-neutral-700 dark:text-neutral-300 hover:border-emerald-500"
+                className="px-2.5 py-1 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[11px] font-medium text-neutral-700 dark:text-neutral-300 hover:border-amber-500"
               >
-                Hero Drop
+                Hero Corner
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('compact')}
-                className="px-2.5 py-1 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[11px] font-medium text-neutral-700 dark:text-neutral-300 hover:border-emerald-500"
+                className="px-2.5 py-1 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[11px] font-medium text-neutral-700 dark:text-neutral-300 hover:border-amber-500"
               >
-                Compact
+                Compact Right
               </button>
               <button
                 type="button"
-                onClick={() => applyPreset('dramatic')}
-                className="px-2.5 py-1 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[11px] font-medium text-neutral-700 dark:text-neutral-300 hover:border-emerald-500"
+                onClick={() => applyPreset('subtle')}
+                className="px-2.5 py-1 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-[11px] font-medium text-neutral-700 dark:text-neutral-300 hover:border-amber-500"
               >
-                Dramatic
+                Subtle Luxury
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Lace Length */}
+            {/* Top Offset (px) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold">
                 <label className="text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                  <Move className="w-3.5 h-3.5 text-emerald-500" />
-                  Lace Suspension Length
+                  <Move className="w-3.5 h-3.5 text-amber-500" />
+                  Top Position (Vertical Offset)
                 </label>
-                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{laceLength}px</span>
+                <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{positionTop}px</span>
               </div>
               <input
                 type="range"
-                min={120}
-                max={380}
-                step={5}
-                value={laceLength}
-                onChange={(e) => setLaceLength(Number(e.target.value))}
-                className="w-full accent-[#0B8F63]"
+                min={40}
+                max={360}
+                step={10}
+                value={positionTop}
+                onChange={(e) => setPositionTop(Number(e.target.value))}
+                className="w-full accent-amber-600"
               />
-              <p className="text-[11px] text-neutral-400">Controls how far down the sneaker hangs from top navbar.</p>
+              <p className="text-[11px] text-neutral-400">Position 35%–45% down from top edge inside hero viewport.</p>
             </div>
 
-            {/* Sneaker Size / Scale */}
+            {/* Right Offset (rem) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold">
                 <label className="text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                  <Sliders className="w-3.5 h-3.5 text-emerald-500" />
-                  Sneaker Size / Scale
+                  <Move className="w-3.5 h-3.5 text-amber-500" />
+                  Right Offset (Horizontal Distance)
                 </label>
-                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{sizePx}px</span>
-              </div>
-              <input
-                type="range"
-                min={140}
-                max={340}
-                step={5}
-                value={sizePx}
-                onChange={(e) => setSizePx(Number(e.target.value))}
-                className="w-full accent-[#0B8F63]"
-              />
-              <p className="text-[11px] text-neutral-400">Adjust overall rendering scale and width.</p>
-            </div>
-
-            {/* Position Right Offset */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <label className="text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                  <Move className="w-3.5 h-3.5 text-emerald-500" />
-                  Right Offset (Rem)
-                </label>
-                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{positionRight}rem</span>
+                <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{positionRight}rem</span>
               </div>
               <input
                 type="range"
                 min={2}
-                max={32}
+                max={24}
                 step={1}
                 value={positionRight}
                 onChange={(e) => setPositionRight(Number(e.target.value))}
-                className="w-full accent-[#0B8F63]"
+                className="w-full accent-amber-600"
               />
-              <p className="text-[11px] text-neutral-400">Horizontal distance from right edge of screen.</p>
+              <p className="text-[11px] text-neutral-400">Spacing from right screen margin to avoid covering text.</p>
             </div>
 
-            {/* Swing Speed Duration */}
+            {/* Shoe Size / Scale (px) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold">
                 <label className="text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-emerald-500" />
-                  Pendulum Swing Speed
+                  <Sliders className="w-3.5 h-3.5 text-amber-500" />
+                  Shoe Size / Scale
                 </label>
-                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{swingSpeedSec}s / cycle</span>
+                <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{sizePx}px</span>
               </div>
               <input
                 type="range"
-                min={4}
-                max={18}
+                min={150}
+                max={340}
+                step={5}
+                value={sizePx}
+                onChange={(e) => setSizePx(Number(e.target.value))}
+                className="w-full accent-amber-600"
+              />
+              <p className="text-[11px] text-neutral-400">Width on desktop view (automatically scales down for mobile).</p>
+            </div>
+
+            {/* Base Tilt Rotation Angle (Deg) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <label className="text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                  <RotateCw className="w-3.5 h-3.5 text-amber-500" />
+                  Base Tilt Angle
+                </label>
+                <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{baseRotationDeg}°</span>
+              </div>
+              <input
+                type="range"
+                min={-40}
+                max={10}
+                step={1}
+                value={baseRotationDeg}
+                onChange={(e) => setBaseRotationDeg(Number(e.target.value))}
+                className="w-full accent-amber-600"
+              />
+              <p className="text-[11px] text-neutral-400">Natural gravity hanging tilt angle (-18° recommended).</p>
+            </div>
+
+            {/* Swing Speed (Seconds per cycle) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <label className="text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-amber-500" />
+                  Swing Speed (Cycle Duration)
+                </label>
+                <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{swingSpeedSec}s / cycle</span>
+              </div>
+              <input
+                type="range"
+                min={4.0}
+                max={12.0}
                 step={0.5}
                 value={swingSpeedSec}
                 onChange={(e) => setSwingSpeedSec(Number(e.target.value))}
-                className="w-full accent-[#0B8F63]"
+                className="w-full accent-amber-600"
               />
-              <p className="text-[11px] text-neutral-400">
-                Slower seconds = smooth, heavy luxury swing. Faster = energetic movement.
-              </p>
+              <p className="text-[11px] text-neutral-400">Subtle slow movement recommended: 6s–8s per full cycle.</p>
+            </div>
+
+            {/* Swing Angle (Degrees) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <label className="text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-amber-500" />
+                  Swing Angle Amplitude
+                </label>
+                <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{swingAngleDeg}°</span>
+              </div>
+              <input
+                type="range"
+                min={1.0}
+                max={10.0}
+                step={0.5}
+                value={swingAngleDeg}
+                onChange={(e) => setSwingAngleDeg(Number(e.target.value))}
+                className="w-full accent-amber-600"
+              />
+              <p className="text-[11px] text-neutral-400">Subtle premium movement recommended: 3°–5° swing angle.</p>
             </div>
           </div>
         </div>
@@ -528,14 +586,14 @@ export const HangingSneakerSettingsView: React.FC = () => {
         {/* Submit Actions */}
         <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-neutral-800">
           <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-            <Info className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            <span>Changes synchronize in real-time across client devices.</span>
+            <Info className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span>Settings apply in real-time to the storefront hero section.</span>
           </div>
 
           <button
             type="submit"
             disabled={isSaving}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0B8F63] to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-semibold text-xs shadow-lg shadow-amber-600/20 transition-all flex items-center gap-2 disabled:opacity-50"
           >
             {isSaving ? (
               <>
@@ -545,7 +603,7 @@ export const HangingSneakerSettingsView: React.FC = () => {
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>Save Sneaker Settings</span>
+                <span>Save Hanging Shoe Settings</span>
               </>
             )}
           </button>

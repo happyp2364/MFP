@@ -648,7 +648,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     const taxAmount = Math.round((subtotal * (paymentSettings.gstPercent || 5)) / 100);
-    const totalAmount = Math.max(0, subtotal + shippingFee + taxAmount - discountAmount);
+    const isOnlinePayment = paymentMethod === 'CARD' || paymentMethod === 'NET_BANKING' || paymentMethod === 'WALLET' || (paymentMethod as string) === 'ONLINE';
+    const isFeeEnabled = paymentSettings.enableConvenienceFee !== false;
+    const feePercent = paymentSettings.convenienceFeePercent ?? 2;
+    const convenienceFee = (isOnlinePayment && isFeeEnabled) ? Math.round((subtotal * feePercent) / 100) : 0;
+
+    const totalAmount = Math.max(0, subtotal + shippingFee + taxAmount + convenienceFee - discountAmount);
 
     // 1. SECURE PAYMENT VERIFICATION ENGINE
     const verificationRes = await verifyPaymentSecurely({
@@ -700,6 +705,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       shippingFee,
       discountAmount,
       taxAmount,
+      convenienceFee,
       totalAmount,
       paymentMethod,
       paymentStatus: finalPaymentStatus,

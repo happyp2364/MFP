@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Phone, Mail, Clock, MessageCircle, Send, CheckCircle2, Calendar, Sparkles } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, MessageCircle, CheckCircle2, Calendar, Sparkles, ExternalLink, Navigation, Layers } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { ContactFormInput } from '../../types';
 
@@ -13,6 +13,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   onOpenGmailModal,
 }) => {
   const { storeInfo } = useStore();
+  const [mapViewMode, setMapViewMode] = useState<'roadmap' | 'satellite'>('roadmap');
 
   const [formData, setFormData] = useState<ContactFormInput>({
     name: '',
@@ -23,6 +24,13 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   });
 
   const [submitted, setSubmitted] = useState(false);
+
+  const googleMapsUrl = storeInfo.googleMapsLink || 'https://maps.app.goo.gl/WuqcuomVPaRVofyN9';
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(storeInfo.name + ' ' + storeInfo.address)}`;
+
+  const mapIframeSrc = mapViewMode === 'satellite'
+    ? `https://maps.google.com/maps?q=${encodeURIComponent(storeInfo.name + ' ' + storeInfo.address)}&t=k&z=17&ie=UTF8&iwloc=&output=embed`
+    : (storeInfo.googleMapsEmbed || `https://maps.google.com/maps?q=${encodeURIComponent(storeInfo.name + ' ' + storeInfo.address)}&t=&z=16&ie=UTF8&iwloc=&output=embed`);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,15 +189,85 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
               </div>
             )}
 
-            {/* Interactive Google Maps Preview */}
-            <div className="rounded-2xl overflow-hidden border border-neutral-200 shadow-sm aspect-video">
-              <iframe
-                title="Marudhar Fashion Point Location"
-                src={storeInfo.googleMapsEmbed}
-                className="w-full h-full border-0"
-                allowFullScreen={false}
-                loading="lazy"
-              />
+            {/* Interactive Google Maps Location Section */}
+            <div className="bg-white rounded-2xl overflow-hidden border border-neutral-200/90 shadow-md space-y-0">
+              {/* Top Map Action Bar */}
+              <div className="bg-neutral-900 text-white p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+                  <MapPin className="w-4 h-4 text-[#0B8F63]" />
+                  <span>Exact Store Location</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setMapViewMode(mapViewMode === 'roadmap' ? 'satellite' : 'roadmap')}
+                    className="bg-white/10 hover:bg-white/20 text-white px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors"
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>{mapViewMode === 'roadmap' ? 'Satellite View' : 'Map View'}</span>
+                  </button>
+
+                  <a
+                    href={googleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-[#0B8F63] hover:bg-[#086F4C] text-white px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Open Map</span>
+                  </a>
+
+                  <a
+                    href={directionsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors"
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>Directions</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Map Iframe */}
+              <div className="relative aspect-video w-full bg-neutral-100">
+                <iframe
+                  title="Marudhar Fashion Point Location"
+                  src={mapIframeSrc}
+                  className="w-full h-full border-0"
+                  allowFullScreen={true}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+
+              {/* Formatted Store Address & Contact Display Below Map */}
+              <div className="p-4 bg-neutral-50 border-t border-neutral-200 text-neutral-900 text-xs font-semibold space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-lg shrink-0">📍</span>
+                  <div className="space-y-0.5">
+                    <div className="font-serif-heading font-extrabold text-sm text-[#0B8F63]">
+                      {storeInfo.name}
+                    </div>
+                    {storeInfo.address.split(',').map((line, idx) => (
+                      <div key={idx} className="font-extrabold text-neutral-800 tracking-wide uppercase text-[11px]">
+                        {line.trim()}{idx < storeInfo.address.split(',').length - 1 ? ',' : ''}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 pt-2 border-t border-neutral-200/80">
+                  <span className="text-lg shrink-0">📞</span>
+                  <a
+                    href={`tel:${storeInfo.phone}`}
+                    className="font-extrabold text-neutral-900 hover:text-[#0B8F63] transition-colors text-xs"
+                  >
+                    {storeInfo.phone}
+                  </a>
+                </div>
+              </div>
             </div>
 
           </div>

@@ -131,7 +131,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const shippingFee = subtotal >= (paymentSettings.freeShippingMinAmount || 999) ? 0 : paymentSettings.flatShippingRate || 0;
   const gstPercent = paymentSettings.gstPercent || 5;
   const taxAmount = Math.round((subtotal * gstPercent) / 100);
-  const totalAmount = Math.max(0, subtotal + shippingFee + taxAmount);
+
+  // Payment Method Based Convenience Fee
+  const isOnlinePayment = selectedMethod === 'CARD' || selectedMethod === 'NET_BANKING' || selectedMethod === 'WALLET';
+  const isFeeEnabled = paymentSettings.enableConvenienceFee !== false;
+  const feePercent = paymentSettings.convenienceFeePercent ?? 2;
+  const convenienceFee = (isOnlinePayment && isFeeEnabled) ? Math.round((subtotal * feePercent) / 100) : 0;
+
+  const totalAmount = Math.max(0, subtotal + shippingFee + taxAmount + convenienceFee);
 
   // Dynamic UPI Link & QR Image
   const dynamicOrderId = completedOrderId || `MFP${1025 + Math.floor(Math.random() * 8000)}`;
@@ -661,9 +668,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   )}
                 </span>
               </div>
+              {isFeeEnabled && (
+                <div className="flex justify-between text-neutral-600">
+                  <span>Convenience Fee (Est.)</span>
+                  <span className="text-emerald-700 font-semibold">₹0 on QR / +{feePercent}% Online</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-neutral-900 pt-1.5 border-t border-neutral-200 text-sm">
-                <span>Total Amount Payable</span>
-                <span className="text-amber-800">₹{totalAmount.toLocaleString()}</span>
+                <span>Estimated Total</span>
+                <span className="text-amber-800">₹{(subtotal + shippingFee + taxAmount).toLocaleString()}</span>
               </div>
             </div>
 
@@ -701,12 +714,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={() => setSelectedMethod('UPI')}
                   className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
                     selectedMethod === 'UPI'
-                      ? 'border-amber-700 bg-amber-50 text-amber-900 font-bold shadow-sm'
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-bold shadow-sm ring-1 ring-emerald-500'
                       : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
                   }`}
                 >
-                  <Smartphone className="w-5 h-5 text-amber-700" />
-                  <span>UPI / QR</span>
+                  <QrCode className="w-5 h-5 text-emerald-700" />
+                  <span className="text-center font-bold">Scan QR Code (Manual UPI)</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">
+                    0% Fee • FREE
+                  </span>
                 </button>
               )}
 
@@ -716,12 +732,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={() => setSelectedMethod('CARD')}
                   className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
                     selectedMethod === 'CARD'
-                      ? 'border-amber-700 bg-amber-50 text-amber-900 font-bold shadow-sm'
+                      ? 'border-amber-700 bg-amber-50 text-amber-950 font-bold shadow-sm ring-1 ring-amber-500'
                       : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
                   }`}
                 >
                   <CreditCard className="w-5 h-5 text-amber-700" />
-                  <span>Card</span>
+                  <span className="text-center font-bold">Pay Online (Cashfree)</span>
+                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-extrabold">
+                    {isFeeEnabled ? `${feePercent}% Fee` : 'Online'}
+                  </span>
                 </button>
               )}
 
@@ -731,12 +750,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={() => setSelectedMethod('NET_BANKING')}
                   className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
                     selectedMethod === 'NET_BANKING'
-                      ? 'border-amber-700 bg-amber-50 text-amber-900 font-bold shadow-sm'
+                      ? 'border-amber-700 bg-amber-50 text-amber-950 font-bold shadow-sm ring-1 ring-amber-500'
                       : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
                   }`}
                 >
                   <Building2 className="w-5 h-5 text-amber-700" />
-                  <span>Netbanking</span>
+                  <span className="text-center font-bold">Net Banking</span>
+                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-extrabold">
+                    {isFeeEnabled ? `${feePercent}% Fee` : 'Online'}
+                  </span>
                 </button>
               )}
 
@@ -746,12 +768,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={() => setSelectedMethod('WALLET')}
                   className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
                     selectedMethod === 'WALLET'
-                      ? 'border-amber-700 bg-amber-50 text-amber-900 font-bold shadow-sm'
+                      ? 'border-amber-700 bg-amber-50 text-amber-950 font-bold shadow-sm ring-1 ring-amber-500'
                       : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
                   }`}
                 >
                   <Wallet className="w-5 h-5 text-amber-700" />
-                  <span>Wallets</span>
+                  <span className="text-center font-bold">Wallets</span>
+                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-extrabold">
+                    {isFeeEnabled ? `${feePercent}% Fee` : 'Online'}
+                  </span>
                 </button>
               )}
 
@@ -761,12 +786,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={() => setSelectedMethod('COD')}
                   className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
                     selectedMethod === 'COD'
-                      ? 'border-amber-700 bg-amber-50 text-amber-900 font-bold shadow-sm'
+                      ? 'border-amber-700 bg-amber-50 text-amber-950 font-bold shadow-sm ring-1 ring-amber-500'
                       : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
                   }`}
                 >
                   <Truck className="w-5 h-5 text-amber-700" />
-                  <span>Pay on Delivery</span>
+                  <span className="text-center font-bold">Pay on Delivery</span>
+                  <span className="px-1.5 py-0.5 rounded bg-neutral-200 text-neutral-800 text-[10px] font-extrabold">
+                    COD
+                  </span>
                 </button>
               )}
             </div>
@@ -1070,6 +1098,52 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </p>
               </div>
             )}
+
+            {/* Complete Payment Price Summary Breakdown */}
+            <div className="p-3.5 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-1.5">
+              <div className="flex justify-between text-neutral-600">
+                <span>Subtotal</span>
+                <span className="font-mono font-medium text-neutral-900">₹{subtotal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-neutral-600">
+                <span>GST ({gstPercent}%)</span>
+                <span className="font-mono font-medium text-neutral-900">₹{taxAmount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-neutral-600">
+                <span>Shipping</span>
+                <span>
+                  {shippingFee === 0 ? (
+                    <span className="text-emerald-600 font-semibold">FREE</span>
+                  ) : (
+                    <span className="font-mono font-medium text-neutral-900">₹{shippingFee}</span>
+                  )}
+                </span>
+              </div>
+
+              {/* Dynamic Convenience Fee line item */}
+              <div className="flex justify-between items-center py-1 border-t border-neutral-200 font-medium">
+                <span className="flex items-center gap-1.5 text-neutral-700">
+                  <span>Convenience Fee</span>
+                  {convenienceFee > 0 ? (
+                    <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded">
+                      {feePercent}% Online Payment (Cashfree)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
+                      ₹0 (Scan QR / Manual UPI)
+                    </span>
+                  )}
+                </span>
+                <span className={convenienceFee > 0 ? 'font-mono font-bold text-amber-900' : 'font-mono text-emerald-700 font-bold'}>
+                  {convenienceFee > 0 ? `+₹${convenienceFee.toLocaleString()}` : '₹0'}
+                </span>
+              </div>
+
+              <div className="flex justify-between font-bold text-neutral-900 pt-1.5 border-t border-neutral-200 text-sm">
+                <span>Total Amount Payable</span>
+                <span className="text-amber-900 font-extrabold text-base">₹{totalAmount.toLocaleString()}</span>
+              </div>
+            </div>
 
             {/* Complete & Verify Button */}
             <button

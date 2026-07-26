@@ -36,8 +36,10 @@ export interface Product {
   colors: ProductColor[];
   isBestSeller?: boolean;
   isNewArrival?: boolean;
+  isFeatured?: boolean;
   isLimitedStock?: boolean;
   isTrending?: boolean;
+  status?: 'active' | 'hidden' | 'out_of_stock';
   collectionTags: string[];
   material?: string;
   inStock: boolean;
@@ -214,6 +216,10 @@ export interface PaymentSettings {
   gstPercent?: number;
   flatShippingRate?: number;
   freeShippingMinAmount?: number;
+  // Payment Method Based Pricing / Convenience Fee
+  enableConvenienceFee?: boolean;
+  convenienceFeePercent?: number;
+  applyFeeToOnlineOnly?: boolean;
 }
 
 export interface ShippingAddressInfo {
@@ -240,6 +246,7 @@ export interface CustomerOrder {
   shippingFee: number;
   discountAmount: number;
   taxAmount: number;
+  convenienceFee?: number;
   totalAmount: number;
   paymentMethod: PaymentMethodType;
   paymentStatus: PaymentStatus;

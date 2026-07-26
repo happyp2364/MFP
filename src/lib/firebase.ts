@@ -686,6 +686,9 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
   gstPercent: 5,
   flatShippingRate: 0,
   freeShippingMinAmount: 999,
+  enableConvenienceFee: true,
+  convenienceFeePercent: 2,
+  applyFeeToOnlineOnly: true,
 };
 
 // Fetch Payment Settings from Firestore

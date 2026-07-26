@@ -1099,12 +1099,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               />
             )}
 
-            {/* Other tabs (homepage, categories, reviews, overview) remain supported */}
+            {/* TAB: STORE INFO, CONTACT & GOOGLE MAPS SETTINGS */}
             {activeTab === 'homepage' && (
               <form onSubmit={handleSaveStoreContent} className="space-y-6 max-w-4xl">
+                {/* Store Identity & Contact */}
                 <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
-                  <h3 className="font-serif-heading font-bold text-base text-neutral-900 border-b border-neutral-100 pb-2">
-                    Store Identity & WhatsApp Settings
+                  <h3 className="font-serif-heading font-bold text-base text-neutral-900 border-b border-neutral-100 pb-2 flex items-center justify-between">
+                    <span>Store Identity & Contact Details</span>
+                    <span className="text-xs font-semibold text-[#0B8F63] bg-[#0B8F63]/10 px-2.5 py-1 rounded-full">
+                      Updates Contact & Footer Instantly
+                    </span>
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div>
@@ -1113,7 +1117,27 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         type="text"
                         value={storeInfoForm.name}
                         onChange={(e) => setStoreInfoForm({ ...storeInfoForm, name: e.target.value })}
+                        className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none font-bold text-neutral-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-neutral-700 block mb-1">Store Tagline</label>
+                      <input
+                        type="text"
+                        value={storeInfoForm.tagline}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, tagline: e.target.value })}
                         className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-neutral-700 block mb-1">Phone Number</label>
+                      <input
+                        type="text"
+                        value={storeInfoForm.phone}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, phone: e.target.value })}
+                        className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none font-medium"
                       />
                     </div>
 
@@ -1123,18 +1147,108 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         type="text"
                         value={storeInfoForm.whatsappNumber}
                         onChange={(e) => setStoreInfoForm({ ...storeInfoForm, whatsappNumber: e.target.value })}
-                        className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none"
+                        className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none font-medium"
                       />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-neutral-700 block mb-1">Store Email</label>
+                      <input
+                        type="email"
+                        value={storeInfoForm.email}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, email: e.target.value })}
+                        className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-neutral-700 block mb-1">Business Hours</label>
+                      <input
+                        type="text"
+                        value={storeInfoForm.businessHours}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, businessHours: e.target.value })}
+                        className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">Full Store Address</label>
+                    <textarea
+                      rows={2}
+                      value={storeInfoForm.address}
+                      onChange={(e) => setStoreInfoForm({ ...storeInfoForm, address: e.target.value })}
+                      className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none font-medium text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Google Maps & Location Settings */}
+                <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
+                  <h3 className="font-serif-heading font-bold text-base text-neutral-900 border-b border-neutral-100 pb-2">
+                    Google Maps & Navigation Settings
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4 text-xs">
+                    <div>
+                      <label className="font-bold text-neutral-700 block mb-1">Google Maps Direct Link</label>
+                      <input
+                        type="url"
+                        value={storeInfoForm.googleMapsLink || ''}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, googleMapsLink: e.target.value })}
+                        placeholder="https://maps.app.goo.gl/WuqcuomVPaRVofyN9"
+                        className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none font-mono text-xs text-blue-700"
+                      />
+                      <p className="text-[10px] text-neutral-500 mt-1">
+                        Used for "Open in Google Maps" and "Get Directions" buttons.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-neutral-700 block mb-1">Google Maps Embed URL</label>
+                      <input
+                        type="url"
+                        value={storeInfoForm.googleMapsEmbed || ''}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, googleMapsEmbed: e.target.value })}
+                        placeholder="https://www.google.com/maps/embed?pb=..."
+                        className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none font-mono text-xs text-neutral-600"
+                      />
+                      <p className="text-[10px] text-neutral-500 mt-1">
+                        URL used inside the embedded map iframe.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="font-bold text-neutral-700 block mb-1">Store Coordinates (Lat, Long)</label>
+                        <input
+                          type="text"
+                          value={storeInfoForm.coordinates || ''}
+                          onChange={(e) => setStoreInfoForm({ ...storeInfoForm, coordinates: e.target.value })}
+                          placeholder="26.343896, 73.5358763"
+                          className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none font-mono text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-neutral-700 block mb-1">Owner Contact / Names</label>
+                        <input
+                          type="text"
+                          value={storeInfoForm.ownerContact || ''}
+                          onChange={(e) => setStoreInfoForm({ ...storeInfoForm, ownerContact: e.target.value })}
+                          placeholder="Vijay Parihar & Vishal Parihar"
+                          className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none text-xs"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-6 py-3.5 rounded-2xl shadow-lg flex items-center gap-2 transition-all"
+                  className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-6 py-3.5 rounded-2xl shadow-lg flex items-center gap-2 transition-all cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
-                  <span>SAVE STORE CONTENT</span>
+                  <span>SAVE STORE INFO & MAP DETAILS</span>
                 </button>
               </form>
             )}

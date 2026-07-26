@@ -133,6 +133,7 @@ Payment Reference / UTR: ${order.paymentReference || 'N/A'}
 
 📦 ORDERED ITEMS:
 ${itemsSummary}
+Subtotal: ₹${order.subtotal.toLocaleString('en-IN')}${order.convenienceFee && order.convenienceFee > 0 ? `\nConvenience Fee: ₹${order.convenienceFee.toLocaleString('en-IN')}` : ''}
 💰 Total Paid: ₹${order.totalAmount.toLocaleString('en-IN')}
 
 📍 DELIVERY ADDRESS:

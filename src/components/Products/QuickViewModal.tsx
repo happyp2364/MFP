@@ -142,14 +142,20 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
           <div className="space-y-4">
             {/* Brand & Badges */}
             <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-widest text-[#0B8F63] bg-[#0B8F63]/10 px-3 py-1 rounded-full">
-                {product.brand}
-              </span>
-              <div className="flex items-center gap-1 text-xs font-bold text-neutral-800">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span>{product.rating}</span>
-                <span className="text-neutral-400">({product.reviewsCount} reviews)</span>
-              </div>
+              {product.brand && product.brand.trim().length > 0 ? (
+                <span className="text-xs font-extrabold uppercase tracking-widest text-[#0B8F63] bg-[#0B8F63]/10 px-3 py-1 rounded-full">
+                  {product.brand}
+                </span>
+              ) : <span />}
+              {product.rating && product.rating > 0 ? (
+                <div className="flex items-center gap-1 text-xs font-bold text-neutral-800">
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  <span>{product.rating}</span>
+                  {product.reviewsCount && product.reviewsCount > 0 ? (
+                    <span className="text-neutral-400">({product.reviewsCount} reviews)</span>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             {/* Product Title */}
@@ -205,9 +211,11 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             </div>
 
             {/* Description */}
-            <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
-              {product.description}
-            </p>
+            {product.description && product.description.trim().length > 0 && (
+              <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+                {product.description}
+              </p>
+            )}
 
             {/* Color Selector */}
             {product.colors.length > 0 && (

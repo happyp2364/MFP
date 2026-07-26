@@ -56,6 +56,18 @@ export const PaymentSettingsView: React.FC = () => {
   const [enableWallets, setEnableWallets] = useState<boolean>(paymentSettings.enableWallets !== false);
   const [enableCOD, setEnableCOD] = useState<boolean>(paymentSettings.enableCOD !== false);
 
+  // Convenience Fee & Pricing Settings
+  const [enableConvenienceFee, setEnableConvenienceFee] = useState<boolean>(
+    paymentSettings.enableConvenienceFee !== false
+  );
+  const [convenienceFeePercent, setConvenienceFeePercent] = useState<number>(
+    paymentSettings.convenienceFeePercent ?? 2
+  );
+  const [applyFeeToOnlineOnly, setApplyFeeToOnlineOnly] = useState<boolean>(
+    paymentSettings.applyFeeToOnlineOnly !== false
+  );
+  const [previewSubtotal, setPreviewSubtotal] = useState<number>(1000);
+
   // Gateway Probe / Test State
   const [isTestingGateway, setIsTestingGateway] = useState(false);
   const [testProbeResult, setTestProbeResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -119,6 +131,9 @@ export const PaymentSettingsView: React.FC = () => {
     setEnableNetBanking(paymentSettings.enableNetBanking !== false);
     setEnableWallets(paymentSettings.enableWallets !== false);
     setEnableCOD(paymentSettings.enableCOD !== false);
+    setEnableConvenienceFee(paymentSettings.enableConvenienceFee !== false);
+    setConvenienceFeePercent(paymentSettings.convenienceFeePercent ?? 2);
+    setApplyFeeToOnlineOnly(paymentSettings.applyFeeToOnlineOnly !== false);
     setMinOrderAmount(paymentSettings.minOrderAmount ?? 1);
     setMaxOrderAmount(paymentSettings.maxOrderAmount ?? 0);
     if (paymentSettings.qrCodeCustomImage) {
@@ -221,6 +236,9 @@ export const PaymentSettingsView: React.FC = () => {
       enableNetBanking,
       enableWallets,
       enableCOD,
+      enableConvenienceFee,
+      convenienceFeePercent: Math.min(10, Math.max(0, Number(convenienceFeePercent) || 0)),
+      applyFeeToOnlineOnly,
       enableQR: true,
     };
 
@@ -614,6 +632,169 @@ export const PaymentSettingsView: React.FC = () => {
                 <span>Pay on Delivery (COD)</span>
               </label>
             </div>
+          </div>
+
+          {/* Section 2B: Payment Pricing & Convenience Fee Settings */}
+          <div className="p-5 bg-white rounded-2xl border border-amber-200/80 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-amber-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <IndianRupee className="w-5 h-5 text-amber-700" />
+                <div>
+                  <h3 className="font-bold text-neutral-900 text-xs uppercase tracking-wider">
+                    Payment Pricing & Convenience Fee Settings
+                  </h3>
+                  <p className="text-[11px] text-neutral-500 font-normal">
+                    Configure convenience fee rules based on customer payment method selection.
+                  </p>
+                </div>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={enableConvenienceFee}
+                  onChange={(e) => {
+                    setEnableConvenienceFee(e.target.checked);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                <span className="ml-2.5 text-xs font-bold text-neutral-800">
+                  {enableConvenienceFee ? 'Convenience Fee Enabled' : 'Disabled'}
+                </span>
+              </label>
+            </div>
+
+            {enableConvenienceFee && (
+              <div className="space-y-4 pt-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  
+                  {/* Fee Percentage Input */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-neutral-800 block">
+                      Convenience Fee Percentage (%)
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type="number"
+                        min={0}
+                        max={10}
+                        step={0.1}
+                        value={convenienceFeePercent}
+                        onChange={(e) => {
+                          const val = Math.min(10, Math.max(0, parseFloat(e.target.value) || 0));
+                          setConvenienceFeePercent(val);
+                          setSaveStatus('IDLE');
+                        }}
+                        className="w-full bg-amber-50/50 border border-amber-200 rounded-xl py-2.5 px-3.5 font-bold text-amber-950 focus:ring-2 focus:ring-amber-600 outline-none text-xs"
+                      />
+                      <span className="absolute right-3.5 text-xs font-bold text-amber-800">%</span>
+                    </div>
+                    <p className="text-[11px] text-neutral-500">
+                      Configurable rate between <strong>0% and 10%</strong> (Default: 2%).
+                    </p>
+                  </div>
+
+                  {/* Apply fee to online payments only toggle */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-neutral-800 block">
+                      Rule Application Strategy
+                    </label>
+                    <label className="flex items-center gap-2.5 p-2.5 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold text-xs">
+                      <input
+                        type="checkbox"
+                        checked={applyFeeToOnlineOnly}
+                        onChange={(e) => {
+                          setApplyFeeToOnlineOnly(e.target.checked);
+                          setSaveStatus('IDLE');
+                        }}
+                        className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4"
+                      />
+                      <span>Apply fee ONLY to Online Payments (Exclude Scan QR / Manual UPI)</span>
+                    </label>
+                    <p className="text-[11px] text-neutral-500">
+                      When checked, QR Payments are 100% free with ₹0 convenience fee.
+                    </p>
+                  </div>
+
+                </div>
+
+                {/* Live Interactive Pricing Calculation Preview */}
+                <div className="p-4 bg-gradient-to-br from-amber-50/60 to-orange-50/40 rounded-2xl border border-amber-200 space-y-3">
+                  <div className="flex items-center justify-between border-b border-amber-200/80 pb-2">
+                    <h4 className="font-bold text-xs text-amber-950 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-700" />
+                      <span>Live Payment Calculation Preview</span>
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-amber-800">Test Subtotal:</span>
+                      <div className="relative flex items-center">
+                        <span className="absolute left-2 text-[10px] font-bold text-amber-700">₹</span>
+                        <input
+                          type="number"
+                          value={previewSubtotal}
+                          onChange={(e) => setPreviewSubtotal(Math.max(1, Number(e.target.value) || 0))}
+                          className="w-20 pl-4 pr-1.5 py-1 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-950 text-right outline-none focus:ring-2 focus:ring-amber-600"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    {/* QR Payment Box */}
+                    <div className="p-3 bg-white rounded-xl border border-emerald-200 shadow-sm space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-emerald-950">Scan QR Code (Manual UPI)</span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">
+                          ₹0 FEE
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-neutral-600 text-[11px] border-t border-neutral-100 pt-1.5">
+                        <div className="flex justify-between">
+                          <span>Product Subtotal:</span>
+                          <span className="font-mono font-bold text-neutral-900">₹{previewSubtotal.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-emerald-700 font-bold">
+                          <span>Convenience Fee (Excluded):</span>
+                          <span className="font-mono">₹0</span>
+                        </div>
+                        <div className="flex justify-between text-xs font-extrabold text-neutral-900 pt-1 border-t border-neutral-200">
+                          <span>Total Customer Pays:</span>
+                          <span className="font-mono text-emerald-700">₹{previewSubtotal.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Online Payment (Cashfree) Box */}
+                    <div className="p-3 bg-white rounded-xl border border-amber-300 shadow-sm space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-amber-950">Pay Online (Cashfree)</span>
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-extrabold">
+                          {convenienceFeePercent}% FEE
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-neutral-600 text-[11px] border-t border-neutral-100 pt-1.5">
+                        <div className="flex justify-between">
+                          <span>Product Subtotal:</span>
+                          <span className="font-mono font-bold text-neutral-900">₹{previewSubtotal.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-amber-900 font-bold">
+                          <span>Convenience Fee ({convenienceFeePercent}%):</span>
+                          <span className="font-mono">+₹{Math.round((previewSubtotal * convenienceFeePercent) / 100).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-xs font-extrabold text-neutral-900 pt-1 border-t border-neutral-200">
+                          <span>Total Customer Pays:</span>
+                          <span className="font-mono text-amber-900">
+                            ₹{(previewSubtotal + Math.round((previewSubtotal * convenienceFeePercent) / 100)).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Section 2: UPI ID & Business Details */}

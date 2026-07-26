@@ -34,10 +34,41 @@ export const PaymentSettingsView: React.FC = () => {
   const [paymentEnabled, setPaymentEnabled] = useState(paymentSettings.paymentEnabled !== false);
   const [paymentInstructions, setPaymentInstructions] = useState(
     paymentSettings.paymentInstructions ||
-      'Scan the QR code using Google Pay, PhonePe, Paytm, or BHIM UPI app. Enter transaction ID after completing payment.'
+      'Scan the QR code using Google Pay, PhonePe, Paytm, or BHIM UPI app. Select payment method and authorize.'
   );
   const [minOrderAmount, setMinOrderAmount] = useState<number>(paymentSettings.minOrderAmount ?? 1);
   const [maxOrderAmount, setMaxOrderAmount] = useState<number>(paymentSettings.maxOrderAmount ?? 0);
+
+  // Gateway Credentials
+  const [gatewayProvider, setGatewayProvider] = useState<'RAZORPAY' | 'PHONEPE' | 'CASHFREE' | 'PAYU'>(
+    paymentSettings.gatewayProvider || 'RAZORPAY'
+  );
+  const [keyId, setKeyId] = useState<string>(paymentSettings.keyId || paymentSettings.apiKey || '');
+  const [keySecret, setKeySecret] = useState<string>(paymentSettings.keySecret || paymentSettings.apiSecret || '');
+  const [merchantId, setMerchantId] = useState<string>(paymentSettings.merchantId || '');
+  const [isTestMode, setIsTestMode] = useState<boolean>(paymentSettings.isTestMode !== false);
+  const [showSecret, setShowSecret] = useState(false);
+
+  // Payment Method Toggles
+  const [enableUPI, setEnableUPI] = useState<boolean>(paymentSettings.enableUPI !== false);
+  const [enableCards, setEnableCards] = useState<boolean>(paymentSettings.enableCards !== false);
+  const [enableNetBanking, setEnableNetBanking] = useState<boolean>(paymentSettings.enableNetBanking !== false);
+  const [enableWallets, setEnableWallets] = useState<boolean>(paymentSettings.enableWallets !== false);
+  const [enableCOD, setEnableCOD] = useState<boolean>(paymentSettings.enableCOD !== false);
+
+  // Gateway Probe / Test State
+  const [isTestingGateway, setIsTestingGateway] = useState(false);
+  const [testProbeResult, setTestProbeResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Payment Transactions Ledger
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [isLoadingTx, setIsLoadingTx] = useState(false);
+
+  // Refund Modal State
+  const [refundTx, setRefundTx] = useState<any | null>(null);
+  const [refundAmount, setRefundAmount] = useState<number>(0);
+  const [refundReason, setRefundReason] = useState<string>('Customer order cancellation');
+  const [isRefunding, setIsRefunding] = useState(false);
 
   // QR Mode: 'AUTO' or 'CUSTOM'
   const [qrMode, setQrMode] = useState<'AUTO' | 'CUSTOM'>(
@@ -52,16 +83,42 @@ export const PaymentSettingsView: React.FC = () => {
   const [copiedUPI, setCopiedUPI] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Sync form state when remote Firestore paymentSettings changes (if not actively editing)
+  // Fetch transactions from server
+  const loadTransactions = async () => {
+    setIsLoadingTx(true);
+    try {
+      const res = await fetch('/api/payment/transactions');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.transactions)) {
+        setTransactions(data.transactions);
+      }
+    } catch (e) {
+      console.warn('Failed to load transaction history:', e);
+    } finally {
+      setIsLoadingTx(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTransactions();
+  }, []);
+
+  // Sync form state when remote Firestore paymentSettings changes
   useEffect(() => {
     if (saveStatus === 'SAVING') return;
     setUpiId(paymentSettings.upiId || 'marudharfashion@upi');
     setMerchantName(paymentSettings.merchantName || 'Marudhar Fashion Point');
     setPaymentEnabled(paymentSettings.paymentEnabled !== false);
-    setPaymentInstructions(
-      paymentSettings.paymentInstructions ||
-        'Scan the QR code using Google Pay, PhonePe, Paytm, or BHIM UPI app. Enter transaction ID after completing payment.'
-    );
+    setGatewayProvider(paymentSettings.gatewayProvider || 'RAZORPAY');
+    setKeyId(paymentSettings.keyId || paymentSettings.apiKey || '');
+    setKeySecret(paymentSettings.keySecret || paymentSettings.apiSecret || '');
+    setMerchantId(paymentSettings.merchantId || '');
+    setIsTestMode(paymentSettings.isTestMode !== false);
+    setEnableUPI(paymentSettings.enableUPI !== false);
+    setEnableCards(paymentSettings.enableCards !== false);
+    setEnableNetBanking(paymentSettings.enableNetBanking !== false);
+    setEnableWallets(paymentSettings.enableWallets !== false);
+    setEnableCOD(paymentSettings.enableCOD !== false);
     setMinOrderAmount(paymentSettings.minOrderAmount ?? 1);
     setMaxOrderAmount(paymentSettings.maxOrderAmount ?? 0);
     if (paymentSettings.qrCodeCustomImage) {
@@ -152,9 +209,19 @@ export const PaymentSettingsView: React.FC = () => {
       maxOrderAmount: Math.max(0, Number(maxOrderAmount) || 0),
       qrCodeCustomImage: qrMode === 'CUSTOM' ? customQrImage : '',
       qrCodeUrl: autoGeneratedQrUrl,
-      enableUPI: true,
+      gatewayProvider,
+      keyId: keyId.trim(),
+      keySecret: keySecret.trim(),
+      apiKey: keyId.trim(),
+      apiSecret: keySecret.trim(),
+      merchantId: merchantId.trim(),
+      isTestMode,
+      enableUPI,
+      enableCards,
+      enableNetBanking,
+      enableWallets,
+      enableCOD,
       enableQR: true,
-      gatewayProvider: 'DIRECT_UPI_QR',
     };
 
     try {
@@ -183,6 +250,79 @@ export const PaymentSettingsView: React.FC = () => {
       setIsSaving(false);
       setSaveStatus('ERROR');
       setErrorMessage(err.message || 'An unexpected error occurred while saving.');
+    }
+  };
+
+  // Test Connection Probe
+  const executeGatewayProbe = async () => {
+    setIsTestingGateway(true);
+    setTestProbeResult(null);
+    try {
+      const res = await fetch('/api/payment/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 100, // ₹1 test probe
+          customerName: 'Gateway Probe Test',
+          keyId: keyId.trim(),
+          keySecret: keySecret.trim(),
+          gatewayProvider,
+          isTestMode,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.orderId) {
+        setTestProbeResult({
+          success: true,
+          message: `✓ Gateway Connection Successful! Order Session created with ID: ${data.orderId}`,
+        });
+      } else {
+        setTestProbeResult({
+          success: false,
+          message: data.message || 'Gateway Probe Failed. Please verify Key ID and Key Secret.',
+        });
+      }
+    } catch (err: any) {
+      setTestProbeResult({
+        success: false,
+        message: 'Network error reaching payment gateway server endpoint.',
+      });
+    } finally {
+      setIsTestingGateway(false);
+    }
+  };
+
+  // Execute Refund
+  const executeRefund = async () => {
+    if (!refundTx || !refundTx.paymentId) return;
+    setIsRefunding(true);
+
+    try {
+      const res = await fetch('/api/payment/refund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentId: refundTx.paymentId,
+          amount: refundAmount || refundTx.amount,
+          reason: refundReason,
+          keyId: keyId.trim(),
+          keySecret: keySecret.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert(`✓ Refund Processed Successfully! Refund ID: ${data.refundId}`);
+        setRefundTx(null);
+        loadTransactions();
+      } else {
+        alert(`Refund failed: ${data.message}`);
+      }
+    } catch (err: any) {
+      alert(`Refund Error: ${err.message}`);
+    } finally {
+      setIsRefunding(false);
     }
   };
 
@@ -289,47 +429,190 @@ export const PaymentSettingsView: React.FC = () => {
         {/* Left 2 Columns: Core UPI Settings */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Section 1: Online Payment Master Switch */}
+          {/* Section 1: Official Production Payment Gateway Credentials */}
           <div className="p-5 bg-white rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
               <div className="flex items-center gap-2.5">
-                <Smartphone className="w-4 h-4 text-[#0B8F63]" />
-                <h3 className="font-bold text-neutral-900 text-xs uppercase tracking-wider">
-                  Payment Status
-                </h3>
+                <ShieldCheck className="w-5 h-5 text-emerald-700" />
+                <div>
+                  <h3 className="font-bold text-neutral-900 text-xs uppercase tracking-wider">
+                    Production Payment Gateway Config
+                  </h3>
+                  <p className="text-[11px] text-neutral-500 font-normal">
+                    Connect Razorpay, PhonePe, Cashfree, or PayU for instant automated checkout.
+                  </p>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setPaymentEnabled(!paymentEnabled);
-                  setSaveStatus('IDLE');
-                }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                  paymentEnabled ? 'bg-[#0B8F63]' : 'bg-neutral-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    paymentEnabled ? 'translate-x-6' : 'translate-x-1'
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-neutral-600">Mode:</span>
+                <button
+                  type="button"
+                  onClick={() => setIsTestMode(!isTestMode)}
+                  className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all ${
+                    isTestMode
+                      ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                      : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                   }`}
-                />
-              </button>
+                >
+                  {isTestMode ? 'Sandbox / Test Mode' : '⚡ Live Production'}
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-xl bg-neutral-100 text-neutral-600 shrink-0 mt-0.5">
-                <Info className="w-4 h-4" />
+            {/* Gateway Provider Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              {[
+                { id: 'RAZORPAY', name: 'Razorpay', subtitle: 'UPI, Cards, Banks, Wallets' },
+                { id: 'PHONEPE', name: 'PhonePe Gateway', subtitle: 'Direct PhonePe PG' },
+                { id: 'CASHFREE', name: 'Cashfree', subtitle: 'Instant Settlements' },
+                { id: 'PAYU', name: 'PayU Money', subtitle: 'Cards & NetBanking' },
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setGatewayProvider(p.id as any)}
+                  className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                    gatewayProvider === p.id
+                      ? 'border-emerald-600 bg-emerald-50/60 text-emerald-950 shadow-sm font-bold'
+                      : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
+                  }`}
+                >
+                  <span className="font-bold text-xs">{p.name}</span>
+                  <span className="text-[10px] text-neutral-500 font-normal mt-1">{p.subtitle}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Credential Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Key ID / Client ID <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={keyId}
+                  onChange={(e) => setKeyId(e.target.value)}
+                  placeholder="rzp_test_... or rzp_live_..."
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 font-mono text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
+                />
+                <p className="text-[10px] text-neutral-500">Provided in your {gatewayProvider} merchant dashboard API keys page.</p>
               </div>
-              <div>
-                <p className="font-bold text-neutral-900 text-xs">
-                  {paymentEnabled ? 'Online UPI Payments Enabled' : 'Online UPI Payments Paused'}
-                </p>
-                <p className="text-neutral-500 text-[11px] mt-0.5 leading-relaxed">
-                  {paymentEnabled
-                    ? 'Customers can scan QR code or pay via GPay, PhonePe, Paytm, and BHIM during checkout.'
-                    : 'Online payment options will be hidden on checkout until re-enabled.'}
-                </p>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-800 flex items-center justify-between">
+                  <span>Key Secret / Salt Key <span className="text-rose-500">*</span></span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSecret(!showSecret)}
+                    className="text-[10px] text-emerald-700 hover:underline font-normal"
+                  >
+                    {showSecret ? 'Hide' : 'Show'}
+                  </button>
+                </label>
+                <input
+                  type={showSecret ? 'text' : 'password'}
+                  value={keySecret}
+                  onChange={(e) => setKeySecret(e.target.value)}
+                  placeholder="••••••••••••••••"
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 font-mono text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
+                />
+                <p className="text-[10px] text-neutral-500">Keep secret. Used for server-side cryptographic HMAC SHA256 signature verification.</p>
               </div>
+            </div>
+
+            {/* Test Connection Probe Button */}
+            <div className="pt-2 flex items-center justify-between border-t border-neutral-100">
+              <button
+                type="button"
+                onClick={executeGatewayProbe}
+                disabled={isTestingGateway}
+                className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-sm"
+              >
+                {isTestingGateway ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-300" />
+                    <span>Testing Gateway Handshake...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Test Gateway Connection</span>
+                  </>
+                )}
+              </button>
+
+              {testProbeResult && (
+                <div
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${
+                    testProbeResult.success
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : 'bg-rose-50 text-rose-800 border-rose-200'
+                  }`}
+                >
+                  {testProbeResult.message}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Section 2: Enabled Payment Methods */}
+          <div className="p-5 bg-white rounded-2xl border border-neutral-200/80 shadow-sm space-y-3">
+            <h3 className="font-bold text-neutral-900 text-xs uppercase tracking-wider border-b border-neutral-100 pb-2.5 flex items-center justify-between">
+              <span>Supported Payment Methods on Checkout</span>
+              <span className="text-[10px] text-neutral-400 font-normal">Customer checkout options</span>
+            </h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">
+                <input
+                  type="checkbox"
+                  checked={enableUPI}
+                  onChange={(e) => setEnableUPI(e.target.checked)}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                />
+                <span>UPI Apps (PhonePe, GPay, Paytm)</span>
+              </label>
+
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">
+                <input
+                  type="checkbox"
+                  checked={enableCards}
+                  onChange={(e) => setEnableCards(e.target.checked)}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                />
+                <span>Debit & Credit Cards</span>
+              </label>
+
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">
+                <input
+                  type="checkbox"
+                  checked={enableNetBanking}
+                  onChange={(e) => setEnableNetBanking(e.target.checked)}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                />
+                <span>Net Banking (50+ Banks)</span>
+              </label>
+
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">
+                <input
+                  type="checkbox"
+                  checked={enableWallets}
+                  onChange={(e) => setEnableWallets(e.target.checked)}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                />
+                <span>Mobile Wallets</span>
+              </label>
+
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">
+                <input
+                  type="checkbox"
+                  checked={enableCOD}
+                  onChange={(e) => setEnableCOD(e.target.checked)}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                />
+                <span>Pay on Delivery (COD)</span>
+              </label>
             </div>
           </div>
 
@@ -665,6 +948,171 @@ export const PaymentSettingsView: React.FC = () => {
         </div>
 
       </form>
+
+      {/* Payment Transactions Ledger & Refund Management Section */}
+      <div className="p-5 bg-white rounded-2xl border border-neutral-200/80 shadow-sm space-y-4 mt-6">
+        <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+          <div className="flex items-center gap-2.5">
+            <FileText className="w-5 h-5 text-emerald-700" />
+            <div>
+              <h3 className="font-bold text-neutral-900 text-xs uppercase tracking-wider">
+                Verified Gateway Transactions Ledger & Refunds
+              </h3>
+              <p className="text-[11px] text-neutral-500 font-normal">
+                Real-time record of all verified payment transactions, payment IDs, and instant refund processing.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={loadTransactions}
+            disabled={isLoadingTx}
+            className="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingTx ? 'animate-spin' : ''}`} />
+            <span>Refresh Ledger</span>
+          </button>
+        </div>
+
+        {transactions.length === 0 ? (
+          <div className="p-8 text-center text-neutral-500 bg-neutral-50 rounded-xl border border-dashed border-neutral-200">
+            <p className="font-bold text-xs text-neutral-700">No Online Gateway Transactions Recorded Yet</p>
+            <p className="text-[11px] text-neutral-500 mt-1">
+              When customers complete checkout via Razorpay, PhonePe, Cards, or Netbanking, verified transactions will appear here.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-neutral-200 bg-neutral-50/80 text-neutral-600 font-bold uppercase text-[10px]">
+                  <th className="py-2.5 px-3">Date / Time</th>
+                  <th className="py-2.5 px-3">Order ID</th>
+                  <th className="py-2.5 px-3">Customer</th>
+                  <th className="py-2.5 px-3">Method / Gateway</th>
+                  <th className="py-2.5 px-3">Amount</th>
+                  <th className="py-2.5 px-3">Payment ID / Ref</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100 font-medium text-neutral-800">
+                {transactions.map((tx) => (
+                  <tr key={tx.id} className="hover:bg-neutral-50/60 transition-colors">
+                    <td className="py-2.5 px-3 text-[11px] font-mono text-neutral-500">
+                      {new Date(tx.verifiedAt || Date.now()).toLocaleString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </td>
+                    <td className="py-2.5 px-3 font-bold font-mono text-neutral-900">{tx.orderId}</td>
+                    <td className="py-2.5 px-3">
+                      <div className="font-bold text-neutral-900">{tx.customerName}</div>
+                      <div className="text-[10px] text-neutral-500">{tx.customerPhone || tx.customerEmail}</div>
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <span className="px-2 py-0.5 rounded bg-neutral-100 text-neutral-800 font-bold text-[10px]">
+                        {tx.paymentMethod} ({tx.gatewayProvider})
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 font-bold text-emerald-800">₹{tx.amount?.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 font-mono text-[11px] text-neutral-700 select-all">{tx.paymentId}</td>
+                    <td className="py-2.5 px-3">
+                      {tx.refunded || tx.paymentStatus === 'REFUNDED' ? (
+                        <span className="px-2 py-0.5 bg-purple-100 text-purple-800 font-bold text-[10px] rounded-full">
+                          REFUNDED
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-full">
+                          PAID & VERIFIED
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-right">
+                      {!tx.refunded && tx.paymentStatus !== 'REFUNDED' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRefundTx(tx);
+                            setRefundAmount(tx.amount);
+                          }}
+                          className="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-bold transition-colors"
+                        >
+                          Initiate Refund
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Refund Modal */}
+      {refundTx && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-neutral-200">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <h3 className="font-bold text-sm text-neutral-900 uppercase">Process Gateway Refund</h3>
+              <button onClick={() => setRefundTx(null)} className="p-1 text-neutral-400 hover:text-neutral-700">
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 text-xs space-y-1 text-purple-900">
+              <div><strong>Payment ID:</strong> <span className="font-mono">{refundTx.paymentId}</span></div>
+              <div><strong>Customer:</strong> {refundTx.customerName}</div>
+              <div><strong>Original Payment:</strong> ₹{refundTx.amount?.toLocaleString()}</div>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-neutral-700 font-bold mb-1">Refund Amount (₹) *</label>
+                <input
+                  type="number"
+                  value={refundAmount}
+                  onChange={(e) => setRefundAmount(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-xl font-bold text-neutral-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-neutral-700 font-bold mb-1">Reason for Refund *</label>
+                <textarea
+                  rows={2}
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="Reason for processing refund..."
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-xl text-neutral-900"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-100">
+              <button
+                type="button"
+                onClick={() => setRefundTx(null)}
+                className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-bold text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={executeRefund}
+                disabled={isRefunding}
+                className="px-5 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl font-bold text-xs flex items-center gap-1.5"
+              >
+                {isRefunding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                <span>Confirm Refund</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

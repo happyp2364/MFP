@@ -35,6 +35,7 @@ import {
   TrendingUp,
   Instagram,
   ExternalLink,
+  Share2,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
@@ -669,7 +670,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                 />
                                 <div>
                                   <div className="font-bold text-neutral-900">{p.name}</div>
-                                  <div className="text-[10px] text-neutral-400">{p.brand} • {p.subcategory}</div>
+                                  <div className="text-[10px] text-neutral-500 flex items-center gap-1.5 mt-0.5">
+                                    <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.2 font-mono font-bold rounded">
+                                      SKU: {p.sku || p.id.toUpperCase()}
+                                    </span>
+                                    <span>• {p.brand}</span>
+                                  </div>
                                 </div>
                               </div>
                             </td>
@@ -1215,7 +1221,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     type="text"
                     required
                     value={editingProduct.name}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                    onChange={(e) => {
+                      const newName = e.target.value;
+                      const autoSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                      setEditingProduct({
+                        ...editingProduct,
+                        name: newName,
+                        slug: editingProduct.slug || autoSlug,
+                        metaTitle: editingProduct.metaTitle || `${newName} | Marudhar Fashion Point`,
+                      });
+                    }}
                     className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63]"
                   />
                 </div>
@@ -1228,6 +1243,88 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     onChange={(e) => setEditingProduct({ ...editingProduct, brand: e.target.value })}
                     className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63]"
                   />
+                </div>
+              </div>
+
+              {/* SKU & PRODUCT PUBLIC URL SLUG */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-100">
+                <div>
+                  <label className="font-bold text-emerald-900 block mb-1 flex items-center justify-between text-xs">
+                    <span>Unique Product SKU (Item ID) *</span>
+                    <span className="text-[10px] text-emerald-700 font-semibold">e.g. MFP-M01-RUN</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. MFP-M01-RUN"
+                    value={editingProduct.sku || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, sku: e.target.value.toUpperCase().trim() })}
+                    className="w-full bg-white border border-emerald-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63] font-mono text-xs font-bold text-emerald-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-emerald-900 block mb-1 flex items-center justify-between text-xs">
+                    <span>Public URL Slug *</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const generated = (editingProduct.name || 'product')
+                          .toLowerCase()
+                          .replace(/[^a-z0-9]+/g, '-')
+                          .replace(/(^-|-$)/g, '');
+                        setEditingProduct({ ...editingProduct, slug: generated });
+                      }}
+                      className="text-[10px] font-bold text-[#0B8F63] hover:underline"
+                    >
+                      Auto-generate
+                    </button>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. marudhar-airglide-running-shoes"
+                      value={editingProduct.slug || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                      className="w-full bg-white border border-emerald-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63] font-mono text-xs text-neutral-800"
+                    />
+                  </div>
+                  <span className="text-[10px] text-neutral-500 mt-1 block truncate">
+                    Preview: <code className="bg-white px-1 py-0.5 rounded text-emerald-800 border border-emerald-100">/product/{editingProduct.slug || 'slug'}</code>
+                  </span>
+                </div>
+              </div>
+
+              {/* WHATSAPP & OPEN GRAPH METADATA */}
+              <div className="bg-neutral-50 p-3 rounded-2xl border border-neutral-200 space-y-2">
+                <span className="font-extrabold text-neutral-800 block text-xs flex items-center gap-1.5">
+                  <Share2 className="w-3.5 h-3.5 text-[#0B8F63]" />
+                  WhatsApp & Social Link Preview Metadata (Open Graph)
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="font-bold text-neutral-600 block text-[11px] mb-0.5">Meta Title (WhatsApp Preview Title)</label>
+                    <input
+                      type="text"
+                      placeholder="Product Title for WhatsApp & SEO"
+                      value={editingProduct.metaTitle || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, metaTitle: e.target.value })}
+                      className="w-full bg-white border border-neutral-200 rounded-xl p-2 text-xs outline-none focus:ring-2 focus:ring-[#0B8F63]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-neutral-600 block text-[11px] mb-0.5">Meta Description (WhatsApp Subtext)</label>
+                    <input
+                      type="text"
+                      placeholder="Brief product description for WhatsApp preview cards"
+                      value={editingProduct.metaDescription || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, metaDescription: e.target.value })}
+                      className="w-full bg-white border border-neutral-200 rounded-xl p-2 text-xs outline-none focus:ring-2 focus:ring-[#0B8F63]"
+                    />
+                  </div>
                 </div>
               </div>
 

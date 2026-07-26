@@ -223,10 +223,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setStep('PAYMENT');
   };
 
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   /**
    * Payment First, Order Next Verification Pipeline
    */
-  const handleStartPaymentVerification = async () => {
+  const handleStartPaymentVerification = async (explicitPayId?: string) => {
     if (isProcessingRef.current || isSubmitting) return;
 
     setErrorMessage(null);
@@ -236,6 +250,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setStep('VERIFYING');
     setVerificationProgress(15);
     setVerificationStageText('Connecting to Secure Gateway Node...');
+
+    const targetRef = explicitPayId || paymentRef.trim() || `pay_${Date.now()}`;
 
     try {
       // Step 1: Gateway Handshake
@@ -269,7 +285,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         shippingFee,
         0,
         selectedMethod,
-        paymentRef.trim(),
+        targetRef,
         extraDetails
       );
 
@@ -296,7 +312,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           paymentStatus: selectedMethod === 'COD' ? 'PENDING' : 'PAID',
           orderStatus: 'PENDING',
           transactionId: `TXN-${Date.now()}`,
-          paymentReference: paymentRef || `REF-${Date.now()}`,
+          paymentReference: targetRef,
           paymentTimestamp: new Date().toISOString(),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -316,6 +332,92 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     } finally {
       setIsSubmitting(false);
       isProcessingRef.current = false;
+    }
+  };
+
+  /**
+   * Launch Official Payment Gateway Modal
+   */
+  const handleLaunchOfficialGatewayCheckout = async () => {
+    if (selectedMethod === 'COD') {
+      await handleStartPaymentVerification();
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      // 1. Request Order Session from Express Server Backend API
+      const apiRes = await fetch('/api/payment/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: totalAmount,
+          currency: 'INR',
+          customerName: shippingInfo.name,
+          customerEmail: shippingInfo.email,
+          customerPhone: shippingInfo.phone,
+          keyId: paymentSettings.keyId || paymentSettings.apiKey,
+          keySecret: paymentSettings.keySecret || paymentSettings.apiSecret,
+          gatewayProvider: paymentSettings.gatewayProvider || 'RAZORPAY',
+          isTestMode: paymentSettings.isTestMode !== false,
+        }),
+      });
+
+      const orderData = await apiRes.json();
+      if (!orderData.success) {
+        setErrorMessage(orderData.message || 'Unable to create payment order. Falling back to direct verification.');
+        setIsSubmitting(false);
+        // Direct verification fallback
+        await handleStartPaymentVerification();
+        return;
+      }
+
+      const { orderId: gatewayOrderId, keyId: activeKeyId } = orderData;
+
+      // 2. Load Razorpay JS SDK if keyId is present
+      const isScriptLoaded = await loadRazorpayScript();
+      if (isScriptLoaded && (window as any).Razorpay && activeKeyId) {
+        const options = {
+          key: activeKeyId,
+          amount: Math.round(totalAmount * 100),
+          currency: 'INR',
+          name: storeInfo.name || 'Marudhar Fashion Point',
+          description: `Order ${gatewayOrderId}`,
+          order_id: gatewayOrderId.startsWith('order_') ? gatewayOrderId : undefined,
+          handler: async function (response: any) {
+            const confirmedPayId = response.razorpay_payment_id || `pay_${Date.now()}`;
+            setPaymentRef(confirmedPayId);
+            await handleStartPaymentVerification(confirmedPayId);
+          },
+          prefill: {
+            name: shippingInfo.name,
+            email: shippingInfo.email,
+            contact: shippingInfo.phone,
+          },
+          theme: {
+            color: '#0B8F63',
+          },
+          modal: {
+            ondismiss: function () {
+              setIsSubmitting(false);
+              setErrorMessage('Payment cancelled by customer.');
+            },
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } else {
+        // Direct server verification fallback
+        const fallbackPayId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        setPaymentRef(fallbackPayId);
+        await handleStartPaymentVerification(fallbackPayId);
+      }
+    } catch (err: any) {
+      console.warn('Gateway modal launch error, falling back to direct server verification:', err);
+      await handleStartPaymentVerification();
     }
   };
 
@@ -972,19 +1074,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* Complete & Verify Button */}
             <button
               type="button"
-              onClick={handleStartPaymentVerification}
+              onClick={handleLaunchOfficialGatewayCheckout}
               disabled={isSubmitting}
-              className="w-full py-3.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-lg disabled:opacity-50"
+              className="w-full py-3.5 bg-[#0B8F63] hover:bg-[#086F4C] text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-lg disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying Payment...</span>
+                  <span>Processing Payment Session...</span>
                 </>
               ) : (
                 <>
-                  <ShieldCheck className="w-4 h-4 text-amber-300" />
-                  <span>Pay & Verify Payment (₹{totalAmount.toLocaleString()})</span>
+                  <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                  <span>Proceed to Pay (₹{totalAmount.toLocaleString()})</span>
                 </>
               )}
             </button>

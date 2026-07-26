@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Heart, MessageCircle, Star, Sparkles, ShieldCheck, Truck, RotateCcw, ShoppingBag, Bell, ImageOff } from 'lucide-react';
+import { X, Heart, MessageCircle, Star, Sparkles, ShieldCheck, Truck, RotateCcw, ShoppingBag, Bell, ImageOff, Share2, Copy, Check } from 'lucide-react';
 import { Product } from '../../types';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
+import { getProductSKU, getProductUrl } from '../../utils/productUtils';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 import {
   normalizeProductSizeStocks,
@@ -40,6 +41,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   );
   const [quantity, setQuantity] = useState(1);
   const [addedNotice, setAddedNotice] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const selectedSizeInfo = getSizeStockInfo(product, selectedSize);
   const isSelectedSizeOutOfStock = selectedSizeInfo
@@ -151,9 +153,41 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             </div>
 
             {/* Product Title */}
-            <h2 className="font-serif-heading font-extrabold text-2xl sm:text-3xl text-neutral-900 leading-tight">
-              {product.name}
-            </h2>
+            <div>
+              <h2 className="font-serif-heading font-extrabold text-2xl sm:text-3xl text-neutral-900 leading-tight">
+                {product.name}
+              </h2>
+              
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className="bg-emerald-100 text-emerald-900 font-mono font-extrabold text-[11px] px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1">
+                  <span>SKU:</span>
+                  <span>{getProductSKU(product)}</span>
+                </span>
+
+                <button
+                  onClick={() => {
+                    const url = getProductUrl(product);
+                    navigator.clipboard.writeText(url);
+                    setCopiedLink(true);
+                    setTimeout(() => setCopiedLink(false), 2000);
+                  }}
+                  className="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors border border-neutral-200"
+                  title="Copy direct product link"
+                >
+                  {copiedLink ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700 font-extrabold">Link Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-neutral-500" />
+                      <span>Copy Link</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
 
             {/* Price Box */}
             <div className="flex items-baseline gap-3">

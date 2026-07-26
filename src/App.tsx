@@ -33,6 +33,7 @@ import { FloatingParticlesCanvas } from './components/Theme/FloatingParticlesCan
 
 import { useStore } from './context/StoreContext';
 import { Product, FilterState, GenderCategory, CartItem } from './types';
+import { findProductBySlugOrId, getProductSlug } from './utils/productUtils';
 
 function AppContent() {
   const { products, isAdmin, toastMessage } = useStore();
@@ -78,6 +79,37 @@ function AppContent() {
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   const [gmailModalOpen, setGmailModalOpen] = useState(false);
   const [workspaceHubOpen, setWorkspaceHubOpen] = useState(false);
+
+  // --- DYNAMIC PUBLIC PRODUCT URL ROUTING ---
+  React.useEffect(() => {
+    if (!products || products.length === 0) return;
+
+    const path = window.location.pathname;
+    if (path.startsWith('/product/')) {
+      const slug = path.replace('/product/', '').split('/')[0];
+      if (slug) {
+        const found = findProductBySlugOrId(products, slug);
+        if (found) {
+          setQuickViewProduct(found);
+        }
+      }
+    }
+  }, [products]);
+
+  // Sync address bar URL when quickViewProduct opens or closes
+  React.useEffect(() => {
+    if (quickViewProduct) {
+      const slug = getProductSlug(quickViewProduct);
+      const targetUrl = `/product/${slug}`;
+      if (window.location.pathname !== targetUrl) {
+        window.history.pushState({ productId: quickViewProduct.id }, '', targetUrl);
+      }
+    } else {
+      if (window.location.pathname.startsWith('/product/')) {
+        window.history.pushState({}, '', '/');
+      }
+    }
+  }, [quickViewProduct]);
 
   // --- HANDLERS ---
   const handleUpdateFilter = (updated: Partial<FilterState>) => {

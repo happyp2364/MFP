@@ -213,116 +213,83 @@ export async function verifyPaymentSecurely(
     };
   }
 
-  // 4. Method-Specific Payment Integrity & Reference Checks
-  const cleanRef = (paymentRef || '').trim().toUpperCase();
+  // 4. Method-Specific Payment Verification via Server Gateway API
+  const cleanRef = (paymentRef || '').trim();
 
-  if (paymentMethod === 'UPI' || paymentMethod === 'QR_SCAN') {
-    if (!cleanRef) {
-      return {
-        success: false,
-        status: 'PAYMENT_FAILED',
-        errorCode: 'INVALID_REF',
-        message: 'Please enter your 12-digit UPI Reference / UTR Number to verify payment.',
-      };
-    }
+  if (paymentMethod === 'COD') {
+    return {
+      success: true,
+      status: 'PAYMENT_SUCCESSFUL',
+      message: 'Cash on Delivery order confirmed.',
+      verifiedReference: `COD-${Date.now()}`,
+      transactionId: `COD-${Date.now()}`,
+      verifiedAt: nowISO,
+    };
+  }
 
-    // Must be at least 8 chars, typically 12 numeric digits
-    if (cleanRef.length < 8) {
-      return {
-        success: false,
-        status: 'PAYMENT_FAILED',
-        errorCode: 'INVALID_REF',
-        message: 'Invalid UTR format. UPI reference numbers must be at least 8 to 12 digits.',
-      };
-    }
-
-    // Check for dummy pattern like "12345678" or "00000000" or "TEST"
-    const dummyRegex = /^(0{8,12}|1{8,12}|12345678|123456789012|TEST|DEMO)$/i;
-    if (dummyRegex.test(cleanRef)) {
-      return {
-        success: false,
-        status: 'PAYMENT_FAILED',
-        errorCode: 'INVALID_REF',
-        message: 'Invalid or dummy UTR entered. Please provide the real bank transaction UTR from your UPI app.',
-      };
-    }
-
-    // Check duplicate UTR in database (Anti-Replay Protection)
+  // Check duplicate transaction reference in database (Anti-Replay Protection)
+  if (cleanRef) {
     const isDuplicate = await checkDuplicateTransactionInFirestore(cleanRef);
     if (isDuplicate) {
       return {
         success: false,
         status: 'PAYMENT_FAILED',
         errorCode: 'DUPLICATE_TX',
-        message: 'This UPI UTR / Reference has already been used for a verified order. Duplicate payment attempts are blocked.',
-      };
-    }
-  } else if (paymentMethod === 'CARD') {
-    const rawCard = (cardNumber || '').replace(/\s/g, '');
-    if (!rawCard || !validateLuhnCardNumber(rawCard)) {
-      return {
-        success: false,
-        status: 'PAYMENT_FAILED',
-        errorCode: 'INVALID_CARD',
-        message: 'Invalid card number. Please check card digits and try again.',
-      };
-    }
-
-    if (!cardName || cardName.trim().length < 2) {
-      return {
-        success: false,
-        status: 'PAYMENT_FAILED',
-        errorCode: 'INVALID_CARD',
-        message: 'Please enter the cardholder name as printed on the card.',
-      };
-    }
-
-    if (!cardExpiry || !validateCardExpiry(cardExpiry)) {
-      return {
-        success: false,
-        status: 'PAYMENT_FAILED',
-        errorCode: 'INVALID_CARD',
-        message: 'Card expiry date is invalid or expired. Enter in MM/YY format.',
-      };
-    }
-
-    if (!cardCvv || cardCvv.trim().length < 3) {
-      return {
-        success: false,
-        status: 'PAYMENT_FAILED',
-        errorCode: 'INVALID_CARD',
-        message: 'Please enter a valid 3 or 4 digit CVV code.',
-      };
-    }
-  } else if (paymentMethod === 'NET_BANKING') {
-    if (!selectedBank) {
-      return {
-        success: false,
-        status: 'PAYMENT_FAILED',
-        errorCode: 'INVALID_REF',
-        message: 'Please select a bank to proceed with Netbanking authorization.',
-      };
-    }
-  } else if (paymentMethod === 'WALLET') {
-    if (!selectedWallet) {
-      return {
-        success: false,
-        status: 'PAYMENT_FAILED',
-        errorCode: 'INVALID_REF',
-        message: 'Please select a digital wallet to complete payment.',
+        message: 'This Payment Reference / Transaction ID has already been used for a confirmed order. Duplicate payment attempts are blocked.',
       };
     }
   }
 
-  // 5. Simulate Server-Side Gateway Settlement Network Roundtrip (Security Handshake)
-  const simulatedTxId = cleanRef || `TXN-${Date.now()}-${Math.floor(Math.random() * 8999 + 1000)}`;
+  // 5. Call Express Server API /api/payment/verify for Cryptographic Verification
+  try {
+    const paymentIdToVerify = cleanRef || `pay_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const orderIdToVerify = `order_${Date.now()}`;
 
-  return {
-    success: true,
-    status: 'PAYMENT_SUCCESSFUL',
-    message: 'Payment verified successfully by banking network.',
-    verifiedReference: cleanRef || simulatedTxId,
-    transactionId: simulatedTxId,
-    verifiedAt: nowISO,
-  };
+    const apiRes = await fetch('/api/payment/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        razorpay_payment_id: paymentIdToVerify,
+        razorpay_order_id: orderIdToVerify,
+        amount: totalAmount,
+        currency: 'INR',
+        customerName: shippingInfo.name,
+        customerEmail: shippingInfo.email,
+        customerPhone: shippingInfo.phone,
+        paymentMethod,
+        keyId: paymentSettings.keyId || paymentSettings.apiKey,
+        keySecret: paymentSettings.keySecret || paymentSettings.apiSecret,
+        gatewayProvider: paymentSettings.gatewayProvider || 'RAZORPAY',
+        isTestMode: paymentSettings.isTestMode !== false,
+      }),
+    });
+
+    const data = await apiRes.json();
+
+    if (data.success && data.verified) {
+      return {
+        success: true,
+        status: 'PAYMENT_SUCCESSFUL',
+        message: data.message || 'Payment successfully verified on official gateway.',
+        verifiedReference: data.paymentId || paymentIdToVerify,
+        transactionId: data.paymentId || paymentIdToVerify,
+        verifiedAt: data.verifiedAt || nowISO,
+      };
+    } else {
+      return {
+        success: false,
+        status: 'PAYMENT_FAILED',
+        errorCode: 'FAILED',
+        message: data.message || 'Payment verification failed on server gateway. Please retry.',
+      };
+    }
+  } catch (err: any) {
+    console.error('[Payment Server Verification Error]:', err);
+    return {
+      success: false,
+      status: 'PAYMENT_FAILED',
+      errorCode: 'GATEWAY_TIMEOUT',
+      message: 'Failed to connect to Payment Gateway server node. Please check your internet connection.',
+    };
+  }
 }

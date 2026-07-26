@@ -27,6 +27,8 @@ export async function extractShoeFromImage(imageSrc: string): Promise<Segmentati
         const width = img.naturalWidth || img.width;
         const height = img.naturalHeight || img.height;
 
+        let boundingBox: number[] | null = null;
+
         // Try server-side Gemini Vision AI extraction first if API available
         try {
           const serverRes = await fetch('/api/ai/extract-shoe', {
@@ -46,6 +48,8 @@ export async function extractShoeFromImage(imageSrc: string): Promise<Segmentati
                 height: data.height || height,
               });
               return;
+            } else if (data?.boundingBox && Array.isArray(data.boundingBox)) {
+              boundingBox = data.boundingBox;
             }
           }
         } catch (serverErr) {
@@ -71,10 +75,10 @@ export async function extractShoeFromImage(imageSrc: string): Promise<Segmentati
         const samplePoints = [
           [0, 0], [width - 1, 0], [0, height - 1], [width - 1, height - 1],
           [Math.floor(width / 2), 0], [0, Math.floor(height / 2)], [width - 1, Math.floor(height / 2)],
-          [Math.floor(width * 0.1), Math.floor(height * 0.1)],
-          [Math.floor(width * 0.9), Math.floor(height * 0.1)],
-          [Math.floor(width * 0.1), Math.floor(height * 0.9)],
-          [Math.floor(width * 0.9), Math.floor(height * 0.9)],
+          [Math.floor(width * 0.05), Math.floor(height * 0.05)],
+          [Math.floor(width * 0.95), Math.floor(height * 0.05)],
+          [Math.floor(width * 0.05), Math.floor(height * 0.95)],
+          [Math.floor(width * 0.95), Math.floor(height * 0.95)],
         ];
 
         samplePoints.forEach(([x, y]) => {
@@ -82,50 +86,64 @@ export async function extractShoeFromImage(imageSrc: string): Promise<Segmentati
           bgSamples.push([pixels[idx], pixels[idx + 1], pixels[idx + 2]]);
         });
 
-        // 2. Identify Shoe Bounding Box region (saliency / color variance check)
+        // Also add pure white / light grey & near black as potential background defaults for studio product posters
+        bgSamples.push([255, 255, 255]);
+        bgSamples.push([245, 245, 245]);
+        bgSamples.push([240, 240, 240]);
+
+        // 2. Identify Shoe Bounding Box region (saliency / color variance check or AI vision boundingBox)
         let minX = width, minY = height, maxX = 0, maxY = 0;
-        let shoePixelsFound = 0;
 
-        for (let y = 0; y < height; y++) {
-          for (let x = 0; x < width; x++) {
-            const i = (y * width + x) * 4;
-            const r = pixels[i];
-            const g = pixels[i + 1];
-            const b = pixels[i + 2];
+        if (boundingBox && boundingBox.length === 4) {
+          // Use AI vision bounding box from Gemini [ymin, xmin, ymax, xmax] normalized 0-1000
+          minY = Math.max(0, Math.floor((boundingBox[0] / 1000) * height));
+          minX = Math.max(0, Math.floor((boundingBox[1] / 1000) * width));
+          maxY = Math.min(height - 1, Math.ceil((boundingBox[2] / 1000) * height));
+          maxX = Math.min(width - 1, Math.ceil((boundingBox[3] / 1000) * width));
+        } else {
+          let shoePixelsFound = 0;
 
-            // Check distance to background color palette
-            let isBg = false;
-            for (const [bR, bG, bB] of bgSamples) {
-              const colorDist = Math.sqrt((r - bR) ** 2 + (g - bG) ** 2 + (b - bB) ** 2);
-              if (colorDist < 42) {
-                isBg = true;
-                break;
+          for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+              const i = (y * width + x) * 4;
+              const r = pixels[i];
+              const g = pixels[i + 1];
+              const b = pixels[i + 2];
+
+              // Check distance to background color palette
+              let isBg = false;
+              for (const [bR, bG, bB] of bgSamples) {
+                const colorDist = Math.sqrt((r - bR) ** 2 + (g - bG) ** 2 + (b - bB) ** 2);
+                if (colorDist < 38) {
+                  isBg = true;
+                  break;
+                }
+              }
+
+              // Exclude extreme top/bottom margins where poster text typically resides
+              const isPosterTextMargin = (y < height * 0.1) || (y > height * 0.9) || (x < width * 0.05) || (x > width * 0.95);
+
+              if (!isBg && !isPosterTextMargin) {
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+                shoePixelsFound++;
               }
             }
+          }
 
-            // Exclude extreme top/bottom margins where poster text typically resides
-            const isPosterTextMargin = (y < height * 0.12 && x < width * 0.4) || (y > height * 0.82);
-
-            if (!isBg && !isPosterTextMargin) {
-              minX = Math.min(minX, x);
-              minY = Math.min(minY, y);
-              maxX = Math.max(maxX, x);
-              maxY = Math.max(maxY, y);
-              shoePixelsFound++;
-            }
+          // Fallback bounds if no clear separation
+          if (shoePixelsFound < 300 || maxX <= minX || maxY <= minY) {
+            minX = Math.floor(width * 0.1);
+            minY = Math.floor(height * 0.1);
+            maxX = Math.floor(width * 0.9);
+            maxY = Math.floor(height * 0.9);
           }
         }
 
-        // Fallback bounds if no clear separation
-        if (shoePixelsFound < 500 || maxX <= minX || maxY <= minY) {
-          minX = Math.floor(width * 0.15);
-          minY = Math.floor(height * 0.15);
-          maxX = Math.floor(width * 0.85);
-          maxY = Math.floor(height * 0.85);
-        }
-
-        // Add small padding to bounding box
-        const pad = 12;
+        // Add padding to bounding box
+        const pad = 10;
         minX = Math.max(0, minX - pad);
         minY = Math.max(0, minY - pad);
         maxX = Math.min(width - 1, maxX + pad);
@@ -165,11 +183,11 @@ export async function extractShoeFromImage(imageSrc: string): Promise<Segmentati
             }
 
             // Alpha transparency mapping
-            if (minBgDist < 30) {
+            if (minBgDist < 35) {
               outPixels[idx + 3] = 0; // 100% transparent
-            } else if (minBgDist < 55) {
+            } else if (minBgDist < 60) {
               // Smooth edge anti-aliasing feather
-              const alphaRatio = (minBgDist - 30) / 25;
+              const alphaRatio = (minBgDist - 35) / 25;
               outPixels[idx + 3] = Math.floor(alphaRatio * 255);
             }
           }

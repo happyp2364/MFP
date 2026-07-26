@@ -71,6 +71,8 @@ export const PRODUCTS_DATA: Product[] = [
   // --- MEN FOOTWEAR & CLOTHING ---
   {
     id: 'mfp-m01',
+    sku: 'MFP-M01-RUN',
+    slug: 'marudhar-airglide-knit-running-shoes',
     name: 'Marudhar AirGlide Knit Running Shoes',
     brand: 'Marudhar Active',
     category: 'men',
@@ -100,6 +102,8 @@ export const PRODUCTS_DATA: Product[] = [
   },
   {
     id: 'mfp-m02',
+    sku: 'MFP-M02-LOAF',
+    slug: 'royal-heritage-handcrafted-leather-loafers',
     name: 'Royal Heritage Handcrafted Leather Loafers',
     brand: 'MFP Premium Craft',
     category: 'men',
@@ -126,6 +130,8 @@ export const PRODUCTS_DATA: Product[] = [
   },
   {
     id: 'mfp-m03',
+    sku: 'MFP-M03-SNK',
+    slug: 'urban-streetwear-minimalist-white-sneakers',
     name: 'Urban Streetwear Minimalist White Sneakers',
     brand: 'MFP Studio',
     category: 'men',
@@ -153,6 +159,8 @@ export const PRODUCTS_DATA: Product[] = [
   },
   {
     id: 'mfp-m04',
+    sku: 'MFP-M04-ETH',
+    slug: 'marudhar-imperial-jutti-nagra-shoes',
     name: 'Marudhar Imperial Jutti & Nagra Shoes',
     brand: 'Marudhar Ethnic',
     category: 'men',
@@ -181,6 +189,8 @@ export const PRODUCTS_DATA: Product[] = [
   },
   {
     id: 'mfp-m05',
+    sku: 'MFP-M05-FRM',
+    slug: 'oxford-executive-formal-derby-leather-shoes',
     name: 'Oxford Executive Formal Derby Leather Shoes',
     brand: 'MFP Formal Elite',
     category: 'men',

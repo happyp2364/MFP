@@ -134,20 +134,21 @@ export const AIShoePetSettingsView: React.FC = () => {
 
     try {
       setProcessingStage('Detecting shoe object using AI...');
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 300));
 
       setProcessingStage('Removing background, text, borders & poster elements...');
       const result = await extractShoeFromImage(srcUrl);
 
       setProcessingStage('Validating transparent PNG quality...');
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 200));
 
       // Automated validation check
       if (result && result.transparentPngUrl) {
         setExtractedShoePng(result.transparentPngUrl);
+        // Automatically update the imageUri state with the extracted transparent PNG
+        setImageUri(result.transparentPngUrl);
 
-        // Check validation criteria
-        if (result.confidence >= 0.8) {
+        if (result.confidence >= 0.7) {
           setValidationResult({
             isValid: true,
             message: 'Shoe object isolated successfully! 100% background, text & poster removed.',
@@ -155,20 +156,20 @@ export const AIShoePetSettingsView: React.FC = () => {
         } else {
           setValidationResult({
             isValid: false,
-            message: 'Only a shoe could not be extracted. Please upload a clearer shoe image.',
+            message: 'Only a shoe could not be extracted cleanly. Please upload a clearer shoe image.',
           });
         }
       } else {
         setValidationResult({
           isValid: false,
-          message: 'Only a shoe could not be extracted. Please upload a clearer shoe image.',
+          message: 'Only a shoe could not be extracted cleanly. Please upload a clearer shoe image.',
         });
       }
     } catch (err: any) {
       console.error('[AI Shoe Extraction Error]:', err);
       setValidationResult({
         isValid: false,
-        message: 'Only a shoe could not be extracted. Please upload a clearer shoe image.',
+        message: 'Only a shoe could not be extracted cleanly. Please upload a clearer shoe image.',
       });
     } finally {
       setIsProcessing(false);
@@ -176,8 +177,8 @@ export const AIShoePetSettingsView: React.FC = () => {
     }
   };
 
-  // Admin File Upload Handler
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Admin File Upload Handler with Image Optimization
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -186,26 +187,65 @@ export const AIShoePetSettingsView: React.FC = () => {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      showToast('Image size should be under 10MB', 'error');
+    if (file.size > 12 * 1024 * 1024) {
+      showToast('Image size should be under 12MB', 'error');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUri = event.target?.result as string;
-      if (dataUri) {
-        processImageForShoeExtraction(dataUri);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsProcessing(true);
+      setProcessingStage('Optimizing image upload...');
+      const optimizedUri = await optimizeImageFile(file, { maxWidth: 1024, maxHeight: 1024, quality: 0.9 });
+      await processImageForShoeExtraction(optimizedUri);
+    } catch (err: any) {
+      showToast('Failed to read uploaded image', 'error');
+      setIsProcessing(false);
+    }
   };
 
-  // Preview Approval: Apply Approved Transparent PNG Shoe to Website Flying Mascot
+  // Preview Approval: Apply Approved Transparent PNG Shoe to Website Flying Mascot Instantly
   const handleApproveExtractedShoe = () => {
-    if (!extractedShoePng) return;
-    setImageUri(extractedShoePng);
-    showToast('Extracted transparent PNG shoe applied to Flying Mascot! Remember to save settings.', 'success');
+    const targetPng = extractedShoePng || imageUri;
+    if (!targetPng) return;
+    
+    setImageUri(targetPng);
+    updatePetShoeConfig({ imageUri: targetPng, enabled: true });
+    showToast('Extracted transparent PNG shoe applied to Flying Mascot instantly!', 'success');
+  };
+
+  // Restore Default Mascot
+  const handleRestoreDefaultMascot = () => {
+    setImageUri('');
+    setExtractedShoePng(null);
+    setOriginalImage(null);
+    setWingsEnabled(true);
+    setWingColor('#F59E0B');
+    setGlowEnabled(true);
+    setGlowColor('#F59E0B');
+    setShineEnabled(true);
+    setMovementSpeed('medium');
+    setSizePx(130);
+    setWingFlapSpeed('normal');
+    setHoverAmplitude('moderate');
+    setOpacity(0.95);
+    setDefaultPosition('bottom-right');
+
+    updatePetShoeConfig({
+      imageUri: '',
+      wingsEnabled: true,
+      wingColor: '#F59E0B',
+      glowEnabled: true,
+      glowColor: '#F59E0B',
+      shineEnabled: true,
+      movementSpeed: 'medium',
+      sizePx: 130,
+      wingFlapSpeed: 'normal',
+      hoverAmplitude: 'moderate',
+      opacity: 0.95,
+      defaultPosition: 'bottom-right',
+    });
+
+    showToast('Restored default AI Pet Shoe Mascot!', 'info');
   };
 
   // Save Config
@@ -215,7 +255,7 @@ export const AIShoePetSettingsView: React.FC = () => {
 
     const updated: Partial<PetShoeConfig> = {
       enabled,
-      imageUri,
+      imageUri: extractedShoePng || imageUri,
       wingsEnabled,
       wingColor,
       glowEnabled,
@@ -238,7 +278,7 @@ export const AIShoePetSettingsView: React.FC = () => {
     updatePetShoeConfig(updated);
     setIsSaving(false);
     setSaveSuccess(true);
-    showToast('Flying Shoe Pet settings saved successfully!', 'success');
+    showToast('AI Pet Shoe Mascot settings saved successfully!', 'success');
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
@@ -254,30 +294,42 @@ export const AIShoePetSettingsView: React.FC = () => {
               <Sparkles className="w-8 h-8 animate-pulse" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl sm:text-2xl font-bold font-serif-heading text-white">
-                  Flying Shoe Manager
+                  AI Pet Shoe Settings
                 </h2>
                 <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                   <Scissors className="w-3 h-3" />
-                  AI Transparent PNG Extraction
+                  AI Object Segmentation Pipeline
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-neutral-300 mt-1">
-                Upload any shoe photo. AI automatically removes background, posters, and text so ONLY the shoe flies on your website.
+                Upload any shoe photo or poster. AI automatically detects the shoe, removes background, logos, and posters, so ONLY the transparent shoe flies on your website.
               </p>
             </div>
           </div>
 
-          <label className="relative inline-flex items-center cursor-pointer shrink-0">
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={(e) => setEnabled(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-14 h-8 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-[#0B8F63]"></div>
-          </label>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={handleRestoreDefaultMascot}
+              className="px-3.5 py-2 bg-neutral-800/80 hover:bg-neutral-700 text-xs font-bold text-amber-300 border border-amber-500/30 rounded-xl transition-all flex items-center gap-1.5"
+              title="Restore Default AI Pet Shoe Mascot"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Restore Default</span>
+            </button>
+
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-14 h-8 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-[#0B8F63]"></div>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -485,8 +537,8 @@ export const AIShoePetSettingsView: React.FC = () => {
                       onClick={handleApproveExtractedShoe}
                       className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-black text-xs font-extrabold rounded-xl shadow-lg shrink-0 flex items-center gap-1.5 transition-transform hover:scale-105"
                     >
-                      <Check className="w-4 h-4" />
-                      <span>Use This Shoe for Flying Pet</span>
+                      <Zap className="w-4 h-4" />
+                      <span>Replace Mascot Instantly</span>
                     </button>
                   )}
                 </div>

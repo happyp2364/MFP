@@ -1,6 +1,7 @@
 import { Product } from '../types';
 import { STORE_INFO } from '../data/mockData';
 import { isProductCompletelyOutOfStock, getSizeStockInfo } from './sizeStockUtils';
+import { getProductSKU, getProductUrl } from './productUtils';
 
 export function generateProductWhatsAppLink(
   product: Product,
@@ -10,6 +11,8 @@ export function generateProductWhatsAppLink(
 ): string {
   const sizeText = selectedSize || (product.sizes.length > 0 ? product.sizes[0] : 'Standard');
   const colorText = selectedColor || (product.colors.length > 0 ? product.colors[0].name : 'Standard');
+  const sku = getProductSKU(product);
+  const productUrl = getProductUrl(product);
 
   const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
   const sizeInfo = getSizeStockInfo(product, sizeText);
@@ -18,29 +21,59 @@ export function generateProductWhatsAppLink(
   let text = '';
 
   if (isCompletelyOutOfStock || isSizeOutOfStock) {
-    text = `Hello Marudhar Fashion Point,
+    text = `🛍️ Hello Marudhar Fashion Point,
 
 I am interested in this product which is currently OUT OF STOCK:
 
-Product: ${product.name}
-Brand: ${product.brand}
-Requested Size: ${sizeText}
-Requested Color: ${colorText}
+📦 Product:
+${product.name}
 
-🔔 Please notify me as soon as this item/size is restocked or available in store!`;
+🏷️ SKU:
+${sku}
+
+📏 Size:
+${sizeText}
+
+🎨 Colour:
+${colorText}
+
+🔢 Quantity:
+${quantity}
+
+💰 Price:
+₹${product.price.toLocaleString('en-IN')}
+
+🔗 Product Link:
+${productUrl}
+
+🔔 Please notify me as soon as this item/size is restocked in store!`;
   } else {
-    text = `Hello Marudhar Fashion Point,
+    text = `🛍️ Hello Marudhar Fashion Point,
 
-I want to place an order for this item:
+I want to order this product.
 
-Product Name: ${product.name}
-Brand: ${product.brand}
-Price: ₹${product.price.toLocaleString('en-IN')}
-Size: ${sizeText}
-Color: ${colorText}
-Quantity: ${quantity}
+📦 Product:
+${product.name}
 
-Please confirm availability and store pickup / delivery options. Thank you!`;
+🏷️ SKU:
+${sku}
+
+📏 Size:
+${sizeText}
+
+🎨 Colour:
+${colorText}
+
+🔢 Quantity:
+${quantity}
+
+💰 Price:
+₹${product.price.toLocaleString('en-IN')}
+
+🔗 Product Link:
+${productUrl}
+
+Please confirm availability.`;
   }
 
   const encodedText = encodeURIComponent(text);

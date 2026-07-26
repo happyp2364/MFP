@@ -15,6 +15,11 @@ export interface SizeStock {
 
 export interface Product {
   id: string;
+  sku?: string;               // Unique Product ID / Stock Keeping Unit (e.g. MFP-M01-RUN)
+  slug?: string;              // Unique public URL slug (e.g. marudhar-airglide-knit-running-shoes)
+  metaTitle?: string;         // Open Graph / WhatsApp preview custom title
+  metaDescription?: string;   // Open Graph / WhatsApp preview custom description
+  ogImage?: string;           // Open Graph / WhatsApp preview custom image URL
   name: string;
   brand: string;
   category: 'men' | 'women' | 'kids';
@@ -169,6 +174,17 @@ export type PaymentStatus = 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED';
 
 export type PaymentMethodType = 'UPI' | 'QR_SCAN' | 'CARD' | 'NET_BANKING' | 'WALLET' | 'COD';
 
+export interface RefundRecord {
+  id: string;
+  orderId: string;
+  paymentId: string;
+  amount: number;
+  reason: string;
+  status: 'PENDING' | 'PROCESSED' | 'FAILED';
+  gatewayProvider: string;
+  createdAt: string;
+}
+
 export interface PaymentSettings {
   merchantName: string;
   upiId: string;
@@ -179,9 +195,13 @@ export interface PaymentSettings {
   paymentEnabled?: boolean;
   minOrderAmount?: number;
   maxOrderAmount?: number;
-  gatewayProvider?: 'RAZORPAY' | 'PAYU' | 'CASHFREE' | 'DIRECT_UPI_QR';
+  gatewayProvider?: 'RAZORPAY' | 'PHONEPE' | 'CASHFREE' | 'PAYU' | 'DIRECT_UPI_QR';
   apiKey?: string;
   apiSecret?: string;
+  keyId?: string;
+  keySecret?: string;
+  merchantId?: string;
+  webhookSecret?: string;
   enableUPI?: boolean;
   enableQR?: boolean;
   enableCards?: boolean;

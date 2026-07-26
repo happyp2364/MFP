@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { optimizeImageFile } from '../../utils/imageOptimizer';
 import {
   Sparkles,
   Zap,

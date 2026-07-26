@@ -36,6 +36,7 @@ import {
   Instagram,
   ExternalLink,
   Share2,
+  Copy,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
@@ -48,6 +49,7 @@ import { ReportsAnalyticsView } from './ReportsAnalyticsView';
 import { HangingSneakerSettingsView } from './HangingSneakerSettingsView';
 import { AIShoePetSettingsView } from './AIShoePetSettingsView';
 import { InstagramSettingsView } from './InstagramSettingsView';
+import { SmartProductFormModal } from './SmartProductFormModal';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
@@ -182,18 +184,34 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     showNotification('Homepage and store information updated successfully!');
   };
 
+  // Duplicate Product Handler
+  const handleDuplicateProduct = (p: Product) => {
+    const randomSuffix = Math.floor(Math.random() * 1000);
+    const newSku = `${p.sku || 'MFP'}-COPY-${randomSuffix}`;
+    const newSlug = `${p.slug || 'product'}-copy-${randomSuffix}`;
+    const duplicatedProduct: Product = {
+      ...p,
+      id: '',
+      sku: newSku,
+      slug: newSlug,
+      name: `${p.name} (Copy)`,
+    };
+    setIsCreatingProduct(true);
+    setEditingProduct(duplicatedProduct);
+  };
+
   // Save Product
-  const handleSaveProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProduct) return;
+  const handleSaveProduct = (updatedProd?: Product) => {
+    const prodToSave = updatedProd || editingProduct;
+    if (!prodToSave) return;
 
     if (isCreatingProduct) {
-      const { id, ...rest } = editingProduct;
+      const { id, ...rest } = prodToSave;
       addProduct(rest);
       showNotification('New product added successfully!');
     } else {
-      updateProduct(editingProduct.id, editingProduct);
-      showNotification(`Product "${editingProduct.name}" updated successfully!`);
+      updateProduct(prodToSave.id, prodToSave);
+      showNotification(`Product "${prodToSave.name}" updated successfully!`);
     }
 
     setEditingProduct(null);
@@ -710,14 +728,23 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                     setEditingProduct({ ...p });
                                   }}
                                   className="p-1.5 rounded-lg bg-neutral-100 hover:bg-[#0B8F63] hover:text-white transition-colors text-neutral-700"
+                                  title="Edit Product"
                                 >
                                   <Edit className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDuplicateProduct(p)}
+                                  className="p-1.5 rounded-lg bg-neutral-100 hover:bg-amber-500 hover:text-white transition-colors text-amber-700"
+                                  title="Duplicate Product"
+                                >
+                                  <Copy className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => {
                                     triggerReAuthGuard(`Delete Product "${p.name}"`, () => deleteProduct(p.id));
                                   }}
                                   className="p-1.5 rounded-lg bg-neutral-100 hover:bg-rose-600 hover:text-white transition-colors text-rose-600"
+                                  title="Delete Product"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -1199,389 +1226,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         </div>
       )}
 
-      {/* --- EDIT / CREATE PRODUCT MODAL --- */}
+      {/* --- SMART DYNAMIC PRODUCT ADD / EDIT MODAL --- */}
       {editingProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setEditingProduct(null)} />
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-neutral-100 p-6 space-y-4 z-10 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
-              <h3 className="font-serif-heading font-bold text-lg text-neutral-900">
-                {isCreatingProduct ? 'Add New Product' : `Edit "${editingProduct.name}"`}
-              </h3>
-              <button onClick={() => setEditingProduct(null)} className="p-1 text-neutral-400 hover:text-neutral-700">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveProduct} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Product Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingProduct.name}
-                    onChange={(e) => {
-                      const newName = e.target.value;
-                      const autoSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                      setEditingProduct({
-                        ...editingProduct,
-                        name: newName,
-                        slug: editingProduct.slug || autoSlug,
-                        metaTitle: editingProduct.metaTitle || `${newName} | Marudhar Fashion Point`,
-                      });
-                    }}
-                    className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63]"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Brand Name</label>
-                  <input
-                    type="text"
-                    value={editingProduct.brand}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, brand: e.target.value })}
-                    className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63]"
-                  />
-                </div>
-              </div>
-
-              {/* SKU & PRODUCT PUBLIC URL SLUG */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-100">
-                <div>
-                  <label className="font-bold text-emerald-900 block mb-1 flex items-center justify-between text-xs">
-                    <span>Unique Product SKU (Item ID) *</span>
-                    <span className="text-[10px] text-emerald-700 font-semibold">e.g. MFP-M01-RUN</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. MFP-M01-RUN"
-                    value={editingProduct.sku || ''}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, sku: e.target.value.toUpperCase().trim() })}
-                    className="w-full bg-white border border-emerald-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63] font-mono text-xs font-bold text-emerald-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-emerald-900 block mb-1 flex items-center justify-between text-xs">
-                    <span>Public URL Slug *</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const generated = (editingProduct.name || 'product')
-                          .toLowerCase()
-                          .replace(/[^a-z0-9]+/g, '-')
-                          .replace(/(^-|-$)/g, '');
-                        setEditingProduct({ ...editingProduct, slug: generated });
-                      }}
-                      className="text-[10px] font-bold text-[#0B8F63] hover:underline"
-                    >
-                      Auto-generate
-                    </button>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. marudhar-airglide-running-shoes"
-                      value={editingProduct.slug || ''}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
-                      className="w-full bg-white border border-emerald-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63] font-mono text-xs text-neutral-800"
-                    />
-                  </div>
-                  <span className="text-[10px] text-neutral-500 mt-1 block truncate">
-                    Preview: <code className="bg-white px-1 py-0.5 rounded text-emerald-800 border border-emerald-100">/product/{editingProduct.slug || 'slug'}</code>
-                  </span>
-                </div>
-              </div>
-
-              {/* WHATSAPP & OPEN GRAPH METADATA */}
-              <div className="bg-neutral-50 p-3 rounded-2xl border border-neutral-200 space-y-2">
-                <span className="font-extrabold text-neutral-800 block text-xs flex items-center gap-1.5">
-                  <Share2 className="w-3.5 h-3.5 text-[#0B8F63]" />
-                  WhatsApp & Social Link Preview Metadata (Open Graph)
-                </span>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label className="font-bold text-neutral-600 block text-[11px] mb-0.5">Meta Title (WhatsApp Preview Title)</label>
-                    <input
-                      type="text"
-                      placeholder="Product Title for WhatsApp & SEO"
-                      value={editingProduct.metaTitle || ''}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, metaTitle: e.target.value })}
-                      className="w-full bg-white border border-neutral-200 rounded-xl p-2 text-xs outline-none focus:ring-2 focus:ring-[#0B8F63]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-neutral-600 block text-[11px] mb-0.5">Meta Description (WhatsApp Subtext)</label>
-                    <input
-                      type="text"
-                      placeholder="Brief product description for WhatsApp preview cards"
-                      value={editingProduct.metaDescription || ''}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, metaDescription: e.target.value })}
-                      className="w-full bg-white border border-neutral-200 rounded-xl p-2 text-xs outline-none focus:ring-2 focus:ring-[#0B8F63]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Category *</label>
-                  <select
-                    value={editingProduct.category}
-                    onChange={(e) => {
-                      const newCat = e.target.value as 'men' | 'women' | 'kids';
-                      let defaultSub = 'Sports Shoes';
-                      if (newCat === 'men') defaultSub = 'Sports Shoes';
-                      if (newCat === 'women') defaultSub = 'Sports Shoes';
-                      if (newCat === 'kids') defaultSub = 'School Shoes';
-                      setEditingProduct({
-                        ...editingProduct,
-                        category: newCat,
-                        subcategory: defaultSub,
-                      });
-                    }}
-                    className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63] font-bold"
-                  >
-                    <option value="men">Men's Collection</option>
-                    <option value="women">Women's Sports Shoes ONLY</option>
-                    <option value="kids">Kids' Footwear</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Subcategory *</label>
-                  <select
-                    value={editingProduct.subcategory}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, subcategory: e.target.value })}
-                    className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63] font-bold"
-                  >
-                    {editingProduct.category === 'men' && (
-                      <>
-                        <option value="Sports Shoes">Sports Shoes</option>
-                        <option value="Casual Shoes">Casual Shoes</option>
-                        <option value="Sneakers">Sneakers</option>
-                        <option value="Formal Shoes">Formal Shoes</option>
-                        <option value="Sandals">Sandals</option>
-                        <option value="Slippers">Slippers</option>
-                        <option value="Clothing">Clothing</option>
-                      </>
-                    )}
-                    {editingProduct.category === 'women' && (
-                      <option value="Sports Shoes">Sports Shoes (ONLY)</option>
-                    )}
-                    {editingProduct.category === 'kids' && (
-                      <>
-                        <option value="School Shoes">School Shoes</option>
-                        <option value="Sports Shoes">Sports Shoes</option>
-                        <option value="Casual Shoes">Casual Shoes</option>
-                        <option value="Sneakers">Sneakers</option>
-                        <option value="Sandals">Sandals</option>
-                        <option value="Slippers">Slippers</option>
-                        <option value="Party Shoes">Party Shoes</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Selling Price (₹) *</label>
-                  <input
-                    type="number"
-                    required
-                    value={editingProduct.price}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, price: Number(e.target.value) })}
-                    className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63] font-bold text-[#0B8F63]"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">Original Price (₹)</label>
-                  <input
-                    type="number"
-                    value={editingProduct.originalPrice}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: Number(e.target.value) })}
-                    className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#0B8F63]"
-                  />
-                </div>
-              </div>
-
-              {/* REAL PRODUCT IMAGE UPLOAD & CANVAS ENHANCEMENT SECTION */}
-              <div className="space-y-3 border-t border-neutral-200/80 pt-3">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-neutral-800 flex items-center gap-1.5 text-xs">
-                    <Sparkles className="w-4 h-4 text-[#0B8F63]" />
-                    Real Product Images & Canvas Auto-Optimizer
-                  </label>
-                  <span className="text-[10px] text-emerald-700 bg-emerald-50 font-extrabold px-2 py-0.5 rounded-md border border-emerald-200">
-                    Auto-Enhancement & WebP Compression
-                  </span>
-                </div>
-
-                <p className="text-[11px] text-neutral-500">
-                  Upload real product photos taken in shop or from phone camera. Canvas automatically enhances contrast, brightness, and sharpness without modifying shoe design.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {/* Drag & Drop / File Input / Camera Capture */}
-                  <label className="border-2 border-dashed border-[#0B8F63]/40 hover:border-[#0B8F63] bg-[#0B8F63]/5 hover:bg-[#0B8F63]/10 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all text-center group">
-                    <Upload className="w-6 h-6 text-[#0B8F63] mb-1 group-hover:scale-110 transition-transform" />
-                    <span className="font-extrabold text-[#0B8F63] text-xs">Upload Photo / Take Picture</span>
-                    <span className="text-[10px] text-neutral-500 mt-0.5">JPEG, PNG, WEBP (Client Canvas Compressed)</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={async (e) => {
-                        if (!e.target.files || e.target.files.length === 0) return;
-                        setIsOptimizingImage(true);
-                        const files = Array.from(e.target.files) as File[];
-                        for (const file of files) {
-                          const validation = validateFileUpload(file);
-                          if (!validation.isValid) {
-                            alert(validation.error || 'Invalid file format');
-                            continue;
-                          }
-                          try {
-                            const optimizedUrl = await optimizeImageFile(file, { enhance: true });
-                            setEditingProduct((prev) =>
-                              prev
-                                ? { ...prev, images: [...(prev.images || []), optimizedUrl] }
-                                : null
-                            );
-                          } catch (err) {
-                            console.error('Error optimizing product image:', err);
-                          }
-                        }
-                        setIsOptimizingImage(false);
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
-
-                  {/* Image URL Input Option */}
-                  <div className="bg-[#F7F7F7] border border-neutral-200 rounded-2xl p-3 flex flex-col justify-between">
-                    <div>
-                      <span className="font-bold text-neutral-800 text-[11px] mb-1 block">Or Add Image via Direct Web URL</span>
-                      <p className="text-[10px] text-neutral-400 mb-2">Provide direct image link for real shop product.</p>
-                    </div>
-                    <div className="flex gap-1.5">
-                      <input
-                        type="url"
-                        placeholder="https://..."
-                        value={imageInputUrl}
-                        onChange={(e) => setImageInputUrl(e.target.value)}
-                        className="flex-1 bg-white border border-neutral-200 rounded-xl p-2 text-xs outline-none focus:ring-2 focus:ring-[#0B8F63]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!imageInputUrl.trim()) return;
-                          setEditingProduct((prev) =>
-                            prev
-                              ? { ...prev, images: [...(prev.images || []), imageInputUrl.trim()] }
-                              : null
-                          );
-                          setImageInputUrl('');
-                        }}
-                        className="bg-[#0B8F63] text-white font-extrabold text-xs px-3.5 py-2 rounded-xl hover:bg-[#086F4C] transition-colors"
-                      >
-                        Add URL
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {isOptimizingImage && (
-                  <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-bold flex items-center gap-2 animate-pulse">
-                    <Sparkles className="w-4 h-4 text-[#0B8F63] animate-spin" />
-                    <span>Processing & Canvas auto-enhancing uploaded product photo...</span>
-                  </div>
-                )}
-
-                {/* Uploaded Images List & Thumbnails */}
-                <div className="space-y-1.5 pt-1">
-                  <span className="text-[11px] font-bold text-neutral-700 block">
-                    Product Gallery Images ({editingProduct.images?.length || 0}):
-                  </span>
-                  {(!editingProduct.images || editingProduct.images.length === 0) ? (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-[11px] font-medium flex items-center gap-2.5">
-                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
-                      <span>
-                        No image uploaded yet. A clean <strong>"Real Image Coming Soon"</strong> placeholder will be rendered on the website to ensure customers are never shown fake products.
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                      {editingProduct.images.map((imgUrl, idx) => (
-                        <div
-                          key={idx}
-                          className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-100 group shadow-sm"
-                        >
-                          <img
-                            src={imgUrl}
-                            alt={`Product ${idx + 1}`}
-                            style={{ filter: 'brightness(102%) contrast(104%) saturate(105%)' }}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingProduct((prev) =>
-                                  prev
-                                    ? {
-                                        ...prev,
-                                        images: prev.images.filter((_, i) => i !== idx),
-                                      }
-                                    : null
-                                );
-                              }}
-                              className="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-md"
-                              title="Delete Image"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                          {idx === 0 ? (
-                            <span className="absolute bottom-1.5 left-1.5 bg-[#0B8F63] text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md shadow">
-                              Primary Cover
-                            </span>
-                          ) : (
-                            <span className="absolute bottom-1.5 left-1.5 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
-                              #{idx + 1}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingProduct(null)}
-                  className="px-4 py-2.5 rounded-xl border border-neutral-200 font-bold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold px-6 py-2.5 rounded-xl shadow-md"
-                >
-                  Save Product
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <SmartProductFormModal
+          product={editingProduct}
+          isCreating={isCreatingProduct}
+          onSave={(savedProduct) => handleSaveProduct(savedProduct)}
+          onClose={() => setEditingProduct(null)}
+          onDuplicate={(duplicated) => handleDuplicateProduct(duplicated)}
+        />
       )}
 
       {/* Real-time Order Notification Drawer */}

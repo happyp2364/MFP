@@ -43,6 +43,7 @@ import { ChangePasswordView } from './ChangePasswordView';
 import { OrderManagementView } from './OrderManagementView';
 import { PaymentSettingsView } from './PaymentSettingsView';
 import { ReportsAnalyticsView } from './ReportsAnalyticsView';
+import { HangingSneakerSettingsView } from './HangingSneakerSettingsView';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
@@ -52,7 +53,7 @@ interface AdminDashboardModalProps {
   onClose: () => void;
 }
 
-type TabType = 'orders' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'settings' | 'audit' | 'backups' | 'password';
+type TabType = 'orders' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hanging_shoe' | 'overview' | 'settings' | 'audit' | 'backups' | 'password';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -437,6 +438,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('hanging_shoe')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'hanging_shoe'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Hanging Shoe (AI Studio)</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('categories')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'categories'
@@ -537,6 +550,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: SALES & REPORTS ----------------- */}
             {activeTab === 'reports' && <ReportsAnalyticsView />}
+
+            {/* ----------------- TAB: HANGING SHOE AI MANAGER ----------------- */}
+            {activeTab === 'hanging_shoe' && <HangingSneakerSettingsView />}
 
             {/* ----------------- TAB: PRODUCTS & PRICES ----------------- */}
             {activeTab === 'products' && (

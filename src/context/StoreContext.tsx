@@ -81,7 +81,7 @@ const STORAGE_KEYS = {
 
 export const DEFAULT_HANGING_SNEAKER_CONFIG: HangingSneakerConfig = {
   enabled: true,
-  imageUri: '', // empty means use reference ONE 8 burgundy luxury shoe
+  imageUri: '', // empty means use ultra-realistic studio photograph
   laceLength: 220,
   sizePx: 260,
   positionRight: 10,
@@ -90,6 +90,7 @@ export const DEFAULT_HANGING_SNEAKER_CONFIG: HangingSneakerConfig = {
   swingAngleDeg: 4.0,
   baseRotationDeg: -18,
   enablePhysicsAnimation: true,
+  enableShineEffect: true,
   colorTheme: 'ONE8_BURGUNDY',
 };
 

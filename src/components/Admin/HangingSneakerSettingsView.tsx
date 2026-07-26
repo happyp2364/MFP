@@ -16,11 +16,14 @@ import {
   Eye,
   Info,
   RotateCw,
+  Wand2,
+  Scissors,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { HangingSneakerConfig } from '../../types';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { extractShoeFromImage } from '../../utils/aiBackgroundRemoval';
 
 export const HangingSneakerSettingsView: React.FC = () => {
   const { hangingSneakerConfig, updateHangingSneakerConfig } = useStore();
@@ -54,12 +57,14 @@ export const HangingSneakerSettingsView: React.FC = () => {
   const [enablePhysicsAnimation, setEnablePhysicsAnimation] = useState<boolean>(
     current.enablePhysicsAnimation ?? true
   );
+  const [enableShineEffect, setEnableShineEffect] = useState<boolean>(current.enableShineEffect ?? true);
 
   // Status & Feedback
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'IDLE' | 'SAVING' | 'SUCCESS' | 'ERROR'>('IDLE');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [aiProcessingStage, setAiProcessingStage] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -78,9 +83,10 @@ export const HangingSneakerSettingsView: React.FC = () => {
     setSwingAngleDeg(cfg.swingAngleDeg ?? 4.0);
     setBaseRotationDeg(cfg.baseRotationDeg ?? -18);
     setEnablePhysicsAnimation(cfg.enablePhysicsAnimation ?? true);
+    setEnableShineEffect(cfg.enableShineEffect ?? true);
   }, [hangingSneakerConfig]);
 
-  // Handle Image Upload
+  // Handle Image Upload & AI Background Removal
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -93,14 +99,20 @@ export const HangingSneakerSettingsView: React.FC = () => {
     }
 
     setIsUploading(true);
+    setAiProcessingStage('Preparing image...');
     try {
       const optimizedUri = await optimizeImageFile(file, { maxWidth: 1024, maxHeight: 1024, quality: 0.9 });
-      setImageUri(optimizedUri);
+      
+      setAiProcessingStage('AI Detecting Shoe & Isolating Object (Removing Poster, Text & Rocks)...');
+      const segResult = await extractShoeFromImage(optimizedUri);
+      
+      setImageUri(segResult.transparentPngUrl);
       setUseCustomImage(true);
     } catch (err: any) {
-      setErrorMessage('Failed to process image: ' + (err?.message || 'Unknown error'));
+      setErrorMessage('Failed to extract shoe: ' + (err?.message || 'Unknown error'));
     } finally {
       setIsUploading(false);
+      setAiProcessingStage('');
     }
   };
 
@@ -123,6 +135,7 @@ export const HangingSneakerSettingsView: React.FC = () => {
     setSwingAngleDeg(4.0);
     setBaseRotationDeg(-18);
     setEnablePhysicsAnimation(true);
+    setEnableShineEffect(true);
   };
 
   // Apply Presets
@@ -172,6 +185,7 @@ export const HangingSneakerSettingsView: React.FC = () => {
       swingAngleDeg,
       baseRotationDeg,
       enablePhysicsAnimation,
+      enableShineEffect,
       colorTheme: 'ONE8_BURGUNDY',
     };
 
@@ -237,16 +251,16 @@ export const HangingSneakerSettingsView: React.FC = () => {
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Master Toggle & Mode Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Active Enable Toggle */}
           <div className="p-5 rounded-2xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between">
             <div className="space-y-1">
               <label className="text-sm font-semibold flex items-center gap-2 text-neutral-900 dark:text-white">
                 <Eye className="w-4 h-4 text-amber-500" />
-                Enable Decorative Hanging Shoe
+                Enable Hanging Shoe
               </label>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Display the decorative hanging sneaker in the top-right Hero section.
+                Display hanging shoe in Hero section.
               </p>
             </div>
             <button
@@ -269,10 +283,10 @@ export const HangingSneakerSettingsView: React.FC = () => {
             <div className="space-y-1">
               <label className="text-sm font-semibold flex items-center gap-2 text-neutral-900 dark:text-white">
                 <Activity className="w-4 h-4 text-amber-500" />
-                Gentle Pendulum Swing Animation
+                Pendulum Swing
               </label>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Enable subtle luxury swinging motion (3°–5° angle, 6–8s cycle).
+                Subtle swinging motion (3°–5°, 6–8s).
               </p>
             </div>
             <button
@@ -285,6 +299,32 @@ export const HangingSneakerSettingsView: React.FC = () => {
               <span
                 className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
                   enablePhysicsAnimation ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Luxury Studio Shine Toggle */}
+          <div className="p-5 rounded-2xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between">
+            <div className="space-y-1">
+              <label className="text-sm font-semibold flex items-center gap-2 text-neutral-900 dark:text-white">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                Studio Shine Sweep
+              </label>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Soft gloss reflection moving across shoe.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEnableShineEffect(!enableShineEffect)}
+              className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                enableShineEffect ? 'bg-[#0B8F63]' : 'bg-neutral-300 dark:bg-neutral-700'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  enableShineEffect ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
             </button>

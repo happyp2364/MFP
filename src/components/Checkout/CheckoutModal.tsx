@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { CartItem, ShippingAddressInfo, PaymentMethodType, CustomerOrder } from '../../types';
-import { generateUPILink, getQRCodeImageUrl } from '../../utils/qrCode';
+import { generateUPILink, getQRCodeImageUrl, cleanAndSanitizeUPIId, isValidUPIIdFormat } from '../../utils/qrCode';
 import { generateOrderWhatsAppLink } from '../../utils/whatsapp';
 import { InvoiceModal } from '../Customer/InvoiceModal';
 
@@ -135,8 +135,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Dynamic UPI Link & QR Image
   const dynamicOrderId = completedOrderId || `MFP${1025 + Math.floor(Math.random() * 8000)}`;
+  const sanitizedUpiId = cleanAndSanitizeUPIId(paymentSettings.upiId);
+  const isUpiValid = isValidUPIIdFormat(sanitizedUpiId);
+
   const upiLink = generateUPILink(
-    paymentSettings.upiId,
+    sanitizedUpiId,
     paymentSettings.merchantName,
     totalAmount,
     dynamicOrderId
@@ -144,23 +147,47 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const qrImageUrl = getQRCodeImageUrl(upiLink, 320);
 
   const handleCopyUPI = () => {
-    navigator.clipboard.writeText(paymentSettings.upiId);
-    setCopiedUPI(true);
-    setTimeout(() => setCopiedUPI(false), 2000);
+    if (sanitizedUpiId) {
+      navigator.clipboard.writeText(sanitizedUpiId);
+      setCopiedUPI(true);
+      setTimeout(() => setCopiedUPI(false), 2000);
+    }
   };
 
   const handlePayWithUPIApp = () => {
     setDirectPaymentNotice(null);
+
+    // Validate that the UPI ID is not empty and valid before opening app
+    if (!sanitizedUpiId || !isUpiValid) {
+      setDirectPaymentNotice('Invalid UPI ID. Please contact the store.');
+      return;
+    }
+
+    const intentLink = generateUPILink(
+      sanitizedUpiId,
+      paymentSettings.merchantName,
+      totalAmount,
+      dynamicOrderId
+    );
+
+    if (!intentLink) {
+      setDirectPaymentNotice('Invalid UPI ID. Please contact the store.');
+      return;
+    }
+
     try {
+      if (typeof window !== 'undefined' && ((import.meta as any)?.env?.DEV || process.env.NODE_ENV !== 'production')) {
+        console.log('[Opening UPI Intent Deep Link]:', intentLink);
+      }
       // Attempt to launch the native UPI intent deep link
-      window.location.href = upiLink;
+      window.location.href = intentLink;
 
       // Gracefully set provider restriction / scan fallback notice if app doesn't open or direct intent is blocked
       setTimeout(() => {
         setDirectPaymentNotice(
           'Your payment app does not allow direct payment to this UPI ID. Please scan the QR Code to complete your payment.'
         );
-      }, 1000);
+      }, 1200);
     } catch {
       // Never display technical errors
       setDirectPaymentNotice(
@@ -689,7 +716,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           Merchant UPI ID
                         </span>
                         <span className="font-mono font-bold text-sm text-neutral-900 select-all">
-                          {paymentSettings.upiId}
+                          {sanitizedUpiId || 'Not Configured'}
                         </span>
                       </div>
                       <button

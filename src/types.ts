@@ -278,7 +278,7 @@ export interface CustomerProfile {
 
 export interface HangingSneakerConfig {
   enabled: boolean;
-  imageUri: string; // custom uploaded image URL, or empty string to use ONE 8 burgundy leather shoe
+  imageUri: string; // custom uploaded image URL, or fallback default studio photograph
   laceLength: number; // lace drop length in px (e.g. 240)
   sizePx: number; // shoe width/scale in desktop view (e.g. 260)
   positionRight: number; // right offset spacing in rem/px (e.g. 10)
@@ -287,6 +287,7 @@ export interface HangingSneakerConfig {
   swingAngleDeg: number; // pendulum swing angle in degrees (3-5deg)
   baseRotationDeg: number; // base tilt angle in degrees (e.g. -18deg)
   enablePhysicsAnimation: boolean;
+  enableShineEffect?: boolean; // gentle luxury glossy shine overlay
   colorTheme?: 'ONE8_BURGUNDY' | 'MARUDHAR_HERITAGE' | 'MIDNIGHT_NAVY' | 'GOLD_LUXURY';
 }
 

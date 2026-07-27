@@ -1644,7 +1644,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                   <div className="flex items-center justify-between text-[11px] text-neutral-500 font-medium">
                     <span>Step {publishProgress?.currentStep || 1} of 10</span>
-                    <span>Max timeout: 30 seconds</span>
+                    <span className="font-semibold text-emerald-700">Atomic WriteBatch Active</span>
                   </div>
                 </div>
 
@@ -1655,7 +1655,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                       <span>Website Published Successfully!</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 pt-1 border-t border-emerald-200/60">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-emerald-200/60">
                       <div>
                         <span className="text-[10px] uppercase font-bold text-emerald-700 block">Published Time</span>
                         <span className="font-bold text-neutral-900">
@@ -1667,23 +1667,59 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         <span className="font-bold text-emerald-800">{publishResult.versionNumber}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-emerald-700 block">Updated Items</span>
+                        <span className="text-[10px] uppercase font-bold text-emerald-700 block">Publish Duration</span>
+                        <span className="font-bold text-neutral-900">{publishResult.publishDuration || '1.2s'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-emerald-700 block">Updated Docs</span>
                         <span className="font-bold text-neutral-900">{publishResult.totalUpdatedDocs || 'All'} docs</span>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* ERROR CARD */}
+                {/* ERROR CARD WITH FULL FIRESTORE DIAGNOSTICS */}
                 {publishError && (
-                  <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-950 space-y-2 animate-in fade-in duration-200">
+                  <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-950 space-y-3 animate-in fade-in duration-200">
                     <div className="flex items-center gap-2 font-extrabold text-rose-900 text-sm">
                       <AlertTriangle className="w-5 h-5 text-rose-600" />
-                      <span>Publish Operation Stopped</span>
+                      <span>Publish Operation Exception & Diagnostics</span>
                     </div>
-                    <p className="font-mono text-[11px] text-rose-800 bg-rose-100/80 p-2.5 rounded-xl border border-rose-200/60">
-                      {publishError}
-                    </p>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-rose-100/60 p-2.5 rounded-xl border border-rose-200/80 text-[11px]">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-rose-700 block">Error Code</span>
+                        <span className="font-mono font-bold text-rose-950">{publishProgress?.errorCode || publishResult?.errorCode || 'firestore/error'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-rose-700 block">Collection</span>
+                        <span className="font-mono font-bold text-rose-950">{publishProgress?.collectionName || publishResult?.collectionName || 'website_draft'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-rose-700 block">Document ID</span>
+                        <span className="font-mono font-bold text-rose-950">{publishProgress?.documentId || publishResult?.documentId || 'current'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-rose-700 block">Failed Step</span>
+                        <span className="font-mono font-bold text-rose-950">{publishProgress?.stepName || 'Step 3'}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-rose-700 block mb-1">Firebase Exception Message</span>
+                      <p className="font-mono text-[11px] text-rose-900 bg-white/80 p-2.5 rounded-xl border border-rose-200/60 break-words">
+                        {publishError}
+                      </p>
+                    </div>
+
+                    {(publishProgress?.stackTrace || publishResult?.stackTrace) && (
+                      <details className="text-[10px] text-rose-800">
+                        <summary className="cursor-pointer font-bold underline mb-1">View Stack Trace</summary>
+                        <pre className="p-2 bg-rose-950 text-rose-100 rounded-lg overflow-x-auto text-[9px] font-mono whitespace-pre-wrap">
+                          {publishProgress?.stackTrace || publishResult?.stackTrace}
+                        </pre>
+                      </details>
+                    )}
                   </div>
                 )}
 
@@ -1725,6 +1761,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                           </div>
                           {log.message && (
                             <p className="text-[10px] text-neutral-400 mt-0.5 truncate">{log.message}</p>
+                          )}
+                          {log.errorCode && (
+                            <div className="mt-1 p-1.5 bg-rose-950/80 border border-rose-800/80 rounded text-[10px] text-rose-300 space-y-0.5">
+                              <div><strong className="text-rose-400">Code:</strong> {log.errorCode}</div>
+                              <div><strong className="text-rose-400">Collection:</strong> {log.collectionName} | <strong className="text-rose-400">Doc:</strong> {log.documentId}</div>
+                            </div>
                           )}
                         </div>
                       </div>

@@ -518,6 +518,10 @@ export interface PublishStepLog {
   status: 'pending' | 'running' | 'success' | 'failed';
   message?: string;
   timestamp?: string;
+  errorCode?: string;
+  collectionName?: string;
+  documentId?: string;
+  stackTrace?: string;
 }
 
 export interface PublishProgressState {
@@ -528,6 +532,10 @@ export interface PublishProgressState {
   logs: PublishStepLog[];
   error?: string;
   isCompleted?: boolean;
+  errorCode?: string;
+  collectionName?: string;
+  documentId?: string;
+  stackTrace?: string;
 }
 
 export interface PublishResult {
@@ -535,7 +543,12 @@ export interface PublishResult {
   versionNumber?: string;
   publishedAt?: string;
   totalUpdatedDocs?: number;
+  publishDuration?: string;
   message?: string;
   logs?: PublishStepLog[];
+  errorCode?: string;
+  collectionName?: string;
+  documentId?: string;
+  stackTrace?: string;
 }
 

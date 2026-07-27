@@ -17,6 +17,8 @@ import {
   MapPin,
   Calendar,
   Mail,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { GenderCategory } from '../../types';
 import { useStore } from '../../context/StoreContext';
@@ -30,6 +32,7 @@ interface NavbarProps {
   onOpenWishlist: () => void;
   onOpenAdmin: () => void;
   onOpenCustomerAccount?: () => void;
+  onOpenSoundSettings?: () => void;
   onOpenCalendarModal?: () => void;
   onOpenGmailModal?: () => void;
   onOpenWorkspaceHub?: () => void;
@@ -46,6 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenWishlist,
   onOpenAdmin,
   onOpenCustomerAccount,
+  onOpenSoundSettings,
   onOpenCalendarModal,
   onOpenGmailModal,
   onOpenWorkspaceHub,
@@ -55,7 +59,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectCategory,
   onNavigateToSection,
 }) => {
-  const { storeInfo, isAdmin } = useStore();
+  const { storeInfo, isAdmin, customerSoundSettings } = useStore();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
@@ -274,6 +278,26 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </span>
                 )}
               </button>
+
+              {/* Customer Sound Settings Button */}
+              {onOpenSoundSettings && (
+                <button
+                  onClick={onOpenSoundSettings}
+                  className={`p-2 sm:p-2.5 rounded-full transition-all relative active:scale-95 ${
+                    customerSoundSettings?.muted
+                      ? 'text-rose-500 hover:bg-rose-50'
+                      : 'text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50'
+                  }`}
+                  aria-label="Sound Settings"
+                  title={customerSoundSettings?.muted ? 'Sound Muted - Click to adjust' : `Sound Active (${customerSoundSettings?.volume}%)`}
+                >
+                  {customerSoundSettings?.muted ? (
+                    <VolumeX className="w-5 h-5 text-rose-500" />
+                  ) : (
+                    <Volume2 className="w-5 h-5 text-emerald-600" />
+                  )}
+                </button>
+              )}
 
               {/* My Orders & Account Button */}
               {onOpenCustomerAccount && (

@@ -3,6 +3,7 @@ import { Heart, Eye, MessageCircle, Star, Sparkles, Flame, Bell, ImageOff } from
 import { Product } from '../../types';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
+import { useStore } from '../../context/StoreContext';
 import {
   normalizeProductSizeStocks,
   isProductCompletelyOutOfStock,
@@ -23,6 +24,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onToggleWishlist,
   isWishlisted,
 }) => {
+  const { playSiteSound } = useStore();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
   const sizeStocks = normalizeProductSizeStocks(product);
@@ -37,6 +39,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const handleWhatsAppBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
+    playSiteSound('addToCart');
     const link = generateProductWhatsAppLink(product, selectedSize, selectedColor);
     window.open(link, '_blank');
   };
@@ -108,6 +111,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
+              playSiteSound('wishlist');
               onToggleWishlist(product);
             }}
             className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-md ${

@@ -25,6 +25,7 @@ import { AdminLoginModal } from './components/Admin/AdminLoginModal';
 import { AdminDashboardModal } from './components/Admin/AdminDashboardModal';
 import { CheckoutModal } from './components/Checkout/CheckoutModal';
 import { CustomerAccountModal } from './components/Customer/CustomerAccountModal';
+import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
 import { CalendarBookingModal } from './components/GoogleWorkspace/CalendarBookingModal';
 import { GmailInquiryModal } from './components/GoogleWorkspace/GmailInquiryModal';
 import { WorkspaceHubDrawer } from './components/GoogleWorkspace/WorkspaceHubDrawer';
@@ -75,6 +76,7 @@ function AppContent() {
   const [adminDashboardOpen, setAdminDashboardOpen] = useState(false);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [customerAccountOpen, setCustomerAccountOpen] = useState(false);
+  const [soundSettingsOpen, setSoundSettingsOpen] = useState(false);
 
   // Google Workspace Modals
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
@@ -344,6 +346,7 @@ function AppContent() {
         onOpenWishlist={() => setWishlistModalOpen(true)}
         onOpenAdmin={() => (isAdmin ? setAdminDashboardOpen(true) : setAdminLoginOpen(true))}
         onOpenCustomerAccount={() => setCustomerAccountOpen(true)}
+        onOpenSoundSettings={() => setSoundSettingsOpen(true)}
         onOpenCalendarModal={() => setCalendarModalOpen(true)}
         onOpenGmailModal={() => setGmailModalOpen(true)}
         onOpenWorkspaceHub={() => setWorkspaceHubOpen(true)}
@@ -453,9 +456,10 @@ function AppContent() {
       {/* 14. Footer */}
       <Footer />
 
-      {/* 13. Floating Action Hub (WhatsApp, Call, Socials, Back To Top, Calendar) */}
+      {/* 13. Floating Action Hub (WhatsApp, Call, Socials, Back To Top, Calendar, Sound) */}
       <FloatingActionHub
         onOpenCalendarModal={() => setCalendarModalOpen(true)}
+        onOpenSoundSettings={() => setSoundSettingsOpen(true)}
       />
 
       {/* Interactive AI Pet Shoe Brand Mascot */}
@@ -499,6 +503,12 @@ function AppContent() {
         isOpen={customerAccountOpen}
         onClose={() => setCustomerAccountOpen(false)}
         onQuickViewProduct={(p) => setQuickViewProduct(p)}
+      />
+
+      {/* Customer Sound & Audio Preferences Modal */}
+      <SoundSettingsModal
+        isOpen={soundSettingsOpen}
+        onClose={() => setSoundSettingsOpen(false)}
       />
 
       {/* Live Search Modal */}

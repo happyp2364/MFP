@@ -24,7 +24,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
   onClearCart,
   onProceedToCheckout,
 }) => {
-  const { paymentSettings } = useStore();
+  const { paymentSettings, playSiteSound } = useStore();
   if (!isOpen) return null;
 
   const subtotal = cartItems.reduce(
@@ -38,6 +38,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
   const totalAmount = subtotal + shippingFee;
 
   const handleWhatsAppCheckout = () => {
+    playSiteSound('addToCart');
     const link = generateCartWhatsAppLink(cartItems);
     window.open(link, '_blank');
   };

@@ -473,6 +473,33 @@ export interface HangingSneakerConfig {
   colorTheme?: 'ONE8_BURGUNDY' | 'MARUDHAR_HERITAGE' | 'MIDNIGHT_NAVY' | 'GOLD_LUXURY';
 }
 
+export type SoundType =
+  | 'click'
+  | 'hover'
+  | 'addToCart'
+  | 'wishlist'
+  | 'paymentSuccess'
+  | 'orderSuccess'
+  | 'notification'
+  | 'error'
+  | 'login'
+  | 'logout';
+
+export interface SoundConfig {
+  enabled: boolean;
+  masterVolume: number; // 0 - 100
+  enableHoverSounds: boolean;
+  enableButtonClicks: boolean;
+  enableAddToCartSounds: boolean;
+  enableOrderSuccessSounds: boolean;
+  customSoundUrls: Partial<Record<SoundType, string>>;
+}
+
+export interface CustomerSoundSettings {
+  muted: boolean;
+  volume: number; // 0 - 100
+}
+
 export interface StoreBackupSnapshot {
   id: string;
   timestamp: string;
@@ -509,6 +536,7 @@ export interface PublishedVersionHistory {
     hangingSneakerConfig?: HangingSneakerConfig;
     petShoeConfig?: PetShoeConfig;
     instagramConfig?: InstagramConfig;
+    soundConfig?: SoundConfig;
   };
 }
 

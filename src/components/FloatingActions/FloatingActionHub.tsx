@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Phone, ArrowUp, Instagram, Facebook, Youtube, X, Share2, Calendar } from 'lucide-react';
+import { MessageCircle, Phone, ArrowUp, Instagram, Facebook, Youtube, X, Share2, Calendar, Volume2, VolumeX } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { generateGeneralInquiryWhatsAppLink } from '../../utils/whatsapp';
 
 interface FloatingActionHubProps {
   onOpenCalendarModal?: () => void;
+  onOpenSoundSettings?: () => void;
 }
 
 export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
   onOpenCalendarModal,
+  onOpenSoundSettings,
 }) => {
-  const { storeInfo } = useStore();
+  const { storeInfo, customerSoundSettings } = useStore();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [expandedSocials, setExpandedSocials] = useState(false);
 
@@ -104,6 +106,30 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
             )}
           </button>
         </div>
+
+        {/* Sound Settings Control Button */}
+        {onOpenSoundSettings && (
+          <div className="group relative flex items-center gap-2">
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
+              {customerSoundSettings?.muted ? 'Muted (Tap for Sound Settings)' : `Sound Volume: ${customerSoundSettings?.volume ?? 80}%`}
+            </span>
+            <button
+              onClick={onOpenSoundSettings}
+              className={`w-11 h-11 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 backdrop-blur-md border border-neutral-200/80 active:scale-95 ${
+                customerSoundSettings?.muted
+                  ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
+                  : 'bg-white/90 text-emerald-700 hover:bg-emerald-50 border-emerald-200'
+              }`}
+              title="Sound Settings"
+            >
+              {customerSoundSettings?.muted ? (
+                <VolumeX className="w-5 h-5 text-rose-500" />
+              ) : (
+                <Volume2 className="w-5 h-5 text-emerald-600" />
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Quick Call Button */}
         <div className="group relative flex items-center gap-2">

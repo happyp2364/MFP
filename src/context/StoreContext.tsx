@@ -27,6 +27,9 @@ import {
   PublishStepLog,
   PublishProgressState,
   PublishResult,
+  SoundType,
+  SoundConfig,
+  CustomerSoundSettings,
 } from '../types';
 import { sendBrowserWebPushNotification } from '../utils/pushNotifications';
 import {
@@ -73,7 +76,16 @@ import {
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { addDoc, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, limit, orderBy, query, writeBatch } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { playNotificationSound } from '../utils/audio';
+import {
+  playSound,
+  playNotificationSound,
+  setSoundConfig as applyAudioSoundConfig,
+  setCustomerSoundSettings as applyAudioCustomerSettings,
+  getActiveSoundConfig,
+  getActiveCustomerSettings,
+  DEFAULT_SOUND_CONFIG,
+  DEFAULT_CUSTOMER_SOUND_SETTINGS,
+} from '../utils/audio';
 import { verifyPaymentSecurely } from '../utils/paymentVerification';
 
 const STORAGE_KEYS = {
@@ -96,6 +108,7 @@ const STORAGE_KEYS = {
   PET_SHOE_CONFIG: 'mfp_pet_shoe_config',
   MARKETING_CAMPAIGNS: 'mfp_marketing_campaigns',
   MARKETING_SUBSCRIBERS: 'mfp_marketing_subscribers',
+  SOUND_CONFIG: 'mfp_sound_config',
 };
 
 export const DEFAULT_PET_SHOE_CONFIG: PetShoeConfig = {
@@ -265,6 +278,13 @@ interface StoreContextType {
   instagramConfig: InstagramConfig;
   updateInstagramConfig: (updated: Partial<InstagramConfig>) => Promise<void>;
   updatePaymentSettings: (settings: Partial<PaymentSettings>) => Promise<boolean>;
+
+  // Website Sound Engine & Customer Controls
+  soundConfig: SoundConfig;
+  updateSoundConfig: (updated: Partial<SoundConfig>) => Promise<void>;
+  customerSoundSettings: CustomerSoundSettings;
+  updateCustomerSoundSettings: (updated: Partial<CustomerSoundSettings>) => void;
+  playSiteSound: (type: SoundType) => void;
   placeOrderAndPay: (
     shippingInfo: ShippingAddressInfo,
     items: import('../types').CartItem[],
@@ -415,6 +435,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return saved ? { ...DEFAULT_INSTAGRAM_CONFIG, ...JSON.parse(saved) } : DEFAULT_INSTAGRAM_CONFIG;
   });
 
+  const [publishedSoundConfig, setPublishedSoundConfig] = useState<SoundConfig>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SOUND_CONFIG);
+    return saved ? { ...DEFAULT_SOUND_CONFIG, ...JSON.parse(saved) } : DEFAULT_SOUND_CONFIG;
+  });
+
+  const [customerSoundSettings, setCustomerSoundSettingsState] = useState<CustomerSoundSettings>(() => {
+    const saved = localStorage.getItem('mfp_customer_sound_settings');
+    return saved ? { ...DEFAULT_CUSTOMER_SOUND_SETTINGS, ...JSON.parse(saved) } : DEFAULT_CUSTOMER_SOUND_SETTINGS;
+  });
+
   // --- 2. DRAFT (ADMIN CMS EDITING WORKSPACE) STATE ---
   const [draftProducts, setDraftProducts] = useState<Product[]>(publishedProducts);
   const [draftReviews, setDraftReviews] = useState<Review[]>(publishedReviews);
@@ -427,6 +457,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [draftHangingSneakerConfig, setDraftHangingSneakerConfig] = useState<HangingSneakerConfig>(publishedHangingSneakerConfig);
   const [draftPetShoeConfig, setDraftPetShoeConfig] = useState<PetShoeConfig>(publishedPetShoeConfig);
   const [draftInstagramConfig, setDraftInstagramConfig] = useState<InstagramConfig>(publishedInstagramConfig);
+  const [draftSoundConfig, setDraftSoundConfig] = useState<SoundConfig>(publishedSoundConfig);
 
   // --- 3. DRAFT STATUS TRACKING & VERSION HISTORY ---
   const [previewMode, setPreviewMode] = useState<'draft' | 'live'>('draft');
@@ -978,6 +1009,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         `Verification rejected for ${paymentMethod} (Ref: ${paymentRef || 'N/A'}). Error: ${verificationRes.message}`,
         'DANGER'
       );
+      playSound('error');
       return {
         success: false,
         message: verificationRes.message || 'Payment verification failed. Please try again.',
@@ -1092,8 +1124,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     await createAdminNotificationInFirestore(newNotif);
 
-    // Trigger audio chime for admin real-time notification
+    // Trigger audio chimes for admin real-time notification and customer order success
     playNotificationSound();
+    playSound('paymentSuccess');
+    setTimeout(() => playSound('orderSuccess'), 250);
 
     setOrders((prev) => [newOrder, ...prev.filter((o) => o.id !== orderId)]);
     setNotifications((prev) => [newNotif, ...prev]);
@@ -1317,6 +1351,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsAdmin(true);
     setLastActivityTime(Date.now());
     recordAuditLog('Admin Logged In', 'AUTH', 'Successfully authenticated to store dashboard via Firebase Auth', 'SUCCESS');
+    playSound('login');
     return { success: true };
   };
 
@@ -1343,6 +1378,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const logoutAdmin = (reason: string = 'User Clicked Logout') => {
     setIsAdmin(false);
     logoutUser();
+    playSound('logout');
     recordAuditLog('Admin Logged Out', 'AUTH', `Session ended: ${reason}`, 'WARNING');
   };
 
@@ -1390,6 +1426,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     hangingSneakerConfig: HangingSneakerConfig;
     petShoeConfig: PetShoeConfig;
     instagramConfig: InstagramConfig;
+    soundConfig: SoundConfig;
   }>) => {
     const nextProducts = overrides?.products ?? draftProducts;
     const nextReviews = overrides?.reviews ?? draftReviews;
@@ -1402,6 +1439,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const nextHangingSneakerConfig = overrides?.hangingSneakerConfig ?? draftHangingSneakerConfig;
     const nextPetShoeConfig = overrides?.petShoeConfig ?? draftPetShoeConfig;
     const nextInstagramConfig = overrides?.instagramConfig ?? draftInstagramConfig;
+    const nextSoundConfig = overrides?.soundConfig ?? draftSoundConfig;
 
     const updatedDraft = {
       products: nextProducts,
@@ -1415,6 +1453,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       hangingSneakerConfig: nextHangingSneakerConfig,
       petShoeConfig: nextPetShoeConfig,
       instagramConfig: nextInstagramConfig,
+      soundConfig: nextSoundConfig,
       updatedAt: new Date().toISOString(),
       updatedBy: auth.currentUser?.email || 'Admin',
     };
@@ -1433,7 +1472,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [
     draftProducts, draftReviews, draftStoreInfo, draftHeroContent, draftAnnouncements,
     draftCategoryHighlights, draftTrendingCollections, draftPaymentSettings,
-    draftHangingSneakerConfig, draftPetShoeConfig, draftInstagramConfig, pendingDraftCount, showToast
+    draftHangingSneakerConfig, draftPetShoeConfig, draftInstagramConfig, draftSoundConfig, pendingDraftCount, showToast
   ]);
 
   // Load Active Draft Snapshot from Firestore on Mount
@@ -1455,6 +1494,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (data.hangingSneakerConfig) setDraftHangingSneakerConfig(data.hangingSneakerConfig);
           if (data.petShoeConfig) setDraftPetShoeConfig(data.petShoeConfig);
           if (data.instagramConfig) setDraftInstagramConfig(data.instagramConfig);
+          if (data.soundConfig) setDraftSoundConfig(data.soundConfig);
           setHasPendingDraft(true);
         }
       });
@@ -1511,6 +1551,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (data.hangingSneakerConfig) setPublishedHangingSneakerConfig(data.hangingSneakerConfig);
             if (data.petShoeConfig) setPublishedPetShoeConfig(data.petShoeConfig);
             if (data.instagramConfig) setPublishedInstagramConfig(data.instagramConfig);
+            if (data.soundConfig) setPublishedSoundConfig(data.soundConfig);
             if (data.publishedAt) setLastPublishedAt(data.publishedAt);
             if (data.publishedBy) setLastPublishedBy(data.publishedBy);
           }
@@ -1769,6 +1810,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         hangingSneakerConfig: draftHangingSneakerConfig,
         petShoeConfig: draftPetShoeConfig,
         instagramConfig: draftInstagramConfig,
+        soundConfig: draftSoundConfig,
         updatedAt: nowISO,
         updatedBy: adminEmail,
         isPublished: false,
@@ -1802,6 +1844,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           hangingSneakerConfig: draftHangingSneakerConfig,
           petShoeConfig: draftPetShoeConfig,
           instagramConfig: draftInstagramConfig,
+          soundConfig: draftSoundConfig,
         },
       };
 
@@ -1926,7 +1969,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         { type: 'set', ref: doc(db, 'paymentSettings', 'config'), data: draftPaymentSettings, collectionName: 'paymentSettings', documentId: 'config', description: 'Payment Settings' },
         { type: 'set', ref: doc(db, 'hangingSneakerConfig', 'config'), data: draftHangingSneakerConfig, collectionName: 'hangingSneakerConfig', documentId: 'config', description: 'Hanging Sneaker Config' },
         { type: 'set', ref: doc(db, 'petShoeConfig', 'config'), data: draftPetShoeConfig, collectionName: 'petShoeConfig', documentId: 'config', description: 'Pet Shoe Config' },
-        { type: 'set', ref: doc(db, 'instagramConfig', 'config'), data: draftInstagramConfig, collectionName: 'instagramConfig', documentId: 'config', description: 'Instagram Config' }
+        { type: 'set', ref: doc(db, 'instagramConfig', 'config'), data: draftInstagramConfig, collectionName: 'instagramConfig', documentId: 'config', description: 'Instagram Config' },
+        { type: 'set', ref: doc(db, 'siteSettings', 'soundConfig'), data: draftSoundConfig, collectionName: 'siteSettings', documentId: 'soundConfig', description: 'Sound Config' }
       );
 
       // 6. Version History Snapshot
@@ -2324,6 +2368,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     saveDraftLocallyAndRemote({ instagramConfig: newCfg });
   };
 
+  const updateSoundConfig = async (updated: Partial<SoundConfig>) => {
+    const newCfg = { ...draftSoundConfig, ...updated };
+    setDraftSoundConfig(newCfg);
+    saveDraftLocallyAndRemote({ soundConfig: newCfg });
+    recordAuditLog('Sound Settings Updated (Draft)', 'SETTINGS', 'Admin updated website audio effects configuration', 'SUCCESS');
+  };
+
+  const updateCustomerSoundSettings = (updated: Partial<CustomerSoundSettings>) => {
+    setCustomerSoundSettingsState((prev) => {
+      const next = { ...prev, ...updated };
+      applyAudioCustomerSettings(next);
+      localStorage.setItem('mfp_customer_sound_settings', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const playSiteSound = (type: SoundType) => {
+    playSound(type);
+  };
+
   const updatePaymentSettings = async (settings: Partial<PaymentSettings>): Promise<boolean> => {
     const newCfg = { ...draftPaymentSettings, ...settings };
     setDraftPaymentSettings(newCfg);
@@ -2345,6 +2409,51 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const activeHangingSneakerConfig = isEditingDraft ? draftHangingSneakerConfig : publishedHangingSneakerConfig;
   const activePetShoeConfig = isEditingDraft ? draftPetShoeConfig : publishedPetShoeConfig;
   const activeInstagramConfig = isEditingDraft ? draftInstagramConfig : publishedInstagramConfig;
+  const activeSoundConfig = isEditingDraft ? draftSoundConfig : publishedSoundConfig;
+
+  // Keep Audio Engine synchronized with Active Sound Config and Customer Sound Settings
+  useEffect(() => {
+    applyAudioSoundConfig(activeSoundConfig);
+  }, [activeSoundConfig]);
+
+  useEffect(() => {
+    applyAudioCustomerSettings(customerSoundSettings);
+  }, [customerSoundSettings]);
+
+  // Global capture event delegation listeners for ultra-responsive click and hover sound feedback
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest('[data-no-sound]')) return;
+      const interactive = target.closest(
+        'button, a, input[type="button"], input[type="submit"], [role="button"], [data-sound="click"]'
+      );
+      if (interactive) {
+        playSound('click');
+      }
+    };
+
+    const handleGlobalMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest('[data-no-sound]')) return;
+      const hoverable = target.closest(
+        'button, a, [role="button"], [data-sound="hover"]'
+      );
+      if (hoverable) {
+        playSound('hover');
+      }
+    };
+
+    document.addEventListener('click', handleGlobalClick, { capture: true, passive: true });
+    document.addEventListener('mouseover', handleGlobalMouseOver, { capture: true, passive: true });
+
+    return () => {
+      document.removeEventListener('click', handleGlobalClick, { capture: true });
+      document.removeEventListener('mouseover', handleGlobalMouseOver, { capture: true });
+    };
+  }, []);
   // Backup & Recovery Engine
   const createStoreBackup = async (): Promise<StoreBackupSnapshot> => {
     const snapshot: StoreBackupSnapshot = {
@@ -2451,6 +2560,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         instagramConfig: activeInstagramConfig,
         updateInstagramConfig,
         updatePaymentSettings,
+        soundConfig: activeSoundConfig,
+        updateSoundConfig,
+        customerSoundSettings,
+        updateCustomerSoundSettings,
+        playSiteSound,
         hasPendingDraft,
         pendingDraftCount,
         lastPublishedAt,

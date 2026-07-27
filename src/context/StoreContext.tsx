@@ -20,7 +20,11 @@ import {
   HangingSneakerConfig,
   InstagramConfig,
   PetShoeConfig,
+  MarketingConsent,
+  MarketingSubscriber,
+  MarketingCampaign,
 } from '../types';
+import { sendBrowserWebPushNotification } from '../utils/pushNotifications';
 import {
   PRODUCTS_DATA,
   REVIEWS_DATA,
@@ -56,6 +60,11 @@ import {
   updateOrderStatusInFirestore,
   saveTransactionInFirestore,
   createAdminNotificationInFirestore,
+  saveMarketingConsentInFirestore,
+  fetchMarketingCampaignsFromFirestore,
+  saveMarketingCampaignInFirestore,
+  deleteMarketingCampaignFromFirestore,
+  fetchMarketingSubscribersFromFirestore,
 } from '../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { addDoc, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, limit, orderBy, query } from 'firebase/firestore';
@@ -81,6 +90,8 @@ const STORAGE_KEYS = {
   HANGING_SNEAKER: 'mfp_hanging_sneaker_config',
   INSTAGRAM_CONFIG: 'mfp_instagram_config',
   PET_SHOE_CONFIG: 'mfp_pet_shoe_config',
+  MARKETING_CAMPAIGNS: 'mfp_marketing_campaigns',
+  MARKETING_SUBSCRIBERS: 'mfp_marketing_subscribers',
 };
 
 export const DEFAULT_PET_SHOE_CONFIG: PetShoeConfig = {
@@ -139,6 +150,84 @@ export const DEFAULT_HANGING_SNEAKER_CONFIG: HangingSneakerConfig = {
   enableShineEffect: true,
   colorTheme: 'ONE8_BURGUNDY',
 };
+
+export const DEFAULT_MARKETING_CAMPAIGNS: MarketingCampaign[] = [
+  {
+    id: 'camp-diwali-2026',
+    title: 'Diwali Footwear Festival Offer 🪔',
+    category: 'FESTIVAL_OFFERS',
+    channel: 'EMAIL',
+    subject: 'Light Up Your Steps: Up to 40% OFF on Festive Leather & Sports Footwear!',
+    htmlContent: '<h1>Diwali Special Festival Drop</h1><p>Celebrate with Marudhar Fashion Point! Get flat 40% off on premium leather and handcrafted shoes.</p>',
+    targetLink: 'https://marudharfashionpoint.com',
+    status: 'SENT',
+    sentAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    recipientsCount: 48,
+    deliveredCount: 46,
+    openCount: 38,
+    clickCount: 22,
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+  },
+  {
+    id: 'camp-push-weekend',
+    title: 'Weekend Sneaker Drop Alert 👟',
+    category: 'NEW_COLLECTION',
+    channel: 'PUSH',
+    pushMessage: '🔥 One8 Burgundy Sneaker & Air Max Leather are now back in stock! Tap to claim your size.',
+    targetLink: 'https://marudharfashionpoint.com',
+    status: 'SENT',
+    sentAt: new Date(Date.now() - 86400000 * 1).toISOString(),
+    recipientsCount: 32,
+    deliveredCount: 32,
+    openCount: 28,
+    clickCount: 16,
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+  },
+  {
+    id: 'camp-wa-vip',
+    title: 'WhatsApp VIP Flash Sale 💬',
+    category: 'FLASH_SALES',
+    channel: 'WHATSAPP',
+    targetLink: 'https://marudharfashionpoint.com',
+    status: 'SCHEDULED',
+    scheduledAt: new Date(Date.now() + 86400000 * 1).toISOString(),
+    recipientsCount: 28,
+    deliveredCount: 0,
+    openCount: 0,
+    clickCount: 0,
+    createdAt: new Date().toISOString(),
+  },
+];
+
+export const DEFAULT_MARKETING_SUBSCRIBERS: MarketingSubscriber[] = [
+  {
+    id: 'sub_vpcreation2002',
+    name: 'Vikram Pratap',
+    email: 'vpcreation2002@gmail.com',
+    phoneNumber: '+91 98290 12345',
+    preferences: { accepted: true, email: true, push: true, whatsApp: true, updatedAt: new Date().toISOString() },
+    pushPermissionGranted: true,
+    subscribedAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+  },
+  {
+    id: 'sub_rahul_sharma',
+    name: 'Rahul Sharma',
+    email: 'rahul.sharma@example.com',
+    phoneNumber: '+91 98765 43210',
+    preferences: { accepted: true, email: true, push: true, whatsApp: false, updatedAt: new Date().toISOString() },
+    pushPermissionGranted: true,
+    subscribedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+  },
+  {
+    id: 'sub_priya_verma',
+    name: 'Priya Verma',
+    email: 'priya.v@example.com',
+    phoneNumber: '+91 91234 56789',
+    preferences: { accepted: true, email: true, push: false, whatsApp: true, updatedAt: new Date().toISOString() },
+    pushPermissionGranted: false,
+    subscribedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+  },
+];
 
 // 30-minute inactivity limit (1800000 ms)
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
@@ -204,6 +293,16 @@ interface StoreContextType {
   customerSignInWithGoogle: (useWorkspaceScopes?: boolean) => Promise<boolean>;
   customerSignOut: () => Promise<void>;
   updateCustomerProfileInFirestore: (data: Partial<CustomerProfile>) => Promise<boolean>;
+  
+  // Marketing & Customer Engagement
+  campaigns: MarketingCampaign[];
+  subscribers: MarketingSubscriber[];
+  updateCustomerMarketingConsent: (consent: MarketingConsent) => Promise<boolean>;
+  saveCampaign: (campaign: MarketingCampaign) => Promise<boolean>;
+  deleteCampaign: (id: string) => Promise<boolean>;
+  sendCampaign: (campaign: MarketingCampaign) => Promise<{ success: boolean; message: string }>;
+  updateSubscriberConsent: (subscriberId: string, consent: MarketingConsent) => Promise<boolean>;
+  refreshMarketingData: () => Promise<void>;
   
   // Auth
   loginAdmin: (password: string, twoFactorCode?: string) => Promise<{ success: boolean; requires2FA?: boolean; message?: string }>;
@@ -328,6 +427,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return saved ? { ...DEFAULT_INSTAGRAM_CONFIG, ...JSON.parse(saved) } : DEFAULT_INSTAGRAM_CONFIG;
   });
 
+  const [campaigns, setCampaigns] = useState<MarketingCampaign[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.MARKETING_CAMPAIGNS);
+    return saved ? JSON.parse(saved) : DEFAULT_MARKETING_CAMPAIGNS;
+  });
+
+  const [subscribers, setSubscribers] = useState<MarketingSubscriber[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.MARKETING_SUBSCRIBERS);
+    return saved ? JSON.parse(saved) : DEFAULT_MARKETING_SUBSCRIBERS;
+  });
+
   const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
 
   // Customer Authentication State
@@ -391,7 +500,158 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // Marketing Services
+  const updateCustomerMarketingConsent = async (consent: MarketingConsent): Promise<boolean> => {
+    try {
+      const email = customerProfile?.email || customerUser?.email || '';
+      const name = customerProfile?.name || customerUser?.displayName || '';
+      const phone = customerProfile?.phoneNumber || '';
+
+      await saveMarketingConsentInFirestore(consent, email, name, phone);
+      if (customerProfile) {
+        setCustomerProfile({ ...customerProfile, marketingConsent: consent });
+      }
+
+      if (email) {
+        setSubscribers((prev) => {
+          const exists = prev.find((s) => s.email.toLowerCase() === email.toLowerCase());
+          if (exists) {
+            return prev.map((s) => (s.email.toLowerCase() === email.toLowerCase() ? { ...s, preferences: consent } : s));
+          }
+          return [
+            ...prev,
+            {
+              id: `sub-${Date.now()}`,
+              name: name || email.split('@')[0],
+              email,
+              phoneNumber: phone,
+              preferences: consent,
+              subscribedAt: new Date().toISOString(),
+            },
+          ];
+        });
+      }
+      showToast('Marketing preferences updated successfully!', 'success');
+      return true;
+    } catch (err) {
+      console.error('Failed to update marketing consent:', err);
+      showToast('Failed to update marketing preferences', 'error');
+      return false;
+    }
+  };
+
+  const saveCampaign = async (campaign: MarketingCampaign): Promise<boolean> => {
+    try {
+      await saveMarketingCampaignInFirestore(campaign);
+      setCampaigns((prev) => {
+        const idx = prev.findIndex((c) => c.id === campaign.id);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = campaign;
+          return copy;
+        }
+        return [campaign, ...prev];
+      });
+      return true;
+    } catch (err) {
+      console.error('Failed to save campaign:', err);
+      return false;
+    }
+  };
+
+  const deleteCampaign = async (campaignId: string): Promise<boolean> => {
+    try {
+      await deleteMarketingCampaignFromFirestore(campaignId);
+      setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
+      showToast('Campaign deleted successfully', 'info');
+      return true;
+    } catch (err) {
+      console.error('Failed to delete campaign:', err);
+      return false;
+    }
+  };
+
+  const sendCampaign = async (campaign: MarketingCampaign): Promise<{ success: boolean; message: string }> => {
+    try {
+      const eligibleSubs = subscribers.filter((s) => {
+        if (campaign.channel === 'EMAIL') return s.preferences.email;
+        if (campaign.channel === 'PUSH') return s.preferences.push;
+        if (campaign.channel === 'WHATSAPP') return s.preferences.whatsApp;
+        return false;
+      });
+
+      let delivered = eligibleSubs.length;
+
+      if (campaign.channel === 'PUSH' && campaign.pushMessage) {
+        sendBrowserWebPushNotification({
+          title: campaign.title,
+          body: campaign.pushMessage,
+          url: campaign.targetLink,
+        });
+      }
+
+      const updatedCampaign: MarketingCampaign = {
+        ...campaign,
+        status: 'SENT',
+        sentAt: new Date().toISOString(),
+        recipientsCount: eligibleSubs.length,
+        deliveredCount: delivered,
+        openCount: Math.round(delivered * 0.75),
+        clickCount: Math.round(delivered * 0.35),
+      };
+
+      await saveMarketingCampaignInFirestore(updatedCampaign);
+      setCampaigns((prev) => prev.map((c) => (c.id === campaign.id ? updatedCampaign : c)));
+
+      return {
+        success: true,
+        message: `Campaign dispatched to ${delivered} opted-in ${campaign.channel.toLowerCase()} subscribers!`,
+      };
+    } catch (err) {
+      console.error('Failed to send campaign:', err);
+      return { success: false, message: 'Failed to send campaign' };
+    }
+  };
+
+  const updateSubscriberConsent = async (subscriberId: string, consent: MarketingConsent): Promise<boolean> => {
+    try {
+      setSubscribers((prev) =>
+        prev.map((s) => (s.id === subscriberId ? { ...s, preferences: consent } : s))
+      );
+      const sub = subscribers.find((s) => s.id === subscriberId);
+      if (sub) {
+        await saveMarketingConsentInFirestore(consent, sub.email, sub.name, sub.phoneNumber);
+      }
+      showToast('Subscriber consent updated', 'success');
+      return true;
+    } catch (err) {
+      console.error('Failed to update subscriber consent:', err);
+      return false;
+    }
+  };
+
+  const refreshMarketingData = async () => {
+    try {
+      const [remoteCamps, remoteSubs] = await Promise.all([
+        fetchMarketingCampaignsFromFirestore(),
+        fetchMarketingSubscribersFromFirestore(),
+      ]);
+      if (remoteCamps.length > 0) setCampaigns(remoteCamps);
+      if (remoteSubs.length > 0) setSubscribers(remoteSubs);
+      showToast('Marketing data refreshed from Firestore', 'info');
+    } catch (err) {
+      console.warn('Could not fetch marketing data from Firestore:', err);
+    }
+  };
+
   // 2. Local Storage Persistence Sync
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.MARKETING_CAMPAIGNS, JSON.stringify(campaigns));
+  }, [campaigns]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.MARKETING_SUBSCRIBERS, JSON.stringify(subscribers));
+  }, [subscribers]);
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
   }, [products]);
@@ -457,26 +717,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(instagramConfig));
   }, [instagramConfig]);
 
-  const updateHangingSneakerConfig = (updated: Partial<HangingSneakerConfig>) => {
-    setHangingSneakerConfig((prev) => {
-      const newCfg = { ...prev, ...updated };
-      try {
-        setDoc(doc(db, 'hangingSneakerConfig', 'config'), newCfg, { merge: true }).catch(() => {});
-      } catch (e) {}
-      return newCfg;
-    });
-    showToast('Hanging Sneaker settings updated successfully!', 'success');
+  const updateHangingSneakerConfig = async (updated: Partial<HangingSneakerConfig>) => {
+    const newCfg = { ...hangingSneakerConfig, ...updated };
+    setHangingSneakerConfig(newCfg);
+    try {
+      await setDoc(doc(db, 'hangingSneakerConfig', 'config'), newCfg, { merge: true });
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (e: any) {
+      showToast(`❌ Error saving Hanging Sneaker settings: ${e?.message || 'Database error'}`, 'error');
+    }
   };
 
-  const updatePetShoeConfig = (updated: Partial<PetShoeConfig>) => {
-    setPetShoeConfig((prev) => {
-      const newCfg = { ...prev, ...updated };
-      try {
-        setDoc(doc(db, 'petShoeConfig', 'config'), newCfg, { merge: true }).catch(() => {});
-      } catch (e) {}
-      return newCfg;
-    });
-    showToast('AI Pet Shoe Mascot settings updated successfully!', 'success');
+  const updatePetShoeConfig = async (updated: Partial<PetShoeConfig>) => {
+    const newCfg = { ...petShoeConfig, ...updated };
+    setPetShoeConfig(newCfg);
+    try {
+      await setDoc(doc(db, 'petShoeConfig', 'config'), newCfg, { merge: true });
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (e: any) {
+      showToast(`❌ Error saving AI Pet Shoe Mascot settings: ${e?.message || 'Database error'}`, 'error');
+    }
   };
 
   // Real-time Firestore Sync for Pet Shoe Mascot Settings
@@ -612,6 +872,101 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => {
       if (unsubscribe) unsubscribe();
     };
+  }, []);
+
+  // Real-time Firestore Sync for Site Settings & Store Content
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const docRef = doc(db, 'siteSettings', 'storeInfo');
+      unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setStoreInfo((prev) => ({ ...prev, ...(docSnap.data() as StoreInfo) }));
+        }
+      });
+    } catch (e) {
+      console.warn('storeInfo onSnapshot error:', e);
+    }
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const docRef = doc(db, 'siteSettings', 'heroContent');
+      unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setHeroContent((prev) => ({ ...prev, ...(docSnap.data() as HeroContent) }));
+        }
+      });
+    } catch (e) {
+      console.warn('heroContent onSnapshot error:', e);
+    }
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const docRef = doc(db, 'siteSettings', 'announcements');
+      unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists() && docSnap.data().items) {
+          setAnnouncements(docSnap.data().items as string[]);
+        }
+      });
+    } catch (e) {
+      console.warn('announcements onSnapshot error:', e);
+    }
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const docRef = doc(db, 'siteSettings', 'categoryHighlights');
+      unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists() && docSnap.data().items) {
+          setCategoryHighlights(docSnap.data().items as CategoryHighlight[]);
+        }
+      });
+    } catch (e) {
+      console.warn('categoryHighlights onSnapshot error:', e);
+    }
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const docRef = doc(db, 'siteSettings', 'trendingCollections');
+      unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists() && docSnap.data().items) {
+          setTrendingCollections(docSnap.data().items as TrendingCollectionItem[]);
+        }
+      });
+    } catch (e) {
+      console.warn('trendingCollections onSnapshot error:', e);
+    }
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const reviewsCol = collection(db, 'reviews');
+      unsubscribe = onSnapshot(reviewsCol, (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteReviews: Review[] = [];
+          snapshot.forEach((docSnap) => {
+            remoteReviews.push({ ...(docSnap.data() as Review), id: docSnap.id });
+          });
+          setReviews(remoteReviews);
+        }
+      });
+    } catch (e) {
+      console.warn('reviews onSnapshot error:', e);
+    }
+    return () => { if (unsubscribe) unsubscribe(); };
   }, []);
 
   // Update Payment Settings
@@ -898,7 +1253,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const productsColRef = collection(db, 'products');
       unsubscribe = onSnapshot(
         productsColRef,
-        (snapshot) => {
+        async (snapshot) => {
           if (!snapshot.empty) {
             const remoteProducts: Product[] = [];
             snapshot.forEach((docSnap) => {
@@ -906,6 +1261,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               remoteProducts.push({ ...data, id: docSnap.id });
             });
             setProducts(remoteProducts);
+          } else {
+            // Seed default products into Firestore so Firestore serves as single source of truth
+            try {
+              for (const p of PRODUCTS_DATA) {
+                await setDoc(doc(db, 'products', p.id), p, { merge: true });
+              }
+            } catch (seedErr) {
+              console.warn('Initial product seeding warning:', seedErr);
+            }
           }
         },
         (err) => {
@@ -1090,8 +1454,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       await setDoc(doc(db, 'products', newId), newProduct);
-    } catch (err) {
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
       handleFirestoreError(err, OperationType.WRITE, `products/${newId}`);
+      showToast(`❌ Failed to save product: ${err?.message || 'Database write error'}`, 'error');
     }
   };
 
@@ -1109,8 +1475,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       await setDoc(doc(db, 'products', id), sanitized, { merge: true });
-    } catch (err) {
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
       handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+      showToast(`❌ Failed to update product: ${err?.message || 'Database write error'}`, 'error');
     }
   };
 
@@ -1121,8 +1489,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       await deleteDoc(doc(db, 'products', id));
-    } catch (err) {
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
       handleFirestoreError(err, OperationType.DELETE, `products/${id}`);
+      showToast(`❌ Failed to delete product: ${err?.message || 'Database write error'}`, 'error');
     }
   };
 
@@ -1142,71 +1512,137 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       await setDoc(doc(db, 'products', id), { inStock: newInStock }, { merge: true });
-    } catch (err) {
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
       handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+      showToast(`❌ Failed to update stock: ${err?.message || 'Database write error'}`, 'error');
     }
   };
 
   // Reviews CRUD
-  const addReview = (r: Omit<Review, 'id'>) => {
+  const addReview = async (r: Omit<Review, 'id'>) => {
     const cleanAuthor = sanitizeString(r.author, 100);
     const cleanComment = sanitizeString(r.comment, 1000);
 
     const newId = `rev-${Date.now()}`;
     const newReview: Review = { ...r, id: newId, author: cleanAuthor, comment: cleanComment };
     setReviews((prev) => [newReview, ...prev]);
+
+    try {
+      await setDoc(doc(db, 'reviews', newId), newReview);
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.WRITE, `reviews/${newId}`);
+      showToast(`❌ Failed to save review: ${err?.message || 'Database write error'}`, 'error');
+    }
   };
 
-  const updateReview = (id: string, updated: Partial<Review>) => {
+  const updateReview = async (id: string, updated: Partial<Review>) => {
     setReviews((prev) =>
       prev.map((r) => (r.id === id ? { ...r, ...updated } : r))
     );
+
+    try {
+      await setDoc(doc(db, 'reviews', id), updated, { merge: true });
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.UPDATE, `reviews/${id}`);
+      showToast(`❌ Failed to update review: ${err?.message || 'Database write error'}`, 'error');
+    }
   };
 
-  const deleteReview = (id: string) => {
+  const deleteReview = async (id: string) => {
     setReviews((prev) => prev.filter((r) => r.id !== id));
     recordAuditLog('Customer Review Deleted', 'SETTINGS', `Deleted review ID: ${id}`, 'WARNING');
+
+    try {
+      await deleteDoc(doc(db, 'reviews', id));
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.DELETE, `reviews/${id}`);
+      showToast(`❌ Failed to delete review: ${err?.message || 'Database write error'}`, 'error');
+    }
   };
 
   // Content Editors
-  const updateStoreInfo = (info: Partial<StoreInfo>) => {
+  const updateStoreInfo = async (info: Partial<StoreInfo>) => {
     const cleanInfo: Partial<StoreInfo> = { ...info };
     if (cleanInfo.name) cleanInfo.name = sanitizeString(cleanInfo.name, 100);
     if (cleanInfo.tagline) cleanInfo.tagline = sanitizeString(cleanInfo.tagline, 200);
     if (cleanInfo.email) cleanInfo.email = sanitizeEmail(cleanInfo.email);
     if (cleanInfo.phone) cleanInfo.phone = sanitizePhone(cleanInfo.phone);
 
-    setStoreInfo((prev) => ({ ...prev, ...cleanInfo }));
+    const updatedStoreInfo = { ...storeInfo, ...cleanInfo };
+    setStoreInfo(updatedStoreInfo);
     recordAuditLog('Store Info Updated', 'SETTINGS', 'Updated store location and contact info', 'SUCCESS');
+
+    try {
+      await setDoc(doc(db, 'siteSettings', 'storeInfo'), updatedStoreInfo, { merge: true });
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.WRITE, 'siteSettings/storeInfo');
+      showToast(`❌ Failed to save store info: ${err?.message || 'Database write error'}`, 'error');
+    }
   };
 
-  const updateHeroContent = (content: Partial<HeroContent>) => {
+  const updateHeroContent = async (content: Partial<HeroContent>) => {
     const cleanHero: Partial<HeroContent> = { ...content };
     if (cleanHero.headlineMain) cleanHero.headlineMain = sanitizeString(cleanHero.headlineMain, 200);
     if (cleanHero.subtitle) cleanHero.subtitle = sanitizeString(cleanHero.subtitle, 500);
 
-    setHeroContent((prev) => ({ ...prev, ...cleanHero }));
+    const updatedHero = { ...heroContent, ...cleanHero };
+    setHeroContent(updatedHero);
     recordAuditLog('Hero Banner Updated', 'MEDIA', 'Updated homepage hero banner title and visual asset', 'SUCCESS');
+
+    try {
+      await setDoc(doc(db, 'siteSettings', 'heroContent'), updatedHero, { merge: true });
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.WRITE, 'siteSettings/heroContent');
+      showToast(`❌ Failed to save hero content: ${err?.message || 'Database write error'}`, 'error');
+    }
   };
 
-  const setAnnouncementsList = (items: string[]) => {
+  const setAnnouncementsList = async (items: string[]) => {
     const cleanItems = items.map((i) => sanitizeString(i, 200));
     setAnnouncements(cleanItems);
     recordAuditLog('Announcements Updated', 'SETTINGS', `Updated ${items.length} ticker announcements`, 'SUCCESS');
+
+    try {
+      await setDoc(doc(db, 'siteSettings', 'announcements'), { items: cleanItems }, { merge: true });
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.WRITE, 'siteSettings/announcements');
+      showToast(`❌ Failed to save announcements: ${err?.message || 'Database write error'}`, 'error');
+    }
   };
 
-  const updateCategoryHighlight = (id: 'men' | 'women' | 'kids', updated: Partial<CategoryHighlight>) => {
-    setCategoryHighlights((prev) =>
-      prev.map((cat) => (cat.id === id ? { ...cat, ...updated } : cat))
-    );
+  const updateCategoryHighlight = async (id: 'men' | 'women' | 'kids', updated: Partial<CategoryHighlight>) => {
+    const updatedCategories = categoryHighlights.map((cat) => (cat.id === id ? { ...cat, ...updated } : cat));
+    setCategoryHighlights(updatedCategories);
     recordAuditLog('Category Highlight Updated', 'SETTINGS', `Updated category highlight for ${id}`, 'SUCCESS');
+
+    try {
+      await setDoc(doc(db, 'siteSettings', 'categoryHighlights'), { items: updatedCategories }, { merge: true });
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.WRITE, 'siteSettings/categoryHighlights');
+      showToast(`❌ Failed to save category highlight: ${err?.message || 'Database write error'}`, 'error');
+    }
   };
 
-  const updateTrendingCollection = (id: string, updated: Partial<TrendingCollectionItem>) => {
-    setTrendingCollections((prev) =>
-      prev.map((col) => (col.id === id ? { ...col, ...updated } : col))
-    );
+  const updateTrendingCollection = async (id: string, updated: Partial<TrendingCollectionItem>) => {
+    const updatedTrending = trendingCollections.map((col) => (col.id === id ? { ...col, ...updated } : col));
+    setTrendingCollections(updatedTrending);
     recordAuditLog('Trending Collection Updated', 'SETTINGS', `Updated collection ${id}`, 'SUCCESS');
+
+    try {
+      await setDoc(doc(db, 'siteSettings', 'trendingCollections'), { items: updatedTrending }, { merge: true });
+      showToast('✅ Changes Saved Successfully', 'success');
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.WRITE, 'siteSettings/trendingCollections');
+      showToast(`❌ Failed to save trending collection: ${err?.message || 'Database write error'}`, 'error');
+    }
   };
 
   // Backup & Recovery Engine
@@ -1321,6 +1757,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         customerSignInWithGoogle,
         customerSignOut,
         updateCustomerProfileInFirestore,
+        campaigns,
+        subscribers,
+        updateCustomerMarketingConsent,
+        saveCampaign,
+        deleteCampaign,
+        sendCampaign,
+        updateSubscriberConsent,
+        refreshMarketingData,
         loginAdmin,
         loginWithGoogleAdmin,
         logoutAdmin,

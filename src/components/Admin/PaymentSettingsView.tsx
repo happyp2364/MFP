@@ -20,6 +20,7 @@ import {
   Building2,
   FileText,
   IndianRupee,
+  Truck,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { PaymentSettings } from '../../types';
@@ -67,6 +68,29 @@ export const PaymentSettingsView: React.FC = () => {
     paymentSettings.applyFeeToOnlineOnly !== false
   );
   const [previewSubtotal, setPreviewSubtotal] = useState<number>(1000);
+
+  // Shipping & Return Policy Settings
+  const [freeShippingMinAmount, setFreeShippingMinAmount] = useState<number>(
+    paymentSettings.freeShippingMinAmount ?? 999
+  );
+  const [flatShippingRate, setFlatShippingRate] = useState<number>(
+    paymentSettings.flatShippingRate ?? 80
+  );
+  const [noReturnPolicyEnabled, setNoReturnPolicyEnabled] = useState<boolean>(
+    paymentSettings.noReturnPolicyEnabled !== false
+  );
+  const [noExchangePolicyEnabled, setNoExchangePolicyEnabled] = useState<boolean>(
+    paymentSettings.noExchangePolicyEnabled !== false
+  );
+  const [policyText, setPolicyText] = useState<string>(
+    paymentSettings.policyText || 'No Return & No Exchange Policy'
+  );
+  const [deliveryMessage, setDeliveryMessage] = useState<string>(
+    paymentSettings.deliveryMessage || '🚚 Fast & Express Delivery Across India'
+  );
+  const [estimatedDeliveryTime, setEstimatedDeliveryTime] = useState<string>(
+    paymentSettings.estimatedDeliveryTime || '3-5 Business Days'
+  );
 
   // Gateway Probe / Test State
   const [isTestingGateway, setIsTestingGateway] = useState(false);
@@ -136,6 +160,13 @@ export const PaymentSettingsView: React.FC = () => {
     setApplyFeeToOnlineOnly(paymentSettings.applyFeeToOnlineOnly !== false);
     setMinOrderAmount(paymentSettings.minOrderAmount ?? 1);
     setMaxOrderAmount(paymentSettings.maxOrderAmount ?? 0);
+    setFreeShippingMinAmount(paymentSettings.freeShippingMinAmount ?? 999);
+    setFlatShippingRate(paymentSettings.flatShippingRate ?? 80);
+    setNoReturnPolicyEnabled(paymentSettings.noReturnPolicyEnabled !== false);
+    setNoExchangePolicyEnabled(paymentSettings.noExchangePolicyEnabled !== false);
+    setPolicyText(paymentSettings.policyText || 'No Return & No Exchange Policy');
+    setDeliveryMessage(paymentSettings.deliveryMessage || '🚚 Fast & Express Delivery Across India');
+    setEstimatedDeliveryTime(paymentSettings.estimatedDeliveryTime || '3-5 Business Days');
     if (paymentSettings.qrCodeCustomImage) {
       setCustomQrImage(paymentSettings.qrCodeCustomImage);
       setQrMode('CUSTOM');
@@ -239,6 +270,14 @@ export const PaymentSettingsView: React.FC = () => {
       enableConvenienceFee,
       convenienceFeePercent: Math.min(10, Math.max(0, Number(convenienceFeePercent) || 0)),
       applyFeeToOnlineOnly,
+      freeShippingMinAmount: Math.max(0, Number(freeShippingMinAmount) || 0),
+      flatShippingRate: Math.max(0, Number(flatShippingRate) || 0),
+      standardDeliveryCharge: Math.max(0, Number(flatShippingRate) || 0),
+      noReturnPolicyEnabled,
+      noExchangePolicyEnabled,
+      policyText: policyText.trim(),
+      deliveryMessage: deliveryMessage.trim(),
+      estimatedDeliveryTime: estimatedDeliveryTime.trim(),
       enableQR: true,
     };
 
@@ -795,6 +834,133 @@ export const PaymentSettingsView: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Section 2C: Shipping & Return Policy Settings */}
+          <div className="p-5 bg-white rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+              <div className="flex items-center gap-2.5">
+                <Truck className="w-5 h-5 text-amber-700" />
+                <div>
+                  <h3 className="font-bold text-neutral-900 text-xs uppercase tracking-wider">
+                    Shipping & Return Policy Settings
+                  </h3>
+                  <p className="text-[11px] text-neutral-500 font-normal">
+                    Configure delivery charges, free delivery thresholds, and return policies displayed across the website.
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full">
+                Live Auto-Applied
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Free Delivery Minimum Amount */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Free Delivery Minimum Order Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  value={freeShippingMinAmount}
+                  onChange={(e) => setFreeShippingMinAmount(Number(e.target.value))}
+                  placeholder="999"
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 font-mono text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
+                />
+                <p className="text-[10px] text-neutral-500">
+                  Orders equal to or above this amount receive 🚚 FREE DELIVERY. Default: ₹999.
+                </p>
+              </div>
+
+              {/* Standard Delivery Charge */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Standard Delivery Charge (₹)
+                </label>
+                <input
+                  type="number"
+                  value={flatShippingRate}
+                  onChange={(e) => setFlatShippingRate(Number(e.target.value))}
+                  placeholder="80"
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 font-mono text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
+                />
+                <p className="text-[10px] text-neutral-500">
+                  Delivery fee applied to orders below the Free Delivery threshold. Default: ₹80.
+                </p>
+              </div>
+
+              {/* Policy Toggles */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Return & Exchange Policy Status
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-center gap-2 p-2.5 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer text-xs font-bold">
+                    <input
+                      type="checkbox"
+                      checked={noReturnPolicyEnabled}
+                      onChange={(e) => setNoReturnPolicyEnabled(e.target.checked)}
+                      className="rounded text-rose-600 focus:ring-rose-500 w-4 h-4"
+                    />
+                    <span className="text-rose-900">❌ No Return Policy</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2.5 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer text-xs font-bold">
+                    <input
+                      type="checkbox"
+                      checked={noExchangePolicyEnabled}
+                      onChange={(e) => setNoExchangePolicyEnabled(e.target.checked)}
+                      className="rounded text-rose-600 focus:ring-rose-500 w-4 h-4"
+                    />
+                    <span className="text-rose-900">❌ No Exchange Policy</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Estimated Delivery Time */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Estimated Delivery Time
+                </label>
+                <input
+                  type="text"
+                  value={estimatedDeliveryTime}
+                  onChange={(e) => setEstimatedDeliveryTime(e.target.value)}
+                  placeholder="3-5 Business Days"
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
+                />
+                <p className="text-[10px] text-neutral-500">Displayed in order emails, WhatsApp receipts, and checkout pages.</p>
+              </div>
+
+              {/* Policy Heading Text */}
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Policy Display Title
+                </label>
+                <input
+                  type="text"
+                  value={policyText}
+                  onChange={(e) => setPolicyText(e.target.value)}
+                  placeholder="No Return & No Exchange Policy"
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
+                />
+              </div>
+
+              {/* Delivery Message */}
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Delivery Banner Message
+                </label>
+                <input
+                  type="text"
+                  value={deliveryMessage}
+                  onChange={(e) => setDeliveryMessage(e.target.value)}
+                  placeholder="🚚 Fast & Express Delivery Across India"
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Section 2: UPI ID & Business Details */}

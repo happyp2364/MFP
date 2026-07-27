@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, Trash2, MessageCircle, ShoppingBag, ArrowRight } from 'lucide-react';
+import { X, Trash2, MessageCircle, ShoppingBag, ArrowRight, ShieldCheck, Truck } from 'lucide-react';
 import { CartItem } from '../../types';
+import { useStore } from '../../context/StoreContext';
 import { generateCartWhatsAppLink } from '../../utils/whatsapp';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 
@@ -23,12 +24,18 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
   onClearCart,
   onProceedToCheckout,
 }) => {
+  const { paymentSettings } = useStore();
   if (!isOpen) return null;
 
-  const totalAmount = cartItems.reduce(
+  const subtotal = cartItems.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
     0
   );
+
+  const freeMin = paymentSettings.freeShippingMinAmount ?? 999;
+  const flatFee = paymentSettings.flatShippingRate ?? 80;
+  const shippingFee = subtotal >= freeMin ? 0 : flatFee;
+  const totalAmount = subtotal + shippingFee;
 
   const handleWhatsAppCheckout = () => {
     const link = generateCartWhatsAppLink(cartItems);
@@ -148,12 +155,44 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
 
         {/* Drawer Footer */}
         {cartItems.length > 0 && (
-          <div className="p-5 border-t border-neutral-200 bg-[#F7F7F7] space-y-3">
-            <div className="flex justify-between items-center text-sm">
-              <span className="font-bold text-neutral-600">Total Estimated Amount:</span>
-              <span className="font-serif-heading font-extrabold text-xl text-neutral-900">
-                ₹{totalAmount.toLocaleString('en-IN')}
-              </span>
+          <div className="p-4 border-t border-neutral-200 bg-[#F7F7F7] space-y-3">
+            {/* Policy & Shipping Badges Strip */}
+            <div className="p-2.5 bg-neutral-900 text-white rounded-xl text-[10px] space-y-1">
+              <div className="flex justify-between items-center border-b border-white/10 pb-1 font-bold">
+                <span className="flex items-center gap-1 text-emerald-400">
+                  <Truck className="w-3.5 h-3.5" />
+                  {shippingFee === 0 ? '🚚 FREE DELIVERY' : `🚚 Delivery: ₹${shippingFee}`}
+                </span>
+                <span className="text-amber-300">
+                  {subtotal < freeMin ? `Add ₹${freeMin - subtotal} for FREE Delivery` : 'Free Shipping Unlocked!'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between font-extrabold text-rose-300 pt-0.5">
+                <span className="flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
+                  <span>❌ NO RETURN</span>
+                </span>
+                <span>❌ NO EXCHANGE</span>
+              </div>
+            </div>
+
+            <div className="space-y-1 text-xs font-semibold text-neutral-600">
+              <div className="flex justify-between">
+                <span>Items Subtotal:</span>
+                <span>₹{subtotal.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Delivery Charge:</span>
+                <span className={shippingFee === 0 ? 'text-emerald-700 font-bold' : ''}>
+                  {shippingFee === 0 ? '🚚 FREE' : `₹${shippingFee}`}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm pt-1 border-t border-neutral-200">
+                <span className="font-extrabold text-neutral-900">Total Payable:</span>
+                <span className="font-serif-heading font-extrabold text-xl text-neutral-900">
+                  ₹{totalAmount.toLocaleString('en-IN')}
+                </span>
+              </div>
             </div>
 
             <button

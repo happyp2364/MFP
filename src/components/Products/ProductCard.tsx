@@ -79,6 +79,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Top Badges Left */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+          {product.price >= 999 && (
+            <span className="bg-emerald-800 text-white text-[9px] font-extrabold tracking-wider uppercase px-2.5 py-0.5 rounded-md shadow-sm">
+              🚚 Free Delivery
+            </span>
+          )}
           {product.isBestSeller && (
             <span className="bg-[#0B8F63] text-white text-[10px] font-extrabold tracking-wider uppercase px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1">
               <Sparkles className="w-3 h-3" />

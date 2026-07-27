@@ -184,11 +184,14 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
           {/* Footer Note */}
           <div className="pt-6 border-t border-neutral-200 text-center text-[10px] text-neutral-500 space-y-1">
+            <p className="font-extrabold text-rose-800 uppercase tracking-wider">
+              Store Policy: ❌ No Return | ❌ No Exchange
+            </p>
             <p className="font-bold text-neutral-700">
               Thank you for shopping with Marudhar Fashion Point!
             </p>
             <p>
-              This is a computer-generated invoice. For support or returns, contact support@marudharfashion.com or +91 {storeInfo.phone}
+              This is a computer-generated tax invoice. Customer verified agreement to store terms prior to payment. For assistance, contact +91 {storeInfo.phone}
             </p>
           </div>
 

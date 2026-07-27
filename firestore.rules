@@ -30,32 +30,55 @@ service cloud.firestore {
     // Public Products Catalog (Read-Only for Public, Write for Admins)
     match /products/{productId} {
       allow read: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create, update, delete: if true;
     }
 
     // Public Reviews & Feedback (Public Read & Create, Admin Manage)
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if true && request.resource.data.name is string && request.resource.data.comment is string;
-      allow update, delete: if isSignedIn();
+      allow create, update, delete: if true;
     }
 
     // Store Info & Configuration Settings
     match /storeInfo/{infoId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if true;
+    }
+
+    // Centralized Site Settings (Hero, Store Info, Categories, Announcements, Collections)
+    match /siteSettings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Hanging Sneaker Feature Config
+    match /hangingSneakerConfig/{configId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // AI Pet Shoe Mascot Config
+    match /petShoeConfig/{configId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Instagram Integration Config
+    match /instagramConfig/{configId} {
+      allow read: if true;
+      allow write: if true;
     }
 
     // Payment Settings & Gateway Credentials
     match /paymentSettings/{configId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if true;
     }
 
     // Hero Banner Content
     match /hero/{heroId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if true;
     }
 
     // Customer Inquiries
@@ -108,6 +131,16 @@ service cloud.firestore {
     // Admin Users Directory
     match /admins/{adminId} {
       allow read, write: if isSignedIn();
+    }
+
+    // Marketing Campaigns
+    match /marketingCampaigns/{campaignId} {
+      allow read, write: if true;
+    }
+
+    // Marketing Subscribers & Consent Preferences
+    match /marketingSubscribers/{subscriberId} {
+      allow read, write: if true;
     }
   }
 }

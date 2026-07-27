@@ -215,7 +215,13 @@ export interface PaymentSettings {
   currencySymbol?: string;
   gstPercent?: number;
   flatShippingRate?: number;
+  standardDeliveryCharge?: number;
   freeShippingMinAmount?: number;
+  noReturnPolicyEnabled?: boolean;
+  noExchangePolicyEnabled?: boolean;
+  policyText?: string;
+  deliveryMessage?: string;
+  estimatedDeliveryTime?: string;
   // Payment Method Based Pricing / Convenience Fee
   enableConvenienceFee?: boolean;
   convenienceFeePercent?: number;

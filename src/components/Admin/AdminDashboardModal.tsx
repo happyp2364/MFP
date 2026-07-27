@@ -37,6 +37,7 @@ import {
   ExternalLink,
   Share2,
   Copy,
+  Megaphone,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
@@ -49,6 +50,7 @@ import { ReportsAnalyticsView } from './ReportsAnalyticsView';
 import { HangingSneakerSettingsView } from './HangingSneakerSettingsView';
 import { AIShoePetSettingsView } from './AIShoePetSettingsView';
 import { InstagramSettingsView } from './InstagramSettingsView';
+import { MarketingCenterView } from './MarketingCenterView';
 import { SmartProductFormModal } from './SmartProductFormModal';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { validateFileUpload } from '../../lib/security';
@@ -59,7 +61,7 @@ interface AdminDashboardModalProps {
   onClose: () => void;
 }
 
-type TabType = 'orders' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password';
+type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -170,18 +172,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   };
 
   // Handle Save Store Info & Hero
-  const handleSaveStoreContent = (e: React.FormEvent) => {
+  const handleSaveStoreContent = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateStoreInfo(storeInfoForm);
-    updateHeroContent(heroContentForm);
+    await updateStoreInfo(storeInfoForm);
+    await updateHeroContent(heroContentForm);
 
     const items = announcementsText
       .split('\n')
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
-    setAnnouncementsList(items);
+    await setAnnouncementsList(items);
 
-    showNotification('Homepage and store information updated successfully!');
+    showNotification('✅ Homepage and store information synchronized live with Firebase!');
   };
 
   // Duplicate Product Handler
@@ -410,6 +412,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('marketing')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'marketing'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Megaphone className="w-4 h-4 text-amber-600" />
+              <span>Marketing & Campaigns</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('payment_settings')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'payment_settings'
@@ -590,6 +604,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             
             {/* ----------------- TAB: ORDERS & TRACKING ----------------- */}
             {activeTab === 'orders' && <OrderManagementView />}
+
+            {/* ----------------- TAB: MARKETING & ENGAGEMENT CENTER ----------------- */}
+            {activeTab === 'marketing' && <MarketingCenterView />}
 
             {/* ----------------- TAB: PAYMENT & UPI CONFIGURATION ----------------- */}
             {activeTab === 'payment_settings' && <PaymentSettingsView />}

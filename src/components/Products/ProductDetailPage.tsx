@@ -28,6 +28,7 @@ import {
   getSizeStockInfo,
 } from '../../utils/sizeStockUtils';
 import { ProductCard } from './ProductCard';
+import { useStore } from '../../context/StoreContext';
 
 interface ProductDetailPageProps {
   product: Product | null;
@@ -52,6 +53,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   onQuickView,
   wishlistIds,
 }) => {
+  const { paymentSettings } = useStore();
+
   // Update SEO Open Graph & Title Meta Tags dynamically
   useEffect(() => {
     if (!product) {
@@ -501,6 +504,64 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               >
                 +
               </button>
+            </div>
+          </div>
+
+          {/* PREMIUM SHIPPING & RETURN POLICY CARD */}
+          <div className="p-4 bg-gradient-to-r from-amber-950 via-neutral-900 to-amber-950 text-white rounded-2xl shadow-md border border-amber-800/40 space-y-3 my-3">
+            <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="w-5 h-5 text-amber-400" />
+                <span className="text-xs font-serif font-extrabold text-amber-100 uppercase tracking-wider">
+                  {paymentSettings.policyText || 'No Return & No Exchange Policy'}
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-amber-300 bg-amber-900/60 px-2.5 py-0.5 rounded-full border border-amber-700/50">
+                Verified Store Policy
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-medium">
+              {/* Delivery Status */}
+              <div className="flex items-center space-x-2 bg-black/40 p-2.5 rounded-xl border border-white/10">
+                <Truck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <div>
+                  <span className="font-extrabold text-emerald-300 block">
+                    {product.price >= (paymentSettings.freeShippingMinAmount || 999)
+                      ? '🚚 FREE DELIVERY'
+                      : `🚚 ₹${paymentSettings.flatShippingRate || 80} Delivery`}
+                  </span>
+                  <span className="text-[10px] text-neutral-300">
+                    {product.price >= (paymentSettings.freeShippingMinAmount || 999)
+                      ? 'Eligible for Free Standard Delivery'
+                      : `Add ₹${((paymentSettings.freeShippingMinAmount || 999) - product.price).toLocaleString()} for Free Delivery`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Policy */}
+              <div className="flex items-center space-x-2 bg-black/40 p-2.5 rounded-xl border border-white/10">
+                <div className="flex items-center space-x-1 font-extrabold text-rose-300 shrink-0 text-sm">
+                  <span>❌</span>
+                </div>
+                <div>
+                  <span className="font-extrabold text-rose-300 block">NO RETURN • NO EXCHANGE</span>
+                  <span className="text-[10px] text-neutral-300">Quality Checked Prior to Dispatch</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Badges Strip */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/10 text-[10px] font-bold">
+              <span className="bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                🚚 FREE DELIVERY ABOVE ₹{paymentSettings.freeShippingMinAmount || 999}
+              </span>
+              <span className="bg-rose-500/20 text-rose-300 px-2.5 py-1 rounded-lg border border-rose-500/30">
+                ❌ NO RETURN
+              </span>
+              <span className="bg-rose-500/20 text-rose-300 px-2.5 py-1 rounded-lg border border-rose-500/30">
+                ❌ NO EXCHANGE
+              </span>
             </div>
           </div>
 

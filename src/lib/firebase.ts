@@ -24,6 +24,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
   getDocFromServer,
   collection,
   addDoc,
@@ -33,7 +34,7 @@ import {
   limit,
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { CustomerProfile } from '../types';
+import { CustomerProfile, MarketingConsent, MarketingSubscriber, MarketingCampaign } from '../types';
 
 // Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
@@ -684,8 +685,14 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
   autoApprovePaidOrders: true,
   currencySymbol: '₹',
   gstPercent: 5,
-  flatShippingRate: 0,
+  flatShippingRate: 80,
+  standardDeliveryCharge: 80,
   freeShippingMinAmount: 999,
+  noReturnPolicyEnabled: true,
+  noExchangePolicyEnabled: true,
+  policyText: 'No Return & No Exchange Policy',
+  deliveryMessage: '🚚 Fast & Express Delivery Across India',
+  estimatedDeliveryTime: '3-5 Business Days',
   enableConvenienceFee: true,
   convenienceFeePercent: 2,
   applyFeeToOnlineOnly: true,
@@ -861,4 +868,126 @@ export async function createAdminNotificationInFirestore(
     return false;
   }
 }
+
+// ----------------------------------------------------------------------------
+// CUSTOMER ENGAGEMENT & MARKETING AUTOMATION FIRESTORE SERVICES
+// ----------------------------------------------------------------------------
+
+/**
+ * Save or update Customer Marketing Preferences in Firestore
+ */
+export async function saveMarketingConsentInFirestore(
+  consent: MarketingConsent,
+  userEmail?: string,
+  userName?: string,
+  phoneNumber?: string
+): Promise<boolean> {
+  try {
+    const now = new Date().toISOString();
+    const currentUser = auth.currentUser;
+    const email = userEmail || currentUser?.email || '';
+    const name = userName || currentUser?.displayName || email.split('@')[0] || 'Valued Customer';
+    const phone = phoneNumber || currentUser?.phoneNumber || '';
+
+    // 1. Update user profile if authenticated
+    if (currentUser?.uid) {
+      const userRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userRef, { marketingConsent: consent }, { merge: true });
+    }
+
+    // 2. Upsert subscriber entry in marketingSubscribers collection
+    if (email) {
+      const subId = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const subRef = doc(db, 'marketingSubscribers', subId);
+      const subscriberDoc: MarketingSubscriber = {
+        id: subId,
+        name,
+        email,
+        phoneNumber: phone,
+        preferences: consent,
+        pushPermissionGranted: consent.push,
+        subscribedAt: now,
+      };
+      await setDoc(subRef, subscriberDoc, { merge: true });
+    }
+
+    recordAuditLog(
+      'Marketing Preferences Updated',
+      'SETTINGS',
+      `Updated engagement channels for ${email || 'guest'} (Email: ${consent.email}, Push: ${consent.push}, WhatsApp: ${consent.whatsApp})`,
+      'SUCCESS'
+    );
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, 'marketingSubscribers');
+    return false;
+  }
+}
+
+/**
+ * Fetch all Marketing Subscribers
+ */
+export async function fetchMarketingSubscribersFromFirestore(): Promise<MarketingSubscriber[]> {
+  try {
+    const q = query(collection(db, 'marketingSubscribers'), limit(200));
+    const snap = await getDocs(q);
+    const subscribers: MarketingSubscriber[] = [];
+    snap.forEach((d) => {
+      subscribers.push(d.data() as MarketingSubscriber);
+    });
+    return subscribers;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, 'marketingSubscribers');
+    return [];
+  }
+}
+
+/**
+ * Fetch all Marketing Campaigns
+ */
+export async function fetchMarketingCampaignsFromFirestore(): Promise<MarketingCampaign[]> {
+  try {
+    const q = query(collection(db, 'marketingCampaigns'), orderBy('createdAt', 'desc'), limit(100));
+    const snap = await getDocs(q);
+    const list: MarketingCampaign[] = [];
+    snap.forEach((d) => {
+      list.push(d.data() as MarketingCampaign);
+    });
+    return list;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, 'marketingCampaigns');
+    return [];
+  }
+}
+
+/**
+ * Save or update Marketing Campaign
+ */
+export async function saveMarketingCampaignInFirestore(
+  campaign: MarketingCampaign
+): Promise<boolean> {
+  try {
+    const docRef = doc(db, 'marketingCampaigns', campaign.id);
+    await setDoc(docRef, campaign, { merge: true });
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `marketingCampaigns/${campaign.id}`);
+    return false;
+  }
+}
+
+/**
+ * Delete Marketing Campaign
+ */
+export async function deleteMarketingCampaignFromFirestore(campaignId: string): Promise<boolean> {
+  try {
+    const docRef = doc(db, 'marketingCampaigns', campaignId);
+    await deleteDoc(docRef);
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `marketingCampaigns/${campaignId}`);
+    return false;
+  }
+}
+
 

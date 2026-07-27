@@ -144,13 +144,56 @@
         "lastLogin": { "type": "string" },
         "wishlist": { "type": "array" },
         "savedAddresses": { "type": "array" },
-        "orderHistory": { "type": "array" }
+        "orderHistory": { "type": "array" },
+        "marketingConsent": { "type": "object" }
       },
       "required": ["uid", "email"]
+    },
+    "marketingCampaigns": {
+      "title": "Marketing Campaigns",
+      "description": "Email, Push, and WhatsApp engagement campaigns",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "channel": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "category", "channel"]
+    },
+    "marketingSubscribers": {
+      "title": "Marketing Subscribers",
+      "description": "Customer marketing consent preferences and notification status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "preferences": { "type": "object" },
+        "subscribedAt": { "type": "string" }
+      },
+      "required": ["email", "preferences"]
     }
   },
   "firestore": {
     "collections": {
+      "marketingCampaigns": {
+        "path": "marketingCampaigns/{campaignId}",
+        "allow": {
+          "read": "true",
+          "write": "true"
+        }
+      },
+      "marketingSubscribers": {
+        "path": "marketingSubscribers/{subscriberId}",
+        "allow": {
+          "read": "true",
+          "write": "true"
+        }
+      },
       "users": {
         "path": "users/{userId}",
         "allow": {

@@ -26,7 +26,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
-import { CartItem, ShippingAddressInfo, PaymentMethodType, CustomerOrder } from '../../types';
+import { CartItem, ShippingAddressInfo, PaymentMethodType, CustomerOrder, MarketingConsent } from '../../types';
 import { generateUPILink, getQRCodeImageUrl, cleanAndSanitizeUPIId, isValidUPIIdFormat } from '../../utils/qrCode';
 import { generateOrderWhatsAppLink } from '../../utils/whatsapp';
 import { InvoiceModal } from '../Customer/InvoiceModal';
@@ -51,12 +51,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   cartItems,
   onOrderComplete,
 }) => {
-  const { paymentSettings, customerProfile, placeOrderAndPay, storeInfo, orders } = useStore();
+  const { paymentSettings, customerProfile, placeOrderAndPay, storeInfo, orders, updateCustomerMarketingConsent } = useStore();
 
   const [step, setStep] = useState<CheckoutStep>('SHIPPING');
   const [copiedUPI, setCopiedUPI] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Marketing consent state for checkout
+  const [checkoutConsent, setCheckoutConsent] = useState<MarketingConsent>(() => {
+    return customerProfile?.marketingConsent || { accepted: true, email: true, push: true, whatsApp: false, updatedAt: new Date().toISOString() };
+  });
 
   // Verification progress animation state
   const [verificationProgress, setVerificationProgress] = useState(0);
@@ -226,6 +231,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setErrorMessage('Please complete all required shipping details before proceeding.');
       return;
     }
+
+    // Save marketing consent preference
+    updateCustomerMarketingConsent(checkoutConsent);
 
     setStep('PAYMENT');
   };
@@ -646,6 +654,56 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
+            </div>
+
+            {/* Optional Customer Marketing Consent Section */}
+            <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2 mt-4 text-xs">
+              <label className="flex items-start space-x-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={checkoutConsent.email || checkoutConsent.push || checkoutConsent.whatsApp}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setCheckoutConsent({ accepted: checked, email: checked, push: checked, whatsApp: checked, updatedAt: new Date().toISOString() });
+                  }}
+                  className="mt-0.5 w-4 h-4 text-amber-600 border-neutral-300 rounded focus:ring-amber-500"
+                />
+                <span className="font-bold text-neutral-900 leading-snug">
+                  ☑ I would like to receive exclusive offers, new arrivals, festival deals, and important updates.
+                </span>
+              </label>
+
+              {(checkoutConsent.email || checkoutConsent.push || checkoutConsent.whatsApp) && (
+                <div className="pt-2 border-t border-amber-200/60 flex flex-wrap gap-4 text-[11px] text-neutral-700 font-medium">
+                  <label className="flex items-center space-x-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checkoutConsent.email}
+                      onChange={(e) => setCheckoutConsent({ ...checkoutConsent, email: e.target.checked })}
+                      className="w-3.5 h-3.5 text-amber-600 rounded"
+                    />
+                    <span>📧 Email</span>
+                  </label>
+                  <label className="flex items-center space-x-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checkoutConsent.push}
+                      onChange={(e) => setCheckoutConsent({ ...checkoutConsent, push: e.target.checked })}
+                      className="w-3.5 h-3.5 text-amber-600 rounded"
+                    />
+                    <span>🔔 Website Push</span>
+                  </label>
+                  <label className="flex items-center space-x-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checkoutConsent.whatsApp}
+                      onChange={(e) => setCheckoutConsent({ ...checkoutConsent, whatsApp: e.target.checked })}
+                      className="w-3.5 h-3.5 text-emerald-600 rounded"
+                    />
+                    <span className="text-emerald-800 font-bold">💬 WhatsApp VIP</span>
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* Price Summary */}

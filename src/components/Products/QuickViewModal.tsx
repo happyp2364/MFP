@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Heart, MessageCircle, Star, Sparkles, ShieldCheck, Truck, RotateCcw, ShoppingBag, Bell, ImageOff, Share2, Copy, Check } from 'lucide-react';
 import { Product } from '../../types';
+import { useStore } from '../../context/StoreContext';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
 import { getProductSKU, getProductUrl } from '../../utils/productUtils';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
@@ -26,6 +27,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   isWishlisted,
   onAddToCart,
 }) => {
+  const { paymentSettings } = useStore();
   if (!product) return null;
 
   const sizeStocks = normalizeProductSizeStocks(product);
@@ -305,6 +307,41 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             </div>
           </div>
 
+          {/* PREMIUM SHIPPING & RETURN POLICY CARD */}
+          <div className="p-3.5 bg-gradient-to-r from-neutral-900 via-amber-950 to-neutral-900 text-white rounded-2xl shadow-sm border border-amber-800/40 space-y-2.5 my-2">
+            <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+              <div className="flex items-center space-x-1.5">
+                <ShieldCheck className="w-4 h-4 text-amber-400" />
+                <span className="text-[11px] font-serif font-extrabold text-amber-100 uppercase tracking-wider">
+                  {paymentSettings.policyText || 'No Return & No Exchange Policy'}
+                </span>
+              </div>
+              <span className="text-[9px] font-bold text-amber-300 bg-amber-900/60 px-2 py-0.5 rounded-full border border-amber-700/50">
+                Verified Policy
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-[11px] font-medium">
+              <div className="bg-black/40 p-2 rounded-xl border border-white/10">
+                <span className="font-extrabold text-emerald-300 block">
+                  {product.price >= (paymentSettings.freeShippingMinAmount || 999)
+                    ? '🚚 FREE DELIVERY'
+                    : `🚚 ₹${paymentSettings.flatShippingRate || 80} Shipping`}
+                </span>
+                <span className="text-[9px] text-neutral-300">
+                  {product.price >= (paymentSettings.freeShippingMinAmount || 999)
+                    ? 'Free Standard Delivery'
+                    : `Min ₹${paymentSettings.freeShippingMinAmount || 999} for Free Shipping`}
+                </span>
+              </div>
+
+              <div className="bg-black/40 p-2 rounded-xl border border-white/10">
+                <span className="font-extrabold text-rose-300 block">❌ NO RETURN / EXCHANGE</span>
+                <span className="text-[9px] text-neutral-300">Quality Checked</span>
+              </div>
+            </div>
+          </div>
+
           {/* Action CTAs */}
           <div className="space-y-3 pt-4 border-t border-neutral-200">
             {/* Direct WhatsApp Order / Notify CTA */}
@@ -350,18 +387,18 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             </div>
 
             {/* Local Store Guarantees */}
-            <div className="grid grid-cols-3 gap-2 pt-2 text-center text-[10px] text-neutral-500 font-semibold border-t border-neutral-100">
+            <div className="grid grid-cols-3 gap-2 pt-2 text-center text-[10px] text-neutral-600 font-bold border-t border-neutral-100">
               <div className="flex flex-col items-center gap-1">
                 <Truck className="w-4 h-4 text-[#0B8F63]" />
-                <span>Express Local Delivery</span>
+                <span>Express Delivery</span>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <RotateCcw className="w-4 h-4 text-[#0B8F63]" />
-                <span>Easy Size Exchange</span>
+                <ShieldCheck className="w-4 h-4 text-rose-600" />
+                <span>❌ No Return / Exchange</span>
               </div>
               <div className="flex flex-col items-center gap-1">
                 <ShieldCheck className="w-4 h-4 text-[#0B8F63]" />
-                <span>100% Genuine Quality</span>
+                <span>100% Quality Checked</span>
               </div>
             </div>
           </div>

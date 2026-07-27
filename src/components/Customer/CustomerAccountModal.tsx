@@ -17,9 +17,15 @@ import {
   Truck,
   ArrowRight,
   XCircle,
+  Megaphone,
+  Bell,
+  Mail,
+  MessageSquare,
+  ShieldCheck,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
-import { CustomerOrder, OrderStatus, Product, SavedAddress } from '../../types';
+import { CustomerOrder, OrderStatus, Product, SavedAddress, MarketingConsent } from '../../types';
+import { requestPushPermission, getPushPermissionState } from '../../utils/pushNotifications';
 import { InvoiceModal } from './InvoiceModal';
 
 interface CustomerAccountModalProps {
@@ -55,10 +61,18 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
     cancelCustomerOrder,
     products,
     storeInfo,
+    updateCustomerMarketingConsent,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'ORDERS' | 'ADDRESSES' | 'WISHLIST'>('ORDERS');
+  const [activeTab, setActiveTab] = useState<'ORDERS' | 'ADDRESSES' | 'WISHLIST' | 'MARKETING'>('ORDERS');
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<CustomerOrder | null>(null);
+
+  // Marketing Consent Form State
+  const [marketingConsent, setMarketingConsent] = useState<MarketingConsent>(() => {
+    return customerProfile?.marketingConsent || { accepted: true, email: true, push: true, whatsApp: false, updatedAt: new Date().toISOString() };
+  });
+  const [isSavingConsent, setIsSavingConsent] = useState(false);
+  const [pushState, setPushState] = useState(getPushPermissionState());
 
   // Address form modal
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -210,6 +224,18 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
             >
               <Heart className="w-4 h-4" />
               <span>Saved Wishlist ({wishlistProducts.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('MARKETING')}
+              className={`py-3 flex items-center space-x-2 border-b-2 transition-colors ${
+                activeTab === 'MARKETING'
+                  ? 'border-amber-700 text-amber-900 font-bold'
+                  : 'border-transparent text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              <Megaphone className="w-4 h-4 text-amber-600" />
+              <span>Marketing Preferences</span>
             </button>
           </div>
 
@@ -433,7 +459,147 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
             </div>
           )}
 
-          {/* TAB CONTENT: WISHLIST */}
+          {/* TAB CONTENT: MARKETING PREFERENCES */}
+          {activeTab === 'MARKETING' && (
+            <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto">
+              <div className="p-4 bg-gradient-to-r from-amber-950 to-neutral-900 text-white rounded-2xl shadow-sm">
+                <div className="flex items-center space-x-3 mb-1">
+                  <Megaphone className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-sm font-serif font-bold text-amber-100">Marketing Consent & Channel Preferences</h3>
+                </div>
+                <p className="text-xs text-amber-200/70">
+                  Choose how you would like to receive exclusive offers, new arrival drops, festival deals, and order updates from Marudhar Fashion Point. You can change these preferences at any time.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Master Consent Checkbox */}
+                <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    id="masterConsent"
+                    checked={marketingConsent.email || marketingConsent.push || marketingConsent.whatsApp}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setMarketingConsent({
+                        accepted: checked,
+                        email: checked,
+                        push: checked,
+                        whatsApp: checked,
+                        updatedAt: new Date().toISOString(),
+                      });
+                    }}
+                    className="mt-1 w-4 h-4 text-amber-600 rounded border-neutral-300 focus:ring-amber-500"
+                  />
+                  <label htmlFor="masterConsent" className="text-xs font-bold text-neutral-900 leading-snug cursor-pointer">
+                    ☑ I would like to receive exclusive offers, new arrivals, festival deals, and important updates from Marudhar Fashion Point.
+                  </label>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <h4 className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Select Preferred Channels:</h4>
+
+                  {/* Email Channel */}
+                  <div className="p-4 bg-white border border-neutral-200 rounded-2xl flex items-center justify-between shadow-sm">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-neutral-900">Email Marketing</div>
+                        <div className="text-[11px] text-neutral-500">Receive weekly catalogs, festival discount coupons, and sales drop announcements.</div>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={marketingConsent.email}
+                        onChange={(e) => setMarketingConsent({ ...marketingConsent, email: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                    </label>
+                  </div>
+
+                  {/* Web Push Channel */}
+                  <div className="p-4 bg-white border border-neutral-200 rounded-2xl flex items-center justify-between shadow-sm">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
+                        <Bell className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-neutral-900">Website Push Notifications</div>
+                        <div className="text-[11px] text-neutral-500">Instant desktop & mobile browser alerts when flash sales or back-in-stock items go live.</div>
+                        {pushState !== 'granted' && marketingConsent.push && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const res = await requestPushPermission();
+                              setPushState(res);
+                            }}
+                            className="mt-2 px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-900 text-[10px] font-bold rounded-lg transition-colors flex items-center space-x-1"
+                          >
+                            <Bell className="w-3 h-3" />
+                            <span>Grant Browser Push Permission</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={marketingConsent.push}
+                        onChange={(e) => setMarketingConsent({ ...marketingConsent, push: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                    </label>
+                  </div>
+
+                  {/* WhatsApp Business Channel */}
+                  <div className="p-4 bg-white border border-neutral-200 rounded-2xl flex items-center justify-between shadow-sm">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                        <MessageSquare className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-neutral-900">WhatsApp Business Messages</div>
+                        <div className="text-[11px] text-neutral-500">Exclusive VIP promotional offers sent directly to your registered WhatsApp mobile number.</div>
+                        <div className="mt-1 flex items-center space-x-1 text-[10px] text-emerald-700 font-medium">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>Strictly Opt-In • Meta Official API Approved</span>
+                        </div>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={marketingConsent.whatsApp}
+                        onChange={(e) => setMarketingConsent({ ...marketingConsent, whatsApp: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex justify-end">
+                  <button
+                    onClick={async () => {
+                      setIsSavingConsent(true);
+                      await updateCustomerMarketingConsent(marketingConsent);
+                      setIsSavingConsent(false);
+                    }}
+                    disabled={isSavingConsent}
+                    className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center space-x-2"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>{isSavingConsent ? 'Saving Preferences...' : 'Save Marketing Preferences'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {activeTab === 'WISHLIST' && (
             <div className="p-6 max-h-[65vh] overflow-y-auto">
               {wishlistProducts.length === 0 ? (

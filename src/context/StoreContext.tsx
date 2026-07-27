@@ -1536,32 +1536,105 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const nowISO = new Date().toISOString();
     const startTime = Date.now();
 
-    // Exponential Backoff Retry Wrapper for Network Operations
-    const withRetry = async <T,>(
-      operation: () => Promise<T>,
-      maxRetries = 3,
-      delayMs = 200
+    // Strict Timeout Wrapper to Guarantee Async Operations Never Wait Forever
+    const promiseWithTimeout = <T,>(
+      promise: Promise<T>,
+      timeoutMs: number,
+      errorMessage: string
     ): Promise<T> => {
-      let lastErr: any;
+      let timer: any;
+      const timeoutPromise = new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject({
+            code: 'firestore/timeout',
+            message: errorMessage,
+          });
+        }, timeoutMs);
+      });
+      return Promise.race([promise, timeoutPromise]).finally(() => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+
+    interface BatchOperation {
+      type: 'set' | 'delete';
+      ref: any;
+      data?: any;
+      collectionName: string;
+      documentId: string;
+      description: string;
+    }
+
+    const executeBatchChunkWithRetry = async (
+      operations: BatchOperation[],
+      batchIndex: number,
+      totalBatches: number,
+      onProgressMessage?: (msg: string) => void
+    ) => {
+      const maxRetries = 3;
+      let lastError: any = null;
+
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const chunkStartTime = Date.now();
         try {
-          return await operation();
-        } catch (err: any) {
-          lastErr = err;
-          // Do not retry on non-transient schema or permission errors
-          if (
-            err.code === 'permission-denied' ||
-            (typeof err.code === 'string' && err.code.startsWith('draft/'))
-          ) {
-            throw err;
+          if (onProgressMessage) {
+            onProgressMessage(
+              `Batch ${batchIndex + 1}/${totalBatches}: Attempt ${attempt}/${maxRetries} committing ${operations.length} doc(s)...`
+            );
           }
+
+          // ALWAYS create a FRESH WriteBatch instance per attempt
+          const batch = writeBatch(db);
+          for (const op of operations) {
+            if (op.type === 'set') {
+              batch.set(op.ref, op.data, { merge: true });
+            } else if (op.type === 'delete') {
+              batch.delete(op.ref);
+            }
+          }
+
+          // Commit with a strict 12-second timeout per attempt
+          await promiseWithTimeout(
+            batch.commit(),
+            12000,
+            `WriteBatch commit for Batch ${batchIndex + 1}/${totalBatches} timed out (12s limit).`
+          );
+
+          const duration = ((Date.now() - chunkStartTime) / 1000).toFixed(2);
+          if (onProgressMessage) {
+            onProgressMessage(
+              `Batch ${batchIndex + 1}/${totalBatches}: Successfully committed ${operations.length} doc(s) in ${duration}s.`
+            );
+          }
+          return; // Batch chunk completed!
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`Batch ${batchIndex + 1}/${totalBatches} commit attempt ${attempt} error:`, err);
+
+          // Do NOT retry on permission-denied
+          if (err.code === 'permission-denied') {
+            throw {
+              code: 'permission-denied',
+              message: 'Firestore Permission Denied: Admin permissions required for database write operations.',
+              collectionName: operations[0]?.collectionName || 'website_live',
+              documentId: operations[0]?.documentId || 'current',
+              stackTrace: err.stack,
+            };
+          }
+
           if (attempt < maxRetries) {
-            const backoff = delayMs * Math.pow(2, attempt - 1);
-            await new Promise((resolve) => setTimeout(resolve, backoff));
+            await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
           }
         }
       }
-      throw lastErr;
+
+      throw {
+        code: lastError?.code || 'firestore/batch-commit-failed',
+        message: lastError?.message || `Batch ${batchIndex + 1}/${totalBatches} commit failed after ${maxRetries} attempts.`,
+        collectionName: operations[0]?.collectionName || 'website_live',
+        documentId: operations[0]?.documentId || 'current',
+        stackTrace: lastError?.stack || lastError?.stackTrace || String(lastError),
+      };
     };
 
     const initialSteps: PublishStepLog[] = [
@@ -1679,12 +1752,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (draftHeroContent?.heroImage) totalImages++;
       updateStep(1, 'success', `Verified ${totalImages} images (${existingHostedImages} hosted/cached).`);
 
-      // Step 3: Prepare Draft Snapshot payload
-      updateStep(2, 'running', 'Building draft snapshot payload for website_draft/current...');
+      // Step 3: Prepare Draft Snapshot & Operation Queue
+      updateStep(2, 'running', 'Building operations queue and diffing changed documents...');
       await new Promise((r) => setTimeout(r, 40));
 
-      const batch = writeBatch(db);
-
+      const versionNum = `v1.${publishedVersions.length + 1}`;
       const draftPayload = {
         products: draftProducts,
         reviews: draftReviews,
@@ -1702,16 +1774,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isPublished: false,
       };
 
-      const draftRef = doc(db, 'website_draft', 'current');
-      batch.set(draftRef, draftPayload, { merge: true });
-
-      updateStep(2, 'success', 'Prepared website_draft/current payload in WriteBatch.');
-
-      // Step 4: Synchronize ONLY Changed, Added & Deleted Documents to Live
-      updateStep(3, 'running', 'Diffing changes (added, updated, deleted) & building atomic WriteBatch...');
-      await new Promise((r) => setTimeout(r, 40));
-
-      const versionNum = `v1.${publishedVersions.length + 1}`;
       const livePayload = {
         ...draftPayload,
         publishedAt: nowISO,
@@ -1721,71 +1783,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isPublished: true,
       };
 
-      const liveRef = doc(db, 'website_live', 'current');
-      batch.set(liveRef, livePayload, { merge: true });
-
-      // Diff Products (Added, Updated, Deleted)
-      let addedProducts = 0;
-      let updatedProducts = 0;
-      let deletedProducts = 0;
-
-      const draftProductIds = new Set(draftProducts.map((p) => p.id));
-
-      for (const p of draftProducts) {
-        const pub = publishedProducts.find((item) => item.id === p.id);
-        if (!pub) {
-          batch.set(doc(db, 'products', p.id), p, { merge: true });
-          addedProducts++;
-        } else if (JSON.stringify(pub) !== JSON.stringify(p)) {
-          batch.set(doc(db, 'products', p.id), p, { merge: true });
-          updatedProducts++;
-        }
-      }
-
-      for (const pub of publishedProducts) {
-        if (!draftProductIds.has(pub.id)) {
-          batch.delete(doc(db, 'products', pub.id));
-          deletedProducts++;
-        }
-      }
-
-      // Diff Reviews (Added, Updated, Deleted)
-      let addedReviews = 0;
-      let updatedReviews = 0;
-      let deletedReviews = 0;
-
-      const draftReviewIds = new Set(draftReviews.map((r) => r.id));
-
-      for (const r of draftReviews) {
-        const pub = publishedReviews.find((item) => item.id === r.id);
-        if (!pub) {
-          batch.set(doc(db, 'reviews', r.id), r, { merge: true });
-          addedReviews++;
-        } else if (JSON.stringify(pub) !== JSON.stringify(r)) {
-          batch.set(doc(db, 'reviews', r.id), r, { merge: true });
-          updatedReviews++;
-        }
-      }
-
-      for (const pub of publishedReviews) {
-        if (!draftReviewIds.has(pub.id)) {
-          batch.delete(doc(db, 'reviews', pub.id));
-          deletedReviews++;
-        }
-      }
-
-      // Site settings synchronization in WriteBatch
-      batch.set(doc(db, 'siteSettings', 'storeInfo'), draftStoreInfo, { merge: true });
-      batch.set(doc(db, 'siteSettings', 'heroContent'), draftHeroContent, { merge: true });
-      batch.set(doc(db, 'siteSettings', 'announcements'), { items: draftAnnouncements }, { merge: true });
-      batch.set(doc(db, 'siteSettings', 'categoryHighlights'), { items: draftCategoryHighlights }, { merge: true });
-      batch.set(doc(db, 'siteSettings', 'trendingCollections'), { items: draftTrendingCollections }, { merge: true });
-      batch.set(doc(db, 'paymentSettings', 'config'), draftPaymentSettings, { merge: true });
-      batch.set(doc(db, 'hangingSneakerConfig', 'config'), draftHangingSneakerConfig, { merge: true });
-      batch.set(doc(db, 'petShoeConfig', 'config'), draftPetShoeConfig, { merge: true });
-      batch.set(doc(db, 'instagramConfig', 'config'), draftInstagramConfig, { merge: true });
-
-      // Version History snapshot in WriteBatch
       const newVersion: PublishedVersionHistory = {
         id: `ver-${Date.now()}`,
         versionNumber: versionNum,
@@ -1808,22 +1805,174 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         },
       };
 
-      const versionRef = doc(db, 'publishedVersions', newVersion.id);
-      batch.set(versionRef, newVersion);
+      // Construct Operation Queue
+      const operations: BatchOperation[] = [];
 
-      // Execute Single ATOMIC WriteBatch Commit with retry
-      updateStep(3, 'running', 'Committing WriteBatch to Firestore (Single Atomic Commit)...');
-      try {
-        await withRetry(() => batch.commit());
-      } catch (err: any) {
-        throw {
-          code: err.code || 'firestore/commit-failed',
-          message: err.message || 'Atomic WriteBatch commit failed.',
-          collectionName: 'website_live',
-          documentId: 'current',
-          stackTrace: err.stack,
-        };
+      // 1. website_draft / current
+      operations.push({
+        type: 'set',
+        ref: doc(db, 'website_draft', 'current'),
+        data: draftPayload,
+        collectionName: 'website_draft',
+        documentId: 'current',
+        description: 'Draft Snapshot',
+      });
+
+      // 2. website_live / current
+      operations.push({
+        type: 'set',
+        ref: doc(db, 'website_live', 'current'),
+        data: livePayload,
+        collectionName: 'website_live',
+        documentId: 'current',
+        description: 'Live Snapshot',
+      });
+
+      // 3. Diff Products
+      let addedProducts = 0;
+      let updatedProducts = 0;
+      let deletedProducts = 0;
+      const draftProductIds = new Set(draftProducts.map((p) => p.id));
+
+      for (const p of draftProducts) {
+        const pub = publishedProducts.find((item) => item.id === p.id);
+        if (!pub) {
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'products', p.id),
+            data: p,
+            collectionName: 'products',
+            documentId: p.id,
+            description: `Added product "${p.name}"`,
+          });
+          addedProducts++;
+        } else if (JSON.stringify(pub) !== JSON.stringify(p)) {
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'products', p.id),
+            data: p,
+            collectionName: 'products',
+            documentId: p.id,
+            description: `Updated product "${p.name}"`,
+          });
+          updatedProducts++;
+        }
       }
+
+      for (const pub of publishedProducts) {
+        if (!draftProductIds.has(pub.id)) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'products', pub.id),
+            collectionName: 'products',
+            documentId: pub.id,
+            description: `Deleted product "${pub.name || pub.id}"`,
+          });
+          deletedProducts++;
+        }
+      }
+
+      // 4. Diff Reviews
+      let addedReviews = 0;
+      let updatedReviews = 0;
+      let deletedReviews = 0;
+      const draftReviewIds = new Set(draftReviews.map((r) => r.id));
+
+      for (const r of draftReviews) {
+        const pub = publishedReviews.find((item) => item.id === r.id);
+        if (!pub) {
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'reviews', r.id),
+            data: r,
+            collectionName: 'reviews',
+            documentId: r.id,
+            description: `Added review ${r.id}`,
+          });
+          addedReviews++;
+        } else if (JSON.stringify(pub) !== JSON.stringify(r)) {
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'reviews', r.id),
+            data: r,
+            collectionName: 'reviews',
+            documentId: r.id,
+            description: `Updated review ${r.id}`,
+          });
+          updatedReviews++;
+        }
+      }
+
+      for (const pub of publishedReviews) {
+        if (!draftReviewIds.has(pub.id)) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'reviews', pub.id),
+            collectionName: 'reviews',
+            documentId: pub.id,
+            description: `Deleted review ${pub.id}`,
+          });
+          deletedReviews++;
+        }
+      }
+
+      // 5. Site Settings and Configs
+      operations.push(
+        { type: 'set', ref: doc(db, 'siteSettings', 'storeInfo'), data: draftStoreInfo, collectionName: 'siteSettings', documentId: 'storeInfo', description: 'Store Info' },
+        { type: 'set', ref: doc(db, 'siteSettings', 'heroContent'), data: draftHeroContent, collectionName: 'siteSettings', documentId: 'heroContent', description: 'Hero Content' },
+        { type: 'set', ref: doc(db, 'siteSettings', 'announcements'), data: { items: draftAnnouncements }, collectionName: 'siteSettings', documentId: 'announcements', description: 'Announcements' },
+        { type: 'set', ref: doc(db, 'siteSettings', 'categoryHighlights'), data: { items: draftCategoryHighlights }, collectionName: 'siteSettings', documentId: 'categoryHighlights', description: 'Categories' },
+        { type: 'set', ref: doc(db, 'siteSettings', 'trendingCollections'), data: { items: draftTrendingCollections }, collectionName: 'siteSettings', documentId: 'trendingCollections', description: 'Collections' },
+        { type: 'set', ref: doc(db, 'paymentSettings', 'config'), data: draftPaymentSettings, collectionName: 'paymentSettings', documentId: 'config', description: 'Payment Settings' },
+        { type: 'set', ref: doc(db, 'hangingSneakerConfig', 'config'), data: draftHangingSneakerConfig, collectionName: 'hangingSneakerConfig', documentId: 'config', description: 'Hanging Sneaker Config' },
+        { type: 'set', ref: doc(db, 'petShoeConfig', 'config'), data: draftPetShoeConfig, collectionName: 'petShoeConfig', documentId: 'config', description: 'Pet Shoe Config' },
+        { type: 'set', ref: doc(db, 'instagramConfig', 'config'), data: draftInstagramConfig, collectionName: 'instagramConfig', documentId: 'config', description: 'Instagram Config' }
+      );
+
+      // 6. Version History Snapshot
+      operations.push({
+        type: 'set',
+        ref: doc(db, 'publishedVersions', newVersion.id),
+        data: newVersion,
+        collectionName: 'publishedVersions',
+        documentId: newVersion.id,
+        description: `Version Snapshot ${versionNum}`,
+      });
+
+      updateStep(
+        2,
+        'success',
+        `Prepared ${operations.length} atomic ops (+${addedProducts} new, ~${updatedProducts} updated, -${deletedProducts} deleted products).`
+      );
+
+      // Step 4: Synchronize Live WriteBatch (Chunked & Non-blocking)
+      const step4Start = Date.now();
+      const BATCH_CHUNK_SIZE = 80; // Safe size far below Firestore 500 ops limit
+      const batchChunks: BatchOperation[][] = [];
+      for (let i = 0; i < operations.length; i += BATCH_CHUNK_SIZE) {
+        batchChunks.push(operations.slice(i, i + BATCH_CHUNK_SIZE));
+      }
+
+      const totalBatches = batchChunks.length;
+      updateStep(
+        3,
+        'running',
+        `Synchronizing ${operations.length} doc changes across ${totalBatches} batch(es)...`
+      );
+
+      for (let i = 0; i < totalBatches; i++) {
+        const chunkOps = batchChunks[i];
+        await executeBatchChunkWithRetry(chunkOps, i, totalBatches, (msg) => {
+          updateStep(3, 'running', msg);
+        });
+      }
+
+      const step4Duration = ((Date.now() - step4Start) / 1000).toFixed(2);
+      updateStep(
+        3,
+        'success',
+        `Committed ${operations.length} doc operations across ${totalBatches} batch(es) in ${step4Duration}s.`
+      );
 
       const totalChangedDocs =
         addedProducts +
@@ -1892,8 +2041,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('mfp_last_published_by', adminEmail);
 
       try {
-        await withRetry(() =>
-          setDoc(doc(db, 'website_draft', 'current'), { isPublished: true }, { merge: true })
+        await promiseWithTimeout(
+          setDoc(doc(db, 'website_draft', 'current'), { isPublished: true }, { merge: true }),
+          8000,
+          'Marking website_draft as published timed out.'
         );
         await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
       } catch (e) {

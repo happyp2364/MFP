@@ -564,6 +564,11 @@ export interface PublishProgressState {
   collectionName?: string;
   documentId?: string;
   stackTrace?: string;
+  documentSize?: string;
+  batchSize?: number;
+  numDocuments?: number;
+  commitDuration?: string;
+  writeCount?: number;
 }
 
 export interface PublishResult {
@@ -578,5 +583,10 @@ export interface PublishResult {
   collectionName?: string;
   documentId?: string;
   stackTrace?: string;
+  documentSize?: string;
+  batchSize?: number;
+  numDocuments?: number;
+  commitDuration?: string;
+  writeCount?: number;
 }
 

@@ -75,6 +75,67 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Real Client Collections: Settings, Homepage, Categories, Payment, Animations, Mascot, Social, Theme
+    match /settings/{id} {
+      allow read, write: if true;
+    }
+    match /homepage/{id} {
+      allow read, write: if true;
+    }
+    match /categories/{id} {
+      allow read, write: if true;
+    }
+    match /payment/{id} {
+      allow read, write: if true;
+    }
+    match /animations/{id} {
+      allow read, write: if true;
+    }
+    match /mascot/{id} {
+      allow read, write: if true;
+    }
+    match /social/{id} {
+      allow read, write: if true;
+    }
+    match /theme/{id} {
+      allow read, write: if true;
+    }
+
+    // CMS Draft State Storage for setting collections
+    match /draft_settings/{id} {
+      allow read, write: if true;
+    }
+    match /draft_hero/{id} {
+      allow read, write: if true;
+    }
+    match /draft_homepage/{id} {
+      allow read, write: if true;
+    }
+    match /draft_categories/{id} {
+      allow read, write: if true;
+    }
+    match /draft_payment/{id} {
+      allow read, write: if true;
+    }
+    match /draft_animations/{id} {
+      allow read, write: if true;
+    }
+    match /draft_mascot/{id} {
+      allow read, write: if true;
+    }
+    match /draft_social/{id} {
+      allow read, write: if true;
+    }
+    match /draft_theme/{id} {
+      allow read, write: if true;
+    }
+    match /draft_products/{id} {
+      allow read, write: if true;
+    }
+    match /draft_reviews/{id} {
+      allow read, write: if true;
+    }
+
     // Hero Banner Content
     match /hero/{heroId} {
       allow read: if true;

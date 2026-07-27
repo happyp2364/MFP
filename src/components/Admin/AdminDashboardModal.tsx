@@ -1723,6 +1723,49 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </div>
                 )}
 
+                {/* FIRESTORE PERFORMANCE & SIZE METRICS */}
+                {((publishProgress && (publishProgress.documentSize || publishProgress.batchSize)) || 
+                  (publishResult && (publishResult.documentSize || publishResult.batchSize))) && (
+                  <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-4 text-xs text-neutral-800 space-y-3">
+                    <div className="flex items-center gap-2 font-extrabold text-neutral-950 text-sm">
+                      <Database className="w-5 h-5 text-emerald-600" />
+                      <span>Firestore Performance & Size Metrics</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-white p-3 rounded-xl border border-neutral-200 text-[11px]">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-neutral-500 block">Document Size</span>
+                        <span className="font-mono font-bold text-neutral-950">
+                          {publishProgress?.documentSize || publishResult?.documentSize || '0 KB'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-neutral-500 block">Batch Size</span>
+                        <span className="font-mono font-bold text-neutral-950">
+                          {publishProgress?.batchSize || publishResult?.batchSize || 0} ops
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-neutral-500 block">No. of Documents</span>
+                        <span className="font-mono font-bold text-neutral-950">
+                          {publishProgress?.numDocuments || publishResult?.numDocuments || 0} docs
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-neutral-500 block">Commit Duration</span>
+                        <span className="font-mono font-bold text-neutral-950">
+                          {publishProgress?.commitDuration || publishResult?.commitDuration || '0s'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-neutral-500 block">Write Count</span>
+                        <span className="font-mono font-bold text-neutral-950">
+                          {publishProgress?.writeCount || publishResult?.writeCount || 0} writes
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* ADMIN DEBUG CONSOLE */}
                 <div className="border border-neutral-200 rounded-2xl overflow-hidden bg-neutral-950 text-neutral-200 text-xs font-mono">
                   <div className="px-4 py-2.5 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between text-neutral-400 text-[11px] font-bold">

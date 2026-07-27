@@ -74,7 +74,7 @@ import {
   fetchMarketingSubscribersFromFirestore,
 } from '../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { addDoc, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, limit, orderBy, query, writeBatch } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc, deleteDoc, onSnapshot, getDocs, getDoc, limit, orderBy, query, writeBatch } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import {
   playSound,
@@ -753,7 +753,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
-      const configRef = doc(db, 'petShoeConfig', 'config');
+      const configRef = doc(db, 'mascot', 'petShoeConfig');
       unsubscribe = onSnapshot(configRef, (docSnap) => {
         if (docSnap.exists()) {
           setPublishedPetShoeConfig((prev) => ({ ...prev, ...docSnap.data() }));
@@ -769,7 +769,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
-      const configRef = doc(db, 'instagramConfig', 'config');
+      const configRef = doc(db, 'social', 'instagramConfig');
       unsubscribe = onSnapshot(configRef, (docSnap) => {
         if (docSnap.exists()) {
           setPublishedInstagramConfig((prev) => ({ ...prev, ...docSnap.data() }));
@@ -785,7 +785,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
-      const configRef = doc(db, 'hangingSneakerConfig', 'config');
+      const configRef = doc(db, 'animations', 'hangingSneakerConfig');
       unsubscribe = onSnapshot(configRef, (docSnap) => {
         if (docSnap.exists()) {
           setPublishedHangingSneakerConfig((prev) => ({ ...prev, ...docSnap.data() }));
@@ -801,7 +801,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
-      const configRef = doc(db, 'paymentSettings', 'config');
+      const configRef = doc(db, 'payment', 'config');
       unsubscribe = onSnapshot(configRef, (docSnap) => {
         if (docSnap.exists()) {
           setPublishedPaymentSettings({ ...DEFAULT_PAYMENT_SETTINGS, ...docSnap.data() } as PaymentSettings);
@@ -865,7 +865,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
-      const docRef = doc(db, 'siteSettings', 'storeInfo');
+      const docRef = doc(db, 'settings', 'store');
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
           setPublishedStoreInfo((prev) => ({ ...prev, ...(docSnap.data() as StoreInfo) }));
@@ -880,7 +880,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
-      const docRef = doc(db, 'siteSettings', 'heroContent');
+      const docRef = doc(db, 'hero', 'current');
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
           setPublishedHeroContent((prev) => ({ ...prev, ...(docSnap.data() as HeroContent) }));
@@ -895,7 +895,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
-      const docRef = doc(db, 'siteSettings', 'announcements');
+      const docRef = doc(db, 'homepage', 'announcements');
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists() && docSnap.data().items) {
           setPublishedAnnouncements(docSnap.data().items as string[]);
@@ -910,7 +910,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
-      const docRef = doc(db, 'siteSettings', 'categoryHighlights');
+      const docRef = doc(db, 'categories', 'highlights');
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists() && docSnap.data().items) {
           setPublishedCategoryHighlights(docSnap.data().items as CategoryHighlight[]);
@@ -925,7 +925,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
-      const docRef = doc(db, 'siteSettings', 'trendingCollections');
+      const docRef = doc(db, 'homepage', 'trendingCollections');
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists() && docSnap.data().items) {
           setPublishedTrendingCollections(docSnap.data().items as TrendingCollectionItem[]);
@@ -933,6 +933,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
     } catch (e) {
       console.warn('trendingCollections onSnapshot error:', e);
+    }
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, []);
+
+  // Real-time Firestore Sync for Sound Config
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const docRef = doc(db, 'theme', 'current');
+      unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setPublishedSoundConfig((prev) => ({ ...prev, ...(docSnap.data() as SoundConfig) }));
+        }
+      });
+    } catch (e) {
+      console.warn('soundConfig onSnapshot error:', e);
     }
     return () => { if (unsubscribe) unsubscribe(); };
   }, []);
@@ -1464,9 +1480,88 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem('mfp_cms_active_draft', JSON.stringify(updatedDraft));
     localStorage.setItem('mfp_cms_pending_count', newCount.toString());
 
-    setDoc(doc(db, 'drafts', 'activeDraft'), updatedDraft, { merge: true }).catch((e) => {
-      console.warn('Auto-save draft Firestore notice:', e);
-    });
+    // Write to partitioned documents in Firestore using writeBatch
+    try {
+      const batch = writeBatch(db);
+
+      // Save individual config documents
+      if (overrides?.storeInfo) {
+        batch.set(doc(db, 'draft_settings', 'store'), overrides.storeInfo, { merge: true });
+      }
+      if (overrides?.heroContent) {
+        batch.set(doc(db, 'draft_hero', 'current'), overrides.heroContent, { merge: true });
+      }
+      if (overrides?.announcements) {
+        batch.set(doc(db, 'draft_homepage', 'announcements'), { items: overrides.announcements }, { merge: true });
+      }
+      if (overrides?.categoryHighlights) {
+        batch.set(doc(db, 'draft_categories', 'highlights'), { items: overrides.categoryHighlights }, { merge: true });
+      }
+      if (overrides?.trendingCollections) {
+        batch.set(doc(db, 'draft_homepage', 'trendingCollections'), { items: overrides.trendingCollections }, { merge: true });
+      }
+      if (overrides?.paymentSettings) {
+        batch.set(doc(db, 'draft_payment', 'config'), overrides.paymentSettings, { merge: true });
+      }
+      if (overrides?.hangingSneakerConfig) {
+        batch.set(doc(db, 'draft_animations', 'hangingSneakerConfig'), overrides.hangingSneakerConfig, { merge: true });
+      }
+      if (overrides?.petShoeConfig) {
+        batch.set(doc(db, 'draft_mascot', 'petShoeConfig'), overrides.petShoeConfig, { merge: true });
+      }
+      if (overrides?.instagramConfig) {
+        batch.set(doc(db, 'draft_social', 'instagramConfig'), overrides.instagramConfig, { merge: true });
+      }
+      if (overrides?.soundConfig) {
+        batch.set(doc(db, 'draft_theme', 'current'), overrides.soundConfig, { merge: true });
+      }
+
+      // Save Products that changed
+      if (overrides?.products) {
+        const nextIds = new Set(overrides.products.map(p => p.id));
+
+        // Added/Updated
+        overrides.products.forEach(p => {
+          const existing = draftProducts.find(item => item.id === p.id);
+          if (!existing || JSON.stringify(existing) !== JSON.stringify(p)) {
+            batch.set(doc(db, 'draft_products', p.id), p, { merge: true });
+          }
+        });
+
+        // Deleted
+        draftProducts.forEach(p => {
+          if (!nextIds.has(p.id)) {
+            batch.delete(doc(db, 'draft_products', p.id));
+          }
+        });
+      }
+
+      // Save Reviews that changed
+      if (overrides?.reviews) {
+        const nextIds = new Set(overrides.reviews.map(r => r.id));
+
+        // Added/Updated
+        overrides.reviews.forEach(r => {
+          const existing = draftReviews.find(item => item.id === r.id);
+          if (!existing || JSON.stringify(existing) !== JSON.stringify(r)) {
+            batch.set(doc(db, 'draft_reviews', r.id), r, { merge: true });
+          }
+        });
+
+        // Deleted
+        draftReviews.forEach(r => {
+          if (!nextIds.has(r.id)) {
+            batch.delete(doc(db, 'draft_reviews', r.id));
+          }
+        });
+      }
+
+      batch.commit().catch(e => {
+        console.warn('Auto-save draft Firestore partition commit notice:', e);
+      });
+    } catch (err) {
+      console.warn('Auto-save writeBatch initiation notice:', err);
+    }
 
     showToast('🟡 Draft Saved (Pending Publish)', 'info');
   }, [
@@ -1475,33 +1570,86 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     draftHangingSneakerConfig, draftPetShoeConfig, draftInstagramConfig, draftSoundConfig, pendingDraftCount, showToast
   ]);
 
-  // Load Active Draft Snapshot from Firestore on Mount
+  // Load Active Draft Settings & Configuration from partitioned draft documents
   useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
+    let unsubStore: any, unsubHero: any, unsubAnnounce: any, unsubCat: any, unsubTrend: any, unsubPay: any, unsubSneak: any, unsubPet: any, unsubInsta: any, unsubSound: any;
     try {
-      const draftDocRef = doc(db, 'drafts', 'activeDraft');
-      unsubscribe = onSnapshot(draftDocRef, (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.products) setDraftProducts(data.products);
-          if (data.reviews) setDraftReviews(data.reviews);
-          if (data.storeInfo) setDraftStoreInfo(data.storeInfo);
-          if (data.heroContent) setDraftHeroContent(data.heroContent);
-          if (data.announcements) setDraftAnnouncements(data.announcements);
-          if (data.categoryHighlights) setDraftCategoryHighlights(data.categoryHighlights);
-          if (data.trendingCollections) setDraftTrendingCollections(data.trendingCollections);
-          if (data.paymentSettings) setDraftPaymentSettings(data.paymentSettings);
-          if (data.hangingSneakerConfig) setDraftHangingSneakerConfig(data.hangingSneakerConfig);
-          if (data.petShoeConfig) setDraftPetShoeConfig(data.petShoeConfig);
-          if (data.instagramConfig) setDraftInstagramConfig(data.instagramConfig);
-          if (data.soundConfig) setDraftSoundConfig(data.soundConfig);
+      unsubStore = onSnapshot(doc(db, 'draft_settings', 'store'), (snap) => {
+        if (snap.exists()) setDraftStoreInfo(snap.data() as StoreInfo);
+      });
+      unsubHero = onSnapshot(doc(db, 'draft_hero', 'current'), (snap) => {
+        if (snap.exists()) setDraftHeroContent(snap.data() as HeroContent);
+      });
+      unsubAnnounce = onSnapshot(doc(db, 'draft_homepage', 'announcements'), (snap) => {
+        if (snap.exists() && snap.data().items) setDraftAnnouncements(snap.data().items as string[]);
+      });
+      unsubCat = onSnapshot(doc(db, 'draft_categories', 'highlights'), (snap) => {
+        if (snap.exists() && snap.data().items) setDraftCategoryHighlights(snap.data().items as CategoryHighlight[]);
+      });
+      unsubTrend = onSnapshot(doc(db, 'draft_homepage', 'trendingCollections'), (snap) => {
+        if (snap.exists() && snap.data().items) setDraftTrendingCollections(snap.data().items as TrendingCollectionItem[]);
+      });
+      unsubPay = onSnapshot(doc(db, 'draft_payment', 'config'), (snap) => {
+        if (snap.exists()) setDraftPaymentSettings(snap.data() as PaymentSettings);
+      });
+      unsubSneak = onSnapshot(doc(db, 'draft_animations', 'hangingSneakerConfig'), (snap) => {
+        if (snap.exists()) setDraftHangingSneakerConfig(snap.data() as HangingSneakerConfig);
+      });
+      unsubPet = onSnapshot(doc(db, 'draft_mascot', 'petShoeConfig'), (snap) => {
+        if (snap.exists()) setDraftPetShoeConfig(snap.data() as PetShoeConfig);
+      });
+      unsubInsta = onSnapshot(doc(db, 'draft_social', 'instagramConfig'), (snap) => {
+        if (snap.exists()) setDraftInstagramConfig(snap.data() as InstagramConfig);
+      });
+      unsubSound = onSnapshot(doc(db, 'draft_theme', 'current'), (snap) => {
+        if (snap.exists()) setDraftSoundConfig(snap.data() as SoundConfig);
+      });
+      setHasPendingDraft(true);
+    } catch (e) {
+      console.warn('Draft individual document listeners notice:', e);
+    }
+    return () => {
+      if (unsubStore) unsubStore();
+      if (unsubHero) unsubHero();
+      if (unsubAnnounce) unsubAnnounce();
+      if (unsubCat) unsubCat();
+      if (unsubTrend) unsubTrend();
+      if (unsubPay) unsubPay();
+      if (unsubSneak) unsubSneak();
+      if (unsubPet) unsubPet();
+      if (unsubInsta) unsubInsta();
+      if (unsubSound) unsubSound();
+    };
+  }, []);
+
+  // Load draft products and reviews from their respective collections
+  useEffect(() => {
+    let unsubscribe: any = null;
+    try {
+      unsubscribe = onSnapshot(collection(db, 'draft_products'), (snap) => {
+        if (!snap.empty) {
+          const list: Product[] = [];
+          snap.forEach((d) => list.push({ ...d.data(), id: d.id } as Product));
+          setDraftProducts(list);
           setHasPendingDraft(true);
         }
       });
-    } catch (e) {
-      console.warn('Draft listener notice:', e);
-    }
-    return () => { if (unsubscribe) unsubscribe(); };
+    } catch (e) {}
+    return () => unsubscribe && unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    let unsubscribe: any = null;
+    try {
+      unsubscribe = onSnapshot(collection(db, 'draft_reviews'), (snap) => {
+        if (!snap.empty) {
+          const list: Review[] = [];
+          snap.forEach((d) => list.push({ ...d.data(), id: d.id } as Review));
+          setDraftReviews(list);
+        }
+      });
+    } catch (e) {}
+    return () => unsubscribe && unsubscribe();
   }, []);
 
   // Load Version History from Firestore on Mount
@@ -1529,46 +1677,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => { if (unsubscribe) unsubscribe(); };
   }, []);
 
-  // --- REAL-TIME LISTENER FOR WEBSITE_LIVE COLLECTION ---
-  // Customers always read website_live/current for instant real-time sync
-  useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
-    try {
-      const liveDocRef = doc(db, 'website_live', 'current');
-      unsubscribe = onSnapshot(
-        liveDocRef,
-        (snap) => {
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data.products && Array.isArray(data.products)) setPublishedProducts(data.products);
-            if (data.reviews && Array.isArray(data.reviews)) setPublishedReviews(data.reviews);
-            if (data.storeInfo) setPublishedStoreInfo(data.storeInfo);
-            if (data.heroContent) setPublishedHeroContent(data.heroContent);
-            if (data.announcements) setPublishedAnnouncements(data.announcements);
-            if (data.categoryHighlights) setPublishedCategoryHighlights(data.categoryHighlights);
-            if (data.trendingCollections) setPublishedTrendingCollections(data.trendingCollections);
-            if (data.paymentSettings) setPublishedPaymentSettings(data.paymentSettings);
-            if (data.hangingSneakerConfig) setPublishedHangingSneakerConfig(data.hangingSneakerConfig);
-            if (data.petShoeConfig) setPublishedPetShoeConfig(data.petShoeConfig);
-            if (data.instagramConfig) setPublishedInstagramConfig(data.instagramConfig);
-            if (data.soundConfig) setPublishedSoundConfig(data.soundConfig);
-            if (data.publishedAt) setLastPublishedAt(data.publishedAt);
-            if (data.publishedBy) setLastPublishedBy(data.publishedBy);
-          }
-        },
-        (err) => {
-          console.warn('website_live Firestore listener notice:', err);
-        }
-      );
-    } catch (e) {
-      console.warn('website_live listener initialization error:', e);
-    }
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, []);
-
-  // --- CMS GLOBAL PUBLISH ACTION (10-STEP ATOMIC WORKFLOW) ---
   const publishWebsite = async (
     summary?: string,
     onProgress?: (progress: PublishProgressState) => void
@@ -1576,6 +1684,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const adminEmail = auth.currentUser?.email || 'vpcreation2002@gmail.com';
     const nowISO = new Date().toISOString();
     const startTime = Date.now();
+
+    const estimateSizeInBytes = (obj: any): number => {
+      const str = JSON.stringify(obj);
+      return str ? str.length : 0;
+    };
 
     // Strict Timeout Wrapper to Guarantee Async Operations Never Wait Forever
     const promiseWithTimeout = <T,>(
@@ -1624,7 +1737,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             );
           }
 
-          // ALWAYS create a FRESH WriteBatch instance per attempt
           const batch = writeBatch(db);
           for (const op of operations) {
             if (op.type === 'set') {
@@ -1634,11 +1746,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
           }
 
-          // Commit with a strict 12-second timeout per attempt
           await promiseWithTimeout(
             batch.commit(),
-            12000,
-            `WriteBatch commit for Batch ${batchIndex + 1}/${totalBatches} timed out (12s limit).`
+            45000,
+            `WriteBatch commit for Batch ${batchIndex + 1}/${totalBatches} timed out (45s limit).`
           );
 
           const duration = ((Date.now() - chunkStartTime) / 1000).toFixed(2);
@@ -1647,17 +1758,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               `Batch ${batchIndex + 1}/${totalBatches}: Successfully committed ${operations.length} doc(s) in ${duration}s.`
             );
           }
-          return; // Batch chunk completed!
+          return;
         } catch (err: any) {
           lastError = err;
           console.warn(`Batch ${batchIndex + 1}/${totalBatches} commit attempt ${attempt} error:`, err);
 
-          // Do NOT retry on permission-denied
           if (err.code === 'permission-denied') {
             throw {
               code: 'permission-denied',
               message: 'Firestore Permission Denied: Admin permissions required for database write operations.',
-              collectionName: operations[0]?.collectionName || 'website_live',
+              collectionName: operations[0]?.collectionName || 'products',
               documentId: operations[0]?.documentId || 'current',
               stackTrace: err.stack,
             };
@@ -1672,7 +1782,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       throw {
         code: lastError?.code || 'firestore/batch-commit-failed',
         message: lastError?.message || `Batch ${batchIndex + 1}/${totalBatches} commit failed after ${maxRetries} attempts.`,
-        collectionName: operations[0]?.collectionName || 'website_live',
+        collectionName: operations[0]?.collectionName || 'products',
         documentId: operations[0]?.documentId || 'current',
         stackTrace: lastError?.stack || lastError?.stackTrace || String(lastError),
       };
@@ -1681,17 +1791,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const initialSteps: PublishStepLog[] = [
       { id: 's1', name: 'Validate Draft & Firebase Credentials', status: 'pending' },
       { id: 's2', name: 'Verify Media Assets & URIs', status: 'pending' },
-      { id: 's3', name: 'Prepare Draft Snapshot (website_draft)', status: 'pending' },
-      { id: 's4', name: 'Synchronize Live WriteBatch (website_live)', status: 'pending' },
+      { id: 's3', name: 'Prepare Operations Queue & Size Check', status: 'pending' },
+      { id: 's4', name: 'Synchronize Granular Live Updates', status: 'pending' },
       { id: 's5', name: 'Refresh Search & Filter Indexes', status: 'pending' },
       { id: 's6', name: 'Refresh Local Caches & Storage Keys', status: 'pending' },
       { id: 's7', name: 'Refresh Live Website Data Across Clients', status: 'pending' },
       { id: 's8', name: 'Confirm Version History Snapshot', status: 'pending' },
-      { id: 's9', name: 'Mark Draft as Published', status: 'pending' },
+      { id: 's9', name: 'Cleanup Draft References', status: 'pending' },
       { id: 's10', name: 'Notify Connected Clients & Complete Release', status: 'pending' },
     ];
 
     let currentLogs = [...initialSteps];
+
+    // Initialize metrics variables so they can be captured and shared via the progress callback
+    let totalEstimatedSizeKb = 0;
+    let batchSizeMetric = 0;
+    let numDocsMetric = 0;
+    let commitDurationMetric = '0s';
+    let writeCountMetric = 0;
 
     const updateStep = (
       stepIdx: number,
@@ -1730,6 +1847,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           collectionName: errorInfo?.collectionName,
           documentId: errorInfo?.documentId,
           stackTrace: errorInfo?.stackTrace,
+          documentSize: `${totalEstimatedSizeKb.toFixed(2)} KB`,
+          batchSize: batchSizeMetric,
+          numDocuments: numDocsMetric,
+          commitDuration: commitDurationMetric,
+          writeCount: writeCountMetric,
         });
       }
     };
@@ -1743,8 +1865,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         throw {
           code: 'firebase/connection-failed',
           message: 'Firestore connection unavailable. Check network or initialization.',
-          collectionName: 'website_draft',
-          documentId: 'current',
+          collectionName: 'products',
+          documentId: 'validation',
         };
       }
 
@@ -1752,8 +1874,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         throw {
           code: 'draft/invalid-data',
           message: 'Document Missing: Draft products collection is invalid or empty.',
-          collectionName: 'website_draft',
-          documentId: 'current',
+          collectionName: 'products',
+          documentId: 'validation',
         };
       }
 
@@ -1793,85 +1915,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (draftHeroContent?.heroImage) totalImages++;
       updateStep(1, 'success', `Verified ${totalImages} images (${existingHostedImages} hosted/cached).`);
 
-      // Step 3: Prepare Draft Snapshot & Operation Queue
+      // Step 3: Prepare Operations Queue & Size Check
       updateStep(2, 'running', 'Building operations queue and diffing changed documents...');
       await new Promise((r) => setTimeout(r, 40));
 
       const versionNum = `v1.${publishedVersions.length + 1}`;
-      const draftPayload = {
-        products: draftProducts,
-        reviews: draftReviews,
-        storeInfo: draftStoreInfo,
-        heroContent: draftHeroContent,
-        announcements: draftAnnouncements,
-        categoryHighlights: draftCategoryHighlights,
-        trendingCollections: draftTrendingCollections,
-        paymentSettings: draftPaymentSettings,
-        hangingSneakerConfig: draftHangingSneakerConfig,
-        petShoeConfig: draftPetShoeConfig,
-        instagramConfig: draftInstagramConfig,
-        soundConfig: draftSoundConfig,
-        updatedAt: nowISO,
-        updatedBy: adminEmail,
-        isPublished: false,
-      };
-
-      const livePayload = {
-        ...draftPayload,
-        publishedAt: nowISO,
-        publishedBy: adminEmail,
-        versionNumber: versionNum,
-        summary: summary || `Global CMS publish with ${pendingDraftCount || 1} changes approved`,
-        isPublished: true,
-      };
-
-      const newVersion: PublishedVersionHistory = {
-        id: `ver-${Date.now()}`,
-        versionNumber: versionNum,
-        publishedAt: nowISO,
-        publishedBy: adminEmail,
-        summary: summary || `Global CMS publish with ${pendingDraftCount || 1} changes approved`,
-        changeCount: pendingDraftCount || 1,
-        data: {
-          products: draftProducts,
-          reviews: draftReviews,
-          storeInfo: draftStoreInfo,
-          heroContent: draftHeroContent,
-          announcements: draftAnnouncements,
-          categoryHighlights: draftCategoryHighlights,
-          trendingCollections: draftTrendingCollections,
-          paymentSettings: draftPaymentSettings,
-          hangingSneakerConfig: draftHangingSneakerConfig,
-          petShoeConfig: draftPetShoeConfig,
-          instagramConfig: draftInstagramConfig,
-          soundConfig: draftSoundConfig,
-        },
-      };
-
-      // Construct Operation Queue
       const operations: BatchOperation[] = [];
 
-      // 1. website_draft / current
-      operations.push({
-        type: 'set',
-        ref: doc(db, 'website_draft', 'current'),
-        data: draftPayload,
-        collectionName: 'website_draft',
-        documentId: 'current',
-        description: 'Draft Snapshot',
-      });
-
-      // 2. website_live / current
-      operations.push({
-        type: 'set',
-        ref: doc(db, 'website_live', 'current'),
-        data: livePayload,
-        collectionName: 'website_live',
-        documentId: 'current',
-        description: 'Live Snapshot',
-      });
-
-      // 3. Diff Products
+      // A. Diff and queue products
       let addedProducts = 0;
       let updatedProducts = 0;
       let deletedProducts = 0;
@@ -1900,6 +1951,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
           updatedProducts++;
         }
+        // Remove from draft collection once published
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_products', p.id),
+          collectionName: 'draft_products',
+          documentId: p.id,
+          description: `Cleanup draft product "${p.name}"`,
+        });
       }
 
       for (const pub of publishedProducts) {
@@ -1915,7 +1974,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
 
-      // 4. Diff Reviews
+      // B. Diff and queue reviews
       let addedReviews = 0;
       let updatedReviews = 0;
       let deletedReviews = 0;
@@ -1944,6 +2003,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
           updatedReviews++;
         }
+        // Remove from draft_reviews collection
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_reviews', r.id),
+          collectionName: 'draft_reviews',
+          documentId: r.id,
+          description: `Cleanup draft review ${r.id}`,
+        });
       }
 
       for (const pub of publishedReviews) {
@@ -1959,49 +2026,144 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
 
-      // 5. Site Settings and Configs
-      operations.push(
-        { type: 'set', ref: doc(db, 'siteSettings', 'storeInfo'), data: draftStoreInfo, collectionName: 'siteSettings', documentId: 'storeInfo', description: 'Store Info' },
-        { type: 'set', ref: doc(db, 'siteSettings', 'heroContent'), data: draftHeroContent, collectionName: 'siteSettings', documentId: 'heroContent', description: 'Hero Content' },
-        { type: 'set', ref: doc(db, 'siteSettings', 'announcements'), data: { items: draftAnnouncements }, collectionName: 'siteSettings', documentId: 'announcements', description: 'Announcements' },
-        { type: 'set', ref: doc(db, 'siteSettings', 'categoryHighlights'), data: { items: draftCategoryHighlights }, collectionName: 'siteSettings', documentId: 'categoryHighlights', description: 'Categories' },
-        { type: 'set', ref: doc(db, 'siteSettings', 'trendingCollections'), data: { items: draftTrendingCollections }, collectionName: 'siteSettings', documentId: 'trendingCollections', description: 'Collections' },
-        { type: 'set', ref: doc(db, 'paymentSettings', 'config'), data: draftPaymentSettings, collectionName: 'paymentSettings', documentId: 'config', description: 'Payment Settings' },
-        { type: 'set', ref: doc(db, 'hangingSneakerConfig', 'config'), data: draftHangingSneakerConfig, collectionName: 'hangingSneakerConfig', documentId: 'config', description: 'Hanging Sneaker Config' },
-        { type: 'set', ref: doc(db, 'petShoeConfig', 'config'), data: draftPetShoeConfig, collectionName: 'petShoeConfig', documentId: 'config', description: 'Pet Shoe Config' },
-        { type: 'set', ref: doc(db, 'instagramConfig', 'config'), data: draftInstagramConfig, collectionName: 'instagramConfig', documentId: 'config', description: 'Instagram Config' },
-        { type: 'set', ref: doc(db, 'siteSettings', 'soundConfig'), data: draftSoundConfig, collectionName: 'siteSettings', documentId: 'soundConfig', description: 'Sound Config' }
-      );
+      // C. Synchronize settings only if they changed
+      if (JSON.stringify(draftStoreInfo) !== JSON.stringify(publishedStoreInfo)) {
+        operations.push({ type: 'set', ref: doc(db, 'settings', 'store'), data: draftStoreInfo, collectionName: 'settings', documentId: 'store', description: 'Store Info' });
+      }
+      if (JSON.stringify(draftHeroContent) !== JSON.stringify(publishedHeroContent)) {
+        operations.push({ type: 'set', ref: doc(db, 'hero', 'current'), data: draftHeroContent, collectionName: 'hero', documentId: 'current', description: 'Hero Content' });
+      }
+      if (JSON.stringify(draftAnnouncements) !== JSON.stringify(publishedAnnouncements)) {
+        operations.push({ type: 'set', ref: doc(db, 'homepage', 'announcements'), data: { items: draftAnnouncements }, collectionName: 'homepage', documentId: 'announcements', description: 'Announcements' });
+      }
+      if (JSON.stringify(draftCategoryHighlights) !== JSON.stringify(publishedCategoryHighlights)) {
+        operations.push({ type: 'set', ref: doc(db, 'categories', 'highlights'), data: { items: draftCategoryHighlights }, collectionName: 'categories', documentId: 'highlights', description: 'Categories' });
+      }
+      if (JSON.stringify(draftTrendingCollections) !== JSON.stringify(publishedTrendingCollections)) {
+        operations.push({ type: 'set', ref: doc(db, 'homepage', 'trendingCollections'), data: { items: draftTrendingCollections }, collectionName: 'homepage', documentId: 'trendingCollections', description: 'Collections' });
+      }
+      if (JSON.stringify(draftPaymentSettings) !== JSON.stringify(publishedPaymentSettings)) {
+        operations.push({ type: 'set', ref: doc(db, 'payment', 'config'), data: draftPaymentSettings, collectionName: 'payment', documentId: 'config', description: 'Payment Settings' });
+      }
+      if (JSON.stringify(draftHangingSneakerConfig) !== JSON.stringify(publishedHangingSneakerConfig)) {
+        operations.push({ type: 'set', ref: doc(db, 'animations', 'hangingSneakerConfig'), data: draftHangingSneakerConfig, collectionName: 'animations', documentId: 'hangingSneakerConfig', description: 'Hanging Sneaker Config' });
+      }
+      if (JSON.stringify(draftPetShoeConfig) !== JSON.stringify(publishedPetShoeConfig)) {
+        operations.push({ type: 'set', ref: doc(db, 'mascot', 'petShoeConfig'), data: draftPetShoeConfig, collectionName: 'mascot', documentId: 'petShoeConfig', description: 'Pet Shoe Config' });
+      }
+      if (JSON.stringify(draftInstagramConfig) !== JSON.stringify(publishedInstagramConfig)) {
+        operations.push({ type: 'set', ref: doc(db, 'social', 'instagramConfig'), data: draftInstagramConfig, collectionName: 'social', documentId: 'instagramConfig', description: 'Instagram Config' });
+      }
+      if (JSON.stringify(draftSoundConfig) !== JSON.stringify(publishedSoundConfig)) {
+        operations.push({ type: 'set', ref: doc(db, 'theme', 'current'), data: draftSoundConfig, collectionName: 'theme', documentId: 'current', description: 'Sound Config' });
+      }
 
-      // 6. Version History Snapshot
-      operations.push({
-        type: 'set',
-        ref: doc(db, 'publishedVersions', newVersion.id),
-        data: newVersion,
-        collectionName: 'publishedVersions',
-        documentId: newVersion.id,
-        description: `Version Snapshot ${versionNum}`,
+      // D. Version History Snapshot with Auto-Split Check
+      const newVersion: PublishedVersionHistory = {
+        id: `ver-${Date.now()}`,
+        versionNumber: versionNum,
+        publishedAt: nowISO,
+        publishedBy: adminEmail,
+        summary: summary || `Global CMS publish with ${pendingDraftCount || 1} changes approved`,
+        changeCount: pendingDraftCount || 1,
+        data: {
+          products: draftProducts,
+          reviews: draftReviews,
+          storeInfo: draftStoreInfo,
+          heroContent: draftHeroContent,
+          announcements: draftAnnouncements,
+          categoryHighlights: draftCategoryHighlights,
+          trendingCollections: draftTrendingCollections,
+          paymentSettings: draftPaymentSettings,
+          hangingSneakerConfig: draftHangingSneakerConfig,
+          petShoeConfig: draftPetShoeConfig,
+          instagramConfig: draftInstagramConfig,
+          soundConfig: draftSoundConfig,
+        },
+      };
+
+      const versionSize = estimateSizeInBytes(newVersion);
+      if (versionSize > 800 * 1024) {
+        const parentVersionDoc = { ...newVersion };
+        parentVersionDoc.data = { ...newVersion.data };
+        
+        const productsChunkSize = Math.ceil(draftProducts.length / 2);
+        const part1Products = draftProducts.slice(0, productsChunkSize);
+        const part2Products = draftProducts.slice(productsChunkSize);
+        
+        const part1Id = `${newVersion.id}_products_part1`;
+        const part2Id = `${newVersion.id}_products_part2`;
+        
+        operations.push({
+          type: 'set',
+          ref: doc(db, 'publishedVersions', part1Id),
+          data: { parentId: newVersion.id, products: part1Products },
+          collectionName: 'publishedVersions',
+          documentId: part1Id,
+          description: 'Version Products Part 1 (Split)',
+        });
+        
+        operations.push({
+          type: 'set',
+          ref: doc(db, 'publishedVersions', part2Id),
+          data: { parentId: newVersion.id, products: part2Products },
+          collectionName: 'publishedVersions',
+          documentId: part2Id,
+          description: 'Version Products Part 2 (Split)',
+        });
+        
+        parentVersionDoc.data.products = [];
+        (parentVersionDoc as any)._splittedProductsParts = [part1Id, part2Id];
+        
+        operations.push({
+          type: 'set',
+          ref: doc(db, 'publishedVersions', newVersion.id),
+          data: parentVersionDoc,
+          collectionName: 'publishedVersions',
+          documentId: newVersion.id,
+          description: `Split Version Snapshot ${versionNum}`,
+        });
+      } else {
+        operations.push({
+          type: 'set',
+          ref: doc(db, 'publishedVersions', newVersion.id),
+          data: newVersion,
+          collectionName: 'publishedVersions',
+          documentId: newVersion.id,
+          description: `Version Snapshot ${versionNum}`,
+        });
+      }
+
+      // Calculate sizes in KB/MB for debug display
+      let totalBytes = 0;
+      operations.forEach(op => {
+        if (op.data) totalBytes += estimateSizeInBytes(op.data);
       });
+      totalEstimatedSizeKb = totalBytes / 1024;
+      numDocsMetric = operations.length;
+      writeCountMetric = operations.length;
 
       updateStep(
         2,
         'success',
-        `Prepared ${operations.length} atomic ops (+${addedProducts} new, ~${updatedProducts} updated, -${deletedProducts} deleted products).`
+        `Prepared ${operations.length} atomic ops (+${addedProducts} products, +${addedReviews} reviews) with total size of ${totalEstimatedSizeKb.toFixed(2)} KB.`
       );
 
-      // Step 4: Synchronize Live WriteBatch (Chunked & Non-blocking)
+      // Step 4: Synchronize Granular Live Updates
       const step4Start = Date.now();
-      const BATCH_CHUNK_SIZE = 80; // Safe size far below Firestore 500 ops limit
+      const BATCH_CHUNK_SIZE = 80; // Safe, efficient batch size
       const batchChunks: BatchOperation[][] = [];
       for (let i = 0; i < operations.length; i += BATCH_CHUNK_SIZE) {
         batchChunks.push(operations.slice(i, i + BATCH_CHUNK_SIZE));
       }
 
       const totalBatches = batchChunks.length;
+      batchSizeMetric = BATCH_CHUNK_SIZE;
+
       updateStep(
         3,
         'running',
-        `Synchronizing ${operations.length} doc changes across ${totalBatches} batch(es)...`
+        `Synchronizing ${operations.length} granular updates across ${totalBatches} batches...`
       );
 
       for (let i = 0; i < totalBatches; i++) {
@@ -2012,28 +2174,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       const step4Duration = ((Date.now() - step4Start) / 1000).toFixed(2);
-      updateStep(
-        3,
-        'success',
-        `Committed ${operations.length} doc operations across ${totalBatches} batch(es) in ${step4Duration}s.`
-      );
-
-      const totalChangedDocs =
-        addedProducts +
-        updatedProducts +
-        deletedProducts +
-        addedReviews +
-        updatedReviews +
-        deletedReviews +
-        12;
+      commitDurationMetric = `${step4Duration}s`;
 
       updateStep(
         3,
         'success',
-        `Committed WriteBatch atomically (+${addedProducts} new, ~${updatedProducts} updated, -${deletedProducts} deleted products).`
+        `Successfully synchronized ${operations.length} granular updates in ${commitDurationMetric}.`
       );
 
-      // Step 5: Refresh Search & Filter Indexes (Background/Non-blocking)
+      // Step 5: Refresh Search & Filter Indexes
       updateStep(4, 'running', 'Rebuilding product search & filter indexes...');
       await new Promise((r) => setTimeout(r, 30));
       updateStep(4, 'success', 'Refreshed product search & filter indexes.');
@@ -2068,6 +2217,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setPublishedHangingSneakerConfig(draftHangingSneakerConfig);
       setPublishedPetShoeConfig(draftPetShoeConfig);
       setPublishedInstagramConfig(draftInstagramConfig);
+      setPublishedSoundConfig(draftSoundConfig);
       updateStep(6, 'success', 'Live website state synchronized.');
 
       // Step 8: Confirm Version History Snapshot
@@ -2075,8 +2225,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setPublishedVersions((prev) => [newVersion, ...prev]);
       updateStep(7, 'success', `Version ${versionNum} snapshot confirmed.`);
 
-      // Step 9: Mark Draft as Published
-      updateStep(8, 'running', 'Marking website_draft status as Published...');
+      // Step 9: Cleanup Draft References
+      updateStep(8, 'running', 'Cleaning up active drafts...');
       setHasPendingDraft(false);
       setPendingDraftCount(0);
       setLastPublishedAt(nowISO);
@@ -2085,16 +2235,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('mfp_last_published_by', adminEmail);
 
       try {
-        await promiseWithTimeout(
-          setDoc(doc(db, 'website_draft', 'current'), { isPublished: true }, { merge: true }),
-          8000,
-          'Marking website_draft as published timed out.'
-        );
         await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
       } catch (e) {
-        console.warn('Draft status cleanup notice:', e);
+        console.warn('Draft cleanup notice:', e);
       }
-      updateStep(8, 'success', 'Marked website_draft as Published.');
+      updateStep(8, 'success', 'Draft cleanup complete.');
 
       // Step 10: Notify All Connected Clients & Complete Release
       updateStep(9, 'running', 'Notifying connected clients and completing publish workflow...');
@@ -2106,10 +2251,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       recordAuditLog(
         'Website Published Globally',
         'SETTINGS',
-        `Published ${versionNum} (+${addedProducts}, ~${updatedProducts}, -${deletedProducts} docs) in ${publishDurationStr} by ${adminEmail}`,
+        `Published ${versionNum} with ${operations.length} updates in ${publishDurationStr} by ${adminEmail}`,
         'SUCCESS'
       );
       showToast(`🚀 Website Published Successfully! (${versionNum} in ${publishDurationStr})`, 'success');
+
+      const totalChangedDocs = addedProducts + updatedProducts + deletedProducts + addedReviews + updatedReviews + deletedReviews + operations.length;
 
       return {
         success: true,
@@ -2118,6 +2265,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         totalUpdatedDocs: totalChangedDocs,
         publishDuration: publishDurationStr,
         logs: currentLogs,
+        documentSize: `${totalEstimatedSizeKb.toFixed(2)} KB`,
+        batchSize: batchSizeMetric,
+        numDocuments: numDocsMetric,
+        commitDuration: commitDurationMetric,
+        writeCount: writeCountMetric,
       };
     } catch (err: any) {
       console.error('Failed to publish website:', err);
@@ -2127,7 +2279,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const code = err.code || err.errorCode || 'firestore/unknown-error';
       const msg = err.message || 'Publishing operation encountered an error.';
-      const col = err.collectionName || 'website_draft';
+      const col = err.collectionName || 'products';
       const docId = err.documentId || 'current';
       const stack = err.stackTrace || err.stack || '';
 
@@ -2137,21 +2289,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         documentId: docId,
         stackTrace: stack,
       });
-
-      if (onProgress) {
-        onProgress({
-          currentStep: failedIdx + 1,
-          totalSteps: 10,
-          stepName: 'Publish Failed',
-          percentage: Math.round(((failedIdx + 1) / 10) * 100),
-          logs: [...currentLogs],
-          error: msg,
-          errorCode: code,
-          collectionName: col,
-          documentId: docId,
-          stackTrace: stack,
-        });
-      }
 
       showToast(`❌ Publish Failed [${code}]: ${msg}`, 'error');
 
@@ -2163,6 +2300,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         documentId: docId,
         stackTrace: stack,
         logs: currentLogs,
+        documentSize: `${totalEstimatedSizeKb.toFixed(2)} KB`,
+        batchSize: batchSizeMetric,
+        numDocuments: numDocsMetric,
+        commitDuration: commitDurationMetric,
+        writeCount: writeCountMetric,
       };
     }
   };
@@ -2179,48 +2321,109 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDraftHangingSneakerConfig(publishedHangingSneakerConfig);
     setDraftPetShoeConfig(publishedPetShoeConfig);
     setDraftInstagramConfig(publishedInstagramConfig);
+    setDraftSoundConfig(publishedSoundConfig);
 
     setHasPendingDraft(false);
     setPendingDraftCount(0);
     localStorage.removeItem('mfp_cms_active_draft');
     localStorage.removeItem('mfp_cms_pending_count');
-    await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
+
+    try {
+      const batch = writeBatch(db);
+
+      batch.set(doc(db, 'draft_settings', 'store'), publishedStoreInfo);
+      batch.set(doc(db, 'draft_hero', 'current'), publishedHeroContent);
+      batch.set(doc(db, 'draft_homepage', 'announcements'), { items: publishedAnnouncements });
+      batch.set(doc(db, 'draft_categories', 'highlights'), { items: publishedCategoryHighlights });
+      batch.set(doc(db, 'draft_homepage', 'trendingCollections'), { items: publishedTrendingCollections });
+      batch.set(doc(db, 'draft_payment', 'config'), publishedPaymentSettings);
+      batch.set(doc(db, 'draft_animations', 'hangingSneakerConfig'), publishedHangingSneakerConfig);
+      batch.set(doc(db, 'draft_mascot', 'petShoeConfig'), publishedPetShoeConfig);
+      batch.set(doc(db, 'draft_social', 'instagramConfig'), publishedInstagramConfig);
+      batch.set(doc(db, 'draft_theme', 'current'), publishedSoundConfig);
+
+      const draftProdsSnap = await getDocs(collection(db, 'draft_products'));
+      draftProdsSnap.forEach((docSnap) => {
+        batch.delete(docSnap.ref);
+      });
+
+      publishedProducts.forEach((p) => {
+        batch.set(doc(db, 'draft_products', p.id), p);
+      });
+
+      const draftRevsSnap = await getDocs(collection(db, 'draft_reviews'));
+      draftRevsSnap.forEach((docSnap) => {
+        batch.delete(docSnap.ref);
+      });
+
+      publishedReviews.forEach((r) => {
+        batch.set(doc(db, 'draft_reviews', r.id), r);
+      });
+
+      await batch.commit();
+      await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
+    } catch (err) {
+      console.warn('Discard draft database sync notice:', err);
+    }
+
     showToast('Draft changes discarded. Reverted to last published state.', 'info');
   };
 
   const restorePublishedVersion = async (versionId: string): Promise<boolean> => {
-    const targetVer = publishedVersions.find((v) => v.id === versionId);
-    if (!targetVer || !targetVer.data) return false;
+    try {
+      const targetVer = publishedVersions.find((v) => v.id === versionId);
+      if (!targetVer || !targetVer.data) return false;
 
-    const data = targetVer.data;
-    if (data.products) setDraftProducts(data.products);
-    if (data.reviews) setDraftReviews(data.reviews);
-    if (data.storeInfo) setDraftStoreInfo(data.storeInfo);
-    if (data.heroContent) setDraftHeroContent(data.heroContent);
-    if (data.announcements) setDraftAnnouncements(data.announcements);
-    if (data.categoryHighlights) setDraftCategoryHighlights(data.categoryHighlights);
-    if (data.trendingCollections) setDraftTrendingCollections(data.trendingCollections);
-    if (data.paymentSettings) setDraftPaymentSettings(data.paymentSettings);
-    if (data.hangingSneakerConfig) setDraftHangingSneakerConfig(data.hangingSneakerConfig);
-    if (data.petShoeConfig) setDraftPetShoeConfig(data.petShoeConfig);
-    if (data.instagramConfig) setDraftInstagramConfig(data.instagramConfig);
+      let finalProducts = targetVer.data.products || [];
+      
+      // Rebuild products list if split version
+      if ((targetVer as any)._splittedProductsParts && Array.isArray((targetVer as any)._splittedProductsParts)) {
+        const parts: string[] = (targetVer as any)._splittedProductsParts;
+        const fetchedProducts: Product[] = [];
+        
+        for (const partId of parts) {
+          const partSnap = await getDoc(doc(db, 'publishedVersions', partId));
+          if (partSnap.exists() && partSnap.data().products) {
+            fetchedProducts.push(...(partSnap.data().products as Product[]));
+          }
+        }
+        finalProducts = fetchedProducts;
+      }
 
-    saveDraftLocallyAndRemote({
-      products: data.products,
-      reviews: data.reviews,
-      storeInfo: data.storeInfo,
-      heroContent: data.heroContent,
-      announcements: data.announcements,
-      categoryHighlights: data.categoryHighlights,
-      trendingCollections: data.trendingCollections,
-      paymentSettings: data.paymentSettings,
-      hangingSneakerConfig: data.hangingSneakerConfig,
-      petShoeConfig: data.petShoeConfig,
-      instagramConfig: data.instagramConfig,
-    });
+      const data = targetVer.data;
+      setDraftProducts(finalProducts);
+      if (data.reviews) setDraftReviews(data.reviews);
+      if (data.storeInfo) setDraftStoreInfo(data.storeInfo);
+      if (data.heroContent) setDraftHeroContent(data.heroContent);
+      if (data.announcements) setDraftAnnouncements(data.announcements);
+      if (data.categoryHighlights) setDraftCategoryHighlights(data.categoryHighlights);
+      if (data.trendingCollections) setDraftTrendingCollections(data.trendingCollections);
+      if (data.paymentSettings) setDraftPaymentSettings(data.paymentSettings);
+      if (data.hangingSneakerConfig) setDraftHangingSneakerConfig(data.hangingSneakerConfig);
+      if (data.petShoeConfig) setDraftPetShoeConfig(data.petShoeConfig);
+      if (data.instagramConfig) setDraftInstagramConfig(data.instagramConfig);
+      if (data.soundConfig) setDraftSoundConfig(data.soundConfig);
 
-    showToast(`Loaded version ${targetVer.versionNumber} into draft. Click "Publish Website" to apply live.`, 'info');
-    return true;
+      saveDraftLocallyAndRemote({
+        products: finalProducts,
+        reviews: data.reviews,
+        storeInfo: data.storeInfo,
+        heroContent: data.heroContent,
+        announcements: data.announcements,
+        categoryHighlights: data.categoryHighlights,
+        trendingCollections: data.trendingCollections,
+        paymentSettings: data.paymentSettings,
+        hangingSneakerConfig: data.hangingSneakerConfig,
+        petShoeConfig: data.petShoeConfig,
+        instagramConfig: data.instagramConfig,
+        soundConfig: data.soundConfig,
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Error restoring published version parts:', err);
+      return false;
+    }
   };
 
   const togglePreviewMode = () => {

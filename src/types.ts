@@ -511,3 +511,31 @@ export interface PublishedVersionHistory {
     instagramConfig?: InstagramConfig;
   };
 }
+
+export interface PublishStepLog {
+  id: string;
+  name: string;
+  status: 'pending' | 'running' | 'success' | 'failed';
+  message?: string;
+  timestamp?: string;
+}
+
+export interface PublishProgressState {
+  currentStep: number;
+  totalSteps: number;
+  stepName: string;
+  percentage: number;
+  logs: PublishStepLog[];
+  error?: string;
+  isCompleted?: boolean;
+}
+
+export interface PublishResult {
+  success: boolean;
+  versionNumber?: string;
+  publishedAt?: string;
+  totalUpdatedDocs?: number;
+  message?: string;
+  logs?: PublishStepLog[];
+}
+

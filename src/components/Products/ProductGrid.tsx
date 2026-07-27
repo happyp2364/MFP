@@ -107,7 +107,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         {/* Main Grid + Sidebar Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Desktop Filter Sidebar */}
+          {/* Desktop Filter Sidebar - One fixed left sidebar */}
           <div className="hidden lg:block lg:col-span-3">
             <ProductFilterSidebar
               filterState={filterState}
@@ -117,15 +117,17 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             />
           </div>
 
-          {/* Mobile Filter Drawer */}
-          <ProductFilterSidebar
-            filterState={filterState}
-            onUpdateFilter={onUpdateFilter}
-            onResetFilters={onResetFilters}
-            availableSubcategories={availableSubcategories}
-            isOpenMobile={mobileFiltersOpen}
-            onCloseMobile={() => setMobileFiltersOpen(false)}
-          />
+          {/* Mobile / Tablet Filter Drawer */}
+          {mobileFiltersOpen && (
+            <ProductFilterSidebar
+              filterState={filterState}
+              onUpdateFilter={onUpdateFilter}
+              onResetFilters={onResetFilters}
+              availableSubcategories={availableSubcategories}
+              isOpenMobile={true}
+              onCloseMobile={() => setMobileFiltersOpen(false)}
+            />
+          )}
 
           {/* Products Grid (4 desktop, 2 tablet, 1 mobile as requested) */}
           <div className="lg:col-span-9">

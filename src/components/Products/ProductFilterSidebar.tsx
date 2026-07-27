@@ -237,7 +237,7 @@ export const ProductFilterSidebar: React.FC<ProductFilterSidebarProps> = ({
   // Mobile Drawer Wrapper
   if (isOpenMobile) {
     return (
-      <div className="fixed inset-0 z-50 flex">
+      <div className="fixed inset-0 z-50 flex lg:hidden">
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onCloseMobile} />
         <div className="relative w-full max-w-xs bg-white h-full p-6 overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-300">
           <div className="flex items-center justify-between pb-4 mb-4 border-b">

@@ -42,10 +42,13 @@ import {
   Eye,
   Globe,
   UploadCloud,
+  Terminal,
+  Check,
+  XCircle,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
-import { Product, Review, StoreInfo, HeroContent, AuditLogItem, StoreBackupSnapshot } from '../../types';
+import { Product, Review, StoreInfo, HeroContent, AuditLogItem, StoreBackupSnapshot, PublishProgressState, PublishResult } from '../../types';
 import { SizeStockManager } from './SizeStockManager';
 import { ChangePasswordView } from './ChangePasswordView';
 import { OrderManagementView } from './OrderManagementView';
@@ -127,6 +130,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [publishSummary, setPublishSummary] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishProgress, setPublishProgress] = useState<PublishProgressState | null>(null);
+  const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   const isGoogleUser = auth.currentUser?.providerData.some((p) => p.providerId === 'google.com');
 
@@ -134,13 +140,42 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   const handleConfirmPublish = async () => {
     setIsPublishing(true);
-    const result = await publishWebsite(publishSummary);
-    setIsPublishing(false);
-    if (result.success) {
-      setPublishModalOpen(false);
-      setPublishSummary('');
-      showNotification(`🚀 Website Published Globally! (${result.versionNumber})`);
+    setPublishError(null);
+    setPublishResult(null);
+    setPublishProgress({
+      currentStep: 1,
+      totalSteps: 10,
+      stepName: 'Preparing & Validating Draft Data...',
+      percentage: 5,
+      logs: [],
+    });
+
+    try {
+      const res = await publishWebsite(publishSummary, (progress) => {
+        setPublishProgress(progress);
+      });
+
+      setIsPublishing(false);
+
+      if (res.success) {
+        setPublishResult(res);
+        showNotification(`🚀 Website Published Globally! (${res.versionNumber})`);
+      } else {
+        setPublishError(res.message || 'Publishing failed. Please check debug console logs.');
+      }
+    } catch (err: any) {
+      setIsPublishing(false);
+      setPublishError(err.message || 'Publishing operation failed or timed out.');
     }
+  };
+
+  const handleClosePublishModal = () => {
+    if (isPublishing) return; // do not close while actively publishing
+    setPublishModalOpen(false);
+    setPublishSummary('');
+    setPublishProgress(null);
+    setPublishResult(null);
+    setPublishError(null);
   };
 
   const handleDiscardDraft = async () => {
@@ -1495,71 +1530,237 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       {/* --- PUBLISH WEBSITE CONFIRMATION MODAL --- */}
       {publishModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={() => setPublishModalOpen(false)} />
-          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-neutral-100 p-6 space-y-5 z-10 animate-in zoom-in-95 duration-150">
+          <div className="fixed inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={handleClosePublishModal} />
+          <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-neutral-100 p-6 space-y-5 z-10 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+            
+            {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
               <div className="flex items-center gap-2.5 text-[#0B8F63]">
                 <UploadCloud className="w-6 h-6" />
-                <h3 className="font-extrabold text-neutral-900 text-base">Publish Website to Live Customers</h3>
+                <div>
+                  <h3 className="font-extrabold text-neutral-900 text-base">Publish Website to Live Customers</h3>
+                  <p className="text-[11px] text-neutral-500 font-medium">Syncing website_draft → website_live globally</p>
+                </div>
               </div>
-              <button onClick={() => setPublishModalOpen(false)} className="p-1 text-neutral-400 hover:text-neutral-700">
+              <button
+                onClick={handleClosePublishModal}
+                disabled={isPublishing}
+                className="p-1 text-neutral-400 hover:text-neutral-700 disabled:opacity-30"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-900 space-y-2">
-              <div className="flex items-center gap-2 font-extrabold text-emerald-950">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Global Atomic Publish Ready</span>
-              </div>
-              <p>
-                Publishing will push all <strong>{pendingDraftCount || 'pending'} draft modification(s)</strong> live to all store visitors across the globe.
-              </p>
-              <p className="text-[11px] text-emerald-800">
-                An immutable version snapshot will be created in Firestore. You can restore or rollback to past versions at any time from the "Version History" tab.
-              </p>
-            </div>
+            {/* INITIAL PRE-PUBLISH VIEW */}
+            {!isPublishing && !publishResult && !publishError && (
+              <div className="space-y-4">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-900 space-y-2">
+                  <div className="flex items-center gap-2 font-extrabold text-emerald-950">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Global Atomic Publish Ready</span>
+                  </div>
+                  <p>
+                    Publishing will push all <strong>{pendingDraftCount || 'pending'} draft modification(s)</strong> live to all store visitors across the globe.
+                  </p>
+                  <p className="text-[11px] text-emerald-800">
+                    An immutable version snapshot will be created in Firestore. Customers read strictly from <strong>website_live</strong> and receive instant real-time updates.
+                  </p>
+                </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-neutral-700">
-                Release Notes / Summary of Changes (Optional):
-              </label>
-              <textarea
-                rows={3}
-                placeholder="E.g., Updated festive footwear pricing, added new sports collection, updated banner announcement..."
-                value={publishSummary}
-                onChange={(e) => setPublishSummary(e.target.value)}
-                className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#0B8F63] resize-none"
-              />
-            </div>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-neutral-700">
+                    Release Notes / Summary of Changes (Optional):
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="E.g., Updated festive footwear pricing, added new sports collection, updated banner announcement..."
+                    value={publishSummary}
+                    onChange={(e) => setPublishSummary(e.target.value)}
+                    className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#0B8F63] resize-none"
+                  />
+                </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setPublishModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-xs font-bold hover:bg-neutral-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={isPublishing}
-                onClick={handleConfirmPublish}
-                className="bg-gradient-to-r from-emerald-600 to-[#0B8F63] hover:from-emerald-500 hover:to-[#097752] text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-lg shadow-[#0B8F63]/30 flex items-center gap-2 disabled:opacity-50"
-              >
-                {isPublishing ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Publishing Live...</span>
-                  </>
-                ) : (
-                  <>
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleClosePublishModal}
+                    className="px-4 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-xs font-bold hover:bg-neutral-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmPublish}
+                    className="bg-gradient-to-r from-emerald-600 to-[#0B8F63] hover:from-emerald-500 hover:to-[#097752] text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-lg shadow-[#0B8F63]/30 flex items-center gap-2"
+                  >
                     <Globe className="w-4 h-4" />
                     <span>CONFIRM & PUBLISH LIVE</span>
-                  </>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* PROGRESS & PUBLISHING VIEW */}
+            {(isPublishing || publishProgress || publishResult || publishError) && (
+              <div className="space-y-4">
+                
+                {/* Progress Bar & Header */}
+                <div className="bg-neutral-50 border border-neutral-200/80 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-extrabold text-neutral-900 flex items-center gap-2">
+                      {isPublishing ? (
+                        <RefreshCw className="w-4 h-4 text-[#0B8F63] animate-spin" />
+                      ) : publishResult?.success ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-rose-600" />
+                      )}
+                      <span>
+                        {publishResult?.success
+                          ? 'Publishing Complete!'
+                          : publishError
+                          ? 'Publishing Failed'
+                          : publishProgress?.stepName || 'Publishing Live...'}
+                      </span>
+                    </span>
+                    <span className="font-extrabold text-[#0B8F63]">
+                      {publishProgress ? `${publishProgress.percentage}%` : '0%'}
+                    </span>
+                  </div>
+
+                  {/* Progress Bar Track */}
+                  <div className="w-full bg-neutral-200 rounded-full h-3 overflow-hidden p-0.5">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        publishError
+                          ? 'bg-rose-500'
+                          : publishResult?.success
+                          ? 'bg-emerald-500'
+                          : 'bg-gradient-to-r from-emerald-500 to-[#0B8F63] animate-pulse'
+                      }`}
+                      style={{ width: `${publishProgress?.percentage || 0}%` }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-neutral-500 font-medium">
+                    <span>Step {publishProgress?.currentStep || 1} of 10</span>
+                    <span>Max timeout: 30 seconds</span>
+                  </div>
+                </div>
+
+                {/* SUCCESS CARD */}
+                {publishResult?.success && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-950 space-y-3 animate-in fade-in duration-200">
+                    <div className="flex items-center gap-2 font-extrabold text-emerald-900 text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <span>Website Published Successfully!</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 pt-1 border-t border-emerald-200/60">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-emerald-700 block">Published Time</span>
+                        <span className="font-bold text-neutral-900">
+                          {publishResult.publishedAt ? new Date(publishResult.publishedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-emerald-700 block">Version</span>
+                        <span className="font-bold text-emerald-800">{publishResult.versionNumber}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-emerald-700 block">Updated Items</span>
+                        <span className="font-bold text-neutral-900">{publishResult.totalUpdatedDocs || 'All'} docs</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </button>
-            </div>
+
+                {/* ERROR CARD */}
+                {publishError && (
+                  <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-950 space-y-2 animate-in fade-in duration-200">
+                    <div className="flex items-center gap-2 font-extrabold text-rose-900 text-sm">
+                      <AlertTriangle className="w-5 h-5 text-rose-600" />
+                      <span>Publish Operation Stopped</span>
+                    </div>
+                    <p className="font-mono text-[11px] text-rose-800 bg-rose-100/80 p-2.5 rounded-xl border border-rose-200/60">
+                      {publishError}
+                    </p>
+                  </div>
+                )}
+
+                {/* ADMIN DEBUG CONSOLE */}
+                <div className="border border-neutral-200 rounded-2xl overflow-hidden bg-neutral-950 text-neutral-200 text-xs font-mono">
+                  <div className="px-4 py-2.5 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between text-neutral-400 text-[11px] font-bold">
+                    <div className="flex items-center gap-2 text-emerald-400">
+                      <Terminal className="w-4 h-4" />
+                      <span>Admin Debug Console (Publish Log)</span>
+                    </div>
+                    <span className="text-neutral-500">Live Sync</span>
+                  </div>
+
+                  <div className="p-3 max-h-52 overflow-y-auto space-y-2">
+                    {publishProgress?.logs?.map((log, idx) => (
+                      <div key={log.id || idx} className="flex items-start gap-2 text-[11px] leading-relaxed">
+                        <div className="mt-0.5 shrink-0">
+                          {log.status === 'success' && <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" />}
+                          {log.status === 'running' && <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" />}
+                          {log.status === 'failed' && <XCircle className="w-3.5 h-3.5 text-rose-500 font-bold" />}
+                          {log.status === 'pending' && <div className="w-3.5 h-3.5 rounded-full border border-neutral-700" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`font-semibold ${
+                              log.status === 'success'
+                                ? 'text-emerald-300'
+                                : log.status === 'running'
+                                ? 'text-amber-300'
+                                : log.status === 'failed'
+                                ? 'text-rose-400'
+                                : 'text-neutral-500'
+                            }`}>
+                              Step {idx + 1}: {log.name}
+                            </span>
+                            {log.timestamp && (
+                              <span className="text-[10px] text-neutral-600 shrink-0">{log.timestamp}</span>
+                            )}
+                          </div>
+                          {log.message && (
+                            <p className="text-[10px] text-neutral-400 mt-0.5 truncate">{log.message}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* MODAL FOOTER BUTTONS */}
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  {publishError && (
+                    <button
+                      type="button"
+                      onClick={handleConfirmPublish}
+                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-md"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Retry Publish</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={isPublishing}
+                    onClick={handleClosePublishModal}
+                    className={`px-6 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all ${
+                      publishResult?.success
+                        ? 'bg-[#0B8F63] hover:bg-[#087752] text-white'
+                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                    }`}
+                  >
+                    {publishResult?.success ? 'Done & Return' : 'Close'}
+                  </button>
+                </div>
+
+              </div>
+            )}
+
           </div>
         </div>
       )}

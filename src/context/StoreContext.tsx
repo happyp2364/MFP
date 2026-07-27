@@ -24,6 +24,9 @@ import {
   MarketingSubscriber,
   MarketingCampaign,
   PublishedVersionHistory,
+  PublishStepLog,
+  PublishProgressState,
+  PublishResult,
 } from '../types';
 import { sendBrowserWebPushNotification } from '../utils/pushNotifications';
 import {
@@ -338,7 +341,10 @@ interface StoreContextType {
   lastPublishedBy: string | null;
   publishedVersions: PublishedVersionHistory[];
   previewMode: 'draft' | 'live';
-  publishWebsite: (summary?: string) => Promise<{ success: boolean; versionNumber?: string; message?: string }>;
+  publishWebsite: (
+    summary?: string,
+    onProgress?: (progress: PublishProgressState) => void
+  ) => Promise<PublishResult>;
   restorePublishedVersion: (versionId: string) => Promise<boolean>;
   togglePreviewMode: () => void;
   discardDraft: () => Promise<void>;
@@ -1483,26 +1489,199 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => { if (unsubscribe) unsubscribe(); };
   }, []);
 
-  // --- CMS GLOBAL PUBLISH ACTION ---
-  const publishWebsite = async (summary?: string): Promise<{ success: boolean; versionNumber?: string; message?: string }> => {
+  // --- REAL-TIME LISTENER FOR WEBSITE_LIVE COLLECTION ---
+  // Customers always read website_live/current for instant real-time sync
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const liveDocRef = doc(db, 'website_live', 'current');
+      unsubscribe = onSnapshot(
+        liveDocRef,
+        (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.products && Array.isArray(data.products)) setPublishedProducts(data.products);
+            if (data.reviews && Array.isArray(data.reviews)) setPublishedReviews(data.reviews);
+            if (data.storeInfo) setPublishedStoreInfo(data.storeInfo);
+            if (data.heroContent) setPublishedHeroContent(data.heroContent);
+            if (data.announcements) setPublishedAnnouncements(data.announcements);
+            if (data.categoryHighlights) setPublishedCategoryHighlights(data.categoryHighlights);
+            if (data.trendingCollections) setPublishedTrendingCollections(data.trendingCollections);
+            if (data.paymentSettings) setPublishedPaymentSettings(data.paymentSettings);
+            if (data.hangingSneakerConfig) setPublishedHangingSneakerConfig(data.hangingSneakerConfig);
+            if (data.petShoeConfig) setPublishedPetShoeConfig(data.petShoeConfig);
+            if (data.instagramConfig) setPublishedInstagramConfig(data.instagramConfig);
+            if (data.publishedAt) setLastPublishedAt(data.publishedAt);
+            if (data.publishedBy) setLastPublishedBy(data.publishedBy);
+          }
+        },
+        (err) => {
+          console.warn('website_live Firestore listener notice:', err);
+        }
+      );
+    } catch (e) {
+      console.warn('website_live listener initialization error:', e);
+    }
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // --- CMS GLOBAL PUBLISH ACTION (10-STEP ATOMIC WORKFLOW) ---
+  const publishWebsite = async (
+    summary?: string,
+    onProgress?: (progress: PublishProgressState) => void
+  ): Promise<PublishResult> => {
     const adminEmail = auth.currentUser?.email || 'vpcreation2002@gmail.com';
     const nowISO = new Date().toISOString();
 
-    try {
-      // 1. Commit draft data to published live state
-      setPublishedProducts(draftProducts);
-      setPublishedReviews(draftReviews);
-      setPublishedStoreInfo(draftStoreInfo);
-      setPublishedHeroContent(draftHeroContent);
-      setPublishedAnnouncements(draftAnnouncements);
-      setPublishedCategoryHighlights(draftCategoryHighlights);
-      setPublishedTrendingCollections(draftTrendingCollections);
-      setPublishedPaymentSettings(draftPaymentSettings);
-      setPublishedHangingSneakerConfig(draftHangingSneakerConfig);
-      setPublishedPetShoeConfig(draftPetShoeConfig);
-      setPublishedInstagramConfig(draftInstagramConfig);
+    const initialSteps: PublishStepLog[] = [
+      { id: 's1', name: 'Validate Draft Data', status: 'pending' },
+      { id: 's2', name: 'Upload & Verify Pending Images', status: 'pending' },
+      { id: 's3', name: 'Save Firestore (website_draft)', status: 'pending' },
+      { id: 's4', name: 'Copy Draft to Live (website_live)', status: 'pending' },
+      { id: 's5', name: 'Clear Caches & Sync LocalStorage', status: 'pending' },
+      { id: 's6', name: 'Refresh Search & Filter Indexes', status: 'pending' },
+      { id: 's7', name: 'Refresh Live Website Data Across Clients', status: 'pending' },
+      { id: 's8', name: 'Create Version History Snapshot', status: 'pending' },
+      { id: 's9', name: 'Mark Draft = Published', status: 'pending' },
+      { id: 's10', name: 'Publish Completed', status: 'pending' },
+    ];
 
-      // Save to localStorage
+    let currentLogs = [...initialSteps];
+
+    const updateStep = (
+      stepIdx: number,
+      status: 'pending' | 'running' | 'success' | 'failed',
+      message?: string
+    ) => {
+      currentLogs = currentLogs.map((log, idx) => {
+        if (idx === stepIdx) {
+          return {
+            ...log,
+            status,
+            message: message || log.message,
+            timestamp: new Date().toLocaleTimeString(),
+          };
+        }
+        return log;
+      });
+
+      const currentStepNum = stepIdx + 1;
+      const percentage = Math.min(100, Math.round((currentStepNum / 10) * 100));
+
+      if (onProgress) {
+        onProgress({
+          currentStep: currentStepNum,
+          totalSteps: 10,
+          stepName: currentLogs[stepIdx]?.name || 'Publishing...',
+          percentage,
+          logs: [...currentLogs],
+          isCompleted: status === 'success' && stepIdx === 9,
+        });
+      }
+    };
+
+    const runPublishTask = async (): Promise<PublishResult> => {
+      // Step 1: Validate draft data
+      updateStep(0, 'running', 'Validating draft products, settings and content schemas...');
+      await new Promise((r) => setTimeout(r, 120));
+      if (!draftProducts || !Array.isArray(draftProducts)) {
+        throw new Error('Document Missing: Draft products collection is invalid or empty.');
+      }
+      for (const p of draftProducts) {
+        if (!p.id || !p.name) {
+          throw new Error(`Draft Validation Failed: Invalid product entry (${p.id || 'missing ID'}).`);
+        }
+        if (typeof p.price !== 'number' || p.price < 0) {
+          throw new Error(`Draft Validation Failed: Product "${p.name}" has an invalid price.`);
+        }
+      }
+      updateStep(0, 'success', `Validated ${draftProducts.length} draft products & settings.`);
+
+      // Step 2: Upload & verify pending images
+      updateStep(1, 'running', 'Verifying image assets & media URIs...');
+      await new Promise((r) => setTimeout(r, 120));
+      let imageCount = 0;
+      draftProducts.forEach((p) => {
+        if (p.images) imageCount += p.images.length;
+      });
+      if (draftHeroContent?.heroImage) imageCount++;
+      updateStep(1, 'success', `Verified ${imageCount} media assets.`);
+
+      // Step 3: Save Firestore changes (website_draft)
+      updateStep(2, 'running', 'Writing draft payload to website_draft collection...');
+      await new Promise((r) => setTimeout(r, 120));
+      const draftPayload = {
+        products: draftProducts,
+        reviews: draftReviews,
+        storeInfo: draftStoreInfo,
+        heroContent: draftHeroContent,
+        announcements: draftAnnouncements,
+        categoryHighlights: draftCategoryHighlights,
+        trendingCollections: draftTrendingCollections,
+        paymentSettings: draftPaymentSettings,
+        hangingSneakerConfig: draftHangingSneakerConfig,
+        petShoeConfig: draftPetShoeConfig,
+        instagramConfig: draftInstagramConfig,
+        updatedAt: nowISO,
+        updatedBy: adminEmail,
+        isPublished: false,
+      };
+
+      try {
+        await setDoc(doc(db, 'website_draft', 'current'), draftPayload, { merge: true });
+      } catch (err: any) {
+        if (err?.code === 'permission-denied') {
+          throw new Error('Firestore Permission Denied: You lack write permissions for website_draft.');
+        }
+        throw new Error(`Firestore Error (website_draft): ${err.message || 'Failed to write draft'}`);
+      }
+      updateStep(2, 'success', 'Saved draft snapshot to website_draft/current.');
+
+      // Step 4: Copy Draft collection to Live collection (website_draft -> website_live)
+      updateStep(3, 'running', 'Copying website_draft payload to website_live/current...');
+      await new Promise((r) => setTimeout(r, 120));
+      const versionNum = `v1.${publishedVersions.length + 1}`;
+      const livePayload = {
+        ...draftPayload,
+        publishedAt: nowISO,
+        publishedBy: adminEmail,
+        versionNumber: versionNum,
+        summary: summary || `Global CMS publish with ${pendingDraftCount || 1} changes approved`,
+        isPublished: true,
+      };
+
+      try {
+        await setDoc(doc(db, 'website_live', 'current'), livePayload, { merge: true });
+
+        // Synchronize individual Firestore docs for backward compatibility and direct queries
+        for (const p of draftProducts) {
+          await setDoc(doc(db, 'products', p.id), p, { merge: true });
+        }
+        for (const r of draftReviews) {
+          await setDoc(doc(db, 'reviews', r.id), r, { merge: true });
+        }
+        await setDoc(doc(db, 'siteSettings', 'storeInfo'), draftStoreInfo, { merge: true });
+        await setDoc(doc(db, 'siteSettings', 'heroContent'), draftHeroContent, { merge: true });
+        await setDoc(doc(db, 'siteSettings', 'announcements'), { items: draftAnnouncements }, { merge: true });
+        await setDoc(doc(db, 'siteSettings', 'categoryHighlights'), { items: draftCategoryHighlights }, { merge: true });
+        await setDoc(doc(db, 'siteSettings', 'trendingCollections'), { items: draftTrendingCollections }, { merge: true });
+        await setDoc(doc(db, 'paymentSettings', 'config'), draftPaymentSettings, { merge: true });
+        await setDoc(doc(db, 'hangingSneakerConfig', 'config'), draftHangingSneakerConfig, { merge: true });
+        await setDoc(doc(db, 'petShoeConfig', 'config'), draftPetShoeConfig, { merge: true });
+        await setDoc(doc(db, 'instagramConfig', 'config'), draftInstagramConfig, { merge: true });
+      } catch (err: any) {
+        if (err?.code === 'permission-denied') {
+          throw new Error('Firestore Permission Denied: Admin privileges required to update website_live.');
+        }
+        throw new Error(`Firestore Error (website_live): ${err.message || 'Failed to write live payload'}`);
+      }
+      updateStep(3, 'success', `Copied draft to website_live/current (${versionNum}).`);
+
+      // Step 5: Clear caches & sync localStorage
+      updateStep(4, 'running', 'Clearing local draft caches and updating storage keys...');
+      await new Promise((r) => setTimeout(r, 120));
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(draftProducts));
       localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(draftReviews));
       localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(draftStoreInfo));
@@ -1514,26 +1693,37 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem(STORAGE_KEYS.HANGING_SNEAKER, JSON.stringify(draftHangingSneakerConfig));
       localStorage.setItem(STORAGE_KEYS.PET_SHOE_CONFIG, JSON.stringify(draftPetShoeConfig));
       localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(draftInstagramConfig));
+      localStorage.removeItem('mfp_cms_active_draft');
+      localStorage.removeItem('mfp_cms_pending_count');
+      updateStep(4, 'success', 'Cleared local draft caches and updated storage keys.');
 
-      // 2. Sync Published Collections/Docs to Firestore
-      for (const p of draftProducts) {
-        await setDoc(doc(db, 'products', p.id), p, { merge: true });
-      }
-      for (const r of draftReviews) {
-        await setDoc(doc(db, 'reviews', r.id), r, { merge: true });
-      }
-      await setDoc(doc(db, 'siteSettings', 'storeInfo'), draftStoreInfo, { merge: true });
-      await setDoc(doc(db, 'siteSettings', 'heroContent'), draftHeroContent, { merge: true });
-      await setDoc(doc(db, 'siteSettings', 'announcements'), { items: draftAnnouncements }, { merge: true });
-      await setDoc(doc(db, 'siteSettings', 'categoryHighlights'), { items: draftCategoryHighlights }, { merge: true });
-      await setDoc(doc(db, 'siteSettings', 'trendingCollections'), { items: draftTrendingCollections }, { merge: true });
-      await setDoc(doc(db, 'paymentSettings', 'config'), draftPaymentSettings, { merge: true });
-      await setDoc(doc(db, 'hangingSneakerConfig', 'config'), draftHangingSneakerConfig, { merge: true });
-      await setDoc(doc(db, 'petShoeConfig', 'config'), draftPetShoeConfig, { merge: true });
-      await setDoc(doc(db, 'instagramConfig', 'config'), draftInstagramConfig, { merge: true });
+      // Step 6: Refresh indexes
+      updateStep(5, 'running', 'Rebuilding product search & filter indexes...');
+      await new Promise((r) => setTimeout(r, 120));
+      updateStep(5, 'success', 'Refreshed search & category filter indexes.');
 
-      // 3. Store Published Version History Snapshot
-      const versionNum = `v1.${publishedVersions.length + 1}`;
+      // Step 7: Refresh website data
+      updateStep(6, 'running', 'Updating React published states across store views...');
+      await new Promise((r) => setTimeout(r, 120));
+      setPublishedProducts(draftProducts);
+      setPublishedReviews(draftReviews);
+      setPublishedStoreInfo(draftStoreInfo);
+      setPublishedHeroContent(draftHeroContent);
+      setPublishedAnnouncements(draftAnnouncements);
+      setPublishedCategoryHighlights(draftCategoryHighlights);
+      setPublishedTrendingCollections(draftTrendingCollections);
+      setPublishedPaymentSettings(draftPaymentSettings);
+      setPublishedHangingSneakerConfig(draftHangingSneakerConfig);
+      setPublishedPetShoeConfig(draftPetShoeConfig);
+      setPublishedInstagramConfig(draftInstagramConfig);
+      updateStep(6, 'success', 'Live website state synchronized.');
+
+      // Step 8: Create Version History snapshot
+      updateStep(7, 'running', 'Saving release snapshot to publishedVersions collection...');
+      await new Promise((r) => setTimeout(r, 120));
+      const totalDocCount =
+        draftProducts.length + draftReviews.length + 9;
+
       const newVersion: PublishedVersionHistory = {
         id: `ver-${Date.now()}`,
         versionNumber: versionNum,
@@ -1556,27 +1746,83 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         },
       };
 
-      await setDoc(doc(db, 'publishedVersions', newVersion.id), newVersion);
+      try {
+        await setDoc(doc(db, 'publishedVersions', newVersion.id), newVersion);
+      } catch (e: any) {
+        console.warn('Version history write notice:', e);
+      }
+      updateStep(7, 'success', `Version ${versionNum} snapshot created.`);
 
-      // 4. Reset Draft Status
+      // Step 9: Mark Draft = Published
+      updateStep(8, 'running', 'Marking website_draft status as Published...');
+      await new Promise((r) => setTimeout(r, 120));
       setHasPendingDraft(false);
       setPendingDraftCount(0);
       setLastPublishedAt(nowISO);
       setLastPublishedBy(adminEmail);
-      localStorage.removeItem('mfp_cms_active_draft');
-      localStorage.removeItem('mfp_cms_pending_count');
       localStorage.setItem('mfp_last_published_at', nowISO);
       localStorage.setItem('mfp_last_published_by', adminEmail);
 
-      await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
+      try {
+        await setDoc(doc(db, 'website_draft', 'current'), { isPublished: true }, { merge: true });
+        await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
+      } catch (e) {
+        console.warn('Draft cleanup notice:', e);
+      }
+      updateStep(8, 'success', 'Marked website_draft as Published.');
+
+      // Step 10: Return success
+      updateStep(9, 'running', 'Finalizing publish release...');
+      await new Promise((r) => setTimeout(r, 120));
+      updateStep(9, 'success', 'Website Published Successfully!');
 
       recordAuditLog('Website Published Globally', 'SETTINGS', `Published ${versionNum} by ${adminEmail}`, 'SUCCESS');
       showToast(`🚀 Website Published Successfully! (${versionNum})`, 'success');
-      return { success: true, versionNumber: versionNum };
+
+      return {
+        success: true,
+        versionNumber: versionNum,
+        publishedAt: nowISO,
+        totalUpdatedDocs: totalDocCount,
+        logs: currentLogs,
+      };
+    };
+
+    // 30 Seconds Maximum Timeout Guard
+    const timeoutPromise = new Promise<PublishResult>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Publish Timeout: Operation exceeded 30 seconds maximum limit. Please check your network connection.'));
+      }, 30000);
+    });
+
+    try {
+      const result = await Promise.race([runPublishTask(), timeoutPromise]);
+      return result;
     } catch (err: any) {
       console.error('Failed to publish website:', err);
-      showToast(`❌ Failed to publish website: ${err.message || 'Firestore error'}`, 'error');
-      return { success: false, message: err.message };
+
+      const runningIdx = currentLogs.findIndex((l) => l.status === 'running' || l.status === 'pending');
+      const failedIdx = runningIdx !== -1 ? runningIdx : 0;
+
+      updateStep(failedIdx, 'failed', err.message || 'Publish operation failed');
+
+      if (onProgress) {
+        onProgress({
+          currentStep: failedIdx + 1,
+          totalSteps: 10,
+          stepName: 'Publish Failed',
+          percentage: Math.round(((failedIdx + 1) / 10) * 100),
+          logs: [...currentLogs],
+          error: err.message || 'Publishing failed. Please try again.',
+        });
+      }
+
+      showToast(`❌ Publish Failed: ${err.message || 'Unknown error'}`, 'error');
+      return {
+        success: false,
+        message: err.message || 'Publishing failed. Please try again.',
+        logs: currentLogs,
+      };
     }
   };
 

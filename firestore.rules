@@ -128,6 +128,16 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
+    // CMS Draft System (Draft State Storage)
+    match /drafts/{draftId} {
+      allow read, write: if true;
+    }
+
+    // CMS Published Version History
+    match /publishedVersions/{versionId} {
+      allow read, write: if true;
+    }
+
     // Admin Users Directory
     match /admins/{adminId} {
       allow read, write: if isSignedIn();

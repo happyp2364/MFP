@@ -23,6 +23,7 @@ import {
   MarketingConsent,
   MarketingSubscriber,
   MarketingCampaign,
+  PublishedVersionHistory,
 } from '../types';
 import { sendBrowserWebPushNotification } from '../utils/pushNotifications';
 import {
@@ -330,6 +331,18 @@ interface StoreContextType {
   updateCategoryHighlight: (id: 'men' | 'women' | 'kids', updated: Partial<CategoryHighlight>) => void;
   updateTrendingCollection: (id: string, updated: Partial<TrendingCollectionItem>) => void;
 
+  // CMS Draft & Global Publish System
+  hasPendingDraft: boolean;
+  pendingDraftCount: number;
+  lastPublishedAt: string | null;
+  lastPublishedBy: string | null;
+  publishedVersions: PublishedVersionHistory[];
+  previewMode: 'draft' | 'live';
+  publishWebsite: (summary?: string) => Promise<{ success: boolean; versionNumber?: string; message?: string }>;
+  restorePublishedVersion: (versionId: string) => Promise<boolean>;
+  togglePreviewMode: () => void;
+  discardDraft: () => Promise<void>;
+
   // Audit Logs & Recovery
   refreshAuditLogs: () => Promise<void>;
   createStoreBackup: () => Promise<StoreBackupSnapshot>;
@@ -340,41 +353,87 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // 1. Initialize state with localStorage or defaults
-  const [products, setProducts] = useState<Product[]>(() => {
+  // --- 1. PUBLISHED (LIVE WEBSITE) STATE ---
+  const [publishedProducts, setPublishedProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
     return saved ? JSON.parse(saved) : PRODUCTS_DATA;
   });
 
-  const [reviews, setReviews] = useState<Review[]>(() => {
+  const [publishedReviews, setPublishedReviews] = useState<Review[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.REVIEWS);
     return saved ? JSON.parse(saved) : REVIEWS_DATA;
   });
 
-  const [storeInfo, setStoreInfo] = useState<StoreInfo>(() => {
+  const [publishedStoreInfo, setPublishedStoreInfo] = useState<StoreInfo>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.STORE_INFO);
     return saved ? JSON.parse(saved) : STORE_INFO;
   });
 
-  const [heroContent, setHeroContent] = useState<HeroContent>(() => {
+  const [publishedHeroContent, setPublishedHeroContent] = useState<HeroContent>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.HERO_CONTENT);
     return saved ? JSON.parse(saved) : DEFAULT_HERO_CONTENT;
   });
 
-  const [announcements, setAnnouncements] = useState<string[]>(() => {
+  const [publishedAnnouncements, setPublishedAnnouncements] = useState<string[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS);
     return saved ? JSON.parse(saved) : ANNOUNCEMENT_ITEMS;
   });
 
-  const [categoryHighlights, setCategoryHighlights] = useState<CategoryHighlight[]>(() => {
+  const [publishedCategoryHighlights, setPublishedCategoryHighlights] = useState<CategoryHighlight[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS);
     return saved ? JSON.parse(saved) : (CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
   });
 
-  const [trendingCollections, setTrendingCollections] = useState<TrendingCollectionItem[]>(() => {
+  const [publishedTrendingCollections, setPublishedTrendingCollections] = useState<TrendingCollectionItem[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.TRENDING_COLLECTIONS);
     return saved ? JSON.parse(saved) : TRENDING_COLLECTIONS;
   });
+
+  const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.PAYMENT_SETTINGS);
+    return saved ? JSON.parse(saved) : DEFAULT_PAYMENT_SETTINGS;
+  });
+
+  const [publishedHangingSneakerConfig, setPublishedHangingSneakerConfig] = useState<HangingSneakerConfig>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.HANGING_SNEAKER);
+    return saved ? { ...DEFAULT_HANGING_SNEAKER_CONFIG, ...JSON.parse(saved) } : DEFAULT_HANGING_SNEAKER_CONFIG;
+  });
+
+  const [publishedPetShoeConfig, setPublishedPetShoeConfig] = useState<PetShoeConfig>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.PET_SHOE_CONFIG);
+    return saved ? { ...DEFAULT_PET_SHOE_CONFIG, ...JSON.parse(saved) } : DEFAULT_PET_SHOE_CONFIG;
+  });
+
+  const [publishedInstagramConfig, setPublishedInstagramConfig] = useState<InstagramConfig>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.INSTAGRAM_CONFIG);
+    return saved ? { ...DEFAULT_INSTAGRAM_CONFIG, ...JSON.parse(saved) } : DEFAULT_INSTAGRAM_CONFIG;
+  });
+
+  // --- 2. DRAFT (ADMIN CMS EDITING WORKSPACE) STATE ---
+  const [draftProducts, setDraftProducts] = useState<Product[]>(publishedProducts);
+  const [draftReviews, setDraftReviews] = useState<Review[]>(publishedReviews);
+  const [draftStoreInfo, setDraftStoreInfo] = useState<StoreInfo>(publishedStoreInfo);
+  const [draftHeroContent, setDraftHeroContent] = useState<HeroContent>(publishedHeroContent);
+  const [draftAnnouncements, setDraftAnnouncements] = useState<string[]>(publishedAnnouncements);
+  const [draftCategoryHighlights, setDraftCategoryHighlights] = useState<CategoryHighlight[]>(publishedCategoryHighlights);
+  const [draftTrendingCollections, setDraftTrendingCollections] = useState<TrendingCollectionItem[]>(publishedTrendingCollections);
+  const [draftPaymentSettings, setDraftPaymentSettings] = useState<PaymentSettings>(publishedPaymentSettings);
+  const [draftHangingSneakerConfig, setDraftHangingSneakerConfig] = useState<HangingSneakerConfig>(publishedHangingSneakerConfig);
+  const [draftPetShoeConfig, setDraftPetShoeConfig] = useState<PetShoeConfig>(publishedPetShoeConfig);
+  const [draftInstagramConfig, setDraftInstagramConfig] = useState<InstagramConfig>(publishedInstagramConfig);
+
+  // --- 3. DRAFT STATUS TRACKING & VERSION HISTORY ---
+  const [previewMode, setPreviewMode] = useState<'draft' | 'live'>('draft');
+  const [hasPendingDraft, setHasPendingDraft] = useState<boolean>(() => {
+    return !!localStorage.getItem('mfp_cms_active_draft');
+  });
+  const [pendingDraftCount, setPendingDraftCount] = useState<number>(() => {
+    const raw = localStorage.getItem('mfp_cms_pending_count');
+    return raw ? parseInt(raw, 10) : 0;
+  });
+  const [lastPublishedAt, setLastPublishedAt] = useState<string | null>(() => localStorage.getItem('mfp_last_published_at'));
+  const [lastPublishedBy, setLastPublishedBy] = useState<string | null>(() => localStorage.getItem('mfp_last_published_by'));
+  const [publishedVersions, setPublishedVersions] = useState<PublishedVersionHistory[]>([]);
 
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.IS_ADMIN);
@@ -396,12 +455,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Payment Settings, Orders & Notifications State
-  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.PAYMENT_SETTINGS);
-    return saved ? JSON.parse(saved) : DEFAULT_PAYMENT_SETTINGS;
-  });
-
+  // Orders & Notifications State
   const [orders, setOrders] = useState<CustomerOrder[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
     return saved ? JSON.parse(saved) : [];
@@ -410,21 +464,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [notifications, setNotifications] = useState<AdminNotification[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
     return saved ? JSON.parse(saved) : [];
-  });
-
-  const [hangingSneakerConfig, setHangingSneakerConfig] = useState<HangingSneakerConfig>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.HANGING_SNEAKER);
-    return saved ? { ...DEFAULT_HANGING_SNEAKER_CONFIG, ...JSON.parse(saved) } : DEFAULT_HANGING_SNEAKER_CONFIG;
-  });
-
-  const [petShoeConfig, setPetShoeConfig] = useState<PetShoeConfig>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.PET_SHOE_CONFIG);
-    return saved ? { ...DEFAULT_PET_SHOE_CONFIG, ...JSON.parse(saved) } : DEFAULT_PET_SHOE_CONFIG;
-  });
-
-  const [instagramConfig, setInstagramConfig] = useState<InstagramConfig>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.INSTAGRAM_CONFIG);
-    return saved ? { ...DEFAULT_INSTAGRAM_CONFIG, ...JSON.parse(saved) } : DEFAULT_INSTAGRAM_CONFIG;
   });
 
   const [campaigns, setCampaigns] = useState<MarketingCampaign[]>(() => {
@@ -653,34 +692,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem(STORAGE_KEYS.MARKETING_SUBSCRIBERS, JSON.stringify(subscribers));
   }, [subscribers]);
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(reviews));
-  }, [reviews]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(storeInfo));
-  }, [storeInfo]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.HERO_CONTENT, JSON.stringify(heroContent));
-  }, [heroContent]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(announcements));
-  }, [announcements]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, JSON.stringify(categoryHighlights));
-  }, [categoryHighlights]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.TRENDING_COLLECTIONS, JSON.stringify(trendingCollections));
-  }, [trendingCollections]);
-
-  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.IS_ADMIN, isAdmin.toString());
   }, [isAdmin]);
 
@@ -694,50 +705,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isTwoFactorEnabled]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(paymentSettings));
-  }, [paymentSettings]);
-
-  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
   }, [orders]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
   }, [notifications]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.HANGING_SNEAKER, JSON.stringify(hangingSneakerConfig));
-  }, [hangingSneakerConfig]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PET_SHOE_CONFIG, JSON.stringify(petShoeConfig));
-  }, [petShoeConfig]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(instagramConfig));
-  }, [instagramConfig]);
-
-  const updateHangingSneakerConfig = async (updated: Partial<HangingSneakerConfig>) => {
-    const newCfg = { ...hangingSneakerConfig, ...updated };
-    setHangingSneakerConfig(newCfg);
-    try {
-      await setDoc(doc(db, 'hangingSneakerConfig', 'config'), newCfg, { merge: true });
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (e: any) {
-      showToast(`❌ Error saving Hanging Sneaker settings: ${e?.message || 'Database error'}`, 'error');
-    }
-  };
-
-  const updatePetShoeConfig = async (updated: Partial<PetShoeConfig>) => {
-    const newCfg = { ...petShoeConfig, ...updated };
-    setPetShoeConfig(newCfg);
-    try {
-      await setDoc(doc(db, 'petShoeConfig', 'config'), newCfg, { merge: true });
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (e: any) {
-      showToast(`❌ Error saving AI Pet Shoe Mascot settings: ${e?.message || 'Database error'}`, 'error');
-    }
-  };
 
   // Real-time Firestore Sync for Pet Shoe Mascot Settings
   useEffect(() => {
@@ -746,7 +719,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const configRef = doc(db, 'petShoeConfig', 'config');
       unsubscribe = onSnapshot(configRef, (docSnap) => {
         if (docSnap.exists()) {
-          setPetShoeConfig((prev) => ({ ...prev, ...docSnap.data() }));
+          setPublishedPetShoeConfig((prev) => ({ ...prev, ...docSnap.data() }));
         }
       });
     } catch (e) {}
@@ -755,31 +728,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, []);
 
-  const updateInstagramConfig = async (updated: Partial<InstagramConfig>) => {
-    const newCfg = { ...instagramConfig, ...updated, lastSyncedAt: new Date().toISOString() };
-    setInstagramConfig(newCfg);
-    
-    // Sync with Express backend
-    try {
-      await fetch('/api/instagram/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCfg),
-      });
-    } catch (err) {
-      console.warn('Failed to sync Instagram config with backend API:', err);
-    }
-
-    // Sync with Firestore
-    try {
-      await setDoc(doc(db, 'instagramConfig', 'config'), newCfg, { merge: true });
-    } catch (e) {
-      console.warn('Failed to sync Instagram config with Firestore:', e);
-    }
-
-    showToast('Instagram integration settings updated successfully!', 'success');
-  };
-
   // Real-time Firestore Sync for Instagram Settings
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
@@ -787,7 +735,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const configRef = doc(db, 'instagramConfig', 'config');
       unsubscribe = onSnapshot(configRef, (docSnap) => {
         if (docSnap.exists()) {
-          setInstagramConfig((prev) => ({ ...prev, ...docSnap.data() }));
+          setPublishedInstagramConfig((prev) => ({ ...prev, ...docSnap.data() }));
+        }
+      });
+    } catch (e) {}
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Real-time Firestore Sync for Hanging Sneaker Settings
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const configRef = doc(db, 'hangingSneakerConfig', 'config');
+      unsubscribe = onSnapshot(configRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setPublishedHangingSneakerConfig((prev) => ({ ...prev, ...docSnap.data() }));
         }
       });
     } catch (e) {}
@@ -800,24 +764,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
-      const configRef = doc(db, 'hangingSneakerConfig', 'config');
-      unsubscribe = onSnapshot(configRef, (docSnap) => {
-        if (docSnap.exists()) {
-          setHangingSneakerConfig((prev) => ({ ...prev, ...docSnap.data() }));
-        }
-      });
-    } catch (e) {}
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, []);
-  useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
-    try {
       const configRef = doc(db, 'paymentSettings', 'config');
       unsubscribe = onSnapshot(configRef, (docSnap) => {
         if (docSnap.exists()) {
-          setPaymentSettings({ ...DEFAULT_PAYMENT_SETTINGS, ...docSnap.data() } as PaymentSettings);
+          setPublishedPaymentSettings({ ...DEFAULT_PAYMENT_SETTINGS, ...docSnap.data() } as PaymentSettings);
         }
       });
     } catch (e) {
@@ -874,14 +824,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, []);
 
-  // Real-time Firestore Sync for Site Settings & Store Content
+  // Real-time Firestore Sync for Published Site Settings & Store Content
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     try {
       const docRef = doc(db, 'siteSettings', 'storeInfo');
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
-          setStoreInfo((prev) => ({ ...prev, ...(docSnap.data() as StoreInfo) }));
+          setPublishedStoreInfo((prev) => ({ ...prev, ...(docSnap.data() as StoreInfo) }));
         }
       });
     } catch (e) {
@@ -896,7 +846,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const docRef = doc(db, 'siteSettings', 'heroContent');
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
-          setHeroContent((prev) => ({ ...prev, ...(docSnap.data() as HeroContent) }));
+          setPublishedHeroContent((prev) => ({ ...prev, ...(docSnap.data() as HeroContent) }));
         }
       });
     } catch (e) {
@@ -911,7 +861,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const docRef = doc(db, 'siteSettings', 'announcements');
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists() && docSnap.data().items) {
-          setAnnouncements(docSnap.data().items as string[]);
+          setPublishedAnnouncements(docSnap.data().items as string[]);
         }
       });
     } catch (e) {
@@ -926,7 +876,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const docRef = doc(db, 'siteSettings', 'categoryHighlights');
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists() && docSnap.data().items) {
-          setCategoryHighlights(docSnap.data().items as CategoryHighlight[]);
+          setPublishedCategoryHighlights(docSnap.data().items as CategoryHighlight[]);
         }
       });
     } catch (e) {
@@ -941,7 +891,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const docRef = doc(db, 'siteSettings', 'trendingCollections');
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists() && docSnap.data().items) {
-          setTrendingCollections(docSnap.data().items as TrendingCollectionItem[]);
+          setPublishedTrendingCollections(docSnap.data().items as TrendingCollectionItem[]);
         }
       });
     } catch (e) {
@@ -960,7 +910,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           snapshot.forEach((docSnap) => {
             remoteReviews.push({ ...(docSnap.data() as Review), id: docSnap.id });
           });
-          setReviews(remoteReviews);
+          setPublishedReviews(remoteReviews);
         }
       });
     } catch (e) {
@@ -968,17 +918,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     return () => { if (unsubscribe) unsubscribe(); };
   }, []);
-
-  // Update Payment Settings
-  const updatePaymentSettings = async (updated: Partial<PaymentSettings>): Promise<boolean> => {
-    const newSettings = { ...paymentSettings, ...updated };
-    setPaymentSettings(newSettings);
-    const success = await savePaymentSettingsInFirestore(newSettings);
-    if (success) {
-      showToast('Payment & UPI settings updated successfully!', 'success');
-    }
-    return success;
-  };
 
   // Place Order & Process Payment (Payment First, Order Next)
   const placeOrderAndPay = async (
@@ -1002,10 +941,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return { success: false, message: 'Cart is empty. Order verification aborted.' };
     }
 
-    const taxAmount = Math.round((subtotal * (paymentSettings.gstPercent || 5)) / 100);
+    const taxAmount = Math.round((subtotal * (activePaymentSettings.gstPercent || 5)) / 100);
     const isOnlinePayment = paymentMethod === 'CARD' || paymentMethod === 'NET_BANKING' || paymentMethod === 'WALLET' || (paymentMethod as string) === 'ONLINE';
-    const isFeeEnabled = paymentSettings.enableConvenienceFee !== false;
-    const feePercent = paymentSettings.convenienceFeePercent ?? 2;
+    const isFeeEnabled = activePaymentSettings.enableConvenienceFee !== false;
+    const feePercent = activePaymentSettings.convenienceFeePercent ?? 2;
     const convenienceFee = (isOnlinePayment && isFeeEnabled) ? Math.round((subtotal * feePercent) / 100) : 0;
 
     const totalAmount = Math.max(0, subtotal + shippingFee + taxAmount + convenienceFee - discountAmount);
@@ -1017,7 +956,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       totalAmount,
       shippingInfo,
       items,
-      paymentSettings,
+      paymentSettings: activePaymentSettings,
       cardNumber: extraPaymentDetails?.cardNumber,
       cardExpiry: extraPaymentDetails?.cardExpiry,
       cardCvv: extraPaymentDetails?.cardCvv,
@@ -1080,7 +1019,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     // Auto-reduce inventory stock size-wise
-    setProducts((prevProducts) =>
+    const reduceStockInProducts = (prevProducts: Product[]) =>
       prevProducts.map((p) => {
         const matchingCartItems = items.filter((ci) => ci.product.id === p.id);
         if (matchingCartItems.length === 0) return p;
@@ -1112,8 +1051,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           sizeStocks: updatedSizeStocks,
           inStock: updatedSizeStocks.length > 0 ? hasAnyStock : p.inStock,
         };
-      })
-    );
+      });
+
+    setPublishedProducts(reduceStockInProducts);
+    setDraftProducts(reduceStockInProducts);
 
     // Save to Firestore & local state
     await saveOrderInFirestore(newOrder);
@@ -1128,7 +1069,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       paymentMethod,
       paymentStatus: finalPaymentStatus,
       transactionRef: verifiedRef,
-      gatewayProvider: paymentSettings.gatewayProvider || 'DIRECT_UPI_QR',
+      gatewayProvider: activePaymentSettings.gatewayProvider || 'DIRECT_UPI_QR',
       timestamp: nowISO,
     };
     await saveTransactionInFirestore(txRecord);
@@ -1260,7 +1201,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               const data = docSnap.data() as Product;
               remoteProducts.push({ ...data, id: docSnap.id });
             });
-            setProducts(remoteProducts);
+            setPublishedProducts(remoteProducts);
           } else {
             // Seed default products into Firestore so Firestore serves as single source of truth
             try {
@@ -1430,7 +1371,276 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Product CRUD with Sanitization, Firestore Sync & Audit Trails
+  // --- DRAFT AUTO-SAVE ENGINE ---
+  const saveDraftLocallyAndRemote = useCallback((overrides?: Partial<{
+    products: Product[];
+    reviews: Review[];
+    storeInfo: StoreInfo;
+    heroContent: HeroContent;
+    announcements: string[];
+    categoryHighlights: CategoryHighlight[];
+    trendingCollections: TrendingCollectionItem[];
+    paymentSettings: PaymentSettings;
+    hangingSneakerConfig: HangingSneakerConfig;
+    petShoeConfig: PetShoeConfig;
+    instagramConfig: InstagramConfig;
+  }>) => {
+    const nextProducts = overrides?.products ?? draftProducts;
+    const nextReviews = overrides?.reviews ?? draftReviews;
+    const nextStoreInfo = overrides?.storeInfo ?? draftStoreInfo;
+    const nextHeroContent = overrides?.heroContent ?? draftHeroContent;
+    const nextAnnouncements = overrides?.announcements ?? draftAnnouncements;
+    const nextCategoryHighlights = overrides?.categoryHighlights ?? draftCategoryHighlights;
+    const nextTrendingCollections = overrides?.trendingCollections ?? draftTrendingCollections;
+    const nextPaymentSettings = overrides?.paymentSettings ?? draftPaymentSettings;
+    const nextHangingSneakerConfig = overrides?.hangingSneakerConfig ?? draftHangingSneakerConfig;
+    const nextPetShoeConfig = overrides?.petShoeConfig ?? draftPetShoeConfig;
+    const nextInstagramConfig = overrides?.instagramConfig ?? draftInstagramConfig;
+
+    const updatedDraft = {
+      products: nextProducts,
+      reviews: nextReviews,
+      storeInfo: nextStoreInfo,
+      heroContent: nextHeroContent,
+      announcements: nextAnnouncements,
+      categoryHighlights: nextCategoryHighlights,
+      trendingCollections: nextTrendingCollections,
+      paymentSettings: nextPaymentSettings,
+      hangingSneakerConfig: nextHangingSneakerConfig,
+      petShoeConfig: nextPetShoeConfig,
+      instagramConfig: nextInstagramConfig,
+      updatedAt: new Date().toISOString(),
+      updatedBy: auth.currentUser?.email || 'Admin',
+    };
+
+    const newCount = pendingDraftCount + 1;
+    setHasPendingDraft(true);
+    setPendingDraftCount(newCount);
+    localStorage.setItem('mfp_cms_active_draft', JSON.stringify(updatedDraft));
+    localStorage.setItem('mfp_cms_pending_count', newCount.toString());
+
+    setDoc(doc(db, 'drafts', 'activeDraft'), updatedDraft, { merge: true }).catch((e) => {
+      console.warn('Auto-save draft Firestore notice:', e);
+    });
+
+    showToast('🟡 Draft Saved (Pending Publish)', 'info');
+  }, [
+    draftProducts, draftReviews, draftStoreInfo, draftHeroContent, draftAnnouncements,
+    draftCategoryHighlights, draftTrendingCollections, draftPaymentSettings,
+    draftHangingSneakerConfig, draftPetShoeConfig, draftInstagramConfig, pendingDraftCount, showToast
+  ]);
+
+  // Load Active Draft Snapshot from Firestore on Mount
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const draftDocRef = doc(db, 'drafts', 'activeDraft');
+      unsubscribe = onSnapshot(draftDocRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.products) setDraftProducts(data.products);
+          if (data.reviews) setDraftReviews(data.reviews);
+          if (data.storeInfo) setDraftStoreInfo(data.storeInfo);
+          if (data.heroContent) setDraftHeroContent(data.heroContent);
+          if (data.announcements) setDraftAnnouncements(data.announcements);
+          if (data.categoryHighlights) setDraftCategoryHighlights(data.categoryHighlights);
+          if (data.trendingCollections) setDraftTrendingCollections(data.trendingCollections);
+          if (data.paymentSettings) setDraftPaymentSettings(data.paymentSettings);
+          if (data.hangingSneakerConfig) setDraftHangingSneakerConfig(data.hangingSneakerConfig);
+          if (data.petShoeConfig) setDraftPetShoeConfig(data.petShoeConfig);
+          if (data.instagramConfig) setDraftInstagramConfig(data.instagramConfig);
+          setHasPendingDraft(true);
+        }
+      });
+    } catch (e) {
+      console.warn('Draft listener notice:', e);
+    }
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, []);
+
+  // Load Version History from Firestore on Mount
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const versionsCol = collection(db, 'publishedVersions');
+      const q = query(versionsCol, orderBy('publishedAt', 'desc'), limit(50));
+      unsubscribe = onSnapshot(q, (snap) => {
+        if (!snap.empty) {
+          const historyList: PublishedVersionHistory[] = [];
+          snap.forEach((docSnap) => {
+            historyList.push({ id: docSnap.id, ...(docSnap.data() as PublishedVersionHistory) });
+          });
+          setPublishedVersions(historyList);
+          if (historyList.length > 0) {
+            setLastPublishedAt(historyList[0].publishedAt);
+            setLastPublishedBy(historyList[0].publishedBy);
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('Version history listener notice:', e);
+    }
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, []);
+
+  // --- CMS GLOBAL PUBLISH ACTION ---
+  const publishWebsite = async (summary?: string): Promise<{ success: boolean; versionNumber?: string; message?: string }> => {
+    const adminEmail = auth.currentUser?.email || 'vpcreation2002@gmail.com';
+    const nowISO = new Date().toISOString();
+
+    try {
+      // 1. Commit draft data to published live state
+      setPublishedProducts(draftProducts);
+      setPublishedReviews(draftReviews);
+      setPublishedStoreInfo(draftStoreInfo);
+      setPublishedHeroContent(draftHeroContent);
+      setPublishedAnnouncements(draftAnnouncements);
+      setPublishedCategoryHighlights(draftCategoryHighlights);
+      setPublishedTrendingCollections(draftTrendingCollections);
+      setPublishedPaymentSettings(draftPaymentSettings);
+      setPublishedHangingSneakerConfig(draftHangingSneakerConfig);
+      setPublishedPetShoeConfig(draftPetShoeConfig);
+      setPublishedInstagramConfig(draftInstagramConfig);
+
+      // Save to localStorage
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(draftProducts));
+      localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(draftReviews));
+      localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(draftStoreInfo));
+      localStorage.setItem(STORAGE_KEYS.HERO_CONTENT, JSON.stringify(draftHeroContent));
+      localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(draftAnnouncements));
+      localStorage.setItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, JSON.stringify(draftCategoryHighlights));
+      localStorage.setItem(STORAGE_KEYS.TRENDING_COLLECTIONS, JSON.stringify(draftTrendingCollections));
+      localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(draftPaymentSettings));
+      localStorage.setItem(STORAGE_KEYS.HANGING_SNEAKER, JSON.stringify(draftHangingSneakerConfig));
+      localStorage.setItem(STORAGE_KEYS.PET_SHOE_CONFIG, JSON.stringify(draftPetShoeConfig));
+      localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(draftInstagramConfig));
+
+      // 2. Sync Published Collections/Docs to Firestore
+      for (const p of draftProducts) {
+        await setDoc(doc(db, 'products', p.id), p, { merge: true });
+      }
+      for (const r of draftReviews) {
+        await setDoc(doc(db, 'reviews', r.id), r, { merge: true });
+      }
+      await setDoc(doc(db, 'siteSettings', 'storeInfo'), draftStoreInfo, { merge: true });
+      await setDoc(doc(db, 'siteSettings', 'heroContent'), draftHeroContent, { merge: true });
+      await setDoc(doc(db, 'siteSettings', 'announcements'), { items: draftAnnouncements }, { merge: true });
+      await setDoc(doc(db, 'siteSettings', 'categoryHighlights'), { items: draftCategoryHighlights }, { merge: true });
+      await setDoc(doc(db, 'siteSettings', 'trendingCollections'), { items: draftTrendingCollections }, { merge: true });
+      await setDoc(doc(db, 'paymentSettings', 'config'), draftPaymentSettings, { merge: true });
+      await setDoc(doc(db, 'hangingSneakerConfig', 'config'), draftHangingSneakerConfig, { merge: true });
+      await setDoc(doc(db, 'petShoeConfig', 'config'), draftPetShoeConfig, { merge: true });
+      await setDoc(doc(db, 'instagramConfig', 'config'), draftInstagramConfig, { merge: true });
+
+      // 3. Store Published Version History Snapshot
+      const versionNum = `v1.${publishedVersions.length + 1}`;
+      const newVersion: PublishedVersionHistory = {
+        id: `ver-${Date.now()}`,
+        versionNumber: versionNum,
+        publishedAt: nowISO,
+        publishedBy: adminEmail,
+        summary: summary || `Global CMS publish with ${pendingDraftCount || 1} changes approved`,
+        changeCount: pendingDraftCount || 1,
+        data: {
+          products: draftProducts,
+          reviews: draftReviews,
+          storeInfo: draftStoreInfo,
+          heroContent: draftHeroContent,
+          announcements: draftAnnouncements,
+          categoryHighlights: draftCategoryHighlights,
+          trendingCollections: draftTrendingCollections,
+          paymentSettings: draftPaymentSettings,
+          hangingSneakerConfig: draftHangingSneakerConfig,
+          petShoeConfig: draftPetShoeConfig,
+          instagramConfig: draftInstagramConfig,
+        },
+      };
+
+      await setDoc(doc(db, 'publishedVersions', newVersion.id), newVersion);
+
+      // 4. Reset Draft Status
+      setHasPendingDraft(false);
+      setPendingDraftCount(0);
+      setLastPublishedAt(nowISO);
+      setLastPublishedBy(adminEmail);
+      localStorage.removeItem('mfp_cms_active_draft');
+      localStorage.removeItem('mfp_cms_pending_count');
+      localStorage.setItem('mfp_last_published_at', nowISO);
+      localStorage.setItem('mfp_last_published_by', adminEmail);
+
+      await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
+
+      recordAuditLog('Website Published Globally', 'SETTINGS', `Published ${versionNum} by ${adminEmail}`, 'SUCCESS');
+      showToast(`🚀 Website Published Successfully! (${versionNum})`, 'success');
+      return { success: true, versionNumber: versionNum };
+    } catch (err: any) {
+      console.error('Failed to publish website:', err);
+      showToast(`❌ Failed to publish website: ${err.message || 'Firestore error'}`, 'error');
+      return { success: false, message: err.message };
+    }
+  };
+
+  const discardDraft = async () => {
+    setDraftProducts(publishedProducts);
+    setDraftReviews(publishedReviews);
+    setDraftStoreInfo(publishedStoreInfo);
+    setDraftHeroContent(publishedHeroContent);
+    setDraftAnnouncements(publishedAnnouncements);
+    setDraftCategoryHighlights(publishedCategoryHighlights);
+    setDraftTrendingCollections(publishedTrendingCollections);
+    setDraftPaymentSettings(publishedPaymentSettings);
+    setDraftHangingSneakerConfig(publishedHangingSneakerConfig);
+    setDraftPetShoeConfig(publishedPetShoeConfig);
+    setDraftInstagramConfig(publishedInstagramConfig);
+
+    setHasPendingDraft(false);
+    setPendingDraftCount(0);
+    localStorage.removeItem('mfp_cms_active_draft');
+    localStorage.removeItem('mfp_cms_pending_count');
+    await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
+    showToast('Draft changes discarded. Reverted to last published state.', 'info');
+  };
+
+  const restorePublishedVersion = async (versionId: string): Promise<boolean> => {
+    const targetVer = publishedVersions.find((v) => v.id === versionId);
+    if (!targetVer || !targetVer.data) return false;
+
+    const data = targetVer.data;
+    if (data.products) setDraftProducts(data.products);
+    if (data.reviews) setDraftReviews(data.reviews);
+    if (data.storeInfo) setDraftStoreInfo(data.storeInfo);
+    if (data.heroContent) setDraftHeroContent(data.heroContent);
+    if (data.announcements) setDraftAnnouncements(data.announcements);
+    if (data.categoryHighlights) setDraftCategoryHighlights(data.categoryHighlights);
+    if (data.trendingCollections) setDraftTrendingCollections(data.trendingCollections);
+    if (data.paymentSettings) setDraftPaymentSettings(data.paymentSettings);
+    if (data.hangingSneakerConfig) setDraftHangingSneakerConfig(data.hangingSneakerConfig);
+    if (data.petShoeConfig) setDraftPetShoeConfig(data.petShoeConfig);
+    if (data.instagramConfig) setDraftInstagramConfig(data.instagramConfig);
+
+    saveDraftLocallyAndRemote({
+      products: data.products,
+      reviews: data.reviews,
+      storeInfo: data.storeInfo,
+      heroContent: data.heroContent,
+      announcements: data.announcements,
+      categoryHighlights: data.categoryHighlights,
+      trendingCollections: data.trendingCollections,
+      paymentSettings: data.paymentSettings,
+      hangingSneakerConfig: data.hangingSneakerConfig,
+      petShoeConfig: data.petShoeConfig,
+      instagramConfig: data.instagramConfig,
+    });
+
+    showToast(`Loaded version ${targetVer.versionNumber} into draft. Click "Publish Website" to apply live.`, 'info');
+    return true;
+  };
+
+  const togglePreviewMode = () => {
+    setPreviewMode((prev) => (prev === 'draft' ? 'live' : 'draft'));
+  };
+
+  // --- DRAFT-AWARE EDIT HANDLERS ---
   const addProduct = async (p: Omit<Product, 'id'>) => {
     const cleanName = sanitizeString(p.name, 200);
     const cleanDesc = sanitizeString(p.description, 2000);
@@ -1449,16 +1659,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       originalPrice: cleanOrigPrice,
     };
 
-    setProducts((prev) => [newProduct, ...prev]);
-    recordAuditLog('Product Added', 'PRODUCT', `Added "${cleanName}" (ID: ${newId})`, 'SUCCESS');
-
-    try {
-      await setDoc(doc(db, 'products', newId), newProduct);
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.WRITE, `products/${newId}`);
-      showToast(`❌ Failed to save product: ${err?.message || 'Database write error'}`, 'error');
-    }
+    const updated = [newProduct, ...draftProducts];
+    setDraftProducts(updated);
+    saveDraftLocallyAndRemote({ products: updated });
+    recordAuditLog('Product Added (Draft)', 'PRODUCT', `Draft added "${cleanName}" (ID: ${newId})`, 'SUCCESS');
   };
 
   const updateProduct = async (id: string, updated: Partial<Product>) => {
@@ -1468,55 +1672,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (sanitized.price !== undefined) sanitized.price = sanitizePrice(sanitized.price);
     if (sanitized.originalPrice !== undefined) sanitized.originalPrice = sanitizePrice(sanitized.originalPrice);
 
-    setProducts((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...sanitized } : item))
-    );
-    recordAuditLog('Product Updated', 'PRODUCT', `Updated product details for ID: ${id}`, 'SUCCESS');
-
-    try {
-      await setDoc(doc(db, 'products', id), sanitized, { merge: true });
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
-      showToast(`❌ Failed to update product: ${err?.message || 'Database write error'}`, 'error');
-    }
+    const updatedProducts = draftProducts.map((item) => (item.id === id ? { ...item, ...sanitized } : item));
+    setDraftProducts(updatedProducts);
+    saveDraftLocallyAndRemote({ products: updatedProducts });
+    recordAuditLog('Product Updated (Draft)', 'PRODUCT', `Draft updated product ID: ${id}`, 'SUCCESS');
   };
 
   const deleteProduct = async (id: string) => {
-    const target = products.find((p) => p.id === id);
-    setProducts((prev) => prev.filter((item) => item.id !== id));
-    recordAuditLog('Product Deleted', 'PRODUCT', `Deleted product "${target?.name || id}"`, 'DANGER');
-
-    try {
-      await deleteDoc(doc(db, 'products', id));
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.DELETE, `products/${id}`);
-      showToast(`❌ Failed to delete product: ${err?.message || 'Database write error'}`, 'error');
-    }
+    const target = draftProducts.find((p) => p.id === id);
+    const updatedProducts = draftProducts.filter((item) => item.id !== id);
+    setDraftProducts(updatedProducts);
+    saveDraftLocallyAndRemote({ products: updatedProducts });
+    recordAuditLog('Product Deleted (Draft)', 'PRODUCT', `Draft deleted product "${target?.name || id}"`, 'DANGER');
   };
 
   const toggleInStock = async (id: string) => {
-    const target = products.find((p) => p.id === id);
+    const target = draftProducts.find((p) => p.id === id);
     if (!target) return;
     const newInStock = !target.inStock;
-    setProducts((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, inStock: newInStock } : item))
-    );
-    recordAuditLog(
-      'Product Stock Status Toggled',
-      'PRODUCT',
-      `Toggled inStock status for "${target.name}" to ${newInStock}`,
-      'WARNING'
-    );
-
-    try {
-      await setDoc(doc(db, 'products', id), { inStock: newInStock }, { merge: true });
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
-      showToast(`❌ Failed to update stock: ${err?.message || 'Database write error'}`, 'error');
-    }
+    const updatedProducts = draftProducts.map((item) => (item.id === id ? { ...item, inStock: newInStock } : item));
+    setDraftProducts(updatedProducts);
+    saveDraftLocallyAndRemote({ products: updatedProducts });
   };
 
   // Reviews CRUD
@@ -1526,42 +1702,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const newId = `rev-${Date.now()}`;
     const newReview: Review = { ...r, id: newId, author: cleanAuthor, comment: cleanComment };
-    setReviews((prev) => [newReview, ...prev]);
-
-    try {
-      await setDoc(doc(db, 'reviews', newId), newReview);
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.WRITE, `reviews/${newId}`);
-      showToast(`❌ Failed to save review: ${err?.message || 'Database write error'}`, 'error');
-    }
+    const updated = [newReview, ...draftReviews];
+    setDraftReviews(updated);
+    saveDraftLocallyAndRemote({ reviews: updated });
   };
 
   const updateReview = async (id: string, updated: Partial<Review>) => {
-    setReviews((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, ...updated } : r))
-    );
-
-    try {
-      await setDoc(doc(db, 'reviews', id), updated, { merge: true });
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.UPDATE, `reviews/${id}`);
-      showToast(`❌ Failed to update review: ${err?.message || 'Database write error'}`, 'error');
-    }
+    const updatedReviews = draftReviews.map((r) => (r.id === id ? { ...r, ...updated } : r));
+    setDraftReviews(updatedReviews);
+    saveDraftLocallyAndRemote({ reviews: updatedReviews });
   };
 
   const deleteReview = async (id: string) => {
-    setReviews((prev) => prev.filter((r) => r.id !== id));
-    recordAuditLog('Customer Review Deleted', 'SETTINGS', `Deleted review ID: ${id}`, 'WARNING');
-
-    try {
-      await deleteDoc(doc(db, 'reviews', id));
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.DELETE, `reviews/${id}`);
-      showToast(`❌ Failed to delete review: ${err?.message || 'Database write error'}`, 'error');
-    }
+    const updatedReviews = draftReviews.filter((r) => r.id !== id);
+    setDraftReviews(updatedReviews);
+    saveDraftLocallyAndRemote({ reviews: updatedReviews });
   };
 
   // Content Editors
@@ -1572,17 +1727,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (cleanInfo.email) cleanInfo.email = sanitizeEmail(cleanInfo.email);
     if (cleanInfo.phone) cleanInfo.phone = sanitizePhone(cleanInfo.phone);
 
-    const updatedStoreInfo = { ...storeInfo, ...cleanInfo };
-    setStoreInfo(updatedStoreInfo);
-    recordAuditLog('Store Info Updated', 'SETTINGS', 'Updated store location and contact info', 'SUCCESS');
-
-    try {
-      await setDoc(doc(db, 'siteSettings', 'storeInfo'), updatedStoreInfo, { merge: true });
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.WRITE, 'siteSettings/storeInfo');
-      showToast(`❌ Failed to save store info: ${err?.message || 'Database write error'}`, 'error');
-    }
+    const updatedStoreInfo = { ...draftStoreInfo, ...cleanInfo };
+    setDraftStoreInfo(updatedStoreInfo);
+    saveDraftLocallyAndRemote({ storeInfo: updatedStoreInfo });
+    recordAuditLog('Store Info Updated (Draft)', 'SETTINGS', 'Draft store location and contact info', 'SUCCESS');
   };
 
   const updateHeroContent = async (content: Partial<HeroContent>) => {
@@ -1590,76 +1738,85 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (cleanHero.headlineMain) cleanHero.headlineMain = sanitizeString(cleanHero.headlineMain, 200);
     if (cleanHero.subtitle) cleanHero.subtitle = sanitizeString(cleanHero.subtitle, 500);
 
-    const updatedHero = { ...heroContent, ...cleanHero };
-    setHeroContent(updatedHero);
-    recordAuditLog('Hero Banner Updated', 'MEDIA', 'Updated homepage hero banner title and visual asset', 'SUCCESS');
-
-    try {
-      await setDoc(doc(db, 'siteSettings', 'heroContent'), updatedHero, { merge: true });
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.WRITE, 'siteSettings/heroContent');
-      showToast(`❌ Failed to save hero content: ${err?.message || 'Database write error'}`, 'error');
-    }
+    const updatedHero = { ...draftHeroContent, ...cleanHero };
+    setDraftHeroContent(updatedHero);
+    saveDraftLocallyAndRemote({ heroContent: updatedHero });
+    recordAuditLog('Hero Banner Updated (Draft)', 'MEDIA', 'Draft hero banner content updated', 'SUCCESS');
   };
 
   const setAnnouncementsList = async (items: string[]) => {
     const cleanItems = items.map((i) => sanitizeString(i, 200));
-    setAnnouncements(cleanItems);
-    recordAuditLog('Announcements Updated', 'SETTINGS', `Updated ${items.length} ticker announcements`, 'SUCCESS');
-
-    try {
-      await setDoc(doc(db, 'siteSettings', 'announcements'), { items: cleanItems }, { merge: true });
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.WRITE, 'siteSettings/announcements');
-      showToast(`❌ Failed to save announcements: ${err?.message || 'Database write error'}`, 'error');
-    }
+    setDraftAnnouncements(cleanItems);
+    saveDraftLocallyAndRemote({ announcements: cleanItems });
+    recordAuditLog('Announcements Updated (Draft)', 'SETTINGS', `Draft announcements list updated`, 'SUCCESS');
   };
 
   const updateCategoryHighlight = async (id: 'men' | 'women' | 'kids', updated: Partial<CategoryHighlight>) => {
-    const updatedCategories = categoryHighlights.map((cat) => (cat.id === id ? { ...cat, ...updated } : cat));
-    setCategoryHighlights(updatedCategories);
-    recordAuditLog('Category Highlight Updated', 'SETTINGS', `Updated category highlight for ${id}`, 'SUCCESS');
-
-    try {
-      await setDoc(doc(db, 'siteSettings', 'categoryHighlights'), { items: updatedCategories }, { merge: true });
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.WRITE, 'siteSettings/categoryHighlights');
-      showToast(`❌ Failed to save category highlight: ${err?.message || 'Database write error'}`, 'error');
-    }
+    const updatedCategories = draftCategoryHighlights.map((cat) => (cat.id === id ? { ...cat, ...updated } : cat));
+    setDraftCategoryHighlights(updatedCategories);
+    saveDraftLocallyAndRemote({ categoryHighlights: updatedCategories });
   };
 
   const updateTrendingCollection = async (id: string, updated: Partial<TrendingCollectionItem>) => {
-    const updatedTrending = trendingCollections.map((col) => (col.id === id ? { ...col, ...updated } : col));
-    setTrendingCollections(updatedTrending);
-    recordAuditLog('Trending Collection Updated', 'SETTINGS', `Updated collection ${id}`, 'SUCCESS');
-
-    try {
-      await setDoc(doc(db, 'siteSettings', 'trendingCollections'), { items: updatedTrending }, { merge: true });
-      showToast('✅ Changes Saved Successfully', 'success');
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.WRITE, 'siteSettings/trendingCollections');
-      showToast(`❌ Failed to save trending collection: ${err?.message || 'Database write error'}`, 'error');
-    }
+    const updatedTrending = draftTrendingCollections.map((col) => (col.id === id ? { ...col, ...updated } : col));
+    setDraftTrendingCollections(updatedTrending);
+    saveDraftLocallyAndRemote({ trendingCollections: updatedTrending });
   };
 
+  const updateHangingSneakerConfig = async (updated: Partial<HangingSneakerConfig>) => {
+    const newCfg = { ...draftHangingSneakerConfig, ...updated };
+    setDraftHangingSneakerConfig(newCfg);
+    saveDraftLocallyAndRemote({ hangingSneakerConfig: newCfg });
+  };
+
+  const updatePetShoeConfig = async (updated: Partial<PetShoeConfig>) => {
+    const newCfg = { ...draftPetShoeConfig, ...updated };
+    setDraftPetShoeConfig(newCfg);
+    saveDraftLocallyAndRemote({ petShoeConfig: newCfg });
+  };
+
+  const updateInstagramConfig = async (updated: Partial<InstagramConfig>) => {
+    const newCfg = { ...draftInstagramConfig, ...updated };
+    setDraftInstagramConfig(newCfg);
+    saveDraftLocallyAndRemote({ instagramConfig: newCfg });
+  };
+
+  const updatePaymentSettings = async (settings: Partial<PaymentSettings>): Promise<boolean> => {
+    const newCfg = { ...draftPaymentSettings, ...settings };
+    setDraftPaymentSettings(newCfg);
+    saveDraftLocallyAndRemote({ paymentSettings: newCfg });
+    return true;
+  };
+
+  // Evaluate active states based on previewMode and isAdmin
+  const isEditingDraft = isAdmin && previewMode === 'draft';
+
+  const activeProducts = isEditingDraft ? draftProducts : publishedProducts;
+  const activeReviews = isEditingDraft ? draftReviews : publishedReviews;
+  const activeStoreInfo = isEditingDraft ? draftStoreInfo : publishedStoreInfo;
+  const activeHeroContent = isEditingDraft ? draftHeroContent : publishedHeroContent;
+  const activeAnnouncements = isEditingDraft ? draftAnnouncements : publishedAnnouncements;
+  const activeCategoryHighlights = isEditingDraft ? draftCategoryHighlights : publishedCategoryHighlights;
+  const activeTrendingCollections = isEditingDraft ? draftTrendingCollections : publishedTrendingCollections;
+  const activePaymentSettings = isEditingDraft ? draftPaymentSettings : publishedPaymentSettings;
+  const activeHangingSneakerConfig = isEditingDraft ? draftHangingSneakerConfig : publishedHangingSneakerConfig;
+  const activePetShoeConfig = isEditingDraft ? draftPetShoeConfig : publishedPetShoeConfig;
+  const activeInstagramConfig = isEditingDraft ? draftInstagramConfig : publishedInstagramConfig;
   // Backup & Recovery Engine
   const createStoreBackup = async (): Promise<StoreBackupSnapshot> => {
     const snapshot: StoreBackupSnapshot = {
       id: `backup-${Date.now()}`,
       timestamp: new Date().toISOString(),
       createdBy: auth.currentUser?.email || 'admin@marudharfashionpoint.com',
-      dataSizeKb: Math.round(JSON.stringify(products).length / 1024),
+      dataSizeKb: Math.round(JSON.stringify(activeProducts).length / 1024),
       data: {
-        products,
-        reviews,
-        storeInfo,
-        heroContent,
-        announcements,
-        categoryHighlights,
-        trendingCollections,
+        products: activeProducts,
+        reviews: activeReviews,
+        storeInfo: activeStoreInfo,
+        heroContent: activeHeroContent,
+        announcements: activeAnnouncements,
+        categoryHighlights: activeCategoryHighlights,
+        trendingCollections: activeTrendingCollections,
       },
     };
 
@@ -1690,14 +1847,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         snapshotData = backupInput.data;
       }
 
-      if (snapshotData.products) setProducts(snapshotData.products);
-      if (snapshotData.reviews) setReviews(snapshotData.reviews);
-      if (snapshotData.storeInfo) setStoreInfo(snapshotData.storeInfo);
-      if (snapshotData.heroContent) setHeroContent(snapshotData.heroContent);
-      if (snapshotData.announcements) setAnnouncements(snapshotData.announcements);
-      if (snapshotData.categoryHighlights) setCategoryHighlights(snapshotData.categoryHighlights);
-      if (snapshotData.trendingCollections) setTrendingCollections(snapshotData.trendingCollections);
+      if (snapshotData.products) setDraftProducts(snapshotData.products);
+      if (snapshotData.reviews) setDraftReviews(snapshotData.reviews);
+      if (snapshotData.storeInfo) setDraftStoreInfo(snapshotData.storeInfo);
+      if (snapshotData.heroContent) setDraftHeroContent(snapshotData.heroContent);
+      if (snapshotData.announcements) setDraftAnnouncements(snapshotData.announcements);
+      if (snapshotData.categoryHighlights) setDraftCategoryHighlights(snapshotData.categoryHighlights);
+      if (snapshotData.trendingCollections) setDraftTrendingCollections(snapshotData.trendingCollections);
 
+      saveDraftLocallyAndRemote();
       recordAuditLog('Store Data Restored from Backup', 'BACKUP', 'Successfully restored database from snapshot', 'WARNING');
       return true;
     } catch (err) {
@@ -1708,13 +1866,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Factory Reset
   const resetToDefaults = () => {
-    setProducts(PRODUCTS_DATA);
-    setReviews(REVIEWS_DATA);
-    setStoreInfo(STORE_INFO);
-    setHeroContent(DEFAULT_HERO_CONTENT);
-    setAnnouncements(ANNOUNCEMENT_ITEMS);
-    setCategoryHighlights(CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
-    setTrendingCollections(TRENDING_COLLECTIONS);
+    setDraftProducts(PRODUCTS_DATA);
+    setDraftReviews(REVIEWS_DATA);
+    setDraftStoreInfo(STORE_INFO);
+    setDraftHeroContent(DEFAULT_HERO_CONTENT);
+    setDraftAnnouncements(ANNOUNCEMENT_ITEMS);
+    setDraftCategoryHighlights(CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
+    setDraftTrendingCollections(TRENDING_COLLECTIONS);
+    setPublishedProducts(PRODUCTS_DATA);
+    setPublishedReviews(REVIEWS_DATA);
+    setPublishedStoreInfo(STORE_INFO);
+    setPublishedHeroContent(DEFAULT_HERO_CONTENT);
+    setPublishedAnnouncements(ANNOUNCEMENT_ITEMS);
+    setPublishedCategoryHighlights(CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
+    setPublishedTrendingCollections(TRENDING_COLLECTIONS);
     localStorage.clear();
     recordAuditLog('Factory Reset Performed', 'SECURITY', 'All store data restored to original default settings', 'DANGER');
   };
@@ -1722,27 +1887,37 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <StoreContext.Provider
       value={{
-        products,
-        reviews,
-        storeInfo,
-        heroContent,
-        announcements,
-        categoryHighlights,
-        trendingCollections,
+        products: activeProducts,
+        reviews: activeReviews,
+        storeInfo: activeStoreInfo,
+        heroContent: activeHeroContent,
+        announcements: activeAnnouncements,
+        categoryHighlights: activeCategoryHighlights,
+        trendingCollections: activeTrendingCollections,
         isAdmin,
         isTwoFactorEnabled,
         auditLogs,
         lastActivityTime,
-        paymentSettings,
+        paymentSettings: activePaymentSettings,
         orders,
         notifications,
-        hangingSneakerConfig,
+        hangingSneakerConfig: activeHangingSneakerConfig,
         updateHangingSneakerConfig,
-        petShoeConfig,
+        petShoeConfig: activePetShoeConfig,
         updatePetShoeConfig,
-        instagramConfig,
+        instagramConfig: activeInstagramConfig,
         updateInstagramConfig,
         updatePaymentSettings,
+        hasPendingDraft,
+        pendingDraftCount,
+        lastPublishedAt,
+        lastPublishedBy,
+        publishedVersions,
+        previewMode,
+        publishWebsite,
+        restorePublishedVersion,
+        togglePreviewMode,
+        discardDraft,
         placeOrderAndPay,
         updateOrderStatus,
         cancelCustomerOrder,

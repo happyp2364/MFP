@@ -100,6 +100,17 @@ export interface StoreInfo {
   youtube: string;
 }
 
+export interface FloatingShoeItem {
+  id: string;
+  name: string;
+  imageUri: string;
+  speedSec: number;
+  rotationDeg: number;
+  initialX: string;
+  initialY: string;
+  scale: number;
+}
+
 export interface HeroContent {
   badge: string;
   headlineMain: string;
@@ -112,6 +123,26 @@ export interface HeroContent {
   stat2Label: string;
   stat3Number: string;
   stat3Label: string;
+
+  // Premium Hero Experience V2.0 Controls
+  bgType?: 'gradient' | 'image' | 'video';
+  heroVideoUrl?: string;
+  gradientTheme?: 'deep_emerald' | 'warm_noir' | 'royal_gold' | 'midnight_luxury';
+
+  primaryBtnText?: string;
+  primaryBtnLink?: string;
+  whatsappBtnText?: string;
+  whatsappBtnLink?: string;
+  buyNowBtnText?: string;
+  buyNowBtnLink?: string;
+
+  floatingShoes?: FloatingShoeItem[];
+
+  particleDensity?: 'off' | 'low' | 'medium' | 'high';
+  enableLightRays?: boolean;
+  glowStrength?: 'subtle' | 'medium' | 'intense';
+  parallaxStrength?: 'disabled' | 'subtle' | 'medium' | 'strong';
+  animationSpeed?: 'slow' | 'normal' | 'fast';
 }
 
 export interface CategoryHighlight {
@@ -456,5 +487,27 @@ export interface StoreBackupSnapshot {
     categoryHighlights: CategoryHighlight[];
     trendingCollections: TrendingCollectionItem[];
     paymentSettings?: PaymentSettings;
+  };
+}
+
+export interface PublishedVersionHistory {
+  id: string;
+  versionNumber: string;
+  publishedAt: string;
+  publishedBy: string;
+  summary: string;
+  changeCount: number;
+  data: {
+    products: Product[];
+    reviews: Review[];
+    storeInfo: StoreInfo;
+    heroContent: HeroContent;
+    announcements: string[];
+    categoryHighlights: CategoryHighlight[];
+    trendingCollections: TrendingCollectionItem[];
+    paymentSettings?: PaymentSettings;
+    hangingSneakerConfig?: HangingSneakerConfig;
+    petShoeConfig?: PetShoeConfig;
+    instagramConfig?: InstagramConfig;
   };
 }

@@ -38,6 +38,10 @@ import {
   Share2,
   Copy,
   Megaphone,
+  History,
+  Eye,
+  Globe,
+  UploadCloud,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
@@ -51,6 +55,8 @@ import { HangingSneakerSettingsView } from './HangingSneakerSettingsView';
 import { AIShoePetSettingsView } from './AIShoePetSettingsView';
 import { InstagramSettingsView } from './InstagramSettingsView';
 import { MarketingCenterView } from './MarketingCenterView';
+import { VersionHistoryView } from './VersionHistoryView';
+import { HeroSectionManagerView } from './HeroSectionManagerView';
 import { SmartProductFormModal } from './SmartProductFormModal';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { validateFileUpload } from '../../lib/security';
@@ -61,7 +67,7 @@ interface AdminDashboardModalProps {
   onClose: () => void;
 }
 
-type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password';
+type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -101,15 +107,48 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     refreshAuditLogs,
     createStoreBackup,
     restoreStoreBackup,
+    hasPendingDraft,
+    pendingDraftCount,
+    lastPublishedAt,
+    lastPublishedBy,
+    publishedVersions,
+    previewMode,
+    publishWebsite,
+    restorePublishedVersion,
+    togglePreviewMode,
+    discardDraft,
   } = useStore();
 
   const [activeTab, setActiveTab] = useState<TabType>('orders');
   const [saveNotification, setSaveNotification] = useState<string | null>(null);
   const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
 
+  // Publish Modal State
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [publishSummary, setPublishSummary] = useState('');
+  const [isPublishing, setIsPublishing] = useState(false);
+
   const isGoogleUser = auth.currentUser?.providerData.some((p) => p.providerId === 'google.com');
 
   const unreadNotifCount = notifications.filter((n) => !n.read).length;
+
+  const handleConfirmPublish = async () => {
+    setIsPublishing(true);
+    const result = await publishWebsite(publishSummary);
+    setIsPublishing(false);
+    if (result.success) {
+      setPublishModalOpen(false);
+      setPublishSummary('');
+      showNotification(`🚀 Website Published Globally! (${result.versionNumber})`);
+    }
+  };
+
+  const handleDiscardDraft = async () => {
+    if (window.confirm('Are you sure you want to discard all unpublished draft changes and revert to the live website?')) {
+      await discardDraft();
+      showNotification('Draft changes discarded. Workspace reverted to live website.');
+    }
+  };
 
   // Search & Filters for Products
   const [adminSearch, setAdminSearch] = useState('');
@@ -327,27 +366,71 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       <div className="relative w-full max-w-6xl bg-[#F8FAFC]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 h-[92vh] flex flex-col">
         
         {/* Top Admin Header Bar */}
-        <div className="bg-[#121816] text-white p-4 sm:p-5 flex items-center justify-between border-b border-white/10 shrink-0">
+        <div className="bg-[#121816] text-white p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#0B8F63] flex items-center justify-center font-bold text-white shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-[#0B8F63] flex items-center justify-center font-bold text-white shadow-md shrink-0">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-serif-heading font-extrabold text-base sm:text-lg">
-                  Enterprise Security Console
+                  Enterprise CMS & Security Console
                 </h2>
-                <span className="bg-[#0B8F63] text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  256-Bit SSL
+                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 ${
+                  hasPendingDraft ? 'bg-amber-500 text-neutral-950 font-extrabold animate-pulse' : 'bg-[#0B8F63] text-white'
+                }`}>
+                  {hasPendingDraft ? `🟡 Draft Changes Pending (${pendingDraftCount})` : '🟢 Live'}
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400">
-                Marudhar Fashion Point • ABAC Rules & Automated Audit Trail Active
+                Marudhar Fashion Point • Draft & Publish System Active
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* CMS Global Action Bar */}
+          <div className="flex items-center flex-wrap gap-2">
+            {/* Preview Mode Toggle */}
+            <button
+              onClick={togglePreviewMode}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border ${
+                previewMode === 'draft'
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+              }`}
+              title="Toggle previewing Draft changes vs Live Published site"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>{previewMode === 'draft' ? '👁 Previewing: DRAFT' : '🔴 Previewing: LIVE'}</span>
+            </button>
+
+            {/* Discard Draft Button */}
+            {hasPendingDraft && (
+              <button
+                onClick={handleDiscardDraft}
+                className="bg-white/10 hover:bg-rose-600/80 text-white text-xs font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors"
+                title="Discard pending changes and revert draft to Live state"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Discard</span>
+              </button>
+            )}
+
+            {/* Global Publish Website Button */}
+            <button
+              onClick={() => setPublishModalOpen(true)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-lg transition-all ${
+                hasPendingDraft
+                  ? 'bg-gradient-to-r from-emerald-500 to-[#0B8F63] text-white hover:from-emerald-400 hover:to-[#097752] shadow-emerald-900/50 scale-105 animate-bounce'
+                  : 'bg-white/10 text-neutral-300 hover:bg-white/20'
+              }`}
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span>🚀 Publish Website</span>
+            </button>
+
+            <div className="h-5 w-[1px] bg-white/20 mx-1 hidden sm:block" />
+
             <button
               onClick={() => setNotifDrawerOpen(true)}
               className="p-2 rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 transition-colors relative"
@@ -470,7 +553,19 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               }`}
             >
               <Home className="w-4 h-4" />
-              <span>Store Info & Hero</span>
+              <span>Store Info & Contact</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('hero_v2')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'hero_v2'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Hero Experience V2.0</span>
             </button>
 
             <button
@@ -545,6 +640,23 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <span>Catalog Analytics</span>
             </button>
 
+            <button
+              onClick={() => setActiveTab('versions')}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'versions'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <History className="w-4 h-4 text-emerald-600" />
+                <span>Version History & Rollbacks</span>
+              </div>
+              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-900 rounded font-bold text-[10px]">
+                {publishedVersions.length}
+              </span>
+            </button>
+
             <div className="my-1 border-t border-neutral-200 hidden md:block" />
 
             {/* SECURITY & BACKUP TABS */}
@@ -613,6 +725,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: SALES & REPORTS ----------------- */}
             {activeTab === 'reports' && <ReportsAnalyticsView />}
+
+            {/* ----------------- TAB: VERSION HISTORY & ROLLBACKS ----------------- */}
+            {activeTab === 'versions' && <VersionHistoryView />}
+
+            {/* ----------------- TAB: HERO EXPERIENCE V2.0 ----------------- */}
+            {activeTab === 'hero_v2' && <HeroSectionManagerView />}
 
             {/* ----------------- TAB: HANGING SHOE AI MANAGER ----------------- */}
             {activeTab === 'hanging_shoe' && <HangingSneakerSettingsView />}
@@ -1373,6 +1491,78 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         isOpen={notifDrawerOpen}
         onClose={() => setNotifDrawerOpen(false)}
       />
+
+      {/* --- PUBLISH WEBSITE CONFIRMATION MODAL --- */}
+      {publishModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={() => setPublishModalOpen(false)} />
+          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-neutral-100 p-6 space-y-5 z-10 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+              <div className="flex items-center gap-2.5 text-[#0B8F63]">
+                <UploadCloud className="w-6 h-6" />
+                <h3 className="font-extrabold text-neutral-900 text-base">Publish Website to Live Customers</h3>
+              </div>
+              <button onClick={() => setPublishModalOpen(false)} className="p-1 text-neutral-400 hover:text-neutral-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-900 space-y-2">
+              <div className="flex items-center gap-2 font-extrabold text-emerald-950">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Global Atomic Publish Ready</span>
+              </div>
+              <p>
+                Publishing will push all <strong>{pendingDraftCount || 'pending'} draft modification(s)</strong> live to all store visitors across the globe.
+              </p>
+              <p className="text-[11px] text-emerald-800">
+                An immutable version snapshot will be created in Firestore. You can restore or rollback to past versions at any time from the "Version History" tab.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-neutral-700">
+                Release Notes / Summary of Changes (Optional):
+              </label>
+              <textarea
+                rows={3}
+                placeholder="E.g., Updated festive footwear pricing, added new sports collection, updated banner announcement..."
+                value={publishSummary}
+                onChange={(e) => setPublishSummary(e.target.value)}
+                className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-3 text-xs outline-none focus:ring-2 focus:ring-[#0B8F63] resize-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setPublishModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 text-xs font-bold hover:bg-neutral-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isPublishing}
+                onClick={handleConfirmPublish}
+                className="bg-gradient-to-r from-emerald-600 to-[#0B8F63] hover:from-emerald-500 hover:to-[#097752] text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-lg shadow-[#0B8F63]/30 flex items-center gap-2 disabled:opacity-50"
+              >
+                {isPublishing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Publishing Live...</span>
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-4 h-4" />
+                    <span>CONFIRM & PUBLISH LIVE</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

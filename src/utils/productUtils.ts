@@ -46,23 +46,41 @@ export function getProductSlug(product: Product): string {
  * Constructs the canonical public URL for a product
  */
 export function getProductUrl(product: Product, customOrigin?: string): string {
-  const origin = customOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://marudharfashionpoint.com');
-  const slug = getProductSlug(product);
-  return `${origin}/product/${slug}`;
+  const defaultDomain = 'https://marudhar-fashion-point-1.vercel.app';
+  const origin = customOrigin || (typeof window !== 'undefined' && window.location.origin ? window.location.origin : defaultDomain);
+  // Use product.id (Firebase Document ID) or slug for permanent direct routing
+  const productIdOrSlug = product.id ? product.id.trim() : getProductSlug(product);
+  return `${origin}/product/${productIdOrSlug}`;
 }
 
 /**
- * Matches a product by slug, ID, or SKU
+ * Matches a product by Firebase ID, slug, or SKU with full decoder support
  */
 export function findProductBySlugOrId(products: Product[], targetSlugOrId: string): Product | undefined {
   if (!targetSlugOrId) return undefined;
-  const cleanTarget = targetSlugOrId.trim().toLowerCase();
+  
+  let cleanTarget = '';
+  try {
+    cleanTarget = decodeURIComponent(targetSlugOrId).trim().toLowerCase();
+  } catch (e) {
+    cleanTarget = targetSlugOrId.trim().toLowerCase();
+  }
+
+  // Strip leading slashes if any
+  cleanTarget = cleanTarget.replace(/^\/+(products?\/)?/, '');
 
   return products.find((p) => {
+    const id = (p.id || '').trim().toLowerCase();
     const slug = getProductSlug(p).toLowerCase();
-    const id = (p.id || '').toLowerCase();
     const sku = getProductSKU(p).toLowerCase();
 
-    return slug === cleanTarget || id === cleanTarget || sku === cleanTarget || slug.endsWith(`-${cleanTarget}`);
+    return (
+      id === cleanTarget ||
+      slug === cleanTarget ||
+      sku === cleanTarget ||
+      (id.length > 0 && cleanTarget.endsWith(id)) ||
+      (slug.length > 0 && slug.endsWith(`-${cleanTarget}`)) ||
+      (cleanTarget.length > 0 && cleanTarget.includes(id))
+    );
   });
 }

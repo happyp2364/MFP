@@ -1162,7 +1162,7 @@ ${customerMessage || 'Please confirm availability.'}`;
     },
   ];
 
-  app.get("/product/:slug", async (req, res, next) => {
+  const handleProductRoute = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
       const rawSlug = req.params.slug || "";
       const target = rawSlug.trim().toLowerCase();
@@ -1185,9 +1185,9 @@ ${customerMessage || 'Please confirm availability.'}`;
         let html = fs.readFileSync(indexHtmlPath, "utf-8");
 
         if (foundProduct) {
-          const host = req.get("host") || "marudharfashionpoint.com";
+          const host = req.get("host") || "marudhar-fashion-point-1.vercel.app";
           const protocol = req.protocol || "https";
-          const fullUrl = `${protocol}://${host}/product/${foundProduct.slug}`;
+          const fullUrl = `${protocol}://${host}/product/${foundProduct.id || foundProduct.slug}`;
           const title = `${foundProduct.name} | Marudhar Fashion Point`;
           const desc = `Buy ${foundProduct.name} (SKU: ${foundProduct.sku || foundProduct.id}) for ₹${foundProduct.price.toLocaleString('en-IN')}. ${foundProduct.description}`;
           const imgUrl = foundProduct.images?.[0] || 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80';
@@ -1223,7 +1223,10 @@ ${customerMessage || 'Please confirm availability.'}`;
       console.warn("[OG Route Note]:", err);
     }
     next();
-  });
+  };
+
+  app.get("/product/:slug", handleProductRoute);
+  app.get("/products/:slug", handleProductRoute);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

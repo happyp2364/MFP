@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Heart, MessageCircle, Star, Sparkles, ShieldCheck, Truck, RotateCcw, ShoppingBag, Bell, ImageOff, Share2, Copy, Check } from 'lucide-react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
@@ -28,22 +28,33 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   onAddToCart,
 }) => {
   const { paymentSettings } = useStore();
+
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
+  const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState<string>('Standard');
+  const [quantity, setQuantity] = useState(1);
+  const [addedNotice, setAddedNotice] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    if (product) {
+      setActiveImageIndex(0);
+      setImageError(false);
+      setSelectedSize(getFirstAvailableInStockSize(product));
+      setSelectedColor(
+        product.colors && product.colors.length > 0 ? product.colors[0].name : 'Standard'
+      );
+      setQuantity(1);
+      setAddedNotice(false);
+      setCopiedLink(false);
+    }
+  }, [product]);
+
   if (!product) return null;
 
   const sizeStocks = normalizeProductSizeStocks(product);
   const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
-
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [imageError, setImageError] = useState(false);
-  const [selectedSize, setSelectedSize] = useState<string>(
-    getFirstAvailableInStockSize(product)
-  );
-  const [selectedColor, setSelectedColor] = useState<string>(
-    product.colors.length > 0 ? product.colors[0].name : 'Standard'
-  );
-  const [quantity, setQuantity] = useState(1);
-  const [addedNotice, setAddedNotice] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
 
   const selectedSizeInfo = getSizeStockInfo(product, selectedSize);
   const isSelectedSizeOutOfStock = selectedSizeInfo

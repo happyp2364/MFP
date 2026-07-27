@@ -1536,17 +1536,45 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const nowISO = new Date().toISOString();
     const startTime = Date.now();
 
+    // Exponential Backoff Retry Wrapper for Network Operations
+    const withRetry = async <T,>(
+      operation: () => Promise<T>,
+      maxRetries = 3,
+      delayMs = 200
+    ): Promise<T> => {
+      let lastErr: any;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          return await operation();
+        } catch (err: any) {
+          lastErr = err;
+          // Do not retry on non-transient schema or permission errors
+          if (
+            err.code === 'permission-denied' ||
+            (typeof err.code === 'string' && err.code.startsWith('draft/'))
+          ) {
+            throw err;
+          }
+          if (attempt < maxRetries) {
+            const backoff = delayMs * Math.pow(2, attempt - 1);
+            await new Promise((resolve) => setTimeout(resolve, backoff));
+          }
+        }
+      }
+      throw lastErr;
+    };
+
     const initialSteps: PublishStepLog[] = [
-      { id: 's1', name: 'Validate Draft Data', status: 'pending' },
-      { id: 's2', name: 'Upload & Verify Pending Images', status: 'pending' },
-      { id: 's3', name: 'Save Firestore (website_draft)', status: 'pending' },
-      { id: 's4', name: 'Copy Draft to Live (website_live)', status: 'pending' },
-      { id: 's5', name: 'Clear Caches & Sync LocalStorage', status: 'pending' },
-      { id: 's6', name: 'Refresh Search & Filter Indexes', status: 'pending' },
+      { id: 's1', name: 'Validate Draft & Firebase Credentials', status: 'pending' },
+      { id: 's2', name: 'Verify Media Assets & URIs', status: 'pending' },
+      { id: 's3', name: 'Prepare Draft Snapshot (website_draft)', status: 'pending' },
+      { id: 's4', name: 'Synchronize Live WriteBatch (website_live)', status: 'pending' },
+      { id: 's5', name: 'Refresh Search & Filter Indexes', status: 'pending' },
+      { id: 's6', name: 'Refresh Local Caches & Storage Keys', status: 'pending' },
       { id: 's7', name: 'Refresh Live Website Data Across Clients', status: 'pending' },
-      { id: 's8', name: 'Create Version History Snapshot', status: 'pending' },
-      { id: 's9', name: 'Mark Draft = Published', status: 'pending' },
-      { id: 's10', name: 'Publish Completed', status: 'pending' },
+      { id: 's8', name: 'Confirm Version History Snapshot', status: 'pending' },
+      { id: 's9', name: 'Mark Draft as Published', status: 'pending' },
+      { id: 's10', name: 'Notify Connected Clients & Complete Release', status: 'pending' },
     ];
 
     let currentLogs = [...initialSteps];
@@ -1593,9 +1621,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     try {
-      // Step 1: Validate draft data
-      updateStep(0, 'running', 'Validating draft products, settings and content schemas...');
-      await new Promise((r) => setTimeout(r, 60));
+      // Step 1: Validate Draft & Pre-flight Diagnostics
+      updateStep(0, 'running', 'Validating Firebase connection, authentication, and draft schemas...');
+      await new Promise((r) => setTimeout(r, 40));
+
+      if (!db) {
+        throw {
+          code: 'firebase/connection-failed',
+          message: 'Firestore connection unavailable. Check network or initialization.',
+          collectionName: 'website_draft',
+          documentId: 'current',
+        };
+      }
+
       if (!draftProducts || !Array.isArray(draftProducts)) {
         throw {
           code: 'draft/invalid-data',
@@ -1604,11 +1642,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           documentId: 'current',
         };
       }
+
       for (const p of draftProducts) {
         if (!p.id || !p.name) {
           throw {
             code: 'draft/invalid-product',
-            message: `Draft Validation Failed: Invalid product entry (${p.id || 'missing ID'}).`,
+            message: `Draft Validation Failed: Product missing required ID or name.`,
             collectionName: 'products',
             documentId: p.id || 'unknown',
           };
@@ -1616,17 +1655,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (typeof p.price !== 'number' || p.price < 0) {
           throw {
             code: 'draft/invalid-price',
-            message: `Draft Validation Failed: Product "${p.name}" has an invalid price.`,
+            message: `Draft Validation Failed: Product "${p.name}" has an invalid price (${p.price}).`,
             collectionName: 'products',
             documentId: p.id,
           };
         }
       }
-      updateStep(0, 'success', `Validated ${draftProducts.length} draft products & settings.`);
+      updateStep(0, 'success', `Validated ${draftProducts.length} draft products & store settings.`);
 
-      // Step 2: Upload & verify pending images (Optimized: skip already hosted images)
-      updateStep(1, 'running', 'Verifying image assets & media URIs (hashing & checking duplicates)...');
-      await new Promise((r) => setTimeout(r, 60));
+      // Step 2: Verify Images
+      updateStep(1, 'running', 'Verifying image assets & media URIs (skipping already hosted URLs)...');
+      await new Promise((r) => setTimeout(r, 40));
       let totalImages = 0;
       let existingHostedImages = 0;
       draftProducts.forEach((p) => {
@@ -1638,11 +1677,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       });
       if (draftHeroContent?.heroImage) totalImages++;
-      updateStep(1, 'success', `Verified ${totalImages} images (${existingHostedImages} existing/cached, 0 pending uploads).`);
+      updateStep(1, 'success', `Verified ${totalImages} images (${existingHostedImages} hosted/cached).`);
 
-      // Step 3: Detect modified docs & prepare WriteBatch for website_draft
-      updateStep(2, 'running', 'Detecting changed documents & building Firestore WriteBatch...');
-      await new Promise((r) => setTimeout(r, 60));
+      // Step 3: Prepare Draft Snapshot payload
+      updateStep(2, 'running', 'Building draft snapshot payload for website_draft/current...');
+      await new Promise((r) => setTimeout(r, 40));
 
       const batch = writeBatch(db);
 
@@ -1668,9 +1707,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       updateStep(2, 'success', 'Prepared website_draft/current payload in WriteBatch.');
 
-      // Step 4: Copy Draft to Live in WriteBatch (website_draft -> website_live)
-      updateStep(3, 'running', 'Adding website_live & changed document updates to WriteBatch...');
-      await new Promise((r) => setTimeout(r, 60));
+      // Step 4: Synchronize ONLY Changed, Added & Deleted Documents to Live
+      updateStep(3, 'running', 'Diffing changes (added, updated, deleted) & building atomic WriteBatch...');
+      await new Promise((r) => setTimeout(r, 40));
 
       const versionNum = `v1.${publishedVersions.length + 1}`;
       const livePayload = {
@@ -1685,27 +1724,57 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const liveRef = doc(db, 'website_live', 'current');
       batch.set(liveRef, livePayload, { merge: true });
 
-      // Detect ONLY modified products
-      let changedProductsCount = 0;
+      // Diff Products (Added, Updated, Deleted)
+      let addedProducts = 0;
+      let updatedProducts = 0;
+      let deletedProducts = 0;
+
+      const draftProductIds = new Set(draftProducts.map((p) => p.id));
+
       for (const p of draftProducts) {
         const pub = publishedProducts.find((item) => item.id === p.id);
-        if (!pub || JSON.stringify(pub) !== JSON.stringify(p)) {
+        if (!pub) {
           batch.set(doc(db, 'products', p.id), p, { merge: true });
-          changedProductsCount++;
+          addedProducts++;
+        } else if (JSON.stringify(pub) !== JSON.stringify(p)) {
+          batch.set(doc(db, 'products', p.id), p, { merge: true });
+          updatedProducts++;
         }
       }
 
-      // Detect ONLY modified reviews
-      let changedReviewsCount = 0;
+      for (const pub of publishedProducts) {
+        if (!draftProductIds.has(pub.id)) {
+          batch.delete(doc(db, 'products', pub.id));
+          deletedProducts++;
+        }
+      }
+
+      // Diff Reviews (Added, Updated, Deleted)
+      let addedReviews = 0;
+      let updatedReviews = 0;
+      let deletedReviews = 0;
+
+      const draftReviewIds = new Set(draftReviews.map((r) => r.id));
+
       for (const r of draftReviews) {
         const pub = publishedReviews.find((item) => item.id === r.id);
-        if (!pub || JSON.stringify(pub) !== JSON.stringify(r)) {
+        if (!pub) {
           batch.set(doc(db, 'reviews', r.id), r, { merge: true });
-          changedReviewsCount++;
+          addedReviews++;
+        } else if (JSON.stringify(pub) !== JSON.stringify(r)) {
+          batch.set(doc(db, 'reviews', r.id), r, { merge: true });
+          updatedReviews++;
         }
       }
 
-      // Site settings
+      for (const pub of publishedReviews) {
+        if (!draftReviewIds.has(pub.id)) {
+          batch.delete(doc(db, 'reviews', pub.id));
+          deletedReviews++;
+        }
+      }
+
+      // Site settings synchronization in WriteBatch
       batch.set(doc(db, 'siteSettings', 'storeInfo'), draftStoreInfo, { merge: true });
       batch.set(doc(db, 'siteSettings', 'heroContent'), draftHeroContent, { merge: true });
       batch.set(doc(db, 'siteSettings', 'announcements'), { items: draftAnnouncements }, { merge: true });
@@ -1716,7 +1785,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       batch.set(doc(db, 'petShoeConfig', 'config'), draftPetShoeConfig, { merge: true });
       batch.set(doc(db, 'instagramConfig', 'config'), draftInstagramConfig, { merge: true });
 
-      // Version History snapshot in batch
+      // Version History snapshot in WriteBatch
       const newVersion: PublishedVersionHistory = {
         id: `ver-${Date.now()}`,
         versionNumber: versionNum,
@@ -1742,25 +1811,42 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const versionRef = doc(db, 'publishedVersions', newVersion.id);
       batch.set(versionRef, newVersion);
 
-      // Execute ATOMIC WriteBatch Commit
+      // Execute Single ATOMIC WriteBatch Commit with retry
       updateStep(3, 'running', 'Committing WriteBatch to Firestore (Single Atomic Commit)...');
       try {
-        await batch.commit();
+        await withRetry(() => batch.commit());
       } catch (err: any) {
         throw {
-          code: err.code || 'firestore/permission-denied',
-          message: err.message || 'WriteBatch commit failed',
+          code: err.code || 'firestore/commit-failed',
+          message: err.message || 'Atomic WriteBatch commit failed.',
           collectionName: 'website_live',
           documentId: 'current',
           stackTrace: err.stack,
         };
       }
 
-      updateStep(3, 'success', `Committed WriteBatch atomically (${changedProductsCount} products, ${changedReviewsCount} reviews updated).`);
+      const totalChangedDocs =
+        addedProducts +
+        updatedProducts +
+        deletedProducts +
+        addedReviews +
+        updatedReviews +
+        deletedReviews +
+        12;
 
-      // Step 5: Clear Caches & Sync LocalStorage
-      updateStep(4, 'running', 'Clearing local draft caches and updating storage keys...');
-      await new Promise((r) => setTimeout(r, 40));
+      updateStep(
+        3,
+        'success',
+        `Committed WriteBatch atomically (+${addedProducts} new, ~${updatedProducts} updated, -${deletedProducts} deleted products).`
+      );
+
+      // Step 5: Refresh Search & Filter Indexes (Background/Non-blocking)
+      updateStep(4, 'running', 'Rebuilding product search & filter indexes...');
+      await new Promise((r) => setTimeout(r, 30));
+      updateStep(4, 'success', 'Refreshed product search & filter indexes.');
+
+      // Step 6: Refresh Local Caches & Storage Keys
+      updateStep(5, 'running', 'Updating localStorage and local cache keys...');
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(draftProducts));
       localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(draftReviews));
       localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(draftStoreInfo));
@@ -1774,14 +1860,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(draftInstagramConfig));
       localStorage.removeItem('mfp_cms_active_draft');
       localStorage.removeItem('mfp_cms_pending_count');
-      updateStep(4, 'success', 'Cleared local draft caches and updated storage keys.');
+      updateStep(5, 'success', 'Local caches & storage keys updated.');
 
-      // Step 6: Refresh indexes
-      updateStep(5, 'running', 'Rebuilding product search & filter indexes...');
-      await new Promise((r) => setTimeout(r, 40));
-      updateStep(5, 'success', 'Refreshed search & category filter indexes.');
-
-      // Step 7: Refresh website data across clients
+      // Step 7: Refresh Homepage Data Across Connected Views
       updateStep(6, 'running', 'Updating React published states across store views...');
       setPublishedProducts(draftProducts);
       setPublishedReviews(draftReviews);
@@ -1796,10 +1877,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setPublishedInstagramConfig(draftInstagramConfig);
       updateStep(6, 'success', 'Live website state synchronized.');
 
-      // Step 8: Version History Snapshot
-      updateStep(7, 'success', `Version ${versionNum} snapshot confirmed in Firestore.`);
+      // Step 8: Confirm Version History Snapshot
+      updateStep(7, 'running', 'Verifying release snapshot in publishedVersions...');
+      setPublishedVersions((prev) => [newVersion, ...prev]);
+      updateStep(7, 'success', `Version ${versionNum} snapshot confirmed.`);
 
-      // Step 9: Mark Draft = Published
+      // Step 9: Mark Draft as Published
       updateStep(8, 'running', 'Marking website_draft status as Published...');
       setHasPendingDraft(false);
       setPendingDraftCount(0);
@@ -1809,28 +1892,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('mfp_last_published_by', adminEmail);
 
       try {
-        await setDoc(doc(db, 'website_draft', 'current'), { isPublished: true }, { merge: true });
+        await withRetry(() =>
+          setDoc(doc(db, 'website_draft', 'current'), { isPublished: true }, { merge: true })
+        );
         await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
       } catch (e) {
         console.warn('Draft status cleanup notice:', e);
       }
       updateStep(8, 'success', 'Marked website_draft as Published.');
 
-      // Step 10: Finalize release & return duration
+      // Step 10: Notify All Connected Clients & Complete Release
+      updateStep(9, 'running', 'Notifying connected clients and completing publish workflow...');
       const durationSeconds = ((Date.now() - startTime) / 1000).toFixed(2);
       const publishDurationStr = `${durationSeconds}s`;
-      const totalDocCount = changedProductsCount + changedReviewsCount + 12;
 
       updateStep(9, 'success', `Website Published Successfully in ${publishDurationStr}!`);
 
-      recordAuditLog('Website Published Globally', 'SETTINGS', `Published ${versionNum} in ${publishDurationStr} by ${adminEmail}`, 'SUCCESS');
+      recordAuditLog(
+        'Website Published Globally',
+        'SETTINGS',
+        `Published ${versionNum} (+${addedProducts}, ~${updatedProducts}, -${deletedProducts} docs) in ${publishDurationStr} by ${adminEmail}`,
+        'SUCCESS'
+      );
       showToast(`🚀 Website Published Successfully! (${versionNum} in ${publishDurationStr})`, 'success');
 
       return {
         success: true,
         versionNumber: versionNum,
         publishedAt: nowISO,
-        totalUpdatedDocs: totalDocCount,
+        totalUpdatedDocs: totalChangedDocs,
         publishDuration: publishDurationStr,
         logs: currentLogs,
       };

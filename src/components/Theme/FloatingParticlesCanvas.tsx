@@ -54,8 +54,8 @@ export const FloatingParticlesCanvas: React.FC = () => {
       densityMultiplier *= 0.25; // 75% reduction on low-end device mode
     }
 
-    const baseCount = Math.min(Math.floor((width * height) / 25000), 50);
-    const particleCount = Math.max(5, Math.floor(baseCount * densityMultiplier));
+    const baseCount = Math.min(Math.floor((width * height) / 80000), 12);
+    const particleCount = Math.max(3, Math.floor(baseCount * densityMultiplier));
 
     // Colors according to mood
     const getColorsByMood = (): string[] => {

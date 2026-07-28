@@ -629,10 +629,14 @@ function AppContent() {
   );
 }
 
+import { ErrorBoundary } from './components/Common/ErrorBoundary';
+
 export default function App() {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <ErrorBoundary fallbackTitle="Marudhar Fashion Application Error">
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

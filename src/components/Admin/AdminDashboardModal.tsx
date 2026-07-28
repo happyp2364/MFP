@@ -112,15 +112,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     refreshAuditLogs,
     createStoreBackup,
     restoreStoreBackup,
-    
-    
-    lastPublishedAt,
-    lastPublishedBy,
-    publishedVersions,
-    previewMode,
-    restorePublishedVersion,
-    togglePreviewMode,
-    
   } = useStore();
 
   const [activeTab, setActiveTab] = useState<TabType>('orders');

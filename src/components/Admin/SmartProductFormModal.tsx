@@ -37,10 +37,12 @@ import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { validateFileUpload } from '../../lib/security';
 import { QuickViewModal } from '../Products/QuickViewModal';
 
-interface SmartProductFormModalProps {
-  product: Product;
-  isCreating: boolean;
-  onSave: (product: Product) => void;
+export interface SmartProductFormModalProps {
+  product?: Product;
+  initialData?: Product | null;
+  isOpen?: boolean;
+  isCreating?: boolean;
+  onSave: (product: any) => void;
   onClose: () => void;
   onDuplicate?: (product: Product) => void;
 }
@@ -1030,6 +1032,8 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
         <QuickViewModal
           product={productState}
           onClose={() => setShowLivePreview(false)}
+          onToggleWishlist={() => {}}
+          isWishlisted={false}
           onAddToCart={() => {}}
         />
       )}

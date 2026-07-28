@@ -4,7 +4,7 @@ import { HeroContent, FloatingShoeItem } from '../../types';
 import { Sparkles, Save, Video, Image, Layers, Plus, Trash2, Sliders, CheckCircle2 } from 'lucide-react';
 
 export const HeroSectionManagerView: React.FC = () => {
-  const { heroContent, setHeroContent } = useStore();
+  const { heroContent, updateHeroContent } = useStore();
   const [form, setForm] = useState<HeroContent>({
     badge: heroContent?.badge || 'Marudhar New Season Collection 2026',
     headlineMain: heroContent?.headlineMain || 'Walk in Style.',
@@ -63,7 +63,7 @@ export const HeroSectionManagerView: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setHeroContent(form);
+    updateHeroContent(form);
     setSavedNotice(true);
     setTimeout(() => setSavedNotice(false), 4000);
   };

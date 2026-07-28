@@ -95,6 +95,7 @@ export interface StoreInfo {
   email: string;
   address: string;
   googleMapsEmbed: string;
+  googleMapsLink?: string;
   businessHours: string;
   ownerContact: string;
   instagram: string;
@@ -516,6 +517,7 @@ export interface SoundConfig {
 export interface CustomerSoundSettings {
   muted: boolean;
   volume: number; // 0 - 100
+  enabledTypes?: Record<string, boolean>;
 }
 
 export interface StoreBackupSnapshot {

@@ -41,8 +41,8 @@ export const PaymentSettingsView: React.FC = () => {
   const [maxOrderAmount, setMaxOrderAmount] = useState<number>(paymentSettings.maxOrderAmount ?? 0);
 
   // Gateway Credentials
-  const [gatewayProvider, setGatewayProvider] = useState<'RAZORPAY' | 'PHONEPE' | 'CASHFREE' | 'PAYU'>(
-    paymentSettings.gatewayProvider || 'RAZORPAY'
+  const [gatewayProvider, setGatewayProvider] = useState<'RAZORPAY' | 'DIRECT_UPI_QR' | 'PHONEPE' | 'CASHFREE' | 'PAYU'>(
+    (paymentSettings.gatewayProvider as any) || 'RAZORPAY'
   );
   const [keyId, setKeyId] = useState<string>(paymentSettings.keyId || paymentSettings.apiKey || '');
   const [keySecret, setKeySecret] = useState<string>(paymentSettings.keySecret || paymentSettings.apiSecret || '');

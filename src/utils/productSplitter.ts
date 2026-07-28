@@ -251,41 +251,117 @@ export function stitchProduct(
   seoDoc?: any,
   statisticsDoc?: any,
   relatedDoc?: any,
-  shippingDoc?: any
+  shippingDoc?: any,
+  fallbackProduct?: Product
 ): Product {
-  const images = gallery?.images || (metadata?.thumbnailURL ? [metadata.thumbnailURL] : []);
+  const defaultImage = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80';
+
+  if (!metadata || !metadata.id) {
+    if (fallbackProduct) return fallbackProduct;
+    return {
+      id: `fallback-${Date.now()}`,
+      name: 'Product',
+      brand: 'Marudhar Fashion',
+      category: 'men',
+      subcategory: 'Footwear',
+      price: 999,
+      originalPrice: 1299,
+      discountPercent: 23,
+      rating: 4.5,
+      reviewsCount: 1,
+      images: [defaultImage],
+      description: '',
+      sizes: ['7', '8', '9', '10'],
+      sizeStocks: [],
+      colors: [{ name: 'Standard', hex: '#000000' }],
+      isBestSeller: false,
+      isNewArrival: true,
+      isFeatured: true,
+      isLimitedStock: false,
+      isTrending: false,
+      status: 'active',
+      collectionTags: ['New'],
+      material: 'Premium Material',
+      inStock: true,
+      sku: '',
+      slug: '',
+      metaTitle: '',
+      metaDescription: '',
+      ogImage: defaultImage,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  // Resolve images array with robust fallbacks
+  let images: string[] = [];
+  if (gallery?.images && Array.isArray(gallery.images) && gallery.images.length > 0) {
+    images = gallery.images;
+  } else if (metadata.thumbnailURL) {
+    images = [metadata.thumbnailURL];
+  } else if (metadata.images && Array.isArray(metadata.images) && metadata.images.length > 0) {
+    images = metadata.images;
+  } else if (fallbackProduct?.images && fallbackProduct.images.length > 0) {
+    images = fallbackProduct.images;
+  } else {
+    images = [defaultImage];
+  }
+
+  // Resolve sizes array
+  let sizes: string[] = [];
+  if (variants?.sizes && Array.isArray(variants.sizes) && variants.sizes.length > 0) {
+    sizes = variants.sizes;
+  } else if (metadata.sizes && Array.isArray(metadata.sizes) && metadata.sizes.length > 0) {
+    sizes = metadata.sizes;
+  } else if (fallbackProduct?.sizes && fallbackProduct.sizes.length > 0) {
+    sizes = fallbackProduct.sizes;
+  } else {
+    sizes = ['7', '8', '9', '10'];
+  }
+
+  // Resolve colors array
+  let colors: any[] = [];
+  if (variants?.colors && Array.isArray(variants.colors) && variants.colors.length > 0) {
+    colors = variants.colors;
+  } else if (metadata.colors && Array.isArray(metadata.colors) && metadata.colors.length > 0) {
+    colors = metadata.colors;
+  } else if (fallbackProduct?.colors && fallbackProduct.colors.length > 0) {
+    colors = fallbackProduct.colors;
+  } else {
+    colors = [{ name: 'Standard', hex: '#000000' }];
+  }
 
   return {
     id: metadata.id,
-    sku: seoDoc?.sku || '',
-    slug: seoDoc?.slug || '',
-    metaTitle: seoDoc?.metaTitle || '',
-    metaDescription: seoDoc?.metaDescription || '',
-    ogImage: seoDoc?.ogImage || '',
-    name: metadata.name || '',
-    brand: metadata.brand || '',
-    category: metadata.category || 'men',
-    subcategory: metadata.subCategory || '',
-    price: metadata.price || 0,
-    originalPrice: statisticsDoc?.originalPrice || metadata.price || 0,
-    discountPercent: metadata.discount || 0,
-    rating: metadata.rating || 0,
-    reviewsCount: statisticsDoc?.reviewsCount || 0,
-    images: images,
-    description: aiDoc?.description || '',
-    sizes: metadata.sizes || variants?.sizes || [],
-    sizeStocks: variants?.sizeStocks || [],
-    colors: variants?.colors || [],
-    isBestSeller: statisticsDoc?.isBestSeller ?? false,
-    isNewArrival: statisticsDoc?.isNewArrival ?? false,
-    isFeatured: statisticsDoc?.isFeatured ?? false,
-    isLimitedStock: statisticsDoc?.isLimitedStock ?? false,
-    isTrending: statisticsDoc?.isTrending ?? false,
-    status: metadata.status || 'active',
-    collectionTags: aiDoc?.collectionTags || [],
-    material: aiDoc?.material || '',
-    inStock: metadata.stock ?? true,
-    createdAt: metadata.createdAt,
-    updatedAt: metadata.updatedAt,
+    sku: seoDoc?.sku || metadata.sku || fallbackProduct?.sku || '',
+    slug: seoDoc?.slug || metadata.slug || fallbackProduct?.slug || '',
+    metaTitle: seoDoc?.metaTitle || metadata.metaTitle || fallbackProduct?.metaTitle || '',
+    metaDescription: seoDoc?.metaDescription || metadata.metaDescription || fallbackProduct?.metaDescription || '',
+    ogImage: seoDoc?.ogImage || metadata.ogImage || fallbackProduct?.ogImage || images[0] || defaultImage,
+    name: metadata.name || fallbackProduct?.name || 'Product',
+    brand: metadata.brand || fallbackProduct?.brand || 'Marudhar Fashion',
+    category: metadata.category || metadata.gender || fallbackProduct?.category || 'men',
+    subcategory: metadata.subCategory || metadata.subcategory || fallbackProduct?.subcategory || 'Footwear',
+    price: metadata.price ?? fallbackProduct?.price ?? 999,
+    originalPrice: statisticsDoc?.originalPrice ?? metadata.originalPrice ?? fallbackProduct?.originalPrice ?? metadata.price ?? 1299,
+    discountPercent: metadata.discount ?? fallbackProduct?.discountPercent ?? 0,
+    rating: statisticsDoc?.rating ?? metadata.rating ?? fallbackProduct?.rating ?? 4.5,
+    reviewsCount: statisticsDoc?.reviewsCount ?? fallbackProduct?.reviewsCount ?? 0,
+    images,
+    description: aiDoc?.description || metadata.description || fallbackProduct?.description || '',
+    sizes,
+    sizeStocks: variants?.sizeStocks || fallbackProduct?.sizeStocks || [],
+    colors,
+    isBestSeller: statisticsDoc?.isBestSeller ?? fallbackProduct?.isBestSeller ?? false,
+    isNewArrival: statisticsDoc?.isNewArrival ?? fallbackProduct?.isNewArrival ?? false,
+    isFeatured: statisticsDoc?.isFeatured ?? fallbackProduct?.isFeatured ?? false,
+    isLimitedStock: statisticsDoc?.isLimitedStock ?? fallbackProduct?.isLimitedStock ?? false,
+    isTrending: statisticsDoc?.isTrending ?? fallbackProduct?.isTrending ?? false,
+    status: metadata.status || fallbackProduct?.status || 'active',
+    collectionTags: aiDoc?.collectionTags || metadata.collectionTags || fallbackProduct?.collectionTags || [],
+    material: aiDoc?.material || metadata.material || fallbackProduct?.material || '',
+    inStock: metadata.stock ?? metadata.inStock ?? fallbackProduct?.inStock ?? true,
+    createdAt: metadata.createdAt || fallbackProduct?.createdAt || new Date().toISOString(),
+    updatedAt: metadata.updatedAt || fallbackProduct?.updatedAt || new Date().toISOString(),
   };
 }

@@ -38,7 +38,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     getFirstAvailableInStockSize(product)
   );
   const [selectedColor, setSelectedColor] = useState<string>(
-    product.colors.length > 0 ? product.colors[0].name : ''
+    product?.colors && product.colors.length > 0 ? product.colors[0].name : 'Standard'
   );
 
   const handleWhatsAppBuy = (e: React.MouseEvent) => {
@@ -314,7 +314,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
             const handleBuyNow = (e: React.MouseEvent) => {
               e.stopPropagation();
-              playSiteSound('checkoutOpen');
+              playSiteSound('click');
               if (onBuyNow) {
                 onBuyNow(product, selectedSize, selectedColor);
               } else {

@@ -33,6 +33,7 @@ import {
 } from '../types';
 import { sendBrowserWebPushNotification } from '../utils/pushNotifications';
 import { splitProduct, stitchProduct, estimateObjectSizeKb } from '../utils/productSplitter';
+import { getProductSlug } from '../utils/productUtils';
 import {
   PRODUCTS_DATA,
   REVIEWS_DATA,
@@ -1349,21 +1350,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Stitch Published Products
   useEffect(() => {
     if (rawLiveProducts.length > 0) {
-      const stitched = rawLiveProducts.map((p) =>
-        stitchProduct(
-          p,
-          liveGalleries[p.id],
-          liveVariants[p.id],
-          liveProductReviews[p.id],
-          liveAi[p.id],
-          liveSeo[p.id],
-          liveStatistics[p.id],
-          liveRelated[p.id],
-          liveShipping[p.id]
-        )
-      );
-      setPublishedProducts(stitched);
-          }
+      const stitched = rawLiveProducts
+        .map((p) => {
+          const existingLocal = publishedProducts.find((item) => item.id === p.id);
+          return stitchProduct(
+            p,
+            liveGalleries[p.id],
+            liveVariants[p.id],
+            liveProductReviews[p.id],
+            liveAi[p.id],
+            liveSeo[p.id],
+            liveStatistics[p.id],
+            liveRelated[p.id],
+            liveShipping[p.id],
+            existingLocal
+          );
+        })
+        .filter(Boolean);
+      if (stitched.length > 0) {
+        setPublishedProducts(stitched);
+      }
+    }
   }, [
     rawLiveProducts,
     liveGalleries,
@@ -1892,79 +1899,56 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     publishedCategoryHighlights, publishedTrendingCollections, publishedPaymentSettings,
   ]);
 
-  // Load Active Draft Settings & Configuration from partitioned draft documents
-  useEffect(() => {
-    let unsubStore: any, unsubHero: any, unsubAnnounce: any, unsubCat: any, unsubTrend: any, unsubPay: any, unsubSneak: any, unsubPet: any, unsubInsta: any, unsubSound: any;
-    try {
-      unsubStore = onSnapshot(doc(db, 'settings', 'store'), (snap) => {
-        if (snap.exists()) setPublishedStoreInfo(snap.data() as StoreInfo);
-      });
-      unsubHero = onSnapshot(doc(db, 'hero', 'current'), (snap) => {
-        if (snap.exists()) setPublishedHeroContent(snap.data() as HeroContent);
-      });
-      unsubAnnounce = onSnapshot(doc(db, 'homepage', 'announcements'), (snap) => {
-        if (snap.exists() && snap.data().items) setPublishedAnnouncements(snap.data().items as string[]);
-      });
-      unsubCat = onSnapshot(doc(db, 'categories', 'highlights'), (snap) => {
-        if (snap.exists() && snap.data().items) setPublishedCategoryHighlights(snap.data().items as CategoryHighlight[]);
-      });
-      unsubTrend = onSnapshot(doc(db, 'homepage', 'trendingCollections'), (snap) => {
-        if (snap.exists() && snap.data().items) setPublishedTrendingCollections(snap.data().items as TrendingCollectionItem[]);
-      });
-      unsubPay = onSnapshot(doc(db, 'payment', 'config'), (snap) => {
-        if (snap.exists()) setPublishedPaymentSettings(snap.data() as PaymentSettings);
-      });
-      unsubSneak = onSnapshot(doc(db, 'animations', 'hangingSneakerConfig'), (snap) => {
-        if (snap.exists()) setPublishedHangingSneakerConfig(snap.data() as HangingSneakerConfig);
-      });
-      unsubPet = onSnapshot(doc(db, 'mascot', 'petShoeConfig'), (snap) => {
-        if (snap.exists()) setPublishedPetShoeConfig(snap.data() as PetShoeConfig);
-      });
-      unsubInsta = onSnapshot(doc(db, 'social', 'instagramConfig'), (snap) => {
-        if (snap.exists()) setPublishedInstagramConfig(snap.data() as InstagramConfig);
-      });
-      unsubSound = onSnapshot(doc(db, 'theme', 'current'), (snap) => {
-        if (snap.exists()) setPublishedSoundConfig(snap.data() as SoundConfig);
-      });
-    } catch (e) {
-      console.warn('Draft individual document listeners notice:', e);
-    }
-    return () => {
-      if (unsubStore) unsubStore();
-      if (unsubHero) unsubHero();
-      if (unsubAnnounce) unsubAnnounce();
-      if (unsubCat) unsubCat();
-      if (unsubTrend) unsubTrend();
-      if (unsubPay) unsubPay();
-      if (unsubSneak) unsubSneak();
-      if (unsubPet) unsubPet();
-      if (unsubInsta) unsubInsta();
-      if (unsubSound) unsubSound();
-    };
-  }, []);
-
-  const addProduct = async (p: Omit<Product, 'id'>) => {
-    const cleanName = sanitizeString(p.name, 200);
-    const cleanDesc = sanitizeString(p.description, 2000);
-    const cleanBrand = sanitizeString(p.brand, 100) || 'Marudhar Fashion';
-    const cleanPrice = sanitizePrice(p.price);
-    const cleanOrigPrice = sanitizePrice(p.originalPrice);
+  const addProduct = async (p: Partial<Product>) => {
+    const cleanName = sanitizeString(p.name || 'New Product', 200);
+    const cleanDesc = sanitizeString(p.description || '', 2000);
+    const cleanBrand = sanitizeString(p.brand || 'Marudhar Fashion', 100);
+    const cleanPrice = sanitizePrice(p.price || 999);
+    const cleanOrigPrice = sanitizePrice(p.originalPrice || p.price || 1299);
 
     const newId = `mfp-custom-${Date.now()}`;
+    const defaultImg = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80';
+    const images = p.images && p.images.length > 0 ? p.images : [defaultImg];
+
     const newProduct: Product = {
-      ...p,
       id: newId,
       name: cleanName,
       description: cleanDesc,
       brand: cleanBrand,
       price: cleanPrice,
       originalPrice: cleanOrigPrice,
+      category: p.category || 'men',
+      subcategory: p.subcategory || 'Footwear',
+      discountPercent: p.discountPercent || (cleanOrigPrice > cleanPrice ? Math.round(((cleanOrigPrice - cleanPrice) / cleanOrigPrice) * 100) : 0),
+      rating: p.rating || 4.5,
+      reviewsCount: p.reviewsCount || 1,
+      images,
+      sizes: p.sizes && p.sizes.length > 0 ? p.sizes : ['7', '8', '9', '10'],
+      sizeStocks: p.sizeStocks || [],
+      colors: p.colors && p.colors.length > 0 ? p.colors : [{ name: 'Standard', hex: '#000000' }],
+      isBestSeller: p.isBestSeller ?? false,
+      isNewArrival: p.isNewArrival ?? true,
+      isFeatured: p.isFeatured ?? true,
+      isLimitedStock: p.isLimitedStock ?? false,
+      isTrending: p.isTrending ?? false,
+      status: p.status || 'active',
+      collectionTags: p.collectionTags || ['New'],
+      material: p.material || 'Premium Material',
+      inStock: p.inStock ?? true,
+      sku: p.sku || `MFP-${Date.now()}`,
+      slug: p.slug || getProductSlug({ name: cleanName, id: newId } as any),
+      metaTitle: p.metaTitle || cleanName,
+      metaDescription: p.metaDescription || cleanDesc,
+      ogImage: p.ogImage || images[0],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     const updated = [newProduct, ...publishedProducts];
     setPublishedProducts(updated);
     saveLiveChanges({ products: updated });
     recordAuditLog('Product Added ', 'PRODUCT', `Added "${cleanName}" (ID: ${newId})`, 'SUCCESS');
+    showToast('Product added successfully', 'info');
   };
 
   const updateProduct = async (id: string, updated: Partial<Product>) => {

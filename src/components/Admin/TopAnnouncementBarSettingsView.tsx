@@ -18,6 +18,7 @@ import {
   Award,
   MessageCircle,
   Info,
+  X,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { TopAnnouncementBarConfig, AnnouncementItem } from '../../types';
@@ -45,8 +46,26 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
   const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
   const [backgroundColor, setBackgroundColor] = useState('#00A5B5');
   const [textColor, setTextColor] = useState('#FFFFFF');
-  const [stylePreset, setStylePreset] = useState<'cyan' | 'emerald' | 'amber' | 'rose' | 'custom'>('cyan');
+  const [stylePreset, setStylePreset] = useState<'cyan' | 'emerald' | 'amber' | 'rose' | 'luxury_dark' | 'custom'>('cyan');
   const [intervalSpeed, setIntervalSpeed] = useState(4000);
+
+  // Advanced Styles State
+  const [fontSize, setFontSize] = useState<number>(12);
+  const [paddingY, setPaddingY] = useState<number>(8);
+  const [alignment, setAlignment] = useState<'left' | 'center' | 'right'>('center');
+  const [autoScroll, setAutoScroll] = useState<boolean>(true);
+  const [permanentlyHidden, setPermanentlyHidden] = useState<boolean>(false);
+
+  // Countdown State
+  const [countdownEnabled, setCountdownEnabled] = useState<boolean>(false);
+  const [countdownFestivalName, setCountdownFestivalName] = useState<string>('');
+  const [countdownEndDate, setCountdownEndDate] = useState<string>('');
+  const [countdownEndTime, setCountdownEndTime] = useState<string>('');
+  const [countdownExpiryOption, setCountdownExpiryOption] = useState<'hide' | 'ended_text' | 'switch_slide'>('switch_slide');
+  const [countdownReverseMode, setCountdownReverseMode] = useState<boolean>(false);
+
+  // Live countdown state in preview
+  const [previewTimeLeft, setPreviewTimeLeft] = useState<string>('02d 14h 45m 12s');
 
   // New announcement form state
   const [newText, setNewText] = useState('');
@@ -65,8 +84,62 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
       setTextColor(topAnnouncementBarConfig.textColor || '#FFFFFF');
       setStylePreset(topAnnouncementBarConfig.stylePreset || 'cyan');
       setIntervalSpeed(topAnnouncementBarConfig.intervalSpeed || 4000);
+
+      // Advanced style variables
+      setFontSize(topAnnouncementBarConfig.fontSize || 12);
+      setPaddingY(topAnnouncementBarConfig.paddingY || 8);
+      setAlignment(topAnnouncementBarConfig.alignment || 'center');
+      setAutoScroll(topAnnouncementBarConfig.autoScroll !== false);
+      setPermanentlyHidden(topAnnouncementBarConfig.permanentlyHidden || false);
+
+      // Countdown variables
+      setCountdownEnabled(topAnnouncementBarConfig.countdownEnabled || false);
+      setCountdownFestivalName(topAnnouncementBarConfig.countdownFestivalName || '');
+      setCountdownEndDate(topAnnouncementBarConfig.countdownEndDate || '');
+      setCountdownEndTime(topAnnouncementBarConfig.countdownEndTime || '');
+      setCountdownExpiryOption(topAnnouncementBarConfig.countdownExpiryOption || 'switch_slide');
+      setCountdownReverseMode(topAnnouncementBarConfig.countdownReverseMode || false);
     }
   }, [topAnnouncementBarConfig]);
+
+  // Handle ticking in preview panel
+  useEffect(() => {
+    if (!countdownEnabled || !countdownEndDate) {
+      setPreviewTimeLeft('');
+      return;
+    }
+
+    const targetStr = `${countdownEndDate}T${countdownEndTime || '00:00'}:00`;
+    const targetMs = new Date(targetStr).getTime();
+
+    const updatePreviewTimer = () => {
+      const now = Date.now();
+      const diff = targetMs - now;
+
+      if (countdownReverseMode) {
+        const elapsed = Math.abs(diff);
+        const d = Math.floor(elapsed / (1000 * 60 * 60 * 24));
+        const h = Math.floor((elapsed % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((elapsed % (1000 * 60)) / 1000);
+        setPreviewTimeLeft(`${d}d ${h}h ${m}m ${s}s Elapsed`);
+      } else {
+        if (diff <= 0) {
+          setPreviewTimeLeft('ENDED');
+          return;
+        }
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setPreviewTimeLeft(`${d}d ${h}h ${m}m ${s}s`);
+      }
+    };
+
+    updatePreviewTimer();
+    const timerId = setInterval(updatePreviewTimer, 1000);
+    return () => clearInterval(timerId);
+  }, [countdownEnabled, countdownEndDate, countdownEndTime, countdownReverseMode]);
 
   // Preset Selector
   const handleSelectPreset = (preset: typeof PRESET_STYLES[number]) => {
@@ -163,6 +236,17 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
       textColor,
       stylePreset,
       intervalSpeed: Number(intervalSpeed) || 4000,
+      fontSize,
+      paddingY,
+      alignment,
+      autoScroll,
+      permanentlyHidden,
+      countdownEnabled,
+      countdownFestivalName,
+      countdownEndDate,
+      countdownEndTime,
+      countdownExpiryOption,
+      countdownReverseMode,
     };
 
     try {
@@ -193,7 +277,7 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
               Top Announcement Bar Customizer
             </h2>
             <p className="text-neutral-500 text-[11px] mt-0.5">
-              Create, edit, reorder, and style dynamic sliding announcements at the very top of your website.
+              Create, edit, reorder, and style dynamic sliding announcements with ticking festival countdown headers.
             </p>
           </div>
         </div>
@@ -246,45 +330,80 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             Live Customer Storefront Preview
           </span>
-          <span className="text-[10px] text-neutral-500 font-medium">Recreated style and contents</span>
+          {permanentlyHidden && (
+            <span className="text-[9px] bg-rose-950 text-rose-300 border border-rose-800/40 px-2 py-0.5 rounded font-black uppercase">
+              Permanently Hidden
+            </span>
+          )}
         </div>
-        <div
-          className="text-xs font-medium py-2 px-4 rounded-xl relative overflow-hidden transition-all duration-300 flex items-center justify-between shadow-md"
-          style={{ backgroundColor, color: textColor }}
-        >
-          {announcements.filter((a) => a.enabled).length > 0 ? (
-            <div className="flex items-center gap-2">
-              {(() => {
-                const activeOnes = announcements.filter((a) => a.enabled);
-                const firstIcon = activeOnes[0]?.icon || 'Truck';
-                const IconComponent = AVAILABLE_ICONS.find((i) => i.id === firstIcon)?.Component || Truck;
-                return <IconComponent className="w-4 h-4" style={{ color: textColor === '#FFFFFF' ? '#FBBF24' : 'currentColor' }} />;
-              })()}
-              <p className="font-semibold tracking-tight text-xs">
-                {announcements.filter((a) => a.enabled)[0]?.text}
-              </p>
-              {announcements.filter((a) => a.enabled).length > 1 && (
-                <span className="text-[9px] bg-white/20 px-1.5 py-0.5 rounded-full font-bold ml-1.5">
-                  +{announcements.filter((a) => a.enabled).length - 1} more sliding
-                </span>
+
+        {!permanentlyHidden ? (
+          <div
+            className="font-medium px-4 rounded-xl relative overflow-hidden transition-all duration-300 flex items-center justify-between shadow-md"
+            style={{
+              backgroundColor,
+              color: textColor,
+              fontSize: `${fontSize}px`,
+              paddingTop: `${paddingY}px`,
+              paddingBottom: `${paddingY}px`,
+            }}
+          >
+            <div
+              className={`flex-1 flex flex-col md:flex-row items-center gap-3 ${
+                alignment === 'left' ? 'justify-start' : alignment === 'right' ? 'justify-end' : 'justify-center'
+              }`}
+            >
+              {announcements.filter((a) => a.enabled).length > 0 ? (
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const activeOnes = announcements.filter((a) => a.enabled);
+                    const firstIcon = activeOnes[0]?.icon || 'Truck';
+                    const IconComponent = AVAILABLE_ICONS.find((i) => i.id === firstIcon)?.Component || Truck;
+                    return <IconComponent className="w-4 h-4 shrink-0" style={{ color: textColor === '#FFFFFF' ? '#FBBF24' : 'currentColor' }} />;
+                  })()}
+                  <p className="font-semibold tracking-tight">
+                    {announcements.filter((a) => a.enabled)[0]?.text}
+                  </p>
+                  {announcements.filter((a) => a.enabled).length > 1 && (
+                    <span className="text-[9px] bg-white/20 px-1.5 py-0.5 rounded font-bold ml-1.5 shrink-0">
+                      +{announcements.filter((a) => a.enabled).length - 1} more
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="font-bold italic text-center text-neutral-400">
+                  No active announcements.
+                </div>
+              )}
+
+              {/* Countdown Ticker Preview */}
+              {countdownEnabled && previewTimeLeft && (
+                <div className="flex items-center gap-1.5 ml-0 md:ml-3 pl-0 md:pl-3 border-t md:border-t-0 md:border-l border-white/20 text-[10px] font-extrabold tracking-wide uppercase shrink-0">
+                  <span className="text-amber-300 animate-pulse">⚡</span>
+                  <span>{countdownFestivalName || 'FESTIVAL'}:</span>
+                  <span className="font-mono bg-black/40 px-2 py-0.5 rounded text-amber-300">
+                    {previewTimeLeft}
+                  </span>
+                </div>
               )}
             </div>
-          ) : (
-            <div className="text-center font-bold italic w-full">
-              No active announcements.
-            </div>
-          )}
-          <button className="opacity-80 hover:opacity-100 p-0.5 rounded-full hover:bg-white/10 shrink-0">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
+            <button className="opacity-85 hover:opacity-100 p-1 rounded-full hover:bg-white/10 shrink-0 ml-2">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="py-4 text-center rounded-xl bg-neutral-950 border border-neutral-850 text-neutral-500 font-bold italic">
+            Announcement Bar is set to HIDE. It will not render on storefront.
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Color & Style Customization */}
+        {/* Left Column: Color, Style, Advanced Customization & Countdown */}
         <div className="space-y-6">
+          {/* Section 1: Colors & Speeds */}
           <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm space-y-5">
-            <h3 className="font-serif-heading font-bold text-base text-neutral-900 border-b border-neutral-100 pb-2.5 flex items-center gap-2">
+            <h3 className="font-serif-heading font-bold text-sm text-neutral-900 border-b border-neutral-100 pb-2.5 flex items-center gap-2">
               <Palette className="w-4 h-4 text-emerald-600" />
               <span>Theme & Style Settings</span>
             </h3>
@@ -397,6 +516,220 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
               </p>
             </div>
           </div>
+
+          {/* Section 2: Advanced Styling */}
+          <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
+            <h3 className="font-serif-heading font-bold text-sm text-neutral-900 border-b border-neutral-100 pb-2.5 flex items-center gap-2">
+              <Palette className="w-4 h-4 text-[#00A5B5]" />
+              <span>Advanced Typography & Sizing</span>
+            </h3>
+
+            {/* Font Size & Padding Slider */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-neutral-700 flex justify-between">
+                  <span>Font Size</span>
+                  <span className="text-[#0B8F63] font-bold">{fontSize}px</span>
+                </label>
+                <input
+                  type="range"
+                  min={10}
+                  max={16}
+                  step={1}
+                  value={fontSize}
+                  onChange={(e) => {
+                    setFontSize(Number(e.target.value));
+                    setSaveStatus('IDLE');
+                  }}
+                  className="w-full accent-[#0B8F63]"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-neutral-700 flex justify-between">
+                  <span>Padding Y</span>
+                  <span className="text-[#0B8F63] font-bold">{paddingY}px</span>
+                </label>
+                <input
+                  type="range"
+                  min={2}
+                  max={16}
+                  step={1}
+                  value={paddingY}
+                  onChange={(e) => {
+                    setPaddingY(Number(e.target.value));
+                    setSaveStatus('IDLE');
+                  }}
+                  className="w-full accent-[#0B8F63]"
+                />
+              </div>
+            </div>
+
+            {/* Alignment Selector */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-neutral-700 block">Content Alignment</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['left', 'center', 'right'] as const).map((align) => (
+                  <button
+                    key={align}
+                    type="button"
+                    onClick={() => {
+                      setAlignment(align);
+                      setSaveStatus('IDLE');
+                    }}
+                    className={`p-2 rounded-lg border text-center capitalize font-bold transition-all ${
+                      alignment === align
+                        ? 'border-[#0B8F63] bg-emerald-50 text-[#0B8F63] shadow-sm'
+                        : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-600'
+                    }`}
+                  >
+                    {align}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Auto Scroll & Visibility Toggles */}
+            <div className="space-y-3 pt-3 border-t border-neutral-100">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <span className="font-bold text-neutral-800 block">Slide Auto-Rotation</span>
+                  <span className="text-[10px] text-neutral-500">Automatically cycle active slides.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={autoScroll}
+                  onChange={(e) => {
+                    setAutoScroll(e.target.checked);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="rounded text-[#0B8F63] focus:ring-[#0B8F63] w-4.5 h-4.5 cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
+                <div className="space-y-0.5">
+                  <span className="font-bold text-neutral-800 block">Hide Announcement Bar</span>
+                  <span className="text-[10px] text-neutral-500">Remove from storefront completely.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={permanentlyHidden}
+                  onChange={(e) => {
+                    setPermanentlyHidden(e.target.checked);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="rounded text-rose-600 focus:ring-rose-500 w-4.5 h-4.5 cursor-pointer"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Festival Countdown Timer */}
+          <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
+            <h3 className="font-serif-heading font-bold text-sm text-neutral-900 border-b border-neutral-100 pb-2.5 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-500 animate-spin" style={{ animationDuration: '20s' }} />
+              <span>Festival Countdown Ticker</span>
+            </h3>
+
+            {/* Enable Countdown */}
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+              <div className="space-y-0.5">
+                <span className="font-bold text-neutral-800 block">Enable Countdown Ticker</span>
+                <span className="text-[10px] text-neutral-500">Overlay dynamic timer on announcement.</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={countdownEnabled}
+                onChange={(e) => {
+                  setCountdownEnabled(e.target.checked);
+                  setSaveStatus('IDLE');
+                }}
+                className="rounded text-amber-500 focus:ring-amber-500 w-4.5 h-4.5 cursor-pointer"
+              />
+            </div>
+
+            {countdownEnabled && (
+              <div className="space-y-3.5 pt-1 animate-in slide-in-from-top-2 duration-300">
+                {/* Reverse countdown mode */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-neutral-800 block">Count-up Mode (Reverse)</span>
+                    <span className="text-[10px] text-neutral-500">Shows elapsed time (timeline ticker).</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={countdownReverseMode}
+                    onChange={(e) => {
+                      setCountdownReverseMode(e.target.checked);
+                      setSaveStatus('IDLE');
+                    }}
+                    className="rounded text-amber-500 focus:ring-amber-500 w-4.5 h-4.5 cursor-pointer"
+                  />
+                </div>
+
+                {/* Festival Name */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-neutral-700 block">Festival / Event Name</label>
+                  <input
+                    type="text"
+                    value={countdownFestivalName}
+                    onChange={(e) => {
+                      setCountdownFestivalName(e.target.value);
+                      setSaveStatus('IDLE');
+                    }}
+                    placeholder="e.g. DIWALI OFFER, INDEPENDENCE SALE"
+                    className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-lg p-2.5 text-xs text-neutral-900 outline-none focus:ring-2 focus:ring-amber-500 font-bold"
+                  />
+                </div>
+
+                {/* Target Date and Time */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-neutral-700 block">End Date</label>
+                    <input
+                      type="date"
+                      value={countdownEndDate}
+                      onChange={(e) => {
+                        setCountdownEndDate(e.target.value);
+                        setSaveStatus('IDLE');
+                      }}
+                      className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-lg p-2 text-xs text-neutral-900 outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-neutral-700 block">End Time</label>
+                    <input
+                      type="time"
+                      value={countdownEndTime}
+                      onChange={(e) => {
+                        setCountdownEndTime(e.target.value);
+                        setSaveStatus('IDLE');
+                      }}
+                      className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-lg p-2 text-xs text-neutral-900 outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Expiry Action Selector */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-neutral-700 block">When Timer Expires</label>
+                  <select
+                    value={countdownExpiryOption}
+                    onChange={(e) => {
+                      setCountdownExpiryOption(e.target.value as any);
+                      setSaveStatus('IDLE');
+                    }}
+                    className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-lg p-2.5 text-xs text-neutral-900 outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="switch_slide">Deactivate Countdown Only (Keep Announcements)</option>
+                    <option value="hide">Hide Entire Announcement Bar</option>
+                    <option value="ended_text">Display Event Ended Banner Text</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Column (2 spans): Announcements List CRUD */}
@@ -504,7 +837,7 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
                           type="button"
                           onClick={() => handleMoveDown(index)}
                           disabled={index === announcements.length - 1}
-                          className="p-1.5 rounded bg-neutral-100 hover:bg-neutral-200 text-neutral-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="p-1.5 rounded bg-neutral-100 hover:bg-neutral-200 text-[#737373] disabled:opacity-40 disabled:cursor-not-allowed"
                           title="Move Down"
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
@@ -529,22 +862,3 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
     </div>
   );
 };
-
-// Simple Close Icon mapping for Preview Close button
-const X: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <path d="M18 6 6 18" />
-    <path d="m6 6 12 12" />
-  </svg>
-);

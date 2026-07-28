@@ -684,13 +684,24 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
 
 export const DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG: TopAnnouncementBarConfig = {
   announcements: [
-    { id: '1', text: '🚚 Free Delivery on Selected Products Across India', enabled: true, icon: 'Truck' },
-    { id: '2', text: '👟 New Season Sports Shoes & Sneakers Just Arrived', enabled: true, icon: 'Sparkles' },
-    { id: '3', text: '⭐ Rated 4.9/5 by 15,000+ Happy Local Families', enabled: true, icon: 'Award' },
-    { id: '4', text: '📱 Easy WhatsApp Order & Instant Confirmation', enabled: true, icon: 'MessageCircle' },
+    { id: '1', text: '🚚 Free Delivery on Selected Products Across India', enabled: true, icon: 'Truck', buttonText: '', buttonUrl: '', deviceVisibility: 'both' },
+    { id: '2', text: '👟 New Season Sports Shoes & Sneakers Just Arrived', enabled: true, icon: 'Sparkles', buttonText: '', buttonUrl: '', deviceVisibility: 'both' },
+    { id: '3', text: '⭐ Rated 4.9/5 by 15,000+ Happy Local Families', enabled: true, icon: 'Award', buttonText: '', buttonUrl: '', deviceVisibility: 'both' },
+    { id: '4', text: '📱 Easy WhatsApp Order & Instant Confirmation', enabled: true, icon: 'MessageCircle', buttonText: '', buttonUrl: '', deviceVisibility: 'both' },
   ],
   backgroundColor: '#00A5B5',
   textColor: '#FFFFFF',
   stylePreset: 'cyan',
   intervalSpeed: 4000,
+  fontSize: 12,
+  paddingY: 8,
+  alignment: 'center',
+  autoScroll: true,
+  permanentlyHidden: false,
+  countdownEnabled: false,
+  countdownFestivalName: 'Festival Sale',
+  countdownEndDate: '2026-10-31',
+  countdownEndTime: '23:59',
+  countdownExpiryOption: 'ended_text',
+  countdownReverseMode: false,
 };

@@ -627,13 +627,35 @@ export interface AnnouncementItem {
   text: string;
   enabled: boolean;
   icon?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+  startDate?: string;
+  endDate?: string;
+  autoActivate?: boolean;
+  autoExpire?: boolean;
+  deviceVisibility?: 'both' | 'mobile' | 'desktop';
 }
 
 export interface TopAnnouncementBarConfig {
   announcements: AnnouncementItem[];
   backgroundColor: string;
   textColor: string;
-  stylePreset: 'cyan' | 'emerald' | 'amber' | 'rose' | 'custom';
+  stylePreset: 'cyan' | 'emerald' | 'amber' | 'rose' | 'luxury_dark' | 'custom';
   intervalSpeed: number;
+  
+  // Custom Styles
+  fontSize?: number; // in px, e.g., 12, 14
+  paddingY?: number; // in px
+  alignment?: 'left' | 'center' | 'right';
+  autoScroll?: boolean;
+  permanentlyHidden?: boolean;
+
+  // Countdown Feature
+  countdownEnabled?: boolean;
+  countdownFestivalName?: string;
+  countdownEndDate?: string; // YYYY-MM-DD
+  countdownEndTime?: string; // HH:MM
+  countdownExpiryOption?: 'hide' | 'ended_text' | 'switch_slide';
+  countdownReverseMode?: boolean; // Enable Reverse Timeline
 }
 

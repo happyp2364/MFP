@@ -30,6 +30,8 @@ import { CartItem, ShippingAddressInfo, PaymentMethodType, CustomerOrder, Market
 import { generateUPILink, getQRCodeImageUrl, cleanAndSanitizeUPIId, isValidUPIIdFormat } from '../../utils/qrCode';
 import { generateOrderWhatsAppLink } from '../../utils/whatsapp';
 import { InvoiceModal } from '../Customer/InvoiceModal';
+import { db } from '../../lib/firebase';
+import { getDoc, doc } from 'firebase/firestore';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -51,7 +53,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   cartItems,
   onOrderComplete,
 }) => {
-  const { paymentSettings, customerProfile, placeOrderAndPay, storeInfo, orders, updateCustomerMarketingConsent } = useStore();
+  const { paymentSettings, customerProfile, customerUser, placeOrderAndPay, storeInfo, orders, updateCustomerMarketingConsent } = useStore();
 
   const [step, setStep] = useState<CheckoutStep>('SHIPPING');
   const [copiedUPI, setCopiedUPI] = useState(false);
@@ -86,6 +88,168 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     pincode: '311001',
     landmark: '',
   });
+
+  const [completedOrderId, setCompletedOrderId] = useState<string | null>(null);
+
+  // Reset all state variables
+  const resetCheckoutState = () => {
+    setStep('SHIPPING');
+    setCopiedUPI(false);
+    setIsSubmitting(false);
+    setErrorMessage(null);
+    setVerificationProgress(0);
+    setVerificationStageText('Initiating Payment Verification...');
+    setFailedReason('');
+    setCreatedOrder(null);
+    setShowInvoiceModal(false);
+    setCompletedOrderId(null);
+    setPaymentRef('');
+    setDirectPaymentNotice(null);
+    setPaymentScreenshotName(null);
+    isProcessingRef.current = false;
+    
+    // Clear any potential stored flags just in case
+    localStorage.removeItem('mfp_checkout_stale_success');
+    localStorage.removeItem('mfp_last_order_id');
+    localStorage.removeItem('mfp_payment_success');
+    localStorage.removeItem('mfp_checkout_session');
+    
+    sessionStorage.removeItem('mfp_checkout_stale_success');
+    sessionStorage.removeItem('mfp_last_order_id');
+    sessionStorage.removeItem('mfp_payment_success');
+    sessionStorage.removeItem('mfp_checkout_session');
+  };
+
+  // Perform full validation check
+  const verifySessionNow = async (): Promise<boolean> => {
+    try {
+      // 1. At least one valid product exists.
+      if (!cartItems || cartItems.length === 0) {
+        setErrorMessage('Your cart is empty. Please add products to proceed.');
+        return false;
+      }
+
+      // 2. Check address completeness if we are beyond SHIPPING stage
+      if (step !== 'SHIPPING') {
+        if (
+          !shippingInfo.name.trim() ||
+          !shippingInfo.phone.trim() ||
+          !shippingInfo.street.trim() ||
+          !shippingInfo.pincode.trim()
+        ) {
+          setErrorMessage('Please complete all required shipping details first.');
+          return false;
+        }
+      }
+
+      // 3. Product still exists in Firestore and is in stock.
+      for (const item of cartItems) {
+        if (!item.product || !item.product.id) {
+          setErrorMessage('Invalid product details found in checkout.');
+          return false;
+        }
+
+        const prodRef = doc(db, 'products', item.product.id);
+        const prodSnap = await getDoc(prodRef);
+
+        if (!prodSnap.exists()) {
+          setErrorMessage(`Product "${item.product.name}" no longer exists in our store.`);
+          return false;
+        }
+
+        const liveProduct = prodSnap.data() as import('../../types').Product;
+
+        if (liveProduct.status === 'hidden') {
+          setErrorMessage(`Product "${liveProduct.name}" is currently unavailable.`);
+          return false;
+        }
+
+        if (liveProduct.status === 'out_of_stock' || !liveProduct.inStock) {
+          setErrorMessage(`Product "${liveProduct.name}" is out of stock.`);
+          return false;
+        }
+
+        if (item.selectedSize && liveProduct.sizeStocks && liveProduct.sizeStocks.length > 0) {
+          const sizeStock = liveProduct.sizeStocks.find((s) => s.size === item.selectedSize);
+          if (sizeStock) {
+            if (!sizeStock.inStock || !sizeStock.isAvailable) {
+              setErrorMessage(`Size "${item.selectedSize}" for product "${liveProduct.name}" is out of stock.`);
+              return false;
+            }
+            if (sizeStock.stockQuantity < item.quantity) {
+              setErrorMessage(`Only ${sizeStock.stockQuantity} items available for "${liveProduct.name}" in size "${item.selectedSize}".`);
+              return false;
+            }
+          }
+        }
+      }
+      return true;
+    } catch (err: any) {
+      console.error('Session validation error:', err);
+      setErrorMessage('Validation error: ' + (err.message || 'Could not verify product availability.'));
+      return false;
+    }
+  };
+
+  // Run validation and clean up on open/close
+  useEffect(() => {
+    if (!isOpen) {
+      resetCheckoutState();
+    } else {
+      resetCheckoutState(); // Reset everything when first opened to clear stale state from any previous run
+      const validateOnOpen = async () => {
+        const ok = await verifySessionNow();
+        if (!ok) {
+          console.warn('Initial checkout validation failed');
+        }
+      };
+      validateOnOpen();
+    }
+  }, [isOpen]);
+
+  // Clean up on unmount as well
+  useEffect(() => {
+    return () => {
+      resetCheckoutState();
+    };
+  }, []);
+
+  // Reset and close checkout modal if user logs out
+  useEffect(() => {
+    if (isOpen && !customerUser) {
+      resetCheckoutState();
+      onClose();
+    }
+  }, [customerUser, isOpen]);
+
+  // Security check to prevent users from manually forcing Step 4 success screen
+  useEffect(() => {
+    if (step === 'SUCCESS') {
+      const verifySuccessState = async () => {
+        if (!completedOrderId || !createdOrder || createdOrder.id !== completedOrderId) {
+          console.error('Security Gate: success state accessed without valid completed order details.');
+          setStep('SHIPPING');
+          setErrorMessage('Access denied: Invalid or incomplete checkout session.');
+          return;
+        }
+
+        try {
+          const orderRef = doc(db, 'orders', completedOrderId);
+          const orderSnap = await getDoc(orderRef);
+          if (!orderSnap.exists()) {
+            console.error('Security Gate: order document does not exist in Firestore.');
+            setStep('SHIPPING');
+            setErrorMessage('Access denied: Order document was not successfully created.');
+          }
+        } catch (e) {
+          console.error('Security Gate: failed to verify order in Firestore', e);
+          setStep('SHIPPING');
+          setErrorMessage('Access denied: Unable to verify order status.');
+        }
+      };
+      verifySuccessState();
+    }
+  }, [step, completedOrderId, createdOrder]);
 
   // Pre-fill address if customer has default saved address
   useEffect(() => {
@@ -126,8 +290,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Netbanking / Wallet selection
   const [selectedBank, setSelectedBank] = useState('SBI');
   const [selectedWallet, setSelectedWallet] = useState('Paytm');
-
-  const [completedOrderId, setCompletedOrderId] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -218,7 +380,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  const handleShippingSubmit = (e: React.FormEvent) => {
+  const handleShippingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -231,6 +393,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setErrorMessage('Please complete all required shipping details before proceeding.');
       return;
     }
+
+    setIsSubmitting(true);
+    const ok = await verifySessionNow();
+    setIsSubmitting(false);
+    if (!ok) return;
 
     // Save marketing consent preference
     updateCustomerMarketingConsent(checkoutConsent);
@@ -263,7 +430,51 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     isProcessingRef.current = true;
     setIsSubmitting(true);
     setStep('VERIFYING');
-    setVerificationProgress(15);
+    setVerificationProgress(5);
+    setVerificationStageText('Verifying live stock and product details...');
+
+    // 1. Live stock and product exist checking in database
+    const sessionOk = await verifySessionNow();
+    if (!sessionOk) {
+      setStep('SHIPPING');
+      setIsSubmitting(false);
+      isProcessingRef.current = false;
+      return;
+    }
+
+    // 2. Validate Address completeness
+    if (
+      !shippingInfo.name.trim() ||
+      !shippingInfo.phone.trim() ||
+      !shippingInfo.street.trim() ||
+      !shippingInfo.pincode.trim()
+    ) {
+      setErrorMessage('Please complete all required shipping details before proceeding.');
+      setStep('SHIPPING');
+      setIsSubmitting(false);
+      isProcessingRef.current = false;
+      return;
+    }
+
+    // 3. Validate payment method selected
+    if (!selectedMethod) {
+      setErrorMessage('Please select a payment method.');
+      setStep('PAYMENT');
+      setIsSubmitting(false);
+      isProcessingRef.current = false;
+      return;
+    }
+
+    // 4. Validate payment reference if UPI is selected
+    if (selectedMethod === 'UPI' && !explicitPayId && !paymentRef.trim()) {
+      setErrorMessage('Please enter UTR Transaction Reference Number or upload screenshot.');
+      setStep('PAYMENT');
+      setIsSubmitting(false);
+      isProcessingRef.current = false;
+      return;
+    }
+
+    setVerificationProgress(20);
     setVerificationStageText('Connecting to Secure Gateway Node...');
 
     const targetRef = explicitPayId || paymentRef.trim() || `pay_${Date.now()}`;

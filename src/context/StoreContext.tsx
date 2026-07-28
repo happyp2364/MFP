@@ -564,7 +564,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
 
       unsubscribers.push(
-        onSnapshot(doc(db, 'topAnnouncementBar', 'config'), (snap) => {
+        onSnapshot(doc(db, 'homepage', 'topAnnouncementBarConfig'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as TopAnnouncementBarConfig;
             setPublishedTopAnnouncementBarConfig(data);
@@ -1075,12 +1075,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateTopAnnouncementBarConfig = async (updated: Partial<TopAnnouncementBarConfig>) => {
     try {
       const newCfg = { ...publishedTopAnnouncementBarConfig, ...updated };
-      await setDoc(doc(db, 'topAnnouncementBar', 'config'), newCfg, { merge: true });
-      showToast('💾 Top Announcement Bar Config Saved Live', 'success');
-      recordAuditLog('Top Announcement Bar Updated', 'SETTINGS', 'Updated top announcement bar configuration live', 'SUCCESS');
+      const docRef = doc(db, 'homepage', 'topAnnouncementBarConfig');
+      await setDoc(docRef, newCfg, { merge: true });
+      
+      // Read the document again to verify it was written correctly
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const verifiedData = snap.data() as TopAnnouncementBarConfig;
+        if (verifiedData) {
+          setPublishedTopAnnouncementBarConfig(verifiedData);
+          localStorage.setItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, JSON.stringify(verifiedData));
+          showToast('✅ Announcement Bar Saved Successfully', 'success');
+          recordAuditLog('Top Announcement Bar Updated', 'SETTINGS', 'Updated top announcement bar configuration live', 'SUCCESS');
+          return;
+        }
+      }
+      throw new Error('Save verification failed: Document was not found or empty after writing.');
     } catch (err: any) {
       console.error('Error updating top announcement bar config:', err);
       showToast('Failed to save top announcement bar config', 'error');
+      throw err;
     }
   };
 

@@ -2139,7 +2139,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
 
       const currentStepNum = stepIdx + 1;
-      const percentage = Math.min(100, Math.round((currentStepNum / 3) * 100));
+      let percentage = 0;
+      if (status === 'success') {
+        percentage = Math.min(100, Math.round((currentStepNum / 3) * 100));
+      } else if (status === 'running') {
+        percentage = Math.min(90, Math.round(((currentStepNum - 0.5) / 3) * 100));
+      } else {
+        percentage = Math.min(100, Math.round(((currentStepNum - 1) / 3) * 100));
+      }
 
       if (onProgress) {
         onProgress({
@@ -2474,7 +2481,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Step 3: Write ONLY Changed Data to Firestore (and immediately make website LIVE)
       updateStep(2, 'running', `Writing ${operations.length} changed document(s) to Firestore...`);
+      console.log('[PublishEngine Timestamp] Firestore writes started:', new Date().toISOString());
       const step3Start = Date.now();
+
+      const promiseWithTimeout = <T,>(
+        promise: Promise<T>,
+        timeoutMs: number,
+        errorMessage: string
+      ): Promise<T> => {
+        let timer: any;
+        const timeoutPromise = new Promise<T>((_, reject) => {
+          timer = setTimeout(() => {
+            reject({
+              code: 'firestore/timeout',
+              message: errorMessage,
+            });
+          }, timeoutMs);
+        });
+        return Promise.race([promise, timeoutPromise]).finally(() => {
+          if (timer) clearTimeout(timer);
+        });
+      };
 
       if (operations.length > 0) {
         const BATCH_CHUNK_SIZE = 100;
@@ -2500,7 +2527,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
           }
 
-          await batch.commit();
+          await promiseWithTimeout(
+            batch.commit(),
+            8000,
+            `Firestore batch write chunk ${b + 1}/${totalBatches} timed out after 8s`
+          );
 
           const bDuration = Math.round(performance.now() - bStart);
           cumulativeTimeMs += bDuration;
@@ -2525,6 +2556,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } else {
         commitDurationMetric = '0.00s';
       }
+
+      console.log("Firestore writes completed");
+      console.log('[PublishEngine Timestamp] Firestore writes completed:', new Date().toISOString());
 
       // ─── MAKE NEW DATA LIVE IMMEDIATELY FOR ALL CUSTOMERS ───
       // 1. Update React published states across store views

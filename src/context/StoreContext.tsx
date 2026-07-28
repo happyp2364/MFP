@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
 import {
   Product,
@@ -382,6 +382,7 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isPublishingRef = useRef<boolean>(false);
   // --- 1. PUBLISHED (LIVE WEBSITE) STATE ---
   const [publishedProducts, setPublishedProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
@@ -1759,6 +1760,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     instagramConfig: InstagramConfig;
     soundConfig: SoundConfig;
   }>) => {
+    if (isPublishingRef.current) return;
     const nextProducts = overrides?.products ?? draftProducts;
     const nextReviews = overrides?.reviews ?? draftReviews;
     const nextStoreInfo = overrides?.storeInfo ?? draftStoreInfo;
@@ -2062,182 +2064,196 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     summary?: string,
     onProgress?: (progress: PublishProgressState) => void
   ): Promise<PublishResult> => {
-    const adminEmail = auth.currentUser?.email || 'vpcreation2002@gmail.com';
-    const nowISO = new Date().toISOString();
-    const startTime = Date.now();
+    isPublishingRef.current = true;
+    try {
+      const adminEmail = auth.currentUser?.email || 'vpcreation2002@gmail.com';
+      const nowISO = new Date().toISOString();
+      const startTime = Date.now();
 
-    const estimateSizeInBytes = (obj: any): number => {
-      const str = JSON.stringify(obj);
-      return str ? str.length : 0;
-    };
+      const estimateSizeInBytes = (obj: any): number => {
+        const str = JSON.stringify(obj);
+        return str ? str.length : 0;
+      };
 
-    // Strict Timeout Wrapper to Guarantee Async Operations Never Wait Forever
-    const promiseWithTimeout = <T,>(
-      promise: Promise<T>,
-      timeoutMs: number,
-      errorMessage: string
-    ): Promise<T> => {
-      let timer: any;
-      const timeoutPromise = new Promise<T>((_, reject) => {
-        timer = setTimeout(() => {
-          reject({
-            code: 'firestore/timeout',
-            message: errorMessage,
-          });
-        }, timeoutMs);
-      });
-      return Promise.race([promise, timeoutPromise]).finally(() => {
-        if (timer) clearTimeout(timer);
-      });
-    };
+      // Strict Timeout Wrapper to Guarantee Async Operations Never Wait Forever
+      const promiseWithTimeout = <T,>(
+        promise: Promise<T>,
+        timeoutMs: number,
+        errorMessage: string
+      ): Promise<T> => {
+        let timer: any;
+        const timeoutPromise = new Promise<T>((_, reject) => {
+          timer = setTimeout(() => {
+            reject({
+              code: 'firestore/timeout',
+              message: errorMessage,
+            });
+          }, timeoutMs);
+        });
+        return Promise.race([promise, timeoutPromise]).finally(() => {
+          if (timer) clearTimeout(timer);
+        });
+      };
 
-    interface BatchOperation {
-      type: 'set' | 'delete';
-      ref: any;
-      data?: any;
-      collectionName: string;
-      documentId: string;
-      description: string;
-    }
-
-    const executeBatchChunkWithRetry = async (
-      operations: BatchOperation[],
-      batchIndex: number,
-      totalBatches: number,
-      onProgressMessage?: (msg: string) => void
-    ) => {
-      const maxRetries = 3;
-      let lastError: any = null;
-
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const chunkStartTime = Date.now();
-        try {
-          if (onProgressMessage) {
-            onProgressMessage(
-              `Batch ${batchIndex + 1}/${totalBatches}: Attempt ${attempt}/${maxRetries} committing ${operations.length} doc(s)...`
-            );
-          }
-
-          const batch = writeBatch(db);
-          for (const op of operations) {
-            if (op.type === 'set') {
-              batch.set(op.ref, op.data, { merge: true });
-            } else if (op.type === 'delete') {
-              batch.delete(op.ref);
-            }
-          }
-
-          await promiseWithTimeout(
-            batch.commit(),
-            45000,
-            `WriteBatch commit for Batch ${batchIndex + 1}/${totalBatches} timed out (45s limit).`
-          );
-
-          const duration = ((Date.now() - chunkStartTime) / 1000).toFixed(2);
-          if (onProgressMessage) {
-            onProgressMessage(
-              `Batch ${batchIndex + 1}/${totalBatches}: Successfully committed ${operations.length} doc(s) in ${duration}s.`
-            );
-          }
-          return;
-        } catch (err: any) {
-          lastError = err;
-          console.warn(`Batch ${batchIndex + 1}/${totalBatches} commit attempt ${attempt} error:`, err);
-
-          if (err.code === 'permission-denied') {
-            throw {
-              code: 'permission-denied',
-              message: 'Firestore Permission Denied: Admin permissions required for database write operations.',
-              collectionName: operations[0]?.collectionName || 'products',
-              documentId: operations[0]?.documentId || 'current',
-              stackTrace: err.stack,
-            };
-          }
-
-          if (attempt < maxRetries) {
-            await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
-          }
-        }
+      interface BatchOperation {
+        type: 'set' | 'delete';
+        ref: any;
+        data?: any;
+        collectionName: string;
+        documentId: string;
+        description: string;
       }
 
-      throw {
-        code: lastError?.code || 'firestore/batch-commit-failed',
-        message: lastError?.message || `Batch ${batchIndex + 1}/${totalBatches} commit failed after ${maxRetries} attempts.`,
-        collectionName: operations[0]?.collectionName || 'products',
-        documentId: operations[0]?.documentId || 'current',
-        stackTrace: lastError?.stack || lastError?.stackTrace || String(lastError),
+      const executeBatchChunkWithRetry = async (
+        chunkOps: BatchOperation[],
+        batchIndex: number,
+        totalBatches: number,
+        onProgressMessage?: (msg: string) => void
+      ) => {
+        const maxRetries = 3;
+        let lastError: any = null;
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          const chunkStartTime = Date.now();
+          try {
+            if (onProgressMessage) {
+              onProgressMessage(
+                `Batch ${batchIndex + 1}/${totalBatches} (${chunkOps.length} ops): Committing attempt ${attempt}/${maxRetries}...`
+              );
+            }
+
+            const batch = writeBatch(db);
+            for (const op of chunkOps) {
+              if (op.type === 'set') {
+                batch.set(op.ref, op.data, { merge: true });
+              } else if (op.type === 'delete') {
+                batch.delete(op.ref);
+              }
+            }
+
+            await promiseWithTimeout(
+              batch.commit(),
+              12000,
+              `WriteBatch commit for Batch ${batchIndex + 1}/${totalBatches} timed out (12s limit).`
+            );
+
+            const duration = Date.now() - chunkStartTime;
+            if (onProgressMessage) {
+              onProgressMessage(
+                `Batch ${batchIndex + 1}/${totalBatches} (${chunkOps.length} ops) completed in ${duration}ms.`
+              );
+            }
+            return;
+          } catch (err: any) {
+            lastError = err;
+            console.warn(`Batch ${batchIndex + 1}/${totalBatches} commit attempt ${attempt} error:`, err);
+
+            if (err.code === 'permission-denied') {
+              throw {
+                code: 'permission-denied',
+                message: 'Firestore Permission Denied: Admin permissions required for database write operations.',
+                collectionName: chunkOps[0]?.collectionName || 'products',
+                documentId: chunkOps[0]?.documentId || 'current',
+                stackTrace: err.stack,
+              };
+            }
+
+            if (attempt < maxRetries) {
+              await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+            }
+          }
+        }
+
+        // Fallback: split batch into smaller sub-chunks if possible
+        if (chunkOps.length > 1) {
+          if (onProgressMessage) {
+            onProgressMessage(`Batch ${batchIndex + 1}/${totalBatches} retrying as smaller sub-batches...`);
+          }
+          const mid = Math.ceil(chunkOps.length / 2);
+          const part1 = chunkOps.slice(0, mid);
+          const part2 = chunkOps.slice(mid);
+          await executeBatchChunkWithRetry(part1, batchIndex, totalBatches, onProgressMessage);
+          await executeBatchChunkWithRetry(part2, batchIndex, totalBatches, onProgressMessage);
+          return;
+        }
+
+        throw {
+          code: lastError?.code || 'firestore/batch-commit-failed',
+          message: lastError?.message || `Batch ${batchIndex + 1}/${totalBatches} commit failed after ${maxRetries} attempts.`,
+          collectionName: chunkOps[0]?.collectionName || 'products',
+          documentId: chunkOps[0]?.documentId || 'current',
+          stackTrace: lastError?.stack || lastError?.stackTrace || String(lastError),
+        };
       };
-    };
 
-    const initialSteps: PublishStepLog[] = [
-      { id: 's1', name: 'Validate Draft & Firebase Credentials', status: 'pending' },
-      { id: 's2', name: 'Verify Media Assets & URIs', status: 'pending' },
-      { id: 's3', name: 'Prepare Operations Queue & Size Check', status: 'pending' },
-      { id: 's4', name: 'Synchronize Granular Live Updates', status: 'pending' },
-      { id: 's5', name: 'Refresh Search & Filter Indexes', status: 'pending' },
-      { id: 's6', name: 'Refresh Local Caches & Storage Keys', status: 'pending' },
-      { id: 's7', name: 'Refresh Live Website Data Across Clients', status: 'pending' },
-      { id: 's8', name: 'Confirm Version History Snapshot', status: 'pending' },
-      { id: 's9', name: 'Cleanup Draft References', status: 'pending' },
-      { id: 's10', name: 'Notify Connected Clients & Complete Release', status: 'pending' },
-    ];
+      const initialSteps: PublishStepLog[] = [
+        { id: 's1', name: 'Validate Draft & Firebase Credentials', status: 'pending' },
+        { id: 's2', name: 'Verify Media Assets & URIs', status: 'pending' },
+        { id: 's3', name: 'Prepare Operations Queue & Size Check', status: 'pending' },
+        { id: 's4', name: 'Synchronize Granular Live Updates', status: 'pending' },
+        { id: 's5', name: 'Refresh Search & Filter Indexes', status: 'pending' },
+        { id: 's6', name: 'Refresh Local Caches & Storage Keys', status: 'pending' },
+        { id: 's7', name: 'Refresh Live Website Data Across Clients', status: 'pending' },
+        { id: 's8', name: 'Confirm Version History Snapshot', status: 'pending' },
+        { id: 's9', name: 'Cleanup Draft References', status: 'pending' },
+        { id: 's10', name: 'Notify Connected Clients & Complete Release', status: 'pending' },
+      ];
 
-    let currentLogs = [...initialSteps];
+      let currentLogs = [...initialSteps];
 
-    // Initialize metrics variables so they can be captured and shared via the progress callback
-    let totalEstimatedSizeKb = 0;
-    let batchSizeMetric = 0;
-    let numDocsMetric = 0;
-    let commitDurationMetric = '0s';
-    let writeCountMetric = 0;
+      // Initialize metrics variables so they can be captured and shared via the progress callback
+      let totalEstimatedSizeKb = 0;
+      let batchSizeMetric = 0;
+      let numDocsMetric = 0;
+      let commitDurationMetric = '0s';
+      let writeCountMetric = 0;
 
-    const updateStep = (
-      stepIdx: number,
-      status: 'pending' | 'running' | 'success' | 'failed',
-      message?: string,
-      errorInfo?: { code?: string; collectionName?: string; documentId?: string; stackTrace?: string }
-    ) => {
-      currentLogs = currentLogs.map((log, idx) => {
-        if (idx === stepIdx) {
-          return {
-            ...log,
-            status,
-            message: message || log.message,
-            timestamp: new Date().toLocaleTimeString(),
+      const updateStep = (
+        stepIdx: number,
+        status: 'pending' | 'running' | 'success' | 'failed',
+        message?: string,
+        errorInfo?: { code?: string; collectionName?: string; documentId?: string; stackTrace?: string }
+      ) => {
+        currentLogs = currentLogs.map((log, idx) => {
+          if (idx === stepIdx) {
+            return {
+              ...log,
+              status,
+              message: message || log.message,
+              timestamp: new Date().toLocaleTimeString(),
+              errorCode: errorInfo?.code,
+              collectionName: errorInfo?.collectionName,
+              documentId: errorInfo?.documentId,
+              stackTrace: errorInfo?.stackTrace,
+            };
+          }
+          return log;
+        });
+
+        const currentStepNum = stepIdx + 1;
+        const percentage = Math.min(100, Math.round((currentStepNum / 10) * 100));
+
+        if (onProgress) {
+          onProgress({
+            currentStep: currentStepNum,
+            totalSteps: 10,
+            stepName: currentLogs[stepIdx]?.name || 'Publishing...',
+            percentage,
+            logs: [...currentLogs],
+            isCompleted: status === 'success' && stepIdx === 9,
             errorCode: errorInfo?.code,
             collectionName: errorInfo?.collectionName,
             documentId: errorInfo?.documentId,
             stackTrace: errorInfo?.stackTrace,
-          };
+            documentSize: `${totalEstimatedSizeKb.toFixed(2)} KB`,
+            batchSize: batchSizeMetric,
+            numDocuments: numDocsMetric,
+            commitDuration: commitDurationMetric,
+            writeCount: writeCountMetric,
+          });
         }
-        return log;
-      });
+      };
 
-      const currentStepNum = stepIdx + 1;
-      const percentage = Math.min(100, Math.round((currentStepNum / 10) * 100));
-
-      if (onProgress) {
-        onProgress({
-          currentStep: currentStepNum,
-          totalSteps: 10,
-          stepName: currentLogs[stepIdx]?.name || 'Publishing...',
-          percentage,
-          logs: [...currentLogs],
-          isCompleted: status === 'success' && stepIdx === 9,
-          errorCode: errorInfo?.code,
-          collectionName: errorInfo?.collectionName,
-          documentId: errorInfo?.documentId,
-          stackTrace: errorInfo?.stackTrace,
-          documentSize: `${totalEstimatedSizeKb.toFixed(2)} KB`,
-          batchSize: batchSizeMetric,
-          numDocuments: numDocsMetric,
-          commitDuration: commitDurationMetric,
-          writeCount: writeCountMetric,
-        });
-      }
-    };
-
-    try {
       // Step 1: Validate Draft & Pre-flight Diagnostics
       updateStep(0, 'running', 'Validating Firebase connection, authentication, and draft schemas...');
       await new Promise((r) => setTimeout(r, 40));
@@ -2301,7 +2317,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       await new Promise((r) => setTimeout(r, 40));
 
       const versionNum = `v1.${publishedVersions.length + 1}`;
-      const operations: BatchOperation[] = [];
+      const rawOperations: BatchOperation[] = [];
+      let skippedWritesCount = 0;
 
       // A. Diff and queue products using Split Product Architecture
       let addedProducts = 0;
@@ -2314,184 +2331,98 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const split = splitProduct(p);
 
         if (!pub) {
-          // Add metadata
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'products', p.id),
-            data: split.metadata,
-            collectionName: 'products',
-            documentId: p.id,
-            description: `Added product metadata for "${p.name}"`,
-          });
-          // Add gallery
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'product_gallery', p.id),
-            data: split.gallery,
-            collectionName: 'product_gallery',
-            documentId: p.id,
-            description: `Added product gallery for "${p.name}"`,
-          });
-          // Add variants
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'product_variants', p.id),
-            data: split.variants,
-            collectionName: 'product_variants',
-            documentId: p.id,
-            description: `Added product variants for "${p.name}"`,
-          });
-          // Add AI Metadata
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'product_ai_metadata', p.id),
-            data: split.aiMetadata,
-            collectionName: 'product_ai_metadata',
-            documentId: p.id,
-            description: `Added product AI metadata for "${p.name}"`,
-          });
-          // Add gallery parts
+          // Brand New Product - write all sub-collections
+          rawOperations.push({ type: 'set', ref: doc(db, 'products', p.id), data: split.metadata, collectionName: 'products', documentId: p.id, description: `Added product metadata for "${p.name}"` });
+          rawOperations.push({ type: 'set', ref: doc(db, 'product_gallery', p.id), data: split.gallery, collectionName: 'product_gallery', documentId: p.id, description: `Added product gallery for "${p.name}"` });
+          rawOperations.push({ type: 'set', ref: doc(db, 'product_variants', p.id), data: split.variants, collectionName: 'product_variants', documentId: p.id, description: `Added product variants for "${p.name}"` });
+          rawOperations.push({ type: 'set', ref: doc(db, 'product_ai_metadata', p.id), data: split.aiMetadata, collectionName: 'product_ai_metadata', documentId: p.id, description: `Added product AI metadata for "${p.name}"` });
           for (const part of split.galleryParts) {
-            operations.push({
-              type: 'set',
-              ref: doc(db, 'product_gallery_parts', part.id),
-              data: part,
-              collectionName: 'product_gallery_parts',
-              documentId: part.id,
-              description: `Added product gallery part ${part.id}`,
-            });
+            rawOperations.push({ type: 'set', ref: doc(db, 'product_gallery_parts', part.id), data: part, collectionName: 'product_gallery_parts', documentId: part.id, description: `Added gallery part ${part.id}` });
           }
           addedProducts++;
-        } else if (JSON.stringify(pub) !== JSON.stringify(p)) {
-          // Update metadata
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'products', p.id),
-            data: split.metadata,
-            collectionName: 'products',
-            documentId: p.id,
-            description: `Updated product metadata for "${p.name}"`,
-          });
-          // Update gallery
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'product_gallery', p.id),
-            data: split.gallery,
-            collectionName: 'product_gallery',
-            documentId: p.id,
-            description: `Updated product gallery for "${p.name}"`,
-          });
-          // Update variants
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'product_variants', p.id),
-            data: split.variants,
-            collectionName: 'product_variants',
-            documentId: p.id,
-            description: `Updated product variants for "${p.name}"`,
-          });
-          // Update AI Metadata
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'product_ai_metadata', p.id),
-            data: split.aiMetadata,
-            collectionName: 'product_ai_metadata',
-            documentId: p.id,
-            description: `Updated product AI metadata for "${p.name}"`,
-          });
-          // Update gallery parts
-          for (const part of split.galleryParts) {
-            operations.push({
-              type: 'set',
-              ref: doc(db, 'product_gallery_parts', part.id),
-              data: part,
-              collectionName: 'product_gallery_parts',
-              documentId: part.id,
-              description: `Updated product gallery part ${part.id}`,
-            });
+        } else {
+          // Existing Product: Perform granular sub-collection diffing!
+          const pubSplit = splitProduct(pub);
+          let productHasChange = false;
+
+          // 1) Metadata
+          if (JSON.stringify(split.metadata) !== JSON.stringify(pubSplit.metadata)) {
+            rawOperations.push({ type: 'set', ref: doc(db, 'products', p.id), data: split.metadata, collectionName: 'products', documentId: p.id, description: `Updated product metadata for "${p.name}"` });
+            productHasChange = true;
+          } else {
+            skippedWritesCount++;
           }
-          updatedProducts++;
+
+          // 2) Gallery
+          if (JSON.stringify(split.gallery) !== JSON.stringify(pubSplit.gallery)) {
+            rawOperations.push({ type: 'set', ref: doc(db, 'product_gallery', p.id), data: split.gallery, collectionName: 'product_gallery', documentId: p.id, description: `Updated product gallery for "${p.name}"` });
+            productHasChange = true;
+          } else {
+            skippedWritesCount++;
+          }
+
+          // 3) Variants
+          if (JSON.stringify(split.variants) !== JSON.stringify(pubSplit.variants)) {
+            rawOperations.push({ type: 'set', ref: doc(db, 'product_variants', p.id), data: split.variants, collectionName: 'product_variants', documentId: p.id, description: `Updated product variants for "${p.name}"` });
+            productHasChange = true;
+          } else {
+            skippedWritesCount++;
+          }
+
+          // 4) AI Metadata
+          if (JSON.stringify(split.aiMetadata) !== JSON.stringify(pubSplit.aiMetadata)) {
+            rawOperations.push({ type: 'set', ref: doc(db, 'product_ai_metadata', p.id), data: split.aiMetadata, collectionName: 'product_ai_metadata', documentId: p.id, description: `Updated AI metadata for "${p.name}"` });
+            productHasChange = true;
+          } else {
+            skippedWritesCount++;
+          }
+
+          // 5) Gallery Parts
+          for (const part of split.galleryParts) {
+            const pubPart = pubSplit.galleryParts.find((pt) => pt.id === part.id);
+            if (!pubPart || JSON.stringify(part) !== JSON.stringify(pubPart)) {
+              rawOperations.push({ type: 'set', ref: doc(db, 'product_gallery_parts', part.id), data: part, collectionName: 'product_gallery_parts', documentId: part.id, description: `Updated gallery part ${part.id}` });
+              productHasChange = true;
+            } else {
+              skippedWritesCount++;
+            }
+          }
+
+          if (productHasChange) {
+            updatedProducts++;
+          }
         }
 
-        // Cleanup draft sub-collection documents once published
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_products', p.id),
-          collectionName: 'draft_products',
-          documentId: p.id,
-          description: `Cleanup draft product "${p.name}"`,
-        });
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_product_gallery', p.id),
-          collectionName: 'draft_product_gallery',
-          documentId: p.id,
-          description: `Cleanup draft product gallery "${p.name}"`,
-        });
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_product_variants', p.id),
-          collectionName: 'draft_product_variants',
-          documentId: p.id,
-          description: `Cleanup draft product variants "${p.name}"`,
-        });
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_product_ai_metadata', p.id),
-          collectionName: 'draft_product_ai_metadata',
-          documentId: p.id,
-          description: `Cleanup draft product AI metadata "${p.name}"`,
-        });
+        // Clean up draft sub-collection documents ONLY IF they exist in draft Firestore state
+        if (rawDraftProducts.some((d) => d.id === p.id)) {
+          rawOperations.push({ type: 'delete', ref: doc(db, 'draft_products', p.id), collectionName: 'draft_products', documentId: p.id, description: `Cleanup draft product "${p.name}"` });
+        }
+        if (draftGalleries[p.id]) {
+          rawOperations.push({ type: 'delete', ref: doc(db, 'draft_product_gallery', p.id), collectionName: 'draft_product_gallery', documentId: p.id, description: `Cleanup draft gallery "${p.name}"` });
+        }
+        if (draftVariants[p.id]) {
+          rawOperations.push({ type: 'delete', ref: doc(db, 'draft_product_variants', p.id), collectionName: 'draft_product_variants', documentId: p.id, description: `Cleanup draft variants "${p.name}"` });
+        }
+        if (draftAiMetadata[p.id]) {
+          rawOperations.push({ type: 'delete', ref: doc(db, 'draft_product_ai_metadata', p.id), collectionName: 'draft_product_ai_metadata', documentId: p.id, description: `Cleanup draft AI metadata "${p.name}"` });
+        }
         for (let i = 1; i <= 5; i++) {
-          operations.push({
-            type: 'delete',
-            ref: doc(db, 'draft_product_gallery_parts', `${p.id}_gallery_part${i}`),
-            collectionName: 'draft_product_gallery_parts',
-            documentId: `${p.id}_gallery_part${i}`,
-            description: `Cleanup draft gallery part ${i} for "${p.name}"`,
-          });
+          const partId = `${p.id}_gallery_part${i}`;
+          if (draftGalleryParts[partId]) {
+            rawOperations.push({ type: 'delete', ref: doc(db, 'draft_product_gallery_parts', partId), collectionName: 'draft_product_gallery_parts', documentId: partId, description: `Cleanup draft gallery part ${i}` });
+          }
         }
       }
 
+      // Check deleted products
       for (const pub of publishedProducts) {
         if (!draftProductIds.has(pub.id)) {
-          // Delete all live sub-collection documents
-          operations.push({
-            type: 'delete',
-            ref: doc(db, 'products', pub.id),
-            collectionName: 'products',
-            documentId: pub.id,
-            description: `Deleted product "${pub.name || pub.id}"`,
-          });
-          operations.push({
-            type: 'delete',
-            ref: doc(db, 'product_gallery', pub.id),
-            collectionName: 'product_gallery',
-            documentId: pub.id,
-            description: `Deleted product gallery "${pub.name || pub.id}"`,
-          });
-          operations.push({
-            type: 'delete',
-            ref: doc(db, 'product_variants', pub.id),
-            collectionName: 'product_variants',
-            documentId: pub.id,
-            description: `Deleted product variants "${pub.name || pub.id}"`,
-          });
-          operations.push({
-            type: 'delete',
-            ref: doc(db, 'product_ai_metadata', pub.id),
-            collectionName: 'product_ai_metadata',
-            documentId: pub.id,
-            description: `Deleted product AI metadata "${pub.name || pub.id}"`,
-          });
+          rawOperations.push({ type: 'delete', ref: doc(db, 'products', pub.id), collectionName: 'products', documentId: pub.id, description: `Deleted product "${pub.name || pub.id}"` });
+          rawOperations.push({ type: 'delete', ref: doc(db, 'product_gallery', pub.id), collectionName: 'product_gallery', documentId: pub.id, description: `Deleted gallery "${pub.name || pub.id}"` });
+          rawOperations.push({ type: 'delete', ref: doc(db, 'product_variants', pub.id), collectionName: 'product_variants', documentId: pub.id, description: `Deleted variants "${pub.name || pub.id}"` });
+          rawOperations.push({ type: 'delete', ref: doc(db, 'product_ai_metadata', pub.id), collectionName: 'product_ai_metadata', documentId: pub.id, description: `Deleted AI metadata "${pub.name || pub.id}"` });
           for (let i = 1; i <= 5; i++) {
-            operations.push({
-              type: 'delete',
-              ref: doc(db, 'product_gallery_parts', `${pub.id}_gallery_part${i}`),
-              collectionName: 'product_gallery_parts',
-              documentId: `${pub.id}_gallery_part${i}`,
-              description: `Deleted gallery part ${i} for "${pub.name || pub.id}"`,
-            });
+            rawOperations.push({ type: 'delete', ref: doc(db, 'product_gallery_parts', `${pub.id}_gallery_part${i}`), collectionName: 'product_gallery_parts', documentId: `${pub.id}_gallery_part${i}`, description: `Deleted gallery part ${i}` });
           }
           deletedProducts++;
         }
@@ -2506,82 +2437,65 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       for (const r of draftReviews) {
         const pub = publishedReviews.find((item) => item.id === r.id);
         if (!pub) {
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'reviews', r.id),
-            data: r,
-            collectionName: 'reviews',
-            documentId: r.id,
-            description: `Added review ${r.id}`,
-          });
+          rawOperations.push({ type: 'set', ref: doc(db, 'reviews', r.id), data: r, collectionName: 'reviews', documentId: r.id, description: `Added review ${r.id}` });
           addedReviews++;
         } else if (JSON.stringify(pub) !== JSON.stringify(r)) {
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'reviews', r.id),
-            data: r,
-            collectionName: 'reviews',
-            documentId: r.id,
-            description: `Updated review ${r.id}`,
-          });
+          rawOperations.push({ type: 'set', ref: doc(db, 'reviews', r.id), data: r, collectionName: 'reviews', documentId: r.id, description: `Updated review ${r.id}` });
           updatedReviews++;
+        } else {
+          skippedWritesCount++;
         }
-        // Remove from draft_reviews collection
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_reviews', r.id),
-          collectionName: 'draft_reviews',
-          documentId: r.id,
-          description: `Cleanup draft review ${r.id}`,
-        });
       }
 
       for (const pub of publishedReviews) {
         if (!draftReviewIds.has(pub.id)) {
-          operations.push({
-            type: 'delete',
-            ref: doc(db, 'reviews', pub.id),
-            collectionName: 'reviews',
-            documentId: pub.id,
-            description: `Deleted review ${pub.id}`,
-          });
+          rawOperations.push({ type: 'delete', ref: doc(db, 'reviews', pub.id), collectionName: 'reviews', documentId: pub.id, description: `Deleted review ${pub.id}` });
           deletedReviews++;
         }
       }
 
-      // C. Synchronize settings only if they changed
+      // C. Synchronize CMS Settings only if they changed
       if (JSON.stringify(draftStoreInfo) !== JSON.stringify(publishedStoreInfo)) {
-        operations.push({ type: 'set', ref: doc(db, 'settings', 'store'), data: draftStoreInfo, collectionName: 'settings', documentId: 'store', description: 'Store Info' });
-      }
-      if (JSON.stringify(draftHeroContent) !== JSON.stringify(publishedHeroContent)) {
-        operations.push({ type: 'set', ref: doc(db, 'hero', 'current'), data: draftHeroContent, collectionName: 'hero', documentId: 'current', description: 'Hero Content' });
-      }
-      if (JSON.stringify(draftAnnouncements) !== JSON.stringify(publishedAnnouncements)) {
-        operations.push({ type: 'set', ref: doc(db, 'homepage', 'announcements'), data: { items: draftAnnouncements }, collectionName: 'homepage', documentId: 'announcements', description: 'Announcements' });
-      }
-      if (JSON.stringify(draftCategoryHighlights) !== JSON.stringify(publishedCategoryHighlights)) {
-        operations.push({ type: 'set', ref: doc(db, 'categories', 'highlights'), data: { items: draftCategoryHighlights }, collectionName: 'categories', documentId: 'highlights', description: 'Categories' });
-      }
-      if (JSON.stringify(draftTrendingCollections) !== JSON.stringify(publishedTrendingCollections)) {
-        operations.push({ type: 'set', ref: doc(db, 'homepage', 'trendingCollections'), data: { items: draftTrendingCollections }, collectionName: 'homepage', documentId: 'trendingCollections', description: 'Collections' });
-      }
-      if (JSON.stringify(draftPaymentSettings) !== JSON.stringify(publishedPaymentSettings)) {
-        operations.push({ type: 'set', ref: doc(db, 'payment', 'config'), data: draftPaymentSettings, collectionName: 'payment', documentId: 'config', description: 'Payment Settings' });
-      }
-      if (JSON.stringify(draftHangingSneakerConfig) !== JSON.stringify(publishedHangingSneakerConfig)) {
-        operations.push({ type: 'set', ref: doc(db, 'animations', 'hangingSneakerConfig'), data: draftHangingSneakerConfig, collectionName: 'animations', documentId: 'hangingSneakerConfig', description: 'Hanging Sneaker Config' });
-      }
-      if (JSON.stringify(draftPetShoeConfig) !== JSON.stringify(publishedPetShoeConfig)) {
-        operations.push({ type: 'set', ref: doc(db, 'mascot', 'petShoeConfig'), data: draftPetShoeConfig, collectionName: 'mascot', documentId: 'petShoeConfig', description: 'Pet Shoe Config' });
-      }
-      if (JSON.stringify(draftInstagramConfig) !== JSON.stringify(publishedInstagramConfig)) {
-        operations.push({ type: 'set', ref: doc(db, 'social', 'instagramConfig'), data: draftInstagramConfig, collectionName: 'social', documentId: 'instagramConfig', description: 'Instagram Config' });
-      }
-      if (JSON.stringify(draftSoundConfig) !== JSON.stringify(publishedSoundConfig)) {
-        operations.push({ type: 'set', ref: doc(db, 'theme', 'current'), data: draftSoundConfig, collectionName: 'theme', documentId: 'current', description: 'Sound Config' });
-      }
+        rawOperations.push({ type: 'set', ref: doc(db, 'settings', 'store'), data: draftStoreInfo, collectionName: 'settings', documentId: 'store', description: 'Store Info' });
+      } else { skippedWritesCount++; }
 
-      // D. Version History Snapshot with Auto-Split Check
+      if (JSON.stringify(draftHeroContent) !== JSON.stringify(publishedHeroContent)) {
+        rawOperations.push({ type: 'set', ref: doc(db, 'hero', 'current'), data: draftHeroContent, collectionName: 'hero', documentId: 'current', description: 'Hero Content' });
+      } else { skippedWritesCount++; }
+
+      if (JSON.stringify(draftAnnouncements) !== JSON.stringify(publishedAnnouncements)) {
+        rawOperations.push({ type: 'set', ref: doc(db, 'homepage', 'announcements'), data: { items: draftAnnouncements }, collectionName: 'homepage', documentId: 'announcements', description: 'Announcements' });
+      } else { skippedWritesCount++; }
+
+      if (JSON.stringify(draftCategoryHighlights) !== JSON.stringify(publishedCategoryHighlights)) {
+        rawOperations.push({ type: 'set', ref: doc(db, 'categories', 'highlights'), data: { items: draftCategoryHighlights }, collectionName: 'categories', documentId: 'highlights', description: 'Categories' });
+      } else { skippedWritesCount++; }
+
+      if (JSON.stringify(draftTrendingCollections) !== JSON.stringify(publishedTrendingCollections)) {
+        rawOperations.push({ type: 'set', ref: doc(db, 'homepage', 'trendingCollections'), data: { items: draftTrendingCollections }, collectionName: 'homepage', documentId: 'trendingCollections', description: 'Collections' });
+      } else { skippedWritesCount++; }
+
+      if (JSON.stringify(draftPaymentSettings) !== JSON.stringify(publishedPaymentSettings)) {
+        rawOperations.push({ type: 'set', ref: doc(db, 'payment', 'config'), data: draftPaymentSettings, collectionName: 'payment', documentId: 'config', description: 'Payment Settings' });
+      } else { skippedWritesCount++; }
+
+      if (JSON.stringify(draftHangingSneakerConfig) !== JSON.stringify(publishedHangingSneakerConfig)) {
+        rawOperations.push({ type: 'set', ref: doc(db, 'animations', 'hangingSneakerConfig'), data: draftHangingSneakerConfig, collectionName: 'animations', documentId: 'hangingSneakerConfig', description: 'Hanging Sneaker Config' });
+      } else { skippedWritesCount++; }
+
+      if (JSON.stringify(draftPetShoeConfig) !== JSON.stringify(publishedPetShoeConfig)) {
+        rawOperations.push({ type: 'set', ref: doc(db, 'mascot', 'petShoeConfig'), data: draftPetShoeConfig, collectionName: 'mascot', documentId: 'petShoeConfig', description: 'Pet Shoe Config' });
+      } else { skippedWritesCount++; }
+
+      if (JSON.stringify(draftInstagramConfig) !== JSON.stringify(publishedInstagramConfig)) {
+        rawOperations.push({ type: 'set', ref: doc(db, 'social', 'instagramConfig'), data: draftInstagramConfig, collectionName: 'social', documentId: 'instagramConfig', description: 'Instagram Config' });
+      } else { skippedWritesCount++; }
+
+      if (JSON.stringify(draftSoundConfig) !== JSON.stringify(publishedSoundConfig)) {
+        rawOperations.push({ type: 'set', ref: doc(db, 'theme', 'current'), data: draftSoundConfig, collectionName: 'theme', documentId: 'current', description: 'Sound Config' });
+      } else { skippedWritesCount++; }
+
+      // D. Version History Snapshot
       const newVersion: PublishedVersionHistory = {
         id: `ver-${Date.now()}`,
         versionNumber: versionNum,
@@ -2609,57 +2523,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (versionSize > 800 * 1024) {
         const parentVersionDoc = { ...newVersion };
         parentVersionDoc.data = { ...newVersion.data };
-        
+
         const productsChunkSize = Math.ceil(draftProducts.length / 2);
         const part1Products = draftProducts.slice(0, productsChunkSize);
         const part2Products = draftProducts.slice(productsChunkSize);
-        
+
         const part1Id = `${newVersion.id}_products_part1`;
         const part2Id = `${newVersion.id}_products_part2`;
-        
-        operations.push({
-          type: 'set',
-          ref: doc(db, 'publishedVersions', part1Id),
-          data: { parentId: newVersion.id, products: part1Products },
-          collectionName: 'publishedVersions',
-          documentId: part1Id,
-          description: 'Version Products Part 1 (Split)',
-        });
-        
-        operations.push({
-          type: 'set',
-          ref: doc(db, 'publishedVersions', part2Id),
-          data: { parentId: newVersion.id, products: part2Products },
-          collectionName: 'publishedVersions',
-          documentId: part2Id,
-          description: 'Version Products Part 2 (Split)',
-        });
-        
+
+        rawOperations.push({ type: 'set', ref: doc(db, 'publishedVersions', part1Id), data: { parentId: newVersion.id, products: part1Products }, collectionName: 'publishedVersions', documentId: part1Id, description: 'Version Products Part 1' });
+        rawOperations.push({ type: 'set', ref: doc(db, 'publishedVersions', part2Id), data: { parentId: newVersion.id, products: part2Products }, collectionName: 'publishedVersions', documentId: part2Id, description: 'Version Products Part 2' });
+
         parentVersionDoc.data.products = [];
         (parentVersionDoc as any)._splittedProductsParts = [part1Id, part2Id];
-        
-        operations.push({
-          type: 'set',
-          ref: doc(db, 'publishedVersions', newVersion.id),
-          data: parentVersionDoc,
-          collectionName: 'publishedVersions',
-          documentId: newVersion.id,
-          description: `Split Version Snapshot ${versionNum}`,
-        });
+
+        rawOperations.push({ type: 'set', ref: doc(db, 'publishedVersions', newVersion.id), data: parentVersionDoc, collectionName: 'publishedVersions', documentId: newVersion.id, description: `Split Version Snapshot ${versionNum}` });
       } else {
-        operations.push({
-          type: 'set',
-          ref: doc(db, 'publishedVersions', newVersion.id),
-          data: newVersion,
-          collectionName: 'publishedVersions',
-          documentId: newVersion.id,
-          description: `Version Snapshot ${versionNum}`,
-        });
+        rawOperations.push({ type: 'set', ref: doc(db, 'publishedVersions', newVersion.id), data: newVersion, collectionName: 'publishedVersions', documentId: newVersion.id, description: `Version Snapshot ${versionNum}` });
       }
 
-      // Calculate sizes in KB/MB for debug display
+      // E. Deduplicate Operations Queue
+      const opsMap = new Map<string, BatchOperation>();
+      for (const op of rawOperations) {
+        const key = `${op.collectionName}/${op.documentId}`;
+        opsMap.set(key, op);
+      }
+      const operations = Array.from(opsMap.values());
+
       let totalBytes = 0;
-      operations.forEach(op => {
+      operations.forEach((op) => {
         if (op.data) totalBytes += estimateSizeInBytes(op.data);
       });
       totalEstimatedSizeKb = totalBytes / 1024;
@@ -2669,41 +2561,47 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       updateStep(
         2,
         'success',
-        `Prepared ${operations.length} atomic ops (+${addedProducts} products, +${addedReviews} reviews) with total size of ${totalEstimatedSizeKb.toFixed(2)} KB.`
+        `Prepared ${operations.length} atomic write(s) (${skippedWritesCount} unchanged doc(s) skipped). Size: ${totalEstimatedSizeKb.toFixed(2)} KB.`
       );
 
       // Step 4: Synchronize Granular Live Updates
       const step4Start = Date.now();
-      const BATCH_CHUNK_SIZE = 80; // Safe, efficient batch size
-      const batchChunks: BatchOperation[][] = [];
-      for (let i = 0; i < operations.length; i += BATCH_CHUNK_SIZE) {
-        batchChunks.push(operations.slice(i, i + BATCH_CHUNK_SIZE));
+
+      if (operations.length === 0) {
+        updateStep(3, 'success', `All documents up to date. 0 writes required (${skippedWritesCount} unchanged doc(s) skipped).`);
+        commitDurationMetric = '0.00s';
+      } else {
+        const BATCH_CHUNK_SIZE = Math.min(25, Math.max(10, Math.ceil(operations.length / 3) || 25));
+        const batchChunks: BatchOperation[][] = [];
+        for (let i = 0; i < operations.length; i += BATCH_CHUNK_SIZE) {
+          batchChunks.push(operations.slice(i, i + BATCH_CHUNK_SIZE));
+        }
+
+        const totalBatches = batchChunks.length;
+        batchSizeMetric = BATCH_CHUNK_SIZE;
+
+        updateStep(
+          3,
+          'running',
+          `Synchronizing ${operations.length} granular write(s) across ${totalBatches} batch(es)...`
+        );
+
+        for (let i = 0; i < totalBatches; i++) {
+          const chunkOps = batchChunks[i];
+          await executeBatchChunkWithRetry(chunkOps, i, totalBatches, (msg) => {
+            updateStep(3, 'running', msg);
+          });
+        }
+
+        const step4Duration = ((Date.now() - step4Start) / 1000).toFixed(2);
+        commitDurationMetric = `${step4Duration}s`;
+
+        updateStep(
+          3,
+          'success',
+          `Successfully committed ${operations.length} write(s) across ${totalBatches} batch(es) in ${commitDurationMetric} (${skippedWritesCount} doc(s) skipped).`
+        );
       }
-
-      const totalBatches = batchChunks.length;
-      batchSizeMetric = BATCH_CHUNK_SIZE;
-
-      updateStep(
-        3,
-        'running',
-        `Synchronizing ${operations.length} granular updates across ${totalBatches} batches...`
-      );
-
-      for (let i = 0; i < totalBatches; i++) {
-        const chunkOps = batchChunks[i];
-        await executeBatchChunkWithRetry(chunkOps, i, totalBatches, (msg) => {
-          updateStep(3, 'running', msg);
-        });
-      }
-
-      const step4Duration = ((Date.now() - step4Start) / 1000).toFixed(2);
-      commitDurationMetric = `${step4Duration}s`;
-
-      updateStep(
-        3,
-        'success',
-        `Successfully synchronized ${operations.length} granular updates in ${commitDurationMetric}.`
-      );
 
       // Step 5: Refresh Search & Filter Indexes
       updateStep(4, 'running', 'Rebuilding product search & filter indexes...');
@@ -2829,6 +2727,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         commitDuration: commitDurationMetric,
         writeCount: writeCountMetric,
       };
+    } finally {
+      isPublishingRef.current = false;
     }
   };
 

@@ -2065,198 +2065,118 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     onProgress?: (progress: PublishProgressState) => void
   ): Promise<PublishResult> => {
     isPublishingRef.current = true;
+
+    const estimateSizeInBytes = (obj: any): number => {
+      try {
+        const str = JSON.stringify(obj);
+        return str ? str.length : 0;
+      } catch (e) {
+        return 0;
+      }
+    };
+
+    const cleanForDiff = (obj: any): any => {
+      if (obj === null || obj === undefined) return null;
+      if (typeof obj !== 'object') return obj;
+      if (Array.isArray(obj)) return obj.map(cleanForDiff);
+
+      const clean: Record<string, any> = {};
+      for (const key of Object.keys(obj)) {
+        if (key === 'updatedAt' || key === 'createdAt') continue;
+        clean[key] = cleanForDiff(obj[key]);
+      }
+      return clean;
+    };
+
+    const isSameDoc = (a: any, b: any): boolean => {
+      return JSON.stringify(cleanForDiff(a)) === JSON.stringify(cleanForDiff(b));
+    };
+
+    interface BatchOperation {
+      type: 'set' | 'delete';
+      ref: any;
+      data?: any;
+      collectionName: string;
+      documentId: string;
+      description: string;
+    }
+
+    const initialSteps: PublishStepLog[] = [
+      { id: 's1', name: 'Validate Draft & Firebase Credentials', status: 'pending' },
+      { id: 's2', name: 'Verify Media Assets & URIs', status: 'pending' },
+      { id: 's3', name: 'Prepare Operations Queue & Size Check', status: 'pending' },
+      { id: 's4', name: 'Synchronize Granular Live Updates', status: 'pending' },
+      { id: 's5', name: 'Refresh Search & Filter Indexes', status: 'pending' },
+      { id: 's6', name: 'Refresh Local Caches & Storage Keys', status: 'pending' },
+      { id: 's7', name: 'Refresh Live Website Data Across Clients', status: 'pending' },
+      { id: 's8', name: 'Confirm Version History Snapshot', status: 'pending' },
+      { id: 's9', name: 'Cleanup Draft References', status: 'pending' },
+      { id: 's10', name: 'Notify Connected Clients & Complete Release', status: 'pending' },
+    ];
+
+    let currentLogs = [...initialSteps];
+
+    // Initialize metrics variables so they can be captured and shared via the progress callback
+    let totalEstimatedSizeKb = 0;
+    let batchSizeMetric = 0;
+    let numDocsMetric = 0;
+    let commitDurationMetric = '0s';
+    let writeCountMetric = 0;
+
+    const updateStep = (
+      stepIdx: number,
+      status: 'pending' | 'running' | 'success' | 'failed',
+      message?: string,
+      errorInfo?: { code?: string; collectionName?: string; documentId?: string; stackTrace?: string }
+    ) => {
+      currentLogs = currentLogs.map((log, idx) => {
+        if (idx === stepIdx) {
+          return {
+            ...log,
+            status,
+            message: message || log.message,
+            timestamp: new Date().toLocaleTimeString(),
+            errorCode: errorInfo?.code,
+            collectionName: errorInfo?.collectionName,
+            documentId: errorInfo?.documentId,
+            stackTrace: errorInfo?.stackTrace,
+          };
+        }
+        return log;
+      });
+
+      const currentStepNum = stepIdx + 1;
+      const percentage = Math.min(100, Math.round((currentStepNum / 10) * 100));
+
+      if (onProgress) {
+        onProgress({
+          currentStep: currentStepNum,
+          totalSteps: 10,
+          stepName: currentLogs[stepIdx]?.name || 'Publishing...',
+          percentage,
+          logs: [...currentLogs],
+          isCompleted: status === 'success' && stepIdx === 9,
+          errorCode: errorInfo?.code,
+          collectionName: errorInfo?.collectionName,
+          documentId: errorInfo?.documentId,
+          stackTrace: errorInfo?.stackTrace,
+          documentSize: `${totalEstimatedSizeKb.toFixed(2)} KB`,
+          batchSize: batchSizeMetric,
+          numDocuments: numDocsMetric,
+          commitDuration: commitDurationMetric,
+          writeCount: writeCountMetric,
+        });
+      }
+    };
+
     try {
       const adminEmail = auth.currentUser?.email || 'vpcreation2002@gmail.com';
       const nowISO = new Date().toISOString();
       const startTime = Date.now();
 
-      const estimateSizeInBytes = (obj: any): number => {
-        const str = JSON.stringify(obj);
-        return str ? str.length : 0;
-      };
-
-      // Strict Timeout Wrapper to Guarantee Async Operations Never Wait Forever
-      const promiseWithTimeout = <T,>(
-        promise: Promise<T>,
-        timeoutMs: number,
-        errorMessage: string
-      ): Promise<T> => {
-        let timer: any;
-        const timeoutPromise = new Promise<T>((_, reject) => {
-          timer = setTimeout(() => {
-            reject({
-              code: 'firestore/timeout',
-              message: errorMessage,
-            });
-          }, timeoutMs);
-        });
-        return Promise.race([promise, timeoutPromise]).finally(() => {
-          if (timer) clearTimeout(timer);
-        });
-      };
-
-      interface BatchOperation {
-        type: 'set' | 'delete';
-        ref: any;
-        data?: any;
-        collectionName: string;
-        documentId: string;
-        description: string;
-      }
-
-      const executeBatchChunkWithRetry = async (
-        chunkOps: BatchOperation[],
-        batchIndex: number,
-        totalBatches: number,
-        onProgressMessage?: (msg: string) => void
-      ) => {
-        const maxRetries = 3;
-        let lastError: any = null;
-
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          const chunkStartTime = Date.now();
-          try {
-            if (onProgressMessage) {
-              onProgressMessage(
-                `Batch ${batchIndex + 1}/${totalBatches} (${chunkOps.length} ops): Committing attempt ${attempt}/${maxRetries}...`
-              );
-            }
-
-            const batch = writeBatch(db);
-            for (const op of chunkOps) {
-              if (op.type === 'set') {
-                batch.set(op.ref, op.data, { merge: true });
-              } else if (op.type === 'delete') {
-                batch.delete(op.ref);
-              }
-            }
-
-            await promiseWithTimeout(
-              batch.commit(),
-              12000,
-              `WriteBatch commit for Batch ${batchIndex + 1}/${totalBatches} timed out (12s limit).`
-            );
-
-            const duration = Date.now() - chunkStartTime;
-            if (onProgressMessage) {
-              onProgressMessage(
-                `Batch ${batchIndex + 1}/${totalBatches} (${chunkOps.length} ops) completed in ${duration}ms.`
-              );
-            }
-            return;
-          } catch (err: any) {
-            lastError = err;
-            console.warn(`Batch ${batchIndex + 1}/${totalBatches} commit attempt ${attempt} error:`, err);
-
-            if (err.code === 'permission-denied') {
-              throw {
-                code: 'permission-denied',
-                message: 'Firestore Permission Denied: Admin permissions required for database write operations.',
-                collectionName: chunkOps[0]?.collectionName || 'products',
-                documentId: chunkOps[0]?.documentId || 'current',
-                stackTrace: err.stack,
-              };
-            }
-
-            if (attempt < maxRetries) {
-              await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
-            }
-          }
-        }
-
-        // Fallback: split batch into smaller sub-chunks if possible
-        if (chunkOps.length > 1) {
-          if (onProgressMessage) {
-            onProgressMessage(`Batch ${batchIndex + 1}/${totalBatches} retrying as smaller sub-batches...`);
-          }
-          const mid = Math.ceil(chunkOps.length / 2);
-          const part1 = chunkOps.slice(0, mid);
-          const part2 = chunkOps.slice(mid);
-          await executeBatchChunkWithRetry(part1, batchIndex, totalBatches, onProgressMessage);
-          await executeBatchChunkWithRetry(part2, batchIndex, totalBatches, onProgressMessage);
-          return;
-        }
-
-        throw {
-          code: lastError?.code || 'firestore/batch-commit-failed',
-          message: lastError?.message || `Batch ${batchIndex + 1}/${totalBatches} commit failed after ${maxRetries} attempts.`,
-          collectionName: chunkOps[0]?.collectionName || 'products',
-          documentId: chunkOps[0]?.documentId || 'current',
-          stackTrace: lastError?.stack || lastError?.stackTrace || String(lastError),
-        };
-      };
-
-      const initialSteps: PublishStepLog[] = [
-        { id: 's1', name: 'Validate Draft & Firebase Credentials', status: 'pending' },
-        { id: 's2', name: 'Verify Media Assets & URIs', status: 'pending' },
-        { id: 's3', name: 'Prepare Operations Queue & Size Check', status: 'pending' },
-        { id: 's4', name: 'Synchronize Granular Live Updates', status: 'pending' },
-        { id: 's5', name: 'Refresh Search & Filter Indexes', status: 'pending' },
-        { id: 's6', name: 'Refresh Local Caches & Storage Keys', status: 'pending' },
-        { id: 's7', name: 'Refresh Live Website Data Across Clients', status: 'pending' },
-        { id: 's8', name: 'Confirm Version History Snapshot', status: 'pending' },
-        { id: 's9', name: 'Cleanup Draft References', status: 'pending' },
-        { id: 's10', name: 'Notify Connected Clients & Complete Release', status: 'pending' },
-      ];
-
-      let currentLogs = [...initialSteps];
-
-      // Initialize metrics variables so they can be captured and shared via the progress callback
-      let totalEstimatedSizeKb = 0;
-      let batchSizeMetric = 0;
-      let numDocsMetric = 0;
-      let commitDurationMetric = '0s';
-      let writeCountMetric = 0;
-
-      const updateStep = (
-        stepIdx: number,
-        status: 'pending' | 'running' | 'success' | 'failed',
-        message?: string,
-        errorInfo?: { code?: string; collectionName?: string; documentId?: string; stackTrace?: string }
-      ) => {
-        currentLogs = currentLogs.map((log, idx) => {
-          if (idx === stepIdx) {
-            return {
-              ...log,
-              status,
-              message: message || log.message,
-              timestamp: new Date().toLocaleTimeString(),
-              errorCode: errorInfo?.code,
-              collectionName: errorInfo?.collectionName,
-              documentId: errorInfo?.documentId,
-              stackTrace: errorInfo?.stackTrace,
-            };
-          }
-          return log;
-        });
-
-        const currentStepNum = stepIdx + 1;
-        const percentage = Math.min(100, Math.round((currentStepNum / 10) * 100));
-
-        if (onProgress) {
-          onProgress({
-            currentStep: currentStepNum,
-            totalSteps: 10,
-            stepName: currentLogs[stepIdx]?.name || 'Publishing...',
-            percentage,
-            logs: [...currentLogs],
-            isCompleted: status === 'success' && stepIdx === 9,
-            errorCode: errorInfo?.code,
-            collectionName: errorInfo?.collectionName,
-            documentId: errorInfo?.documentId,
-            stackTrace: errorInfo?.stackTrace,
-            documentSize: `${totalEstimatedSizeKb.toFixed(2)} KB`,
-            batchSize: batchSizeMetric,
-            numDocuments: numDocsMetric,
-            commitDuration: commitDurationMetric,
-            writeCount: writeCountMetric,
-          });
-        }
-      };
-
       // Step 1: Validate Draft & Pre-flight Diagnostics
       updateStep(0, 'running', 'Validating Firebase connection, authentication, and draft schemas...');
-      await new Promise((r) => setTimeout(r, 40));
+      await new Promise((r) => setTimeout(r, 20));
 
       if (!db) {
         throw {
@@ -2298,7 +2218,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Step 2: Verify Images
       updateStep(1, 'running', 'Verifying image assets & media URIs (skipping already hosted URLs)...');
-      await new Promise((r) => setTimeout(r, 40));
+      await new Promise((r) => setTimeout(r, 20));
       let totalImages = 0;
       let existingHostedImages = 0;
       draftProducts.forEach((p) => {
@@ -2314,7 +2234,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Step 3: Prepare Operations Queue & Size Check
       updateStep(2, 'running', 'Building operations queue and diffing changed documents...');
-      await new Promise((r) => setTimeout(r, 40));
+      await new Promise((r) => setTimeout(r, 20));
 
       const versionNum = `v1.${publishedVersions.length + 1}`;
       const rawOperations: BatchOperation[] = [];
@@ -2341,20 +2261,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
           addedProducts++;
         } else {
-          // Existing Product: Perform granular sub-collection diffing!
+          // Existing Product: Perform granular sub-collection content diffing!
           const pubSplit = splitProduct(pub);
           let productHasChange = false;
 
           // 1) Metadata
-          if (JSON.stringify(split.metadata) !== JSON.stringify(pubSplit.metadata)) {
-            rawOperations.push({ type: 'set', ref: doc(db, 'products', p.id), data: split.metadata, collectionName: 'products', documentId: p.id, description: `Updated product metadata for "${p.name}"` });
+          if (!isSameDoc(split.metadata, pubSplit.metadata)) {
+            const updatedMeta = { ...split.metadata, updatedAt: nowISO };
+            rawOperations.push({ type: 'set', ref: doc(db, 'products', p.id), data: updatedMeta, collectionName: 'products', documentId: p.id, description: `Updated product metadata for "${p.name}"` });
             productHasChange = true;
           } else {
             skippedWritesCount++;
           }
 
           // 2) Gallery
-          if (JSON.stringify(split.gallery) !== JSON.stringify(pubSplit.gallery)) {
+          if (!isSameDoc(split.gallery, pubSplit.gallery)) {
             rawOperations.push({ type: 'set', ref: doc(db, 'product_gallery', p.id), data: split.gallery, collectionName: 'product_gallery', documentId: p.id, description: `Updated product gallery for "${p.name}"` });
             productHasChange = true;
           } else {
@@ -2362,7 +2283,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
 
           // 3) Variants
-          if (JSON.stringify(split.variants) !== JSON.stringify(pubSplit.variants)) {
+          if (!isSameDoc(split.variants, pubSplit.variants)) {
             rawOperations.push({ type: 'set', ref: doc(db, 'product_variants', p.id), data: split.variants, collectionName: 'product_variants', documentId: p.id, description: `Updated product variants for "${p.name}"` });
             productHasChange = true;
           } else {
@@ -2370,7 +2291,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
 
           // 4) AI Metadata
-          if (JSON.stringify(split.aiMetadata) !== JSON.stringify(pubSplit.aiMetadata)) {
+          if (!isSameDoc(split.aiMetadata, pubSplit.aiMetadata)) {
             rawOperations.push({ type: 'set', ref: doc(db, 'product_ai_metadata', p.id), data: split.aiMetadata, collectionName: 'product_ai_metadata', documentId: p.id, description: `Updated AI metadata for "${p.name}"` });
             productHasChange = true;
           } else {
@@ -2380,7 +2301,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           // 5) Gallery Parts
           for (const part of split.galleryParts) {
             const pubPart = pubSplit.galleryParts.find((pt) => pt.id === part.id);
-            if (!pubPart || JSON.stringify(part) !== JSON.stringify(pubPart)) {
+            if (!pubPart || !isSameDoc(part, pubPart)) {
               rawOperations.push({ type: 'set', ref: doc(db, 'product_gallery_parts', part.id), data: part, collectionName: 'product_gallery_parts', documentId: part.id, description: `Updated gallery part ${part.id}` });
               productHasChange = true;
             } else {
@@ -2439,7 +2360,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (!pub) {
           rawOperations.push({ type: 'set', ref: doc(db, 'reviews', r.id), data: r, collectionName: 'reviews', documentId: r.id, description: `Added review ${r.id}` });
           addedReviews++;
-        } else if (JSON.stringify(pub) !== JSON.stringify(r)) {
+        } else if (!isSameDoc(pub, r)) {
           rawOperations.push({ type: 'set', ref: doc(db, 'reviews', r.id), data: r, collectionName: 'reviews', documentId: r.id, description: `Updated review ${r.id}` });
           updatedReviews++;
         } else {
@@ -2455,43 +2376,43 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       // C. Synchronize CMS Settings only if they changed
-      if (JSON.stringify(draftStoreInfo) !== JSON.stringify(publishedStoreInfo)) {
+      if (!isSameDoc(draftStoreInfo, publishedStoreInfo)) {
         rawOperations.push({ type: 'set', ref: doc(db, 'settings', 'store'), data: draftStoreInfo, collectionName: 'settings', documentId: 'store', description: 'Store Info' });
       } else { skippedWritesCount++; }
 
-      if (JSON.stringify(draftHeroContent) !== JSON.stringify(publishedHeroContent)) {
+      if (!isSameDoc(draftHeroContent, publishedHeroContent)) {
         rawOperations.push({ type: 'set', ref: doc(db, 'hero', 'current'), data: draftHeroContent, collectionName: 'hero', documentId: 'current', description: 'Hero Content' });
       } else { skippedWritesCount++; }
 
-      if (JSON.stringify(draftAnnouncements) !== JSON.stringify(publishedAnnouncements)) {
+      if (!isSameDoc(draftAnnouncements, publishedAnnouncements)) {
         rawOperations.push({ type: 'set', ref: doc(db, 'homepage', 'announcements'), data: { items: draftAnnouncements }, collectionName: 'homepage', documentId: 'announcements', description: 'Announcements' });
       } else { skippedWritesCount++; }
 
-      if (JSON.stringify(draftCategoryHighlights) !== JSON.stringify(publishedCategoryHighlights)) {
+      if (!isSameDoc(draftCategoryHighlights, publishedCategoryHighlights)) {
         rawOperations.push({ type: 'set', ref: doc(db, 'categories', 'highlights'), data: { items: draftCategoryHighlights }, collectionName: 'categories', documentId: 'highlights', description: 'Categories' });
       } else { skippedWritesCount++; }
 
-      if (JSON.stringify(draftTrendingCollections) !== JSON.stringify(publishedTrendingCollections)) {
+      if (!isSameDoc(draftTrendingCollections, publishedTrendingCollections)) {
         rawOperations.push({ type: 'set', ref: doc(db, 'homepage', 'trendingCollections'), data: { items: draftTrendingCollections }, collectionName: 'homepage', documentId: 'trendingCollections', description: 'Collections' });
       } else { skippedWritesCount++; }
 
-      if (JSON.stringify(draftPaymentSettings) !== JSON.stringify(publishedPaymentSettings)) {
+      if (!isSameDoc(draftPaymentSettings, publishedPaymentSettings)) {
         rawOperations.push({ type: 'set', ref: doc(db, 'payment', 'config'), data: draftPaymentSettings, collectionName: 'payment', documentId: 'config', description: 'Payment Settings' });
       } else { skippedWritesCount++; }
 
-      if (JSON.stringify(draftHangingSneakerConfig) !== JSON.stringify(publishedHangingSneakerConfig)) {
+      if (!isSameDoc(draftHangingSneakerConfig, publishedHangingSneakerConfig)) {
         rawOperations.push({ type: 'set', ref: doc(db, 'animations', 'hangingSneakerConfig'), data: draftHangingSneakerConfig, collectionName: 'animations', documentId: 'hangingSneakerConfig', description: 'Hanging Sneaker Config' });
       } else { skippedWritesCount++; }
 
-      if (JSON.stringify(draftPetShoeConfig) !== JSON.stringify(publishedPetShoeConfig)) {
+      if (!isSameDoc(draftPetShoeConfig, publishedPetShoeConfig)) {
         rawOperations.push({ type: 'set', ref: doc(db, 'mascot', 'petShoeConfig'), data: draftPetShoeConfig, collectionName: 'mascot', documentId: 'petShoeConfig', description: 'Pet Shoe Config' });
       } else { skippedWritesCount++; }
 
-      if (JSON.stringify(draftInstagramConfig) !== JSON.stringify(publishedInstagramConfig)) {
+      if (!isSameDoc(draftInstagramConfig, publishedInstagramConfig)) {
         rawOperations.push({ type: 'set', ref: doc(db, 'social', 'instagramConfig'), data: draftInstagramConfig, collectionName: 'social', documentId: 'instagramConfig', description: 'Instagram Config' });
       } else { skippedWritesCount++; }
 
-      if (JSON.stringify(draftSoundConfig) !== JSON.stringify(publishedSoundConfig)) {
+      if (!isSameDoc(draftSoundConfig, publishedSoundConfig)) {
         rawOperations.push({ type: 'set', ref: doc(db, 'theme', 'current'), data: draftSoundConfig, collectionName: 'theme', documentId: 'current', description: 'Sound Config' });
       } else { skippedWritesCount++; }
 
@@ -2571,14 +2492,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateStep(3, 'success', `All documents up to date. 0 writes required (${skippedWritesCount} unchanged doc(s) skipped).`);
         commitDurationMetric = '0.00s';
       } else {
-        const BATCH_CHUNK_SIZE = Math.min(25, Math.max(10, Math.ceil(operations.length / 3) || 25));
+        const BATCH_CHUNK_SIZE = 100; // Efficient high-throughput batching well within 500 limit
         const batchChunks: BatchOperation[][] = [];
         for (let i = 0; i < operations.length; i += BATCH_CHUNK_SIZE) {
           batchChunks.push(operations.slice(i, i + BATCH_CHUNK_SIZE));
         }
 
         const totalBatches = batchChunks.length;
-        batchSizeMetric = BATCH_CHUNK_SIZE;
+        batchSizeMetric = batchChunks[0]?.length || 0;
+        let cumulativeTimeMs = 0;
 
         updateStep(
           3,
@@ -2586,15 +2508,51 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           `Synchronizing ${operations.length} granular write(s) across ${totalBatches} batch(es)...`
         );
 
-        for (let i = 0; i < totalBatches; i++) {
-          const chunkOps = batchChunks[i];
-          await executeBatchChunkWithRetry(chunkOps, i, totalBatches, (msg) => {
-            updateStep(3, 'running', msg);
-          });
+        for (let b = 0; b < totalBatches; b++) {
+          const chunkOps = batchChunks[b];
+          const bStart = performance.now();
+
+          const batch = writeBatch(db);
+          for (const op of chunkOps) {
+            if (op.type === 'set') {
+              batch.set(op.ref, op.data, { merge: true });
+            } else if (op.type === 'delete') {
+              batch.delete(op.ref);
+            }
+          }
+
+          await batch.commit();
+
+          const bDuration = Math.round(performance.now() - bStart);
+          cumulativeTimeMs += bDuration;
+
+          // DEVELOPER LOG REQUIREMENTS:
+          // Batch Number | Documents | Writes | Skipped | Duration (ms) | Total Time
+          console.log(
+            `[PublishEngine Log] Batch ${b + 1}/${totalBatches} | Documents: ${chunkOps.length} | Writes: ${chunkOps.length} | Skipped: ${skippedWritesCount} | Duration: ${bDuration}ms | Total Time: ${cumulativeTimeMs}ms`
+          );
+
+          // If any batch/document operation takes > 500ms, log its path and reason:
+          if (bDuration > 500) {
+            for (const op of chunkOps) {
+              console.warn(
+                `[PublishEngine Slow Write Warning] Path: ${op.collectionName}/${op.documentId} | Batch duration: ${bDuration}ms (>500ms limit) | Reason: ${op.description}`
+              );
+            }
+          }
+
+          // Non-blocking UI yield to guarantee responsive progress dialog and prevent main thread freezing
+          await new Promise((resolve) => setTimeout(resolve, 0));
+
+          updateStep(
+            3,
+            'running',
+            `Batch ${b + 1}/${totalBatches} (${chunkOps.length} ops) committed in ${bDuration}ms.`
+          );
         }
 
-        const step4Duration = ((Date.now() - step4Start) / 1000).toFixed(2);
-        commitDurationMetric = `${step4Duration}s`;
+        const step4DurationSec = ((Date.now() - step4Start) / 1000).toFixed(2);
+        commitDurationMetric = `${step4DurationSec}s`;
 
         updateStep(
           3,

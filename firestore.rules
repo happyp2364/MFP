@@ -101,68 +101,19 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // CMS Draft State Storage for setting collections
-    match /draft_settings/{id} {
-      allow read, write: if true;
-    }
-    match /draft_hero/{id} {
-      allow read, write: if true;
-    }
-    match /draft_homepage/{id} {
-      allow read, write: if true;
-    }
-    match /draft_categories/{id} {
-      allow read, write: if true;
-    }
-    match /draft_payment/{id} {
-      allow read, write: if true;
-    }
-    match /draft_animations/{id} {
-      allow read, write: if true;
-    }
-    match /draft_mascot/{id} {
-      allow read, write: if true;
-    }
-    match /draft_social/{id} {
-      allow read, write: if true;
-    }
-    match /draft_theme/{id} {
-      allow read, write: if true;
-    }
-    match /draft_products/{id} {
-      allow read, write: if true;
-    }
-    match /draft_reviews/{id} {
-      allow read, write: if true;
-    }
     match /product_gallery/{id} {
-      allow read, write: if true;
-    }
-    match /draft_product_gallery/{id} {
       allow read, write: if true;
     }
     match /product_gallery_parts/{id} {
       allow read, write: if true;
     }
-    match /draft_product_gallery_parts/{id} {
-      allow read, write: if true;
-    }
     match /product_variants/{id} {
-      allow read, write: if true;
-    }
-    match /draft_product_variants/{id} {
       allow read, write: if true;
     }
     match /product_ai_metadata/{id} {
       allow read, write: if true;
     }
-    match /draft_product_ai_metadata/{id} {
-      allow read, write: if true;
-    }
     match /product_statistics/{id} {
-      allow read, write: if true;
-    }
-    match /draft_product_statistics/{id} {
       allow read, write: if true;
     }
 
@@ -217,11 +168,6 @@ service cloud.firestore {
     // Store Snapshots & Recovery Backups
     match /backups/{backupId} {
       allow read, write: if isSignedIn();
-    }
-
-    // CMS Draft System (Draft State Storage)
-    match /drafts/{draftId} {
-      allow read, write: if true;
     }
 
     // CMS Published Version History

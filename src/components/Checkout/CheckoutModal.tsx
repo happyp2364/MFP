@@ -294,14 +294,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       };
 
       const res = await placeOrderAndPay(
-        shippingInfo,
         cartItems,
-        subtotal,
-        shippingFee,
-        0,
+        shippingInfo,
         selectedMethod,
-        targetRef,
-        extraDetails
+        {
+          ...extraDetails,
+          targetRef,
+          subtotal,
+          shippingFee,
+        }
       );
 
       if (res.success && res.orderId) {

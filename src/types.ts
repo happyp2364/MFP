@@ -331,11 +331,12 @@ export interface TransactionRecord {
 
 export interface AdminNotification {
   id: string;
-  orderId: string;
-  customerName: string;
-  totalAmount: number;
-  productCount: number;
-  paymentStatus: string;
+  orderId?: string;
+  customerName?: string;
+  totalAmount?: number;
+  productCount?: number;
+  paymentStatus?: string;
+  message?: string;
   timestamp: string;
   read: boolean;
 }
@@ -611,5 +612,13 @@ export interface PublishResult {
   numDocuments?: number;
   commitDuration?: string;
   writeCount?: number;
+}
+
+export interface ToastState {
+  id?: string;
+  show?: boolean;
+  message?: string;
+  text?: string;
+  type?: 'success' | 'error' | 'info';
 }
 

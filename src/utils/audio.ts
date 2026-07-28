@@ -436,6 +436,10 @@ function playSynthesizedSound(type: SoundType, effectiveGain: number) {
 }
 
 // Backward compatibility export
+export function applyAudioCustomerSettings(settings: CustomerSoundSettings) {
+  activeCustomerSettings = { ...activeCustomerSettings, ...settings };
+}
+
 export function playNotificationSound() {
   playSound('notification');
 }

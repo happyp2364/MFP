@@ -613,3 +613,71 @@ export const TRENDING_COLLECTIONS = [
     count: '28 items',
   },
 ];
+
+export const DEFAULT_HANGING_SNEAKER_CONFIG = {
+  enabled: true,
+  shoeImageUri: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+  shoeName: 'AirGlide Royal Pro',
+  shoePrice: 1499,
+  badgeText: 'HOT ARRIVAL',
+  swingSpeedSec: 3.5,
+  ropeColor: '#C5A059',
+};
+
+export const DEFAULT_PET_SHOE_CONFIG = {
+  enabled: true,
+  mascotName: 'Sneaker Pet',
+  mascotAvatar: '👟',
+  greetingText: 'Looking for the perfect fit today?',
+  discountBadge: '15% OFF ON WHATSAPP ORDERS',
+};
+
+export const DEFAULT_INSTAGRAM_CONFIG = {
+  enabled: true,
+  username: 'marudhar_fashion_point',
+  profileUrl: 'https://www.instagram.com/marudhar_fashion_point/',
+  followersCount: '25.8K+',
+  postsCount: '450+',
+  reels: [],
+};
+
+export const DEFAULT_SOUND_CONFIG = {
+  enabled: true,
+  masterVolume: 80,
+  enableHoverSounds: true,
+  enableButtonClicks: true,
+  enableAddToCartSounds: true,
+  enableOrderSuccessSounds: true,
+  customSoundUrls: {},
+};
+
+export const DEFAULT_CUSTOMER_SOUND_SETTINGS = {
+  muted: false,
+  volume: 80,
+};
+
+export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
+  merchantName: 'Marudhar Fashion Point',
+  upiId: '9782482250@upi',
+  upiName: 'Marudhar Fashion Point',
+  paymentEnabled: true,
+  enableUPI: true,
+  enableQR: true,
+  enableCards: true,
+  enableNetBanking: true,
+  enableWallets: true,
+  enableCOD: true,
+  isTestMode: false,
+  autoApprovePaidOrders: true,
+  currencySymbol: '₹',
+  gstPercent: 0,
+  flatShippingRate: 0,
+  standardDeliveryCharge: 0,
+  freeShippingMinAmount: 999,
+  enableBuyNow: true,
+  enableBuyWhatsApp: true,
+  enableAddToCart: true,
+  buyNowButtonText: 'Buy Now',
+  buyWhatsAppButtonText: 'Order on WhatsApp',
+  addToBagButtonText: 'Add to Bag',
+};

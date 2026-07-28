@@ -138,3 +138,193 @@
   animation-play-state: paused;
 }
 
+
+/* ==========================================================================
+   ACCESSIBILITY & CONTRAST INJECTOR (WCAG AA COMPLIANT)
+   ========================================================================== */
+
+/* 1. SELECTION & CURSOR */
+::selection {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+input, textarea, select {
+  caret-color: #2563eb !important; /* Always visible text cursor */
+}
+
+.dark input, .dark textarea, .dark select {
+  caret-color: #ffffff !important;
+}
+
+/* 2. FORM CONTROLS: INPUTS, TEXTAREAS, SELECTS (LIGHT MODE) */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+textarea,
+select {
+  background-color: #ffffff !important;
+  color: #111827 !important; /* Dark gray or black primary text */
+  border: 1px solid #cbd5e1 !important; /* Light gray borders */
+  border-radius: 0.75rem !important; /* Standardized rounded-xl */
+  font-weight: 500 !important;
+  font-size: 0.875rem !important; /* text-sm/text-xs sizing for readability */
+}
+
+/* 3. FOCUS STATES */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):focus,
+textarea:focus,
+select:focus {
+  border-color: #2563eb !important;
+  outline: 2px solid #2563eb !important; /* Blue accent focus with visible outline */
+  outline-offset: 1px !important;
+  background-color: #ffffff !important;
+}
+
+/* 4. PLACEHOLDERS */
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280 !important; /* Medium gray - highly readable */
+  opacity: 1 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9ca3af !important; /* Light gray - readable in dark mode */
+  opacity: 1 !important;
+}
+
+/* 5. SELECT MENU OPTIONS */
+select option {
+  background-color: #ffffff !important;
+  color: #111827 !important; /* Invisible selected option fix */
+}
+
+/* 6. DARK MODE OVERRIDES */
+/* Target elements with class .dark, inside .dark, or inside dark-themed modal/wrapper layers */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+.dark textarea,
+.dark select,
+[class*="bg-neutral-9"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+[class*="bg-neutral-9"] textarea,
+[class*="bg-neutral-9"] select,
+[class*="bg-black"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+[class*="bg-black"] textarea,
+[class*="bg-black"] select,
+[class*="bg-[#121816]"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+[class*="bg-[#121816]"] textarea,
+[class*="bg-[#121816]"] select {
+  background-color: #1e1e1e !important; /* Dark gray background */
+  color: #ffffff !important; /* White text */
+  border: 1px solid #4b5563 !important; /* Medium gray borders */
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):focus,
+.dark textarea:focus,
+.dark select:focus,
+[class*="bg-neutral-9"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):focus,
+[class*="bg-neutral-9"] textarea:focus,
+[class*="bg-neutral-9"] select:focus,
+[class*="bg-black"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):focus,
+[class*="bg-black"] textarea:focus,
+[class*="bg-black"] select:focus,
+[class*="bg-[#121816]"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):focus,
+[class*="bg-[#121816]"] textarea:focus,
+[class*="bg-[#121816]"] select:focus {
+  border-color: #3b82f6 !important;
+  outline: 2px solid #3b82f6 !important; /* Blue accent outline */
+  outline-offset: 1px !important;
+  background-color: #1e1e1e !important;
+}
+
+.dark select option {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+}
+
+/* 7. AUTO CONTRAST UTILITIES FOR LABELS & CARDS */
+/* If parent is dark, label text must be white. If light, label text must be dark. */
+.dark label,
+[class*="bg-neutral-9"] label,
+[class*="bg-black"] label,
+[class*="bg-[#121816]"] label {
+  color: #ffffff !important;
+}
+
+label {
+  color: #374151 !important; /* Dark gray/black label text for clear light mode contrast */
+}
+
+/* 8. CHECKBOXES, RADIO BUTTONS & SWITCHES */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #0b8f63 !important;
+  border-color: #9ca3af !important;
+  cursor: pointer !important;
+}
+
+/* 9. TABLES & HEADERS */
+th {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid #e5e7eb !important;
+}
+
+.dark th {
+  background-color: #374151 !important;
+  color: #ffffff !important;
+  border-bottom: 2px solid #4b5563 !important;
+}
+
+td {
+  color: #1f2937 !important;
+}
+
+.dark td {
+  color: #f3f4f6 !important;
+}
+
+/* 10. BUTTONS READABILITY */
+button:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+/* Low contrast tags contrast booster */
+span.bg-emerald-500\/20, .bg-emerald-500\/20 {
+  background-color: #d1fae5 !important; /* emerald-100 */
+  color: #065f46 !important; /* emerald-800 */
+}
+
+.dark span.bg-emerald-500\/20, .dark .bg-emerald-500\/20 {
+  background-color: #065f46 !important; /* emerald-800 */
+  color: #ecfdf5 !important; /* emerald-50 */
+}
+
+span.bg-emerald-50, .bg-emerald-50 {
+  background-color: #f0fdf4 !important;
+  color: #166534 !important; /* emerald-800 */
+}
+
+/* 11. AUTOFILL OVERRIDES */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #111827 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #1e1e1e inset !important;
+}
+
+

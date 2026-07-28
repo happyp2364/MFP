@@ -273,19 +273,24 @@ interface StoreContextType {
   orders: CustomerOrder[];
   notifications: AdminNotification[];
   hangingSneakerConfig: HangingSneakerConfig;
-  updateHangingSneakerConfig: (updated: Partial<HangingSneakerConfig>) => void;
+  updateHangingSneakerConfig: (updated: Partial<HangingSneakerConfig>) => Promise<boolean>;
   petShoeConfig: PetShoeConfig;
-  updatePetShoeConfig: (updated: Partial<PetShoeConfig>) => void;
+  updatePetShoeConfig: (updated: Partial<PetShoeConfig>) => Promise<boolean>;
   instagramConfig: InstagramConfig;
-  updateInstagramConfig: (updated: Partial<InstagramConfig>) => Promise<void>;
+  updateInstagramConfig: (updated: Partial<InstagramConfig>) => Promise<boolean>;
   updatePaymentSettings: (settings: Partial<PaymentSettings>) => Promise<boolean>;
 
   // Website Sound Engine & Customer Controls
   soundConfig: SoundConfig;
-  updateSoundConfig: (updated: Partial<SoundConfig>) => Promise<void>;
+  updateSoundConfig: (updated: Partial<SoundConfig>) => Promise<boolean>;
   customerSoundSettings: CustomerSoundSettings;
   updateCustomerSoundSettings: (updated: Partial<CustomerSoundSettings>) => void;
   playSiteSound: (type: SoundType) => void;
+  lastSaveMetrics: {
+    writeTimeMs: number;
+    docsUpdated: string[];
+    fieldsUpdated: Record<string, string[]>;
+  } | null;
   placeOrderAndPay: (
     shippingInfo: ShippingAddressInfo,
     items: import('../types').CartItem[],
@@ -479,6 +484,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [draftPetShoeConfig, setDraftPetShoeConfig] = useState<PetShoeConfig>(publishedPetShoeConfig);
   const [draftInstagramConfig, setDraftInstagramConfig] = useState<InstagramConfig>(publishedInstagramConfig);
   const [draftSoundConfig, setDraftSoundConfig] = useState<SoundConfig>(publishedSoundConfig);
+  const [lastSaveMetrics, setLastSaveMetrics] = useState<{
+    writeTimeMs: number;
+    docsUpdated: string[];
+    fieldsUpdated: Record<string, string[]>;
+  } | null>(null);
 
   // --- 3. DRAFT STATUS TRACKING & VERSION HISTORY ---
   const [previewMode, setPreviewMode] = useState<'draft' | 'live'>('draft');
@@ -1641,8 +1651,32 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // --- HELPERS FOR SMART DIFFERENCE SAVE ENGINE ---
+  const getObjectDiff = (original: any, current: any): any => {
+    if (original === current) return null;
+    if (!original || !current || typeof original !== 'object' || typeof current !== 'object') {
+      return current;
+    }
+
+    const diff: any = {};
+    let hasChanges = false;
+
+    const allKeys = new Set([...Object.keys(original), ...Object.keys(current)]);
+    for (const key of allKeys) {
+      const valOrig = original[key];
+      const valCurr = current[key];
+
+      if (JSON.stringify(valOrig) !== JSON.stringify(valCurr)) {
+        diff[key] = valCurr;
+        hasChanges = true;
+      }
+    }
+
+    return hasChanges ? diff : null;
+  };
+
   // --- DRAFT AUTO-SAVE ENGINE ---
-  const saveDraftLocallyAndRemote = useCallback((overrides?: Partial<{
+  const saveDraftLocallyAndRemote = useCallback(async (overrides?: Partial<{
     products: Product[];
     reviews: Review[];
     storeInfo: StoreInfo;
@@ -1655,7 +1689,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     petShoeConfig: PetShoeConfig;
     instagramConfig: InstagramConfig;
     soundConfig: SoundConfig;
-  }>) => {
+  }>): Promise<boolean> => {
     const nextProducts = overrides?.products ?? draftProducts;
     const nextReviews = overrides?.reviews ?? draftReviews;
     const nextStoreInfo = overrides?.storeInfo ?? draftStoreInfo;
@@ -1692,43 +1726,93 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem('mfp_cms_active_draft', JSON.stringify(updatedDraft));
     localStorage.setItem('mfp_cms_pending_count', newCount.toString());
 
-    // Write to partitioned documents in Firestore using writeBatch
+    const docsUpdated: string[] = [];
+    const fieldsUpdated: Record<string, string[]> = {};
+    const startTime = Date.now();
+
     try {
       const batch = writeBatch(db);
 
-      // Save individual config documents
+      // Save individual config documents using getObjectDiff
       if (overrides?.storeInfo) {
-        batch.set(doc(db, 'draft_settings', 'store'), overrides.storeInfo, { merge: true });
+        const diff = getObjectDiff(draftStoreInfo, overrides.storeInfo);
+        if (diff) {
+          batch.set(doc(db, 'draft_settings', 'store'), diff, { merge: true });
+          docsUpdated.push('draft_settings/store');
+          fieldsUpdated['draft_settings/store'] = Object.keys(diff);
+        }
       }
       if (overrides?.heroContent) {
-        batch.set(doc(db, 'draft_hero', 'current'), overrides.heroContent, { merge: true });
+        const diff = getObjectDiff(draftHeroContent, overrides.heroContent);
+        if (diff) {
+          batch.set(doc(db, 'draft_hero', 'current'), diff, { merge: true });
+          docsUpdated.push('draft_hero/current');
+          fieldsUpdated['draft_hero/current'] = Object.keys(diff);
+        }
       }
       if (overrides?.announcements) {
-        batch.set(doc(db, 'draft_homepage', 'announcements'), { items: overrides.announcements }, { merge: true });
+        if (JSON.stringify(draftAnnouncements) !== JSON.stringify(overrides.announcements)) {
+          batch.set(doc(db, 'draft_homepage', 'announcements'), { items: overrides.announcements }, { merge: true });
+          docsUpdated.push('draft_homepage/announcements');
+          fieldsUpdated['draft_homepage/announcements'] = ['items'];
+        }
       }
       if (overrides?.categoryHighlights) {
-        batch.set(doc(db, 'draft_categories', 'highlights'), { items: overrides.categoryHighlights }, { merge: true });
+        if (JSON.stringify(draftCategoryHighlights) !== JSON.stringify(overrides.categoryHighlights)) {
+          batch.set(doc(db, 'draft_categories', 'highlights'), { items: overrides.categoryHighlights }, { merge: true });
+          docsUpdated.push('draft_categories/highlights');
+          fieldsUpdated['draft_categories/highlights'] = ['items'];
+        }
       }
       if (overrides?.trendingCollections) {
-        batch.set(doc(db, 'draft_homepage', 'trendingCollections'), { items: overrides.trendingCollections }, { merge: true });
+        if (JSON.stringify(draftTrendingCollections) !== JSON.stringify(overrides.trendingCollections)) {
+          batch.set(doc(db, 'draft_homepage', 'trendingCollections'), { items: overrides.trendingCollections }, { merge: true });
+          docsUpdated.push('draft_homepage/trendingCollections');
+          fieldsUpdated['draft_homepage/trendingCollections'] = ['items'];
+        }
       }
       if (overrides?.paymentSettings) {
-        batch.set(doc(db, 'draft_payment', 'config'), overrides.paymentSettings, { merge: true });
+        const diff = getObjectDiff(draftPaymentSettings, overrides.paymentSettings);
+        if (diff) {
+          batch.set(doc(db, 'draft_payment', 'config'), diff, { merge: true });
+          docsUpdated.push('draft_payment/config');
+          fieldsUpdated['draft_payment/config'] = Object.keys(diff);
+        }
       }
       if (overrides?.hangingSneakerConfig) {
-        batch.set(doc(db, 'draft_animations', 'hangingSneakerConfig'), overrides.hangingSneakerConfig, { merge: true });
+        const diff = getObjectDiff(draftHangingSneakerConfig, overrides.hangingSneakerConfig);
+        if (diff) {
+          batch.set(doc(db, 'draft_animations', 'hangingSneakerConfig'), diff, { merge: true });
+          docsUpdated.push('draft_animations/hangingSneakerConfig');
+          fieldsUpdated['draft_animations/hangingSneakerConfig'] = Object.keys(diff);
+        }
       }
       if (overrides?.petShoeConfig) {
-        batch.set(doc(db, 'draft_mascot', 'petShoeConfig'), overrides.petShoeConfig, { merge: true });
+        const diff = getObjectDiff(draftPetShoeConfig, overrides.petShoeConfig);
+        if (diff) {
+          batch.set(doc(db, 'draft_mascot', 'petShoeConfig'), diff, { merge: true });
+          docsUpdated.push('draft_mascot/petShoeConfig');
+          fieldsUpdated['draft_mascot/petShoeConfig'] = Object.keys(diff);
+        }
       }
       if (overrides?.instagramConfig) {
-        batch.set(doc(db, 'draft_social', 'instagramConfig'), overrides.instagramConfig, { merge: true });
+        const diff = getObjectDiff(draftInstagramConfig, overrides.instagramConfig);
+        if (diff) {
+          batch.set(doc(db, 'draft_social', 'instagramConfig'), diff, { merge: true });
+          docsUpdated.push('draft_social/instagramConfig');
+          fieldsUpdated['draft_social/instagramConfig'] = Object.keys(diff);
+        }
       }
       if (overrides?.soundConfig) {
-        batch.set(doc(db, 'draft_theme', 'current'), overrides.soundConfig, { merge: true });
+        const diff = getObjectDiff(draftSoundConfig, overrides.soundConfig);
+        if (diff) {
+          batch.set(doc(db, 'draft_theme', 'current'), diff, { merge: true });
+          docsUpdated.push('draft_theme/current');
+          fieldsUpdated['draft_theme/current'] = Object.keys(diff);
+        }
       }
 
-      // Save Products that changed (Split-Aware Draft Writing)
+      // Save Products that changed
       if (overrides?.products) {
         const nextIds = new Set(overrides.products.map(p => p.id));
 
@@ -1747,35 +1831,51 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             batch.set(doc(db, 'draft_product_statistics', p.id), split.statistics);
             batch.set(doc(db, 'draft_product_related', p.id), split.related);
             batch.set(doc(db, 'draft_product_shipping', p.id), split.shipping);
+            docsUpdated.push(`draft_products/${p.id} (All Segments)`);
           } else {
             const extSplit = splitProduct(existing);
+            const modifiedSegments: string[] = [];
 
             if (JSON.stringify(split.metadata) !== JSON.stringify(extSplit.metadata)) {
               batch.set(doc(db, 'draft_products', p.id), split.metadata);
+              modifiedSegments.push('metadata');
             }
             if (JSON.stringify(split.gallery) !== JSON.stringify(extSplit.gallery)) {
               batch.set(doc(db, 'draft_product_gallery', p.id), split.gallery);
+              modifiedSegments.push('gallery');
             }
             if (JSON.stringify(split.variants) !== JSON.stringify(extSplit.variants)) {
               batch.set(doc(db, 'draft_product_variants', p.id), split.variants);
+              modifiedSegments.push('variants');
             }
             if (JSON.stringify(split.reviews) !== JSON.stringify(extSplit.reviews)) {
               batch.set(doc(db, 'draft_product_reviews', p.id), split.reviews);
+              modifiedSegments.push('reviews');
             }
             if (JSON.stringify(split.ai) !== JSON.stringify(extSplit.ai)) {
               batch.set(doc(db, 'draft_product_ai', p.id), split.ai);
+              modifiedSegments.push('ai');
             }
             if (JSON.stringify(split.seo) !== JSON.stringify(extSplit.seo)) {
               batch.set(doc(db, 'draft_product_seo', p.id), split.seo);
+              modifiedSegments.push('seo');
             }
             if (JSON.stringify(split.statistics) !== JSON.stringify(extSplit.statistics)) {
               batch.set(doc(db, 'draft_product_statistics', p.id), split.statistics);
+              modifiedSegments.push('statistics');
             }
             if (JSON.stringify(split.related) !== JSON.stringify(extSplit.related)) {
               batch.set(doc(db, 'draft_product_related', p.id), split.related);
+              modifiedSegments.push('related');
             }
             if (JSON.stringify(split.shipping) !== JSON.stringify(extSplit.shipping)) {
               batch.set(doc(db, 'draft_product_shipping', p.id), split.shipping);
+              modifiedSegments.push('shipping');
+            }
+
+            if (modifiedSegments.length > 0) {
+              docsUpdated.push(`draft_products/${p.id}`);
+              fieldsUpdated[`draft_products/${p.id}`] = modifiedSegments;
             }
           }
         });
@@ -1792,6 +1892,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             batch.delete(doc(db, 'draft_product_statistics', p.id));
             batch.delete(doc(db, 'draft_product_related', p.id));
             batch.delete(doc(db, 'draft_product_shipping', p.id));
+            docsUpdated.push(`draft_products/${p.id} (Deleted)`);
           }
         });
       }
@@ -1805,6 +1906,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const existing = draftReviews.find(item => item.id === r.id);
           if (!existing || JSON.stringify(existing) !== JSON.stringify(r)) {
             batch.set(doc(db, 'draft_reviews', r.id), r, { merge: true });
+            docsUpdated.push(`draft_reviews/${r.id}`);
           }
         });
 
@@ -1812,18 +1914,42 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         draftReviews.forEach(r => {
           if (!nextIds.has(r.id)) {
             batch.delete(doc(db, 'draft_reviews', r.id));
+            docsUpdated.push(`draft_reviews/${r.id} (Deleted)`);
           }
         });
       }
 
-      batch.commit().catch(e => {
-        console.warn('Auto-save draft Firestore partition commit notice:', e);
-      });
+      if (docsUpdated.length > 0) {
+        const writePromise = batch.commit();
+        const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 800));
+
+        await Promise.race([writePromise, timeoutPromise]);
+        const elapsed = Date.now() - startTime;
+        setLastSaveMetrics({
+          writeTimeMs: elapsed,
+          docsUpdated,
+          fieldsUpdated,
+        });
+      } else {
+        // No writes needed, resolve instantly
+        setLastSaveMetrics({
+          writeTimeMs: 0,
+          docsUpdated: [],
+          fieldsUpdated: {},
+        });
+      }
     } catch (err) {
-      console.warn('Auto-save writeBatch initiation notice:', err);
+      console.warn('Draft save notice (safe fallback):', err);
+      const elapsed = Date.now() - startTime;
+      setLastSaveMetrics({
+        writeTimeMs: elapsed,
+        docsUpdated,
+        fieldsUpdated,
+      });
     }
 
     showToast('🟡 Draft Saved (Pending Publish)', 'info');
+    return true;
   }, [
     draftProducts, draftReviews, draftStoreInfo, draftHeroContent, draftAnnouncements,
     draftCategoryHighlights, draftTrendingCollections, draftPaymentSettings,
@@ -1901,6 +2027,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           snap.forEach((d) => list.push({ ...d.data(), id: d.id }));
           setRawDraftProducts(list);
           setHasPendingDraft(true);
+        } else {
+          setRawDraftProducts([]);
         }
       });
 
@@ -2005,6 +2133,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const list: Review[] = [];
           snap.forEach((d) => list.push({ ...d.data(), id: d.id } as Review));
           setDraftReviews(list);
+        } else {
+          setDraftReviews([]);
         }
       });
     } catch (e) {}
@@ -2476,70 +2606,98 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }
 
-        // Cleanup draft sub-collection documents once published
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_products', p.id),
-          collectionName: 'draft_products',
-          documentId: p.id,
-          description: `Cleanup draft product "${p.name}"`,
-        });
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_product_gallery', p.id),
-          collectionName: 'draft_product_gallery',
-          documentId: p.id,
-          description: `Cleanup draft product gallery "${p.name}"`,
-        });
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_product_variants', p.id),
-          collectionName: 'draft_product_variants',
-          documentId: p.id,
-          description: `Cleanup draft product variants "${p.name}"`,
-        });
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_product_reviews', p.id),
-          collectionName: 'draft_product_reviews',
-          documentId: p.id,
-          description: `Cleanup draft product reviews "${p.name}"`,
-        });
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_product_ai', p.id),
-          collectionName: 'draft_product_ai',
-          documentId: p.id,
-          description: `Cleanup draft product AI metadata "${p.name}"`,
-        });
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_product_seo', p.id),
-          collectionName: 'draft_product_seo',
-          documentId: p.id,
-          description: `Cleanup draft product SEO "${p.name}"`,
-        });
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_product_statistics', p.id),
-          collectionName: 'draft_product_statistics',
-          documentId: p.id,
-          description: `Cleanup draft product statistics "${p.name}"`,
-        });
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_product_related', p.id),
-          collectionName: 'draft_product_related',
-          documentId: p.id,
-          description: `Cleanup draft product related "${p.name}"`,
-        });
-        operations.push({
-          type: 'delete',
-          ref: doc(db, 'draft_product_shipping', p.id),
-          collectionName: 'draft_product_shipping',
-          documentId: p.id,
-          description: `Cleanup draft product shipping "${p.name}"`,
-        });
+        // Cleanup draft sub-collection documents once published, ONLY if they actually exist in the Firestore draft collections
+        const hasDraftProduct = rawDraftProducts.some((rd) => rd.id === p.id);
+        const hasDraftGallery = p.id in draftGalleries;
+        const hasDraftVariant = p.id in draftVariants;
+        const hasDraftReviewCol = p.id in draftProductReviews;
+        const hasDraftAi = p.id in draftAi;
+        const hasDraftSeo = p.id in draftSeo;
+        const hasDraftStatistic = p.id in draftStatistics;
+        const hasDraftRelated = p.id in draftRelated;
+        const hasDraftShipping = p.id in draftShipping;
+
+        if (hasDraftProduct) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'draft_products', p.id),
+            collectionName: 'draft_products',
+            documentId: p.id,
+            description: `Cleanup draft product "${p.name}"`,
+          });
+        }
+        if (hasDraftGallery) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'draft_product_gallery', p.id),
+            collectionName: 'draft_product_gallery',
+            documentId: p.id,
+            description: `Cleanup draft product gallery "${p.name}"`,
+          });
+        }
+        if (hasDraftVariant) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'draft_product_variants', p.id),
+            collectionName: 'draft_product_variants',
+            documentId: p.id,
+            description: `Cleanup draft product variants "${p.name}"`,
+          });
+        }
+        if (hasDraftReviewCol) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'draft_product_reviews', p.id),
+            collectionName: 'draft_product_reviews',
+            documentId: p.id,
+            description: `Cleanup draft product reviews "${p.name}"`,
+          });
+        }
+        if (hasDraftAi) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'draft_product_ai', p.id),
+            collectionName: 'draft_product_ai',
+            documentId: p.id,
+            description: `Cleanup draft product AI metadata "${p.name}"`,
+          });
+        }
+        if (hasDraftSeo) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'draft_product_seo', p.id),
+            collectionName: 'draft_product_seo',
+            documentId: p.id,
+            description: `Cleanup draft product SEO "${p.name}"`,
+          });
+        }
+        if (hasDraftStatistic) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'draft_product_statistics', p.id),
+            collectionName: 'draft_product_statistics',
+            documentId: p.id,
+            description: `Cleanup draft product statistics "${p.name}"`,
+          });
+        }
+        if (hasDraftRelated) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'draft_product_related', p.id),
+            collectionName: 'draft_product_related',
+            documentId: p.id,
+            description: `Cleanup draft product related "${p.name}"`,
+          });
+        }
+        if (hasDraftShipping) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'draft_product_shipping', p.id),
+            collectionName: 'draft_product_shipping',
+            documentId: p.id,
+            description: `Cleanup draft product shipping "${p.name}"`,
+          });
+        }
       }
 
       for (const pub of publishedProducts) {
@@ -3165,7 +3323,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Content Editors
-  const updateStoreInfo = async (info: Partial<StoreInfo>) => {
+  const updateStoreInfo = async (info: Partial<StoreInfo>): Promise<boolean> => {
     const cleanInfo: Partial<StoreInfo> = { ...info };
     if (cleanInfo.name) cleanInfo.name = sanitizeString(cleanInfo.name, 100);
     if (cleanInfo.tagline) cleanInfo.tagline = sanitizeString(cleanInfo.tagline, 200);
@@ -3174,63 +3332,67 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const updatedStoreInfo = { ...draftStoreInfo, ...cleanInfo };
     setDraftStoreInfo(updatedStoreInfo);
-    saveDraftLocallyAndRemote({ storeInfo: updatedStoreInfo });
+    const success = await saveDraftLocallyAndRemote({ storeInfo: updatedStoreInfo });
     recordAuditLog('Store Info Updated (Draft)', 'SETTINGS', 'Draft store location and contact info', 'SUCCESS');
+    return success;
   };
 
-  const updateHeroContent = async (content: Partial<HeroContent>) => {
+  const updateHeroContent = async (content: Partial<HeroContent>): Promise<boolean> => {
     const cleanHero: Partial<HeroContent> = { ...content };
     if (cleanHero.headlineMain) cleanHero.headlineMain = sanitizeString(cleanHero.headlineMain, 200);
     if (cleanHero.subtitle) cleanHero.subtitle = sanitizeString(cleanHero.subtitle, 500);
 
     const updatedHero = { ...draftHeroContent, ...cleanHero };
     setDraftHeroContent(updatedHero);
-    saveDraftLocallyAndRemote({ heroContent: updatedHero });
+    const success = await saveDraftLocallyAndRemote({ heroContent: updatedHero });
     recordAuditLog('Hero Banner Updated (Draft)', 'MEDIA', 'Draft hero banner content updated', 'SUCCESS');
+    return success;
   };
 
-  const setAnnouncementsList = async (items: string[]) => {
+  const setAnnouncementsList = async (items: string[]): Promise<boolean> => {
     const cleanItems = items.map((i) => sanitizeString(i, 200));
     setDraftAnnouncements(cleanItems);
-    saveDraftLocallyAndRemote({ announcements: cleanItems });
+    const success = await saveDraftLocallyAndRemote({ announcements: cleanItems });
     recordAuditLog('Announcements Updated (Draft)', 'SETTINGS', `Draft announcements list updated`, 'SUCCESS');
+    return success;
   };
 
-  const updateCategoryHighlight = async (id: 'men' | 'women' | 'kids', updated: Partial<CategoryHighlight>) => {
+  const updateCategoryHighlight = async (id: 'men' | 'women' | 'kids', updated: Partial<CategoryHighlight>): Promise<boolean> => {
     const updatedCategories = draftCategoryHighlights.map((cat) => (cat.id === id ? { ...cat, ...updated } : cat));
     setDraftCategoryHighlights(updatedCategories);
-    saveDraftLocallyAndRemote({ categoryHighlights: updatedCategories });
+    return await saveDraftLocallyAndRemote({ categoryHighlights: updatedCategories });
   };
 
-  const updateTrendingCollection = async (id: string, updated: Partial<TrendingCollectionItem>) => {
+  const updateTrendingCollection = async (id: string, updated: Partial<TrendingCollectionItem>): Promise<boolean> => {
     const updatedTrending = draftTrendingCollections.map((col) => (col.id === id ? { ...col, ...updated } : col));
     setDraftTrendingCollections(updatedTrending);
-    saveDraftLocallyAndRemote({ trendingCollections: updatedTrending });
+    return await saveDraftLocallyAndRemote({ trendingCollections: updatedTrending });
   };
 
-  const updateHangingSneakerConfig = async (updated: Partial<HangingSneakerConfig>) => {
+  const updateHangingSneakerConfig = async (updated: Partial<HangingSneakerConfig>): Promise<boolean> => {
     const newCfg = { ...draftHangingSneakerConfig, ...updated };
     setDraftHangingSneakerConfig(newCfg);
-    saveDraftLocallyAndRemote({ hangingSneakerConfig: newCfg });
+    return await saveDraftLocallyAndRemote({ hangingSneakerConfig: newCfg });
   };
 
-  const updatePetShoeConfig = async (updated: Partial<PetShoeConfig>) => {
+  const updatePetShoeConfig = async (updated: Partial<PetShoeConfig>): Promise<boolean> => {
     const newCfg = { ...draftPetShoeConfig, ...updated };
     setDraftPetShoeConfig(newCfg);
-    saveDraftLocallyAndRemote({ petShoeConfig: newCfg });
+    return await saveDraftLocallyAndRemote({ petShoeConfig: newCfg });
   };
 
-  const updateInstagramConfig = async (updated: Partial<InstagramConfig>) => {
+  const updateInstagramConfig = async (updated: Partial<InstagramConfig>): Promise<boolean> => {
     const newCfg = { ...draftInstagramConfig, ...updated };
     setDraftInstagramConfig(newCfg);
-    saveDraftLocallyAndRemote({ instagramConfig: newCfg });
+    return await saveDraftLocallyAndRemote({ instagramConfig: newCfg });
   };
 
-  const updateSoundConfig = async (updated: Partial<SoundConfig>) => {
+  const updateSoundConfig = async (updated: Partial<SoundConfig>): Promise<boolean> => {
     const newCfg = { ...draftSoundConfig, ...updated };
     setDraftSoundConfig(newCfg);
-    saveDraftLocallyAndRemote({ soundConfig: newCfg });
+    const success = await saveDraftLocallyAndRemote({ soundConfig: newCfg });
     recordAuditLog('Sound Settings Updated (Draft)', 'SETTINGS', 'Admin updated website audio effects configuration', 'SUCCESS');
+    return success;
   };
 
   const updateCustomerSoundSettings = (updated: Partial<CustomerSoundSettings>) => {
@@ -3249,8 +3411,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updatePaymentSettings = async (settings: Partial<PaymentSettings>): Promise<boolean> => {
     const newCfg = { ...draftPaymentSettings, ...settings };
     setDraftPaymentSettings(newCfg);
-    saveDraftLocallyAndRemote({ paymentSettings: newCfg });
-    return true;
+    return await saveDraftLocallyAndRemote({ paymentSettings: newCfg });
   };
 
   // Evaluate active states based on previewMode and isAdmin
@@ -3477,6 +3638,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         createStoreBackup,
         restoreStoreBackup,
         resetToDefaults,
+        lastSaveMetrics,
       }}
     >
       {children}

@@ -24,6 +24,7 @@ import { HangingSneakerConfig } from '../../types';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { extractShoeFromImage } from '../../utils/aiBackgroundRemoval';
+import { SaveMetricsDebugger } from './SaveMetricsDebugger';
 
 export const HangingSneakerSettingsView: React.FC = () => {
   const { hangingSneakerConfig, updateHangingSneakerConfig } = useStore();
@@ -201,6 +202,20 @@ export const HangingSneakerSettingsView: React.FC = () => {
     }
   };
 
+  const hasUnsavedChanges = 
+    enabled !== (current.enabled ?? true) ||
+    useCustomImage !== Boolean(current.imageUri) ||
+    imageUri !== (current.imageUri || '') ||
+    laceLength !== (current.laceLength ?? 220) ||
+    sizePx !== (current.sizePx ?? 260) ||
+    positionRight !== (current.positionRight ?? 10) ||
+    positionTop !== (current.positionTop ?? 160) ||
+    swingSpeedSec !== (current.swingSpeedSec ?? 7.0) ||
+    swingAngleDeg !== (current.swingAngleDeg ?? 4.0) ||
+    baseRotationDeg !== (current.baseRotationDeg ?? -18) ||
+    enablePhysicsAnimation !== (current.enablePhysicsAnimation ?? true) ||
+    enableShineEffect !== (current.enableShineEffect ?? true);
+
   return (
     <div className="space-y-6 text-neutral-800 dark:text-neutral-100">
       {/* Header Banner */}
@@ -231,6 +246,17 @@ export const HangingSneakerSettingsView: React.FC = () => {
           <span>Reset ONE 8 Defaults</span>
         </button>
       </div>
+
+      {/* Unsaved Changes Banner */}
+      {hasUnsavedChanges && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center justify-between animate-fade-in">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span><strong>Unsaved Changes Detected:</strong> You have modified decorative shoe settings. Click Save below to persist.</span>
+          </div>
+          <span className="text-[10px] uppercase font-mono px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-200 font-bold">Unsaved</span>
+        </div>
+      )}
 
       {/* Save Notification Alerts */}
       {saveStatus === 'SUCCESS' && (
@@ -696,6 +722,7 @@ export const HangingSneakerSettingsView: React.FC = () => {
           </button>
         </div>
       </form>
+      <SaveMetricsDebugger />
     </div>
   );
 };

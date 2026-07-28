@@ -30,6 +30,7 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { PetShoeConfig } from '../../types';
 import { extractShoeFromImage } from '../../utils/aiBackgroundRemoval';
+import { SaveMetricsDebugger } from './SaveMetricsDebugger';
 
 export const AIShoePetSettingsView: React.FC = () => {
   const { petShoeConfig, updatePetShoeConfig, showToast } = useStore();
@@ -205,17 +206,17 @@ export const AIShoePetSettingsView: React.FC = () => {
   };
 
   // Preview Approval: Apply Approved Transparent PNG Shoe to Website Flying Mascot Instantly
-  const handleApproveExtractedShoe = () => {
+  const handleApproveExtractedShoe = async () => {
     const targetPng = extractedShoePng || imageUri;
     if (!targetPng) return;
     
     setImageUri(targetPng);
-    updatePetShoeConfig({ imageUri: targetPng, enabled: true });
+    await updatePetShoeConfig({ imageUri: targetPng, enabled: true });
     showToast('Extracted transparent PNG shoe applied to Flying Mascot instantly!', 'success');
   };
 
   // Restore Default Mascot
-  const handleRestoreDefaultMascot = () => {
+  const handleRestoreDefaultMascot = async () => {
     setImageUri('');
     setExtractedShoePng(null);
     setOriginalImage(null);
@@ -231,7 +232,7 @@ export const AIShoePetSettingsView: React.FC = () => {
     setOpacity(0.95);
     setDefaultPosition('bottom-right');
 
-    updatePetShoeConfig({
+    await updatePetShoeConfig({
       imageUri: '',
       wingsEnabled: true,
       wingColor: '#F59E0B',
@@ -250,7 +251,7 @@ export const AIShoePetSettingsView: React.FC = () => {
   };
 
   // Save Config
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
@@ -276,12 +277,45 @@ export const AIShoePetSettingsView: React.FC = () => {
       scheduleMode,
     };
 
-    updatePetShoeConfig(updated);
-    setIsSaving(false);
-    setSaveSuccess(true);
-    showToast('AI Pet Shoe Mascot settings saved successfully!', 'success');
-    setTimeout(() => setSaveSuccess(false), 3000);
+    try {
+      await updatePetShoeConfig(updated);
+      setSaveSuccess(true);
+      showToast('AI Pet Shoe Mascot settings saved successfully!', 'success');
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      showToast('Failed to save AI Pet Shoe Mascot settings', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const current = petShoeConfig || {};
+  const hasUnsavedChanges = 
+    enabled !== (current.enabled ?? true) ||
+    imageUri !== (current.imageUri || '') ||
+    wingsEnabled !== (current.wingsEnabled ?? true) ||
+    wingColor !== (current.wingColor || '#F59E0B') ||
+    glowEnabled !== (current.glowEnabled ?? true) ||
+    glowColor !== (current.glowColor || '#F59E0B') ||
+    shineEnabled !== (current.shineEnabled ?? true) ||
+    movementSpeed !== (current.movementSpeed || 'medium') ||
+    sizePx !== (current.sizePx || 130) ||
+    wingFlapSpeed !== (current.wingFlapSpeed || 'normal') ||
+    hoverAmplitude !== (current.hoverAmplitude || 'moderate') ||
+    opacity !== (current.opacity ?? 0.95) ||
+    defaultPosition !== (current.defaultPosition || 'bottom-right') ||
+    enableClickInteraction !== (current.enableClickInteraction ?? true) ||
+    enableScrollFollowing !== (current.enableScrollFollowing ?? true) ||
+    enableIdleMovement !== (current.enableIdleMovement ?? true) ||
+    enableSpeechBubbles !== (current.enableSpeechBubbles ?? true) ||
+    JSON.stringify(speechMessages) !== JSON.stringify(current.speechMessages || [
+      'Welcome to Marudhar Fashion Point! 👟✨',
+      'Step into pure luxury & comfort! 👞',
+      'Handcrafted Leather & Sports Drops! 🔥',
+      'Need help? Tap to explore our top picks! 😊',
+      'Pipar City’s #1 Fashion Companion 👑',
+    ]) ||
+    scheduleMode !== (current.scheduleMode || 'always');
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12">
@@ -333,6 +367,17 @@ export const AIShoePetSettingsView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Unsaved Changes Warning Banner */}
+      {hasUnsavedChanges && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center justify-between animate-fade-in">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span><strong>Unsaved Changes Detected:</strong> You have modified flying mascot settings locally. Click Save below to persist.</span>
+          </div>
+          <span className="text-[10px] uppercase font-mono px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-200 font-bold">Unsaved</span>
+        </div>
+      )}
 
       <form onSubmit={handleSave} className="space-y-8">
         {/* PIPELINE: Flying Shoe Manager - AI Object Extraction */}
@@ -809,6 +854,7 @@ export const AIShoePetSettingsView: React.FC = () => {
           </button>
         </div>
       </form>
+      <SaveMetricsDebugger />
     </div>
   );
 };

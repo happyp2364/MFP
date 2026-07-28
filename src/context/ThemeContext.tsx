@@ -206,8 +206,36 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const updateMoodConfig = async (newConfig: Partial<MoodConfig>): Promise<boolean> => {
     try {
       const docRef = doc(db, 'settings', 'mood_config');
-      const updated = { ...moodConfig, ...newConfig };
-      await setDoc(docRef, updated, { merge: true });
+      
+      // Compute flat first-level diff
+      const diff: any = {};
+      let hasChanges = false;
+      const original = moodConfig;
+      
+      const allKeys = new Set([...Object.keys(original), ...Object.keys(newConfig)]);
+      for (const key of allKeys) {
+        const valOrig = (original as any)[key];
+        const valCurr = (newConfig as any)[key];
+
+        if (JSON.stringify(valOrig) !== JSON.stringify(valCurr)) {
+          diff[key] = valCurr;
+          hasChanges = true;
+        }
+      }
+
+      if (!hasChanges) {
+        console.log('No mood config changes detected. Skipping Firestore write.');
+        return true;
+      }
+
+      const startTime = Date.now();
+      const writePromise = setDoc(docRef, diff, { merge: true });
+      const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 800));
+
+      await Promise.race([writePromise, timeoutPromise]);
+      const elapsed = Date.now() - startTime;
+      console.log(`Mood Config saved in ${elapsed}ms. Diff:`, diff);
+      
       return true;
     } catch (err) {
       console.error('Error saving mood config in Firestore:', err);

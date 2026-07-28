@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { MoodType } from '../../types';
+import { SaveMetricsDebugger } from './SaveMetricsDebugger';
 
 export const WebsiteMoodManagerView: React.FC = () => {
   const {
@@ -101,6 +102,22 @@ export const WebsiteMoodManagerView: React.FC = () => {
     await refreshWeather();
     setTimeout(() => setIsRefreshingWeather(false), 1000);
   };
+
+  const hasUnsavedChanges = 
+    isDynamicMoodEnabled !== moodConfig.isDynamicMoodEnabled ||
+    overrideMode !== moodConfig.overrideMode ||
+    activeFestival !== moodConfig.activeFestival ||
+    customBackgroundUrl !== moodConfig.customBackgroundUrl ||
+    customAnimationType !== moodConfig.customAnimationType ||
+    customSoundUrl !== moodConfig.customSoundUrl ||
+    scheduleEnabled !== (moodConfig.scheduledTheme?.enabled ?? false) ||
+    scheduleStart !== (moodConfig.scheduledTheme?.startDate ?? '') ||
+    scheduleEnd !== (moodConfig.scheduledTheme?.endDate ?? '') ||
+    scheduleTheme !== (moodConfig.scheduledTheme?.theme ?? 'afternoon') ||
+    enableAudio !== moodConfig.enableAudio ||
+    audioVolume !== moodConfig.audioVolume ||
+    lowEndReduction !== moodConfig.lowEndReduction ||
+    particleDensity !== (moodConfig.particleDensity ?? 1.0);
 
   const PRESET_WALLPAPERS = [
     { name: 'Aurora Velvet', url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=1200&auto=format&fit=crop' },
@@ -295,6 +312,17 @@ export const WebsiteMoodManagerView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Unsaved Changes warning banner */}
+      {hasUnsavedChanges && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center justify-between animate-fade-in">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span><strong>Unsaved Changes Detected:</strong> You have modified website atmosphere configurations locally. Click Save below to persist.</span>
+          </div>
+          <span className="text-[10px] uppercase font-mono px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-200 font-bold">Unsaved</span>
+        </div>
+      )}
 
       <form onSubmit={handleSave} className="space-y-6">
 
@@ -719,6 +747,7 @@ export const WebsiteMoodManagerView: React.FC = () => {
         </div>
 
       </form>
+      <SaveMetricsDebugger />
     </div>
   );
 };

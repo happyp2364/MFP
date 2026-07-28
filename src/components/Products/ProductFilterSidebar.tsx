@@ -128,11 +128,11 @@ export const ProductFilterSidebar: React.FC<ProductFilterSidebarProps> = ({
             Subcategory
           </label>
           <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 no-scrollbar">
-            {availableSubcategories.map((sub) => {
+            {availableSubcategories.map((sub, idx) => {
               const isChecked = filterState.subcategories.includes(sub);
               return (
                 <label
-                  key={sub}
+                  key={`${sub || 'sub'}-${idx}`}
                   className="flex items-center gap-2 text-xs text-neutral-700 hover:text-neutral-900 cursor-pointer py-1"
                 >
                   <input

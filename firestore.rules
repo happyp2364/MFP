@@ -137,8 +137,7 @@ service cloud.firestore {
 
     // Security Audit Logs Collection
     match /auditLogs/{logId} {
-      allow create: if true;
-      allow read, delete: if isSignedIn();
+      allow read, write: if true;
     }
 
     // Real-time Admin Notifications

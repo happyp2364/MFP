@@ -8,7 +8,7 @@ function getActiveWhatsAppNumber(customNum?: string): string {
     return customNum.replace(/\D/g, '');
   }
   try {
-    const savedInfo = localStorage.getItem('mfp_store_info');
+    const savedInfo = localStorage.getItem('mfp_store_info_live');
     if (savedInfo) {
       const parsed = JSON.parse(savedInfo);
       const phone = parsed.whatsappNumber || parsed.phone;

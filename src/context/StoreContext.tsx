@@ -277,6 +277,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Raw Live Products & Split subcollection maps
   const [rawLiveProducts, setRawLiveProducts] = useState<any[]>([]);
+  const [productsFetched, setProductsFetched] = useState(false);
   const [liveGalleries, setLiveGalleries] = useState<Record<string, any>>({});
   const [liveVariants, setLiveVariants] = useState<Record<string, any>>({});
   const [liveAiMetadata, setLiveAiMetadata] = useState<Record<string, any>>({});
@@ -355,7 +356,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             remote.push({ ...docSnap.data(), id: docSnap.id });
           });
           setRawLiveProducts(remote);
+          setProductsFetched(true);
         } else {
+          setProductsFetched(true);
           // Seed default products using split architecture if empty
           try {
             const batch = writeBatch(db);
@@ -382,24 +385,32 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
         setLiveGalleries(map);
+      }, (err) => {
+        handleFirestoreError(err, OperationType.GET, 'product_gallery');
       });
 
       unsubVariants = onSnapshot(collection(db, 'product_variants'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
         setLiveVariants(map);
+      }, (err) => {
+        handleFirestoreError(err, OperationType.GET, 'product_variants');
       });
 
       unsubAiMetadata = onSnapshot(collection(db, 'product_ai_metadata'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
         setLiveAiMetadata(map);
+      }, (err) => {
+        handleFirestoreError(err, OperationType.GET, 'product_ai_metadata');
       });
 
       unsubGalleryParts = onSnapshot(collection(db, 'product_gallery_parts'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
         setLiveGalleryParts(map);
+      }, (err) => {
+        handleFirestoreError(err, OperationType.GET, 'product_gallery_parts');
       });
 
     } catch (e) {
@@ -417,7 +428,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Stitch Live Products whenever any split subcollection updates
   useEffect(() => {
-    if (rawLiveProducts.length > 0) {
+    if (productsFetched) {
       const stitched = rawLiveProducts.map((p) =>
         stitchProduct(
           p,
@@ -430,7 +441,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setPublishedProducts(stitched);
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(stitched));
     }
-  }, [rawLiveProducts, liveGalleries, liveVariants, liveAiMetadata, liveGalleryParts]);
+  }, [productsFetched, rawLiveProducts, liveGalleries, liveVariants, liveAiMetadata, liveGalleryParts]);
 
   // 2. Real-Time Firestore Listeners for Live Store Settings
   useEffect(() => {

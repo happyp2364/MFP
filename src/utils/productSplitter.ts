@@ -106,6 +106,13 @@ export function splitProduct(p: Product): SplitProductData {
     createdAt: p.createdAt || new Date().toISOString(),
     updatedAt: p.updatedAt || new Date().toISOString(),
     thumbnailURL,
+    description: p.description || '',
+    material: p.material || '',
+    collectionTags: p.collectionTags || [],
+    sizes: p.sizes || [],
+    sizeStocks: p.sizeStocks || [],
+    colors: p.colors || [],
+    images: sanitizedImages,
   };
 
   const variants = {
@@ -186,8 +193,10 @@ export function stitchProduct(
   aiMetadata?: any,
   galleryPartsMap: Record<string, any> = {}
 ): Product {
-  let images = gallery?.images ? [...gallery.images] : [];
-  
+  let images = gallery?.images && gallery.images.length > 0 
+    ? [...gallery.images] 
+    : (metadata.images && metadata.images.length > 0 ? [...metadata.images] : []);
+
   if (gallery?.hasParts && gallery.partCount > 0) {
     for (let i = 1; i <= gallery.partCount; i++) {
       const partId = `${metadata.id}_gallery_part${i}`;
@@ -202,14 +211,21 @@ export function stitchProduct(
     images = [metadata.thumbnailURL];
   }
 
+  const sizes = (variants?.sizes && variants.sizes.length > 0) ? variants.sizes : (metadata.sizes || []);
+  const sizeStocks = (variants?.sizeStocks && variants.sizeStocks.length > 0) ? variants.sizeStocks : (metadata.sizeStocks || []);
+  const colors = (variants?.colors && variants.colors.length > 0) ? variants.colors : (metadata.colors || []);
+  const description = (aiMetadata?.description !== undefined && aiMetadata.description !== '') ? aiMetadata.description : (metadata.description || '');
+  const material = (aiMetadata?.material !== undefined && aiMetadata.material !== '') ? aiMetadata.material : (metadata.material || '');
+  const collectionTags = (aiMetadata?.collectionTags && aiMetadata.collectionTags.length > 0) ? aiMetadata.collectionTags : (metadata.collectionTags || []);
+
   return {
     ...metadata,
     images,
-    sizes: variants?.sizes || metadata.sizes || [],
-    sizeStocks: variants?.sizeStocks || metadata.sizeStocks || [],
-    colors: variants?.colors || metadata.colors || [],
-    description: aiMetadata?.description || metadata.description || '',
-    material: aiMetadata?.material || metadata.material || '',
-    collectionTags: aiMetadata?.collectionTags || metadata.collectionTags || [],
+    sizes,
+    sizeStocks,
+    colors,
+    description,
+    material,
+    collectionTags,
   };
 }

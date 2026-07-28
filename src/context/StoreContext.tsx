@@ -373,8 +373,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // --- 1. PUBLISHED (LIVE WEBSITE) STATE ---
   const [publishedProducts, setPublishedProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-    return saved ? JSON.parse(saved) : PRODUCTS_DATA;
+    return PRODUCTS_DATA;
   });
 
   const [rawLiveProducts, setRawLiveProducts] = useState<any[]>([]);
@@ -389,8 +388,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
 
   const [publishedReviews, setPublishedReviews] = useState<Review[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.REVIEWS);
-    return saved ? JSON.parse(saved) : REVIEWS_DATA;
+    return REVIEWS_DATA;
   });
 
   const [publishedStoreInfo, setPublishedStoreInfo] = useState<StoreInfo>(() => {
@@ -399,8 +397,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const [publishedHeroContent, setPublishedHeroContent] = useState<HeroContent>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.HERO_CONTENT);
-    return saved ? JSON.parse(saved) : DEFAULT_HERO_CONTENT;
+    return DEFAULT_HERO_CONTENT;
   });
 
   const [publishedAnnouncements, setPublishedAnnouncements] = useState<string[]>(() => {
@@ -419,8 +416,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.PAYMENT_SETTINGS);
-    return saved ? JSON.parse(saved) : DEFAULT_PAYMENT_SETTINGS;
+    return DEFAULT_PAYMENT_SETTINGS;
   });
 
   const [publishedHangingSneakerConfig, setPublishedHangingSneakerConfig] = useState<HangingSneakerConfig>(() => {
@@ -1367,8 +1363,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         )
       );
       setPublishedProducts(stitched);
-      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(stitched));
-    }
+          }
   }, [
     rawLiveProducts,
     liveGalleries,

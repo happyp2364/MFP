@@ -55,14 +55,14 @@ import { ChangePasswordView } from './ChangePasswordView';
 import { OrderManagementView } from './OrderManagementView';
 import { PaymentSettingsView } from './PaymentSettingsView';
 import { ReportsAnalyticsView } from './ReportsAnalyticsView';
-import { HangingSneakerSettingsView } from './HangingSneakerSettingsView';
-import { AIShoePetSettingsView } from './AIShoePetSettingsView';
 import { InstagramSettingsView } from './InstagramSettingsView';
 import { MarketingCenterView } from './MarketingCenterView';
 import { VersionHistoryView } from './VersionHistoryView';
 import { HeroSectionManagerView } from './HeroSectionManagerView';
 import { WebsiteMoodManagerView } from './WebsiteMoodManagerView';
 import { SmartProductFormModal } from './SmartProductFormModal';
+import { ProductsManagerView } from './ProductsManagerView';
+import { ReviewsManagerView } from './ReviewsManagerView';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
@@ -410,9 +410,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <button onClick={() => setActiveTab('hero_v2')} className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${activeTab === 'hero_v2' ? 'bg-[#0B8F63] text-white' : 'hover:bg-slate-800'}`}><Sparkles className="w-4 h-4" /> Hero Engine</button>
               <button onClick={() => setActiveTab('mood_engine')} className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${activeTab === 'mood_engine' ? 'bg-[#0B8F63] text-white' : 'hover:bg-slate-800'}`}><Palette className="w-4 h-4" /> Mood Engine</button>
               <button onClick={() => setActiveTab('payment_settings')} className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${activeTab === 'payment_settings' ? 'bg-[#0B8F63] text-white' : 'hover:bg-slate-800'}`}><CreditCard className="w-4 h-4" /> Payments</button>
-              <button onClick={() => setActiveTab('hanging_shoe')} className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${activeTab === 'hanging_shoe' ? 'bg-[#0B8F63] text-white' : 'hover:bg-slate-800'}`}><Sparkles className="w-4 h-4" /> Hanging Shoe</button>
-              <button onClick={() => setActiveTab('ai_pet_shoe')} className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${activeTab === 'ai_pet_shoe' ? 'bg-[#0B8F63] text-white' : 'hover:bg-slate-800'}`}><Sparkles className="w-4 h-4" /> Pet Shoe</button>
-              <button onClick={() => setActiveTab('instagram')} className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${activeTab === 'instagram' ? 'bg-[#0B8F63] text-white' : 'hover:bg-slate-800'}`}><Instagram className="w-4 h-4" /> Instagram</button>
+                                          <button onClick={() => setActiveTab('instagram')} className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${activeTab === 'instagram' ? 'bg-[#0B8F63] text-white' : 'hover:bg-slate-800'}`}><Instagram className="w-4 h-4" /> Instagram</button>
             </div>
           </div>
           
@@ -429,23 +427,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               {activeTab === 'payment_settings' && <PaymentSettingsView />}
               {activeTab === 'hero_v2' && <HeroSectionManagerView />}
               {activeTab === 'mood_engine' && <WebsiteMoodManagerView />}
-              {activeTab === 'hanging_shoe' && <HangingSneakerSettingsView />}
-              {activeTab === 'ai_pet_shoe' && <AIShoePetSettingsView />}
-              {activeTab === 'instagram' && <InstagramSettingsView />}
+                                          {activeTab === 'instagram' && <InstagramSettingsView />}
               
               {/* Product management and other views that might exist inline. For simplicity, we just put a placeholder if we miss something, but the app usually had inline product management. */}
-              {activeTab === 'products' && (
-                <div>
-                   <h2 className="text-2xl font-bold mb-4">Products</h2>
-                   <p>Products manager goes here.</p>
-                </div>
-              )}
-              {activeTab === 'reviews' && (
-                <div>
-                   <h2 className="text-2xl font-bold mb-4">Reviews</h2>
-                   <p>Reviews manager goes here.</p>
-                </div>
-              )}
+              {activeTab === 'products' && <ProductsManagerView />}
+              {activeTab === 'reviews' && <ReviewsManagerView />}
             </div>
           </div>
         </div>

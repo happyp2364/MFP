@@ -3,7 +3,6 @@ import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { AnnouncementBar } from './components/Header/AnnouncementBar';
 import { Navbar } from './components/Header/Navbar';
 import { HorizontalCategoryBar } from './components/Header/HorizontalCategoryBar';
-import { ShoeLaceOverlay } from './components/Decorative/ShoeLaceOverlay';
 import { HeroSection } from './components/Hero/HeroSection';
 import { CategorySection } from './components/Categories/CategorySection';
 import { ProductGrid } from './components/Products/ProductGrid';
@@ -16,7 +15,6 @@ import { InstagramFeed } from './components/Social/InstagramFeed';
 import { SocialFollowCTA } from './components/Social/SocialFollowCTA';
 import { Footer } from './components/Footer/Footer';
 import { FloatingActionHub } from './components/FloatingActions/FloatingActionHub';
-import { AIPetShoeMascot } from './components/Mascot/AIPetShoeMascot';
 import { QuickViewModal } from './components/Products/QuickViewModal';
 import { OrderSheet } from './components/Cart/OrderSheet';
 import { LiveSearchModal } from './components/Search/LiveSearchModal';
@@ -351,7 +349,6 @@ function AppContent() {
       <FloatingParticlesCanvas />
 
       {/* Premium Decorative Hanging Shoe Lace Animation */}
-      <ShoeLaceOverlay />
 
       {/* 1. Announcement Bar */}
       <AnnouncementBar />
@@ -484,7 +481,6 @@ function AppContent() {
       />
 
       {/* Interactive AI Pet Shoe Brand Mascot */}
-      <AIPetShoeMascot />
 
       {/* --- MODALS & DRAWERS --- */}
       {/* Quick View Modal */}

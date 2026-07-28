@@ -24,6 +24,7 @@ import {
   Clock,
   Info,
   Upload,
+  Ticket,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { CartItem, ShippingAddressInfo, PaymentMethodType, CustomerOrder, MarketingConsent } from '../../types';
@@ -53,7 +54,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   cartItems,
   onOrderComplete,
 }) => {
-  const { paymentSettings, customerProfile, customerUser, placeOrderAndPay, storeInfo, orders, updateCustomerMarketingConsent } = useStore();
+  const {
+    paymentSettings,
+    customerProfile,
+    customerUser,
+    placeOrderAndPay,
+    storeInfo,
+    orders,
+    updateCustomerMarketingConsent,
+    coupons,
+    validateCoupon,
+  } = useStore();
 
   const [step, setStep] = useState<CheckoutStep>('SHIPPING');
   const [copiedUPI, setCopiedUPI] = useState(false);
@@ -91,6 +102,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const [completedOrderId, setCompletedOrderId] = useState<string | null>(null);
 
+  // Coupon Promotion Engine states
+  const [couponCodeInput, setCouponCodeInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<import('../../types').PromoCoupon | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [freeShippingPromo, setFreeShippingPromo] = useState(false);
+  const [freeGiftPromo, setFreeGiftPromo] = useState<string | null>(null);
+
   // Reset all state variables
   const resetCheckoutState = () => {
     setStep('SHIPPING');
@@ -107,6 +127,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setDirectPaymentNotice(null);
     setPaymentScreenshotName(null);
     isProcessingRef.current = false;
+
+    // Reset coupon states
+    setAppliedCoupon(null);
+    setDiscountAmount(0);
+    setFreeShippingPromo(false);
+    setFreeGiftPromo(null);
+    setCouponSuccess(null);
+    setCouponError(null);
+    setCouponCodeInput('');
     
     // Clear any potential stored flags just in case
     localStorage.removeItem('mfp_checkout_stale_success');
@@ -291,11 +320,81 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [selectedBank, setSelectedBank] = useState('SBI');
   const [selectedWallet, setSelectedWallet] = useState('Paytm');
 
+  const handleApplyCoupon = (codeToApply: string) => {
+    setCouponError(null);
+    setCouponSuccess(null);
+
+    if (!codeToApply.trim()) {
+      setCouponError('Please enter a coupon code.');
+      return;
+    }
+
+    const cleanCode = codeToApply.trim().toUpperCase();
+    const result = validateCoupon(cleanCode, cartItems);
+
+    if (result.valid) {
+      const matchedCoupon = coupons.find(c => c.code.toUpperCase() === cleanCode)!;
+      setAppliedCoupon(matchedCoupon);
+      setDiscountAmount(result.discountAmount || 0);
+      setFreeShippingPromo(!!result.freeShipping);
+      setFreeGiftPromo(result.freeGift ? result.giftName || 'Special Gift Item' : null);
+
+      let successMsg = `Coupon "${cleanCode}" applied successfully!`;
+      if (result.discountAmount) successMsg += ` ₹${result.discountAmount} discount applied.`;
+      if (result.freeShipping) successMsg += ` Free Shipping applied.`;
+      if (result.freeGift) successMsg += ` Free Gift: "${result.giftName}" included!`;
+      setCouponSuccess(successMsg);
+      setCouponCodeInput(cleanCode);
+    } else {
+      setAppliedCoupon(null);
+      setDiscountAmount(0);
+      setFreeShippingPromo(false);
+      setFreeGiftPromo(null);
+      setCouponError(result.reason || 'Invalid coupon code.');
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setDiscountAmount(0);
+    setFreeShippingPromo(false);
+    setFreeGiftPromo(null);
+    setCouponSuccess(null);
+    setCouponError(null);
+    setCouponCodeInput('');
+  };
+
+  // Auto-apply coupons if available, eligible and no coupon is manually applied
+  useEffect(() => {
+    if (isOpen && coupons && coupons.length > 0 && !appliedCoupon) {
+      const autoCoupons = coupons.filter(c => c.status === 'active' && c.autoApply);
+      let bestCoupon: import('../../types').PromoCoupon | null = null;
+      let bestDiscount = -1;
+
+      for (const coupon of autoCoupons) {
+        const valResult = validateCoupon(coupon.code, cartItems);
+        if (valResult.valid) {
+          const disc = valResult.discountAmount || 0;
+          if (disc > bestDiscount) {
+            bestDiscount = disc;
+            bestCoupon = coupon;
+          }
+        }
+      }
+
+      if (bestCoupon) {
+        handleApplyCoupon(bestCoupon.code);
+      }
+    }
+  }, [isOpen, coupons, cartItems]);
+
   if (!isOpen) return null;
 
   // Price calculations
   const subtotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-  const shippingFee = subtotal >= (paymentSettings.freeShippingMinAmount || 999) ? 0 : paymentSettings.flatShippingRate || 0;
+  const baseShippingFee = subtotal >= (paymentSettings.freeShippingMinAmount || 999) ? 0 : paymentSettings.flatShippingRate || 0;
+  const shippingFee = freeShippingPromo ? 0 : baseShippingFee;
+
   const gstPercent = paymentSettings.gstPercent || 5;
   const taxAmount = Math.round((subtotal * gstPercent) / 100);
 
@@ -305,7 +404,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const feePercent = paymentSettings.convenienceFeePercent ?? 2;
   const convenienceFee = (isOnlinePayment && isFeeEnabled) ? Math.round((subtotal * feePercent) / 100) : 0;
 
-  const totalAmount = Math.max(0, subtotal + shippingFee + taxAmount + convenienceFee);
+  const totalAmount = Math.max(0, subtotal - discountAmount + shippingFee + taxAmount + convenienceFee);
 
   // Dynamic UPI Link & QR Image
   const dynamicOrderId = completedOrderId || `MFP${1025 + Math.floor(Math.random() * 8000)}`;
@@ -513,7 +612,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           targetRef,
           subtotal,
           shippingFee,
-        }
+        },
+        appliedCoupon?.code || undefined,
+        discountAmount
       );
 
       if (res.success && res.orderId) {
@@ -532,7 +633,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           items: cartItems,
           subtotal,
           shippingFee,
-          discountAmount: 0,
+          discountAmount: discountAmount,
           taxAmount,
           totalAmount,
           paymentMethod: selectedMethod,
@@ -918,12 +1019,162 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               )}
             </div>
 
+            {/* 🎟️ ENTERPRISE COUPON PROMOTION BOX */}
+            <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm space-y-3.5 mt-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-neutral-800 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                  <Ticket className="w-4 h-4 text-emerald-600" />
+                  <span>Promo Codes & Coupons</span>
+                </h4>
+                {appliedCoupon && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="text-[10px] font-bold text-rose-600 hover:underline"
+                  >
+                    Remove Coupon
+                  </button>
+                )}
+              </div>
+
+              {/* Input Form */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter Coupon Code"
+                  value={couponCodeInput}
+                  onChange={(e) => setCouponCodeInput(e.target.value)}
+                  disabled={!!appliedCoupon}
+                  className="flex-1 bg-neutral-50 border border-neutral-300 rounded-xl px-3 py-2 text-xs font-mono font-bold uppercase placeholder-neutral-400 outline-none focus:ring-1 focus:ring-emerald-600 disabled:opacity-75 disabled:bg-neutral-100"
+                />
+                {!appliedCoupon ? (
+                  <button
+                    type="button"
+                    onClick={() => handleApplyCoupon(couponCodeInput)}
+                    className="bg-neutral-900 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-sm"
+                  >
+                    Apply
+                  </button>
+                ) : (
+                  <div className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Applied</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Feedback messages */}
+              {couponError && (
+                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-[11px] font-medium text-rose-800 flex items-start gap-1.5">
+                  <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                  <span>{couponError}</span>
+                </div>
+              )}
+              {couponSuccess && (
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] font-bold text-emerald-800 flex items-start gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>{couponSuccess}</span>
+                </div>
+              )}
+
+              {/* Available Coupons & Intelligent Recommendation engine */}
+              {coupons && coupons.filter(c => c.status === 'active' && c.visibility === 'public').length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                    Recommended Deals For You
+                  </div>
+                  <div className="flex flex-col gap-2 max-h-36 overflow-y-auto pr-1">
+                    {coupons
+                      .filter(c => c.status === 'active' && c.visibility === 'public')
+                      .map((coupon) => {
+                        const check = validateCoupon(coupon.code, cartItems);
+                        const isCurrentlyApplied = appliedCoupon?.code === coupon.code;
+                        
+                        return (
+                          <div
+                            key={coupon.id}
+                            onClick={() => !isCurrentlyApplied && handleApplyCoupon(coupon.code)}
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-start justify-between gap-3 ${
+                              isCurrentlyApplied
+                                ? 'bg-emerald-50/50 border-emerald-500 ring-1 ring-emerald-500'
+                                : check.valid
+                                ? 'bg-neutral-50/60 hover:bg-neutral-50 border-neutral-200 hover:border-emerald-500'
+                                : 'bg-neutral-50/30 opacity-70 border-neutral-100 hover:border-neutral-200 cursor-not-allowed'
+                            }`}
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono font-extrabold text-[10px] bg-neutral-100 border border-neutral-300 text-neutral-800 px-1.5 py-0.2 rounded uppercase">
+                                  {coupon.code}
+                                </span>
+                                {coupon.featured && (
+                                  <span className="text-[8px] bg-amber-100 text-amber-800 font-extrabold px-1 rounded uppercase">
+                                    ★ Featured
+                                  </span>
+                                )}
+                              </div>
+                              <div className="font-bold text-neutral-800 text-[10px]">{coupon.name}</div>
+                              {coupon.description && (
+                                <div className="text-[9px] text-neutral-400 leading-snug">{coupon.description}</div>
+                              )}
+                              
+                              {/* Detailed real-time eligibility feedback */}
+                              {!check.valid && check.reason && (
+                                <div className="text-[9px] font-bold text-amber-600 mt-1 flex items-center gap-1">
+                                  <Info className="w-3 h-3 text-amber-500" />
+                                  <span>{check.reason}</span>
+                                </div>
+                              )}
+                              {check.valid && !isCurrentlyApplied && (
+                                <div className="text-[9px] font-bold text-emerald-600 mt-1 flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                  <span>Eligible - Click to Apply!</span>
+                                </div>
+                              )}
+                              {isCurrentlyApplied && (
+                                <div className="text-[9px] font-extrabold text-emerald-700 mt-1 flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600 animate-pulse" />
+                                  <span>Active Promo Applied</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Badge showing potential savings */}
+                            <div className="text-right shrink-0">
+                              <span className="text-[10px] font-extrabold text-[#0B8F63] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/50">
+                                {coupon.type === 'PERCENTAGE' && `${coupon.discountValue}% OFF`}
+                                {coupon.type === 'FLAT' && `₹${coupon.discountValue} OFF`}
+                                {coupon.type === 'BUY_X_GET_Y' && `B${coupon.discountValue}G1`}
+                                {coupon.type === 'FREE_SHIPPING' && `FREE DEL`}
+                                {coupon.type === 'FREE_GIFT' && `GIFT`}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Price Summary */}
             <div className="mt-4 p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-1.5">
               <div className="flex justify-between text-neutral-600">
                 <span>Subtotal ({cartItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
                 <span>₹{subtotal.toLocaleString()}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-600 font-bold">
+                  <span>Discount Applied ({appliedCoupon?.code})</span>
+                  <span>-₹{discountAmount.toLocaleString()}</span>
+                </div>
+              )}
+              {freeGiftPromo && (
+                <div className="flex justify-between text-emerald-600 font-bold">
+                  <span>Free Promo Gift</span>
+                  <span>🎁 {freeGiftPromo}</span>
+                </div>
+              )}
               <div className="flex justify-between text-neutral-600">
                 <span>GST ({gstPercent}%)</span>
                 <span>₹{taxAmount.toLocaleString()}</span>
@@ -932,7 +1183,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <span>Shipping</span>
                 <span>
                   {shippingFee === 0 ? (
-                    <span className="text-emerald-600 font-semibold">FREE</span>
+                    <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                      <span>FREE</span>
+                      {freeShippingPromo && <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1 rounded uppercase">Coupon</span>}
+                    </span>
                   ) : (
                     `₹${shippingFee}`
                   )}
@@ -946,7 +1200,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               )}
               <div className="flex justify-between font-bold text-neutral-900 pt-1.5 border-t border-neutral-200 text-sm">
                 <span>Estimated Total</span>
-                <span className="text-amber-800">₹{(subtotal + shippingFee + taxAmount).toLocaleString()}</span>
+                <span className="text-amber-800">₹{(subtotal - discountAmount + shippingFee + taxAmount).toLocaleString()}</span>
               </div>
             </div>
 
@@ -1375,6 +1629,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <span>Subtotal</span>
                 <span className="font-mono font-medium text-neutral-900">₹{subtotal.toLocaleString()}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-600 font-bold">
+                  <span>Discount Applied ({appliedCoupon?.code})</span>
+                  <span className="font-mono">-₹{discountAmount.toLocaleString()}</span>
+                </div>
+              )}
+              {freeGiftPromo && (
+                <div className="flex justify-between text-emerald-600 font-bold">
+                  <span>Free Promo Gift</span>
+                  <span>🎁 {freeGiftPromo}</span>
+                </div>
+              )}
               <div className="flex justify-between text-neutral-600">
                 <span>GST ({gstPercent}%)</span>
                 <span className="font-mono font-medium text-neutral-900">₹{taxAmount.toLocaleString()}</span>
@@ -1383,7 +1649,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <span>Shipping</span>
                 <span>
                   {shippingFee === 0 ? (
-                    <span className="text-emerald-600 font-semibold">FREE</span>
+                    <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                      <span>FREE</span>
+                      {freeShippingPromo && <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1 rounded uppercase">Coupon</span>}
+                    </span>
                   ) : (
                     <span className="font-mono font-medium text-neutral-900">₹{shippingFee}</span>
                   )}

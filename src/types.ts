@@ -749,4 +749,56 @@ export interface SocialAnalyticsLog {
   monthlyClicks: Record<string, number>; // month string "YYYY-MM" -> click count
 }
 
+export type CouponType = 'PERCENTAGE' | 'FLAT' | 'BUY_X_GET_Y' | 'FREE_SHIPPING' | 'FREE_GIFT';
+
+export interface PromoCoupon {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  bannerImage?: string;
+  bannerUrl?: string;
+  type: CouponType;
+  discountValue: number; // e.g., 10 for 10% or 100 for ₹100 Flat
+  maxDiscount?: number; // Maximum discount limit
+  minOrderAmount?: number; // Minimum order subtotal required
+  maxOrderAmount?: number; // Maximum order subtotal allowed
+  startDate: string; // ISO or YYYY-MM-DD
+  endDate: string; // ISO or YYYY-MM-DD
+  usageLimit?: number; // Maximum global uses
+  perCustomerLimit?: number; // Maximum uses per customer
+  priority: number; // Priority order for auto-apply or lists
+  stackable: boolean; // Can be combined with other coupons
+  autoApply: boolean; // Automatically apply during checkout
+  visible: boolean; // Is visible in checkout selection list
+  visibility?: 'public' | 'hidden';
+  featured: boolean; // Is highlighted/featured
+  status: 'active' | 'paused' | 'disabled' | 'archived';
+
+  // Product Restrictions
+  restrictType: 'ALL' | 'PRODUCTS' | 'CATEGORIES' | 'COLLECTIONS' | 'BRANDS' | 'TRENDING' | 'FEATURED' | 'BEST_SELLER';
+  restrictProductIds?: string[]; // Applicable product IDs
+  restrictCategories?: string[]; // Applicable category highlights or subcategories
+  restrictCollections?: string[]; // e.g., 'men', 'women', 'kids'
+  restrictBrands?: string[]; // list of allowed brands
+
+  // Size & Color Restrictions
+  restrictSizes?: string[]; // e.g., ["6", "7", "8", "9", "10"]
+  restrictColors?: string[]; // e.g., ["Black", "White", "Blue"]
+
+  // Price & Stock range
+  minProductPrice?: number;
+  maxProductPrice?: number;
+  restrictStock?: 'ALL' | 'IN_STOCK' | 'LOW_STOCK' | 'NEW_ARRIVALS' | 'FEATURED' | 'CLEARANCE_SALE';
+
+  // Real-time usage stats
+  usageCount: number;
+  successCount: number;
+  failedCount: number;
+  revenueGenerated: number;
+  discountGiven: number;
+  createdAt: string;
+}
+
+
 

@@ -45,6 +45,7 @@ import {
   Terminal,
   Check,
   XCircle,
+  Ticket,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
@@ -66,6 +67,7 @@ import { HeroSectionManagerView } from './HeroSectionManagerView';
 import { TopAnnouncementBarSettingsView } from './TopAnnouncementBarSettingsView';
 import { SmartProductFormModal } from './SmartProductFormModal';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
+import { CouponManagementView } from './CouponManagementView';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -74,7 +76,7 @@ interface AdminDashboardModalProps {
   onClose: () => void;
 }
 
-type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'top_announcement_bar' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions';
+type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'top_announcement_bar' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -446,6 +448,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('coupons')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'coupons'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Ticket className="w-4 h-4 text-emerald-600" />
+              <span>Coupon & Promotions</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('payment_settings')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'payment_settings'
@@ -670,6 +684,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: MARKETING & ENGAGEMENT CENTER ----------------- */}
             {activeTab === 'marketing' && <MarketingCenterView />}
+
+            {/* ----------------- TAB: COUPON & PROMOTIONS ----------------- */}
+            {activeTab === 'coupons' && <CouponManagementView />}
 
             {/* ----------------- TAB: PAYMENT & UPI CONFIGURATION ----------------- */}
             {activeTab === 'payment_settings' && <PaymentSettingsView />}

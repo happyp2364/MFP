@@ -56,6 +56,15 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const isDark =
     themeMode === 'dark' || (themeMode === 'auto' && activePeriod === 'night');
 
+  // Sync dark class on root document element for Tailwind & accessibility selectors
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
   // Compute dynamic background gradient based on period and theme override
   let backgroundGradientClass = 'bg-[#FAFAFA] text-neutral-900';
 

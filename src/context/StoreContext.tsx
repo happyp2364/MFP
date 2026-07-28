@@ -34,6 +34,8 @@ import {
   AnnouncementItem,
   SocialMediaCenterConfig,
   SocialAnalyticsLog,
+  PromoCoupon,
+  CouponType,
 } from '../types';
 import {
   PRODUCTS_DATA,
@@ -230,6 +232,15 @@ interface StoreContextType {
   createStoreBackup: () => Promise<StoreBackupSnapshot>;
   restoreStoreBackup: (backupData: StoreBackupSnapshot | string) => Promise<boolean>;
   resetToDefaults: () => void;
+
+  // Coupon Management System
+  coupons: PromoCoupon[];
+  addCoupon: (c: Omit<PromoCoupon, 'id' | 'usageCount' | 'successCount' | 'failedCount' | 'revenueGenerated' | 'discountGiven' | 'createdAt'>) => Promise<boolean>;
+  updateCoupon: (id: string, updated: Partial<PromoCoupon>) => Promise<boolean>;
+  deleteCoupon: (id: string) => Promise<boolean>;
+  duplicateCoupon: (id: string) => Promise<boolean>;
+  validateCoupon: (code: string, cartItems: CartItem[]) => { valid: boolean; reason?: string; discountAmount?: number; freeShipping?: boolean; freeGift?: boolean; giftName?: string; eligibleProductIds?: string[] };
+  trackCouponUse: (code: string, success: boolean, revenue?: number, discount?: number) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -310,6 +321,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const local = localStorage.getItem(STORAGE_KEYS.SOCIAL_ANALYTICS);
     return local ? JSON.parse(local) : DEFAULT_SOCIAL_ANALYTICS;
   });
+
+  // Coupons state
+  const [coupons, setCoupons] = useState<PromoCoupon[]>([]);
 
   // Raw Live Products & Split subcollection maps
   const [rawLiveProducts, setRawLiveProducts] = useState<any[]>([]);
@@ -664,6 +678,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setOrders(list);
           },
           (err) => console.warn('Live orders listener notice:', err)
+        )
+      );
+
+      unsubscribers.push(
+        onSnapshot(
+          collection(db, 'coupons'),
+          (snap) => {
+            const list: PromoCoupon[] = [];
+            snap.forEach((d) => {
+              list.push({ ...d.data(), id: d.id } as PromoCoupon);
+            });
+            // sort coupons by priority (highest first), then by code
+            list.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+            setCoupons(list);
+          },
+          (err) => console.warn('Live coupons listener notice:', err)
         )
       );
 
@@ -1232,11 +1262,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     cartItems: CartItem[],
     shippingAddress: any,
     paymentMethod: PaymentMethodType | 'ONLINE' | 'NETBANKING',
-    paymentDetails?: any
+    paymentDetails?: any,
+    couponCode?: string,
+    discountAmount: number = 0
   ) => {
     try {
       const orderId = `MFP-ORD-${Date.now()}`;
-      const totalAmt = cartItems.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+      const subtotalAmt = cartItems.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+      const totalAmt = Math.max(0, subtotalAmt - discountAmount);
       const mappedPaymentMethod: PaymentMethodType =
         paymentMethod === 'ONLINE'
           ? 'UPI'
@@ -1252,9 +1285,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         customerName: customerProfile?.name || shippingAddress?.fullName || 'Valued Customer',
         customerPhone: shippingAddress?.phone || '',
         items: cartItems,
-        subtotal: totalAmt,
+        subtotal: subtotalAmt,
         shippingFee: 0,
-        discountAmount: 0,
+        discountAmount: discountAmount,
         taxAmount: 0,
         totalAmount: totalAmt,
         paymentMethod: mappedPaymentMethod,
@@ -1266,6 +1299,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
+
+      if (couponCode) {
+        (newOrder as any).couponCode = couponCode;
+      }
 
       await saveOrderInFirestore(newOrder);
       setOrders((prev) => [newOrder, ...prev]);
@@ -1285,9 +1322,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         ...prev,
       ]);
 
+      if (couponCode) {
+        await trackCouponUse(couponCode, true, totalAmt, discountAmount);
+      }
+
       return { success: true, orderId };
     } catch (err: any) {
       console.error('Error placing order:', err);
+      if (couponCode) {
+        await trackCouponUse(couponCode, false);
+      }
       return { success: false, message: err.message || 'Could not complete checkout' };
     }
   };
@@ -1308,6 +1352,351 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const cancelCustomerOrder = async (orderId: string, reason?: string): Promise<boolean> => {
     return updateOrderStatus(orderId, 'CANCELLED', reason || 'Cancelled by customer');
+  };
+
+  // Coupon Management System Implementation
+  const addCoupon = async (c: Omit<PromoCoupon, 'id' | 'usageCount' | 'successCount' | 'failedCount' | 'revenueGenerated' | 'discountGiven' | 'createdAt'>) => {
+    try {
+      const codeUpper = c.code.trim().toUpperCase();
+      const exists = coupons.some((x) => x.code.toUpperCase() === codeUpper);
+      if (exists) {
+        showToast(`❌ Coupon Code ${codeUpper} already exists`, 'error');
+        return false;
+      }
+
+      const id = `cpn-${Date.now()}`;
+      const newCoupon: PromoCoupon = {
+        ...c,
+        id,
+        code: codeUpper,
+        usageCount: 0,
+        successCount: 0,
+        failedCount: 0,
+        revenueGenerated: 0,
+        discountGiven: 0,
+        createdAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(db, 'coupons', id), newCoupon);
+      showToast(`🎟️ Coupon ${codeUpper} created successfully`, 'success');
+      recordAuditLog('Coupon Created', 'SETTINGS', `Created coupon: ${codeUpper} (${newCoupon.name})`, 'SUCCESS');
+      return true;
+    } catch (err: any) {
+      console.error('Error adding coupon:', err);
+      showToast('Failed to create coupon', 'error');
+      return false;
+    }
+  };
+
+  const updateCoupon = async (id: string, updated: Partial<PromoCoupon>) => {
+    try {
+      if (updated.code) {
+        updated.code = updated.code.trim().toUpperCase();
+      }
+      await setDoc(doc(db, 'coupons', id), updated, { merge: true });
+      showToast('🎟️ Coupon updated successfully', 'success');
+      recordAuditLog('Coupon Updated', 'SETTINGS', `Updated coupon ID: ${id}`, 'SUCCESS');
+      return true;
+    } catch (err: any) {
+      console.error('Error updating coupon:', err);
+      showToast('Failed to update coupon', 'error');
+      return false;
+    }
+  };
+
+  const deleteCoupon = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'coupons', id));
+      showToast('🗑️ Coupon deleted', 'info');
+      recordAuditLog('Coupon Deleted', 'SETTINGS', `Deleted coupon ID: ${id}`, 'WARNING');
+      return true;
+    } catch (err: any) {
+      console.error('Error deleting coupon:', err);
+      showToast('Failed to delete coupon', 'error');
+      return false;
+    }
+  };
+
+  const duplicateCoupon = async (id: string) => {
+    try {
+      const existing = coupons.find((c) => c.id === id);
+      if (!existing) {
+        showToast('❌ Coupon not found for duplicating', 'error');
+        return false;
+      }
+
+      let newCode = `${existing.code}-DUP`;
+      let attempt = 1;
+      while (coupons.some((c) => c.code === newCode)) {
+        newCode = `${existing.code}-DUP${attempt++}`;
+      }
+
+      const newId = `cpn-${Date.now()}`;
+      const duplicate: PromoCoupon = {
+        ...existing,
+        id: newId,
+        code: newCode,
+        name: `${existing.name} (Copy)`,
+        usageCount: 0,
+        successCount: 0,
+        failedCount: 0,
+        revenueGenerated: 0,
+        discountGiven: 0,
+        createdAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(db, 'coupons', newId), duplicate);
+      showToast(`🎟️ Duplicated into ${newCode}`, 'success');
+      recordAuditLog('Coupon Duplicated', 'SETTINGS', `Duplicated coupon ${existing.code} into ${newCode}`, 'SUCCESS');
+      return true;
+    } catch (err: any) {
+      console.error('Error duplicating coupon:', err);
+      showToast('Failed to duplicate coupon', 'error');
+      return false;
+    }
+  };
+
+  const validateCoupon = (code: string, cartItems: CartItem[]) => {
+    const codeClean = code.trim().toUpperCase();
+    const coupon = coupons.find((c) => c.code.toUpperCase() === codeClean);
+
+    if (!coupon) {
+      return { valid: false, reason: '❌ Coupon Code Not Found' };
+    }
+
+    if (coupon.status === 'disabled') {
+      return { valid: false, reason: '❌ Coupon Disabled' };
+    }
+    if (coupon.status === 'paused') {
+      return { valid: false, reason: '❌ Coupon Paused' };
+    }
+    if (coupon.status === 'archived') {
+      return { valid: false, reason: '❌ Coupon Archived' };
+    }
+
+    const now = new Date();
+    if (coupon.startDate && new Date(coupon.startDate) > now) {
+      return { valid: false, reason: '❌ Coupon Is Not Yet Active' };
+    }
+    if (coupon.endDate && new Date(coupon.endDate) < now) {
+      return { valid: false, reason: '❌ Coupon Expired' };
+    }
+
+    if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) {
+      return { valid: false, reason: '❌ Usage Limit Reached' };
+    }
+
+    if (coupon.perCustomerLimit && customerProfile && customerProfile.orderHistory) {
+      const codeUses = customerProfile.orderHistory.filter((order) => 
+        (order as any).couponCode?.toUpperCase() === codeClean
+      ).length;
+      if (codeUses >= coupon.perCustomerLimit) {
+        return { valid: false, reason: '❌ Coupon Already Used' };
+      }
+    }
+
+    // Evaluate item level restrictions and track exact reasons
+    const itemReasons: string[] = [];
+    const eligibleItems = cartItems.filter((item) => {
+      const p = item.product;
+
+      // Price restriction
+      if (coupon.minProductPrice !== undefined && p.price < coupon.minProductPrice) {
+        itemReasons.push(`❌ Coupon Works Only On Products Between ₹${coupon.minProductPrice}–₹${coupon.maxProductPrice || 'Unlimited'}`);
+        return false;
+      }
+      if (coupon.maxProductPrice !== undefined && p.price > coupon.maxProductPrice) {
+        itemReasons.push(`❌ Coupon Works Only On Products Between ₹${coupon.minProductPrice || 0}–₹${coupon.maxProductPrice}`);
+        return false;
+      }
+
+      // Gender/Collection restriction
+      if (coupon.restrictType === 'COLLECTIONS' && coupon.restrictCollections && coupon.restrictCollections.length > 0) {
+        const cat = (p.category || '').toLowerCase();
+        const allowedCats = coupon.restrictCollections.map((c) => c.toLowerCase());
+        const isAllowed = allowedCats.some((ac) => ac.includes(cat) || cat.includes(ac));
+        if (!isAllowed) {
+          const collName = coupon.restrictCollections.includes('men') ? "Men's Collection" : coupon.restrictCollections.includes('women') ? "Women's Collection" : "Kids Collection";
+          itemReasons.push(`❌ Coupon Works Only On ${collName}`);
+          return false;
+        }
+      }
+
+      // Product list restriction
+      if (coupon.restrictType === 'PRODUCTS' && coupon.restrictProductIds && coupon.restrictProductIds.length > 0) {
+        if (!coupon.restrictProductIds.includes(p.id)) {
+          itemReasons.push('❌ Coupon Not Applicable On This Product');
+          return false;
+        }
+      }
+
+      // Category restriction
+      if (coupon.restrictType === 'CATEGORIES' && coupon.restrictCategories && coupon.restrictCategories.length > 0) {
+        const subLower = (p.subcategory || '').toLowerCase();
+        const catLower = (p.category || '').toLowerCase();
+        const allowedCats = coupon.restrictCategories.map((c) => c.toLowerCase());
+        const isAllowed = allowedCats.some((ac) => subLower.includes(ac) || ac.includes(subLower) || catLower.includes(ac) || ac.includes(catLower));
+        if (!isAllowed) {
+          const catName = coupon.restrictCategories[0] || 'Sports Shoes';
+          itemReasons.push(`❌ Coupon Works Only On ${catName}`);
+          return false;
+        }
+      }
+
+      // Brand restriction
+      if (coupon.restrictType === 'BRANDS' && coupon.restrictBrands && coupon.restrictBrands.length > 0) {
+        const brandLower = (p.brand || '').toLowerCase();
+        const allowedBrands = coupon.restrictBrands.map((b) => b.toLowerCase());
+        if (!allowedBrands.includes(brandLower)) {
+          itemReasons.push(`❌ Coupon Works Only On Brand: ${coupon.restrictBrands.join(', ')}`);
+          return false;
+        }
+      }
+
+      // Tag-based restrictions (Trending, Featured, Best Seller)
+      if (coupon.restrictType === 'TRENDING' && !p.isTrending) {
+        itemReasons.push('❌ Coupon Works Only On Trending Products');
+        return false;
+      }
+      if (coupon.restrictType === 'FEATURED' && !p.isFeatured) {
+        itemReasons.push('❌ Coupon Valid Only On Featured Products');
+        return false;
+      }
+      if (coupon.restrictType === 'BEST_SELLER' && !p.isBestSeller) {
+        itemReasons.push('❌ Coupon Works Only On Best Seller Products');
+        return false;
+      }
+
+      // Size restriction
+      if (coupon.restrictSizes && coupon.restrictSizes.length > 0) {
+        const allowedSizes = coupon.restrictSizes.map((s) => s.trim().toLowerCase());
+        const selSize = (item.selectedSize || '').trim().toLowerCase();
+        if (!allowedSizes.includes(selSize)) {
+          const firstAllowed = coupon.restrictSizes[0] || '7';
+          itemReasons.push(`❌ Selected Size ${item.selectedSize || 'Unknown'} Is Not Eligible`);
+          itemReasons.push(`❌ Coupon Works Only On Size ${firstAllowed}`);
+          return false;
+        }
+      }
+
+      // Color restriction
+      if (coupon.restrictColors && coupon.restrictColors.length > 0) {
+        const allowedColors = coupon.restrictColors.map((c) => c.trim().toLowerCase());
+        const selColor = (item.selectedColor || '').trim().toLowerCase();
+        if (!allowedColors.includes(selColor)) {
+          const firstColor = coupon.restrictColors[0] || 'Black';
+          itemReasons.push(`❌ Selected Color ${item.selectedColor || 'Unknown'} Is Not Eligible`);
+          itemReasons.push(`❌ Coupon Works Only On ${firstColor} Colour`);
+          return false;
+        }
+      }
+
+      // Stock restrictions
+      if (coupon.restrictStock && coupon.restrictStock !== 'ALL') {
+        if (coupon.restrictStock === 'IN_STOCK' && !p.inStock) {
+          itemReasons.push('❌ Coupon Works Only On In Stock Products');
+          return false;
+        }
+        if (coupon.restrictStock === 'LOW_STOCK' && !p.isLimitedStock) {
+          itemReasons.push('❌ Coupon Works Only On Low Stock Products');
+          return false;
+        }
+        if (coupon.restrictStock === 'NEW_ARRIVALS' && !p.isNewArrival) {
+          itemReasons.push('❌ Coupon Works Only On New Arrivals');
+          return false;
+        }
+        if (coupon.restrictStock === 'FEATURED' && !p.isFeatured) {
+          itemReasons.push('❌ Coupon Valid Only On Featured Products');
+          return false;
+        }
+        if (coupon.restrictStock === 'CLEARANCE_SALE' && p.price >= p.originalPrice) {
+          itemReasons.push('❌ Coupon Works Only On Clearance Sale Products');
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    if (eligibleItems.length === 0) {
+      const reason = itemReasons.length > 0 ? itemReasons[0] : '❌ Coupon Not Applicable On This Product';
+      return { valid: false, reason };
+    }
+
+    const eligibleSubtotal = eligibleItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+
+    // Min/Max order subtotal
+    if (coupon.minOrderAmount && eligibleSubtotal < coupon.minOrderAmount) {
+      return { valid: false, reason: `❌ Minimum Order ₹${coupon.minOrderAmount} Required` };
+    }
+    if (coupon.maxOrderAmount && eligibleSubtotal > coupon.maxOrderAmount) {
+      return { valid: false, reason: `❌ Maximum Order ₹${coupon.maxOrderAmount} Allowed` };
+    }
+
+    // Calculate discount amount
+    let discountAmount = 0;
+    let freeShipping = false;
+    let freeGift = false;
+    let giftName = '';
+
+    if (coupon.type === 'PERCENTAGE') {
+      discountAmount = Math.round(eligibleSubtotal * (coupon.discountValue / 100));
+      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+        discountAmount = coupon.maxDiscount;
+      }
+    } else if (coupon.type === 'FLAT') {
+      discountAmount = coupon.discountValue;
+      if (discountAmount > eligibleSubtotal) {
+        discountAmount = eligibleSubtotal;
+      }
+    } else if (coupon.type === 'BUY_X_GET_Y') {
+      const totalEligibleQty = eligibleItems.reduce((sum, item) => sum + item.quantity, 0);
+      const buyX = coupon.discountValue || 2;
+      const getY = 1;
+      if (totalEligibleQty >= buyX) {
+        const itemPrices = eligibleItems.flatMap((item) => Array(item.quantity).fill(item.product.price));
+        itemPrices.sort((a, b) => a - b);
+        const freeCount = Math.floor(totalEligibleQty / (buyX + getY));
+        const freeItems = itemPrices.slice(0, freeCount > 0 ? freeCount : 1);
+        discountAmount = freeItems.reduce((sum, price) => sum + price, 0);
+      } else {
+        return { valid: false, reason: `❌ Coupon requires buying at least ${buyX} items` };
+      }
+    } else if (coupon.type === 'FREE_SHIPPING') {
+      freeShipping = true;
+    } else if (coupon.type === 'FREE_GIFT') {
+      freeGift = true;
+      giftName = coupon.description || 'Special Gift Item';
+    }
+
+    return {
+      valid: true,
+      discountAmount,
+      freeShipping,
+      freeGift,
+      giftName,
+      eligibleProductIds: eligibleItems.map((item) => item.product.id),
+    };
+  };
+
+  const trackCouponUse = async (code: string, success: boolean, revenue: number = 0, discount: number = 0) => {
+    try {
+      const codeClean = code.trim().toUpperCase();
+      const coupon = coupons.find((c) => c.code.toUpperCase() === codeClean);
+      if (!coupon) return;
+
+      const updatedStats = {
+        usageCount: (coupon.usageCount || 0) + (success ? 1 : 0),
+        successCount: (coupon.successCount || 0) + (success ? 1 : 0),
+        failedCount: (coupon.failedCount || 0) + (success ? 0 : 1),
+        revenueGenerated: (coupon.revenueGenerated || 0) + (success ? revenue : 0),
+        discountGiven: (coupon.discountGiven || 0) + (success ? discount : 0),
+      };
+
+      await setDoc(doc(db, 'coupons', coupon.id), updatedStats, { merge: true });
+    } catch (err) {
+      console.warn('Error tracking coupon use statistics:', err);
+    }
   };
 
   const markNotificationRead = async (id: string): Promise<void> => {
@@ -1553,6 +1942,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         createStoreBackup,
         restoreStoreBackup,
         resetToDefaults,
+
+        // Coupon Management System
+        coupons,
+        addCoupon,
+        updateCoupon,
+        deleteCoupon,
+        duplicateCoupon,
+        validateCoupon,
+        trackCouponUse,
       }}
     >
       {children}

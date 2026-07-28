@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Phone, ArrowUp, Instagram, Facebook, Youtube, X, Share2, Calendar, Volume2, VolumeX } from 'lucide-react';
+import { 
+  MessageCircle, Phone, ArrowUp, Instagram, Facebook, Youtube, X, Share2, Calendar, Volume2, VolumeX,
+  Send as TelegramIcon, Twitter, AtSign, Pin, Camera, Linkedin, MapPin
+} from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { generateGeneralInquiryWhatsAppLink } from '../../utils/whatsapp';
 
@@ -12,7 +15,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
   onOpenCalendarModal,
   onOpenSoundSettings,
 }) => {
-  const { storeInfo, customerSoundSettings } = useStore();
+  const { storeInfo, customerSoundSettings, socialMediaConfig, recordSocialClick } = useStore();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [expandedSocials, setExpandedSocials] = useState(false);
 
@@ -28,61 +31,92 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const getPlatformIcon = (id: string) => {
+    switch (id) {
+      case 'instagram': return <Instagram className="w-5 h-5" />;
+      case 'facebook': return <Facebook className="w-5 h-5" />;
+      case 'whatsapp': return <MessageCircle className="w-5 h-5" />;
+      case 'youtube': return <Youtube className="w-5 h-5" />;
+      case 'telegram': return <TelegramIcon className="w-5 h-5" />;
+      case 'twitter': return <Twitter className="w-5 h-5" />;
+      case 'threads': return <AtSign className="w-5 h-5" />;
+      case 'pinterest': return <Pin className="w-5 h-5" />;
+      case 'snapchat': return <Camera className="w-5 h-5" />;
+      case 'linkedin': return <Linkedin className="w-5 h-5" />;
+      case 'google_business': return <MapPin className="w-5 h-5" />;
+      default: return <Share2 className="w-5 h-5" />;
+    }
+  };
+
+  // Extract other active floating platforms except WhatsApp (which is treated as a primary floating button below)
+  const floatingPlatforms = (socialMediaConfig?.platforms || [])
+    .filter(p => p.enabled && p.showAsFloating && p.id !== 'whatsapp')
+    .sort((a, b) => a.displayOrder - b.displayOrder);
+
+  // Predefined custom WhatsApp details
+  const waMessage = socialMediaConfig?.whatsappPredefinedMessage || '';
+  const waSupportName = socialMediaConfig?.whatsappSupportName || 'MFP Support';
+  const waSupportRole = socialMediaConfig?.whatsappSupportRole || 'Live Agent';
+  const waSupportAvatar = socialMediaConfig?.whatsappSupportAvatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=64&q=80';
+  const waUrl = generateGeneralInquiryWhatsAppLink(waMessage);
+
   return (
     <div className="fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
       
       {/* Social Links Sub-Menu (Glassmorphism Circular Buttons with Tooltips) */}
       {expandedSocials && (
         <div className="flex flex-col items-end gap-3 mb-1 pointer-events-auto animate-in slide-in-from-bottom-4 fade-in duration-300">
-          
-          {/* Instagram Button */}
-          <div className="group relative flex items-center gap-2">
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
-              Instagram @marudhar_fashion_point
-            </span>
-            <a
-              href={storeInfo.instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-11 h-11 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center shadow-xl shadow-rose-500/20 hover:scale-115 active:scale-95 transition-all duration-300 backdrop-blur-md border border-white/20"
-              title="Instagram"
-            >
-              <Instagram className="w-5 h-5" />
-            </a>
-          </div>
+          {floatingPlatforms.length > 0 ? (
+            floatingPlatforms.map((plat) => {
+              const getHoverStyle = (effect: string) => {
+                switch (effect) {
+                  case 'glow': return 'hover:shadow-[0_0_15px_rgba(255,255,255,0.7)]';
+                  case 'bounce': return 'hover:-translate-y-1';
+                  case 'fade': return 'hover:opacity-75';
+                  case 'rotate': return 'hover:rotate-12';
+                  default: return 'hover:scale-110';
+                }
+              };
 
-          {/* Facebook Button */}
-          <div className="group relative flex items-center gap-2">
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
-              Facebook Page
-            </span>
-            <a
-              href={storeInfo.facebook}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-11 h-11 rounded-full bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-xl shadow-blue-600/20 hover:scale-115 active:scale-95 transition-all duration-300 backdrop-blur-md border border-white/20"
-              title="Facebook"
-            >
-              <Facebook className="w-5 h-5" />
-            </a>
-          </div>
-
-          {/* YouTube Button */}
-          <div className="group relative flex items-center gap-2">
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
-              YouTube Channel
-            </span>
-            <a
-              href={storeInfo.youtube}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-11 h-11 rounded-full bg-gradient-to-tr from-red-700 via-red-600 to-rose-700 text-white flex items-center justify-center shadow-xl shadow-red-600/20 hover:scale-115 active:scale-95 transition-all duration-300 backdrop-blur-md border border-white/20"
-              title="YouTube"
-            >
-              <Youtube className="w-5 h-5" />
-            </a>
-          </div>
-
+              return (
+                <div key={plat.id} className="group relative flex items-center gap-2">
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
+                    {plat.customLabel || `${plat.name} - @${plat.username}`}
+                  </span>
+                  <a
+                    href={plat.profileUrl}
+                    onClick={() => recordSocialClick(plat.id)}
+                    target={plat.openInNewTab ? "_blank" : "_self"}
+                    rel="noopener noreferrer"
+                    className={`w-11 h-11 rounded-full text-white flex items-center justify-center shadow-xl hover:scale-115 active:scale-95 transition-all duration-300 backdrop-blur-md border border-white/20 ${getHoverStyle(plat.hoverEffect)}`}
+                    style={{ backgroundColor: plat.bgColor || 'rgba(255,255,255,0.1)' }}
+                    title={plat.name}
+                  >
+                    <span style={{ color: plat.iconColor || '#fff' }}>
+                      {getPlatformIcon(plat.id)}
+                    </span>
+                  </a>
+                </div>
+              );
+            })
+          ) : (
+            <>
+              {/* Fallback legacy links if none configured */}
+              <div className="group relative flex items-center gap-2">
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
+                  Instagram @marudhar_fashion_point
+                </span>
+                <a
+                  href={storeInfo.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-11 h-11 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center shadow-xl shadow-rose-500/20 hover:scale-115 active:scale-95 transition-all duration-300 backdrop-blur-md border border-white/20"
+                >
+                  <Instagram className="w-5 h-5" />
+                </a>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -162,16 +196,22 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
         )}
 
         {/* Primary WhatsApp Floating Button */}
-        <div className="group relative flex items-center gap-2">
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
-            Order on WhatsApp (+{storeInfo.whatsappNumber})
-          </span>
+        <div className="group relative flex items-center gap-3">
+          {/* Support agent chat bubble indicator */}
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900 text-white p-3 rounded-2xl shadow-xl whitespace-nowrap backdrop-blur-md flex items-center gap-2.5 border border-white/10">
+            <img src={waSupportAvatar} alt={waSupportName} className="w-8 h-8 rounded-full border border-neutral-700 object-cover" />
+            <div className="text-left leading-tight">
+              <span className="font-bold text-[11px] block text-white">{waSupportName}</span>
+              <span className="text-[9px] text-[#0B8F63] font-extrabold tracking-wide uppercase">{waSupportRole}</span>
+            </div>
+          </div>
           <a
-            href={generateGeneralInquiryWhatsAppLink()}
+            href={waUrl}
+            onClick={() => recordSocialClick('whatsapp')}
             target="_blank"
             rel="noopener noreferrer"
             className="w-14 h-14 rounded-full bg-[#0B8F63] text-white flex items-center justify-center shadow-2xl shadow-[#0B8F63]/40 hover:scale-110 active:scale-95 transition-all duration-300 relative"
-            title="Order on WhatsApp"
+            title={`Inquire on WhatsApp with ${waSupportName}`}
           >
             <MessageCircle className="w-7 h-7 fill-white text-[#0B8F63]" />
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-white animate-ping" />

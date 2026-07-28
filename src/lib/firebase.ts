@@ -696,6 +696,17 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
   enableConvenienceFee: true,
   convenienceFeePercent: 2,
   applyFeeToOnlineOnly: true,
+  enableBuyNow: true,
+  enableBuyWhatsApp: true,
+  enableAddToCart: true,
+  enableCashfree: true,
+  actionButtonsOrder: ['BUY_NOW', 'BUY_WHATSAPP', 'ADD_TO_BAG'],
+  buyNowButtonText: 'BUY NOW',
+  buyNowButtonColor: '#0B8F63',
+  buyWhatsAppButtonText: 'BUY ON WHATSAPP',
+  buyWhatsAppButtonColor: '#25D366',
+  addToBagButtonText: 'ADD TO BAG',
+  addToBagButtonColor: '#171717',
 };
 
 // Fetch Payment Settings from Firestore

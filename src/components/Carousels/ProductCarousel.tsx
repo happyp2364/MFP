@@ -11,8 +11,8 @@ interface ProductCarouselProps {
   onToggleWishlist: (product: Product) => void;
   onQuickView: (product: Product) => void;
   onAddToCart: (product: Product, size: string, color: string) => void;
+  onBuyNow?: (product: Product, size: string, color: string, quantity: number) => void;
   autoSlide?: boolean;
-  onBuyNow?: (product: Product, size: string, color: string) => void;
 }
 
 export const ProductCarousel: React.FC<ProductCarouselProps> = ({
@@ -23,8 +23,8 @@ export const ProductCarousel: React.FC<ProductCarouselProps> = ({
   onToggleWishlist,
   onQuickView,
   onAddToCart,
-  autoSlide = true,
   onBuyNow,
+  autoSlide = true,
 }) => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);

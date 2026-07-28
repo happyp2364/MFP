@@ -16,7 +16,8 @@ import {
   AlertTriangle,
   PackageX,
   Sparkles,
-  CreditCard,
+  Zap,
+  Loader2,
 } from 'lucide-react';
 import { Product } from '../../types';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
@@ -41,7 +42,7 @@ interface ProductDetailPageProps {
   onAddToCart: (product: Product, size: string, color: string) => void;
   onQuickView: (product: Product) => void;
   wishlistIds: string[];
-  onBuyNow?: (product: Product, size: string, color: string) => void;
+  onBuyNow?: (product: Product, size: string, color: string, quantity: number) => void;
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
@@ -56,7 +57,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   wishlistIds,
   onBuyNow,
 }) => {
-  const { paymentSettings } = useStore();
+  const { paymentSettings, playSiteSound, showToast } = useStore();
 
   // Update SEO Open Graph & Title Meta Tags dynamically
   useEffect(() => {
@@ -229,9 +230,35 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     ? CLEAN_IMAGE_COMING_SOON_SVG
     : rawImageSrc;
 
+  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false);
+
   const handleWhatsAppBuy = () => {
     const link = generateProductWhatsAppLink(product, selectedSize, selectedColor, quantity);
     window.open(link, '_blank');
+  };
+
+  const handleBuyNow = () => {
+    if (isBuyNowLoading) return;
+
+    if (isCompletelyOutOfStock || isSelectedSizeOutOfStock) {
+      showToast?.('This item/size is currently out of stock.', 'error');
+      return;
+    }
+
+    if (!selectedSize) {
+      showToast?.('Please select a size first.', 'info');
+      return;
+    }
+
+    setIsBuyNowLoading(true);
+    playSiteSound('addToCart');
+
+    setTimeout(() => {
+      setIsBuyNowLoading(false);
+      if (onBuyNow) {
+        onBuyNow(product, selectedSize, selectedColor || 'Standard', quantity || 1);
+      }
+    }, 150);
   };
 
   const handleAddBag = () => {
@@ -568,7 +595,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             </div>
           </div>
 
-          {/* ACTION BUTTONS: DYNAMIC CUSTOMIZABLE PURCHASE FLOW */}
+          {/* ACTION BUTTONS: BUY NOW, BUY ON WHATSAPP & BAG */}
           <div className="space-y-3 pt-4 border-t border-neutral-200">
             {isCompletelyOutOfStock || isSelectedSizeOutOfStock ? (
               <button
@@ -578,101 +605,63 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <Bell className="w-5 h-5 fill-white text-amber-600" />
                 <span>NOTIFY ME ON WHATSAPP (RESTOCK INQUIRY)</span>
               </button>
-            ) : (() => {
-              const buyNowText = paymentSettings.buyNowText || 'Buy Now';
-              const buyWhatsappText = paymentSettings.buyWhatsappText || 'Buy on WhatsApp';
-              const addBagText = addedNotice ? '✓ Added to Bag!' : (paymentSettings.addBagText || 'Add to Bag');
-
-              const buyNowColor = paymentSettings.buyNowColor || '#000000';
-              const buyWhatsappColor = paymentSettings.buyWhatsappColor || '#25D366';
-              const addBagColor = paymentSettings.addBagColor || '#000000';
-
-              const buyNowTextColor = paymentSettings.buyNowTextColor || '#FFFFFF';
-              const buyWhatsappTextColor = paymentSettings.buyWhatsappTextColor || '#FFFFFF';
-              const addBagTextColor = paymentSettings.addBagTextColor || '#FFFFFF';
-
-              const enableBuyNow = paymentSettings.enableBuyNow !== false;
-              const enableBuyOnWhatsApp = paymentSettings.enableBuyOnWhatsApp !== false;
-              const enableAddToBag = paymentSettings.enableAddToBag !== false;
-
-              const buttonOrder = paymentSettings.buttonOrder || ['buy_now', 'buy_whatsapp', 'add_bag'];
-
-              const handleBuyNow = () => {
-                if (!product) return;
-                if (onBuyNow) {
-                  onBuyNow(product, selectedSize, selectedColor);
-                }
-              };
-
-              const buttonConfigs = {
-                buy_now: enableBuyNow && (
+            ) : (
+              <div className="space-y-3">
+                {/* Direct Buy Now Button */}
+                {paymentSettings.enableBuyNow !== false && (
                   <button
-                    key="buy_now"
                     onClick={handleBuyNow}
-                    className="w-full text-white font-extrabold text-sm sm:text-base py-4 px-6 rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-                    style={{
-                      backgroundColor: buyNowColor,
-                      color: buyNowTextColor,
-                    }}
+                    disabled={isBuyNowLoading}
+                    className="w-full text-white font-extrabold text-base sm:text-lg py-4 px-6 rounded-2xl shadow-lg shadow-[#0B8F63]/20 flex items-center justify-center gap-3 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 group relative overflow-hidden"
+                    style={{ backgroundColor: paymentSettings.buyNowButtonColor || '#0B8F63' }}
                   >
-                    <CreditCard className="w-5 h-5" />
-                    <span>{buyNowText}</span>
+                    {isBuyNowLoading ? (
+                      <Loader2 className="w-6 h-6 animate-spin text-white" />
+                    ) : (
+                      <Zap className="w-6 h-6 fill-white text-white animate-pulse" />
+                    )}
+                    <span>{paymentSettings.buyNowButtonText || 'BUY NOW'}</span>
                   </button>
-                ),
-                buy_whatsapp: enableBuyOnWhatsApp && (
-                  <button
-                    key="buy_whatsapp"
-                    onClick={handleWhatsAppBuy}
-                    className="w-full text-white font-extrabold text-sm sm:text-base py-4 px-6 rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-                    style={{
-                      backgroundColor: buyWhatsappColor,
-                      color: buyWhatsappTextColor,
-                    }}
-                  >
-                    <MessageCircle className="w-5 h-5 fill-current" />
-                    <span>{buyWhatsappText}</span>
-                  </button>
-                ),
-                add_bag: enableAddToBag && (
-                  <button
-                    key="add_bag"
-                    onClick={handleAddBag}
-                    className="w-full font-extrabold text-sm sm:text-base py-4 px-6 rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer border border-neutral-200/50"
-                    style={{
-                      backgroundColor: addBagColor,
-                      color: addBagTextColor,
-                    }}
-                  >
-                    <ShoppingBag className="w-5 h-5" />
-                    <span>{addBagText}</span>
-                  </button>
-                ),
-              };
+                )}
 
-              const renderedButtons = buttonOrder
-                .map(key => buttonConfigs[key as keyof typeof buttonConfigs])
-                .filter(Boolean);
+                {/* Secondary Actions Row: WhatsApp, Add to Bag, Wishlist */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {paymentSettings.enableBuyWhatsApp !== false && (
+                    <button
+                      onClick={handleWhatsAppBuy}
+                      className="w-full text-white font-bold text-xs sm:text-sm py-3.5 px-3 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.01]"
+                      style={{ backgroundColor: paymentSettings.buyWhatsAppButtonColor || '#25D366' }}
+                    >
+                      <MessageCircle className="w-4 h-4 fill-white text-white shrink-0" />
+                      <span className="truncate">{paymentSettings.buyWhatsAppButtonText || 'BUY ON WHATSAPP'}</span>
+                    </button>
+                  )}
 
-              return (
-                <div className="flex flex-col gap-3">
-                  {renderedButtons}
+                  {paymentSettings.enableAddToCart !== false && (
+                    <button
+                      onClick={handleAddBag}
+                      className="w-full text-white font-bold text-xs sm:text-sm py-3.5 px-3 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.01]"
+                      style={{ backgroundColor: paymentSettings.addToBagButtonColor || '#171717' }}
+                    >
+                      <ShoppingBag className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{addedNotice ? 'Added to Bag!' : (paymentSettings.addToBagButtonText || 'ADD TO BAG')}</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => onToggleWishlist(product)}
+                    className={`w-full font-bold text-xs sm:text-sm py-3.5 px-3 rounded-xl border flex items-center justify-center gap-2 transition-colors ${
+                      isWishlisted
+                        ? 'bg-rose-50 border-rose-200 text-rose-600'
+                        : 'bg-white border-neutral-200 text-neutral-800 hover:bg-neutral-50'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 shrink-0 ${isWishlisted ? 'fill-rose-600 text-rose-600' : ''}`} />
+                    <span className="truncate">{isWishlisted ? 'Saved' : 'Wishlist'}</span>
+                  </button>
                 </div>
-              );
-            })()}
-
-            <div className="pt-1">
-              <button
-                onClick={() => product && onToggleWishlist(product)}
-                className={`w-full font-bold text-xs sm:text-sm py-3.5 px-4 rounded-xl border flex items-center justify-center gap-2 transition-colors ${
-                  isWishlisted
-                    ? 'bg-rose-50 border-rose-200 text-rose-600'
-                    : 'bg-white border-neutral-200 text-neutral-800 hover:bg-neutral-50'
-                }`}
-              >
-                <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-rose-600' : ''}`} />
-                <span>{isWishlisted ? 'Saved in Wishlist' : 'Save to Wishlist'}</span>
-              </button>
-            </div>
+              </div>
+            )}
 
             {/* Store Guarantees */}
             <div className="grid grid-cols-3 gap-2 pt-4 text-center text-[11px] text-neutral-600 font-semibold border-t border-neutral-100">

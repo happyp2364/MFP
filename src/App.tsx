@@ -15,6 +15,7 @@ import { InstagramFeed } from './components/Social/InstagramFeed';
 import { SocialFollowCTA } from './components/Social/SocialFollowCTA';
 import { Footer } from './components/Footer/Footer';
 import { FloatingActionHub } from './components/FloatingActions/FloatingActionHub';
+import { AIPetShoeMascot } from './components/Mascot/AIPetShoeMascot';
 import { QuickViewModal } from './components/Products/QuickViewModal';
 import { OrderSheet } from './components/Cart/OrderSheet';
 import { LiveSearchModal } from './components/Search/LiveSearchModal';
@@ -29,7 +30,6 @@ import { GmailInquiryModal } from './components/GoogleWorkspace/GmailInquiryModa
 import { WorkspaceHubDrawer } from './components/GoogleWorkspace/WorkspaceHubDrawer';
 import { ProductDetailPage } from './components/Products/ProductDetailPage';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { FloatingParticlesCanvas } from './components/Theme/FloatingParticlesCanvas';
 
 import { useStore } from './context/StoreContext';
 import { Product, FilterState, GenderCategory, CartItem } from './types';
@@ -64,7 +64,7 @@ function AppContent() {
       },
     ] : []
   );
-  const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(null);
+  const [directCheckoutItems, setDirectCheckoutItems] = useState<CartItem[] | null>(null);
 
   // Modals
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
@@ -206,20 +206,19 @@ function AppContent() {
     });
   };
 
-  const [isBuyNowProcessing, setIsBuyNowProcessing] = useState(false);
-  const handleBuyNow = (product: Product, size: string, color: string) => {
-    if (isBuyNowProcessing) return;
-    setIsBuyNowProcessing(true);
-    setBuyNowItem({
-      product,
-      selectedSize: size || product.sizes[0] || 'Standard',
-      selectedColor: color || (product.colors[0] ? product.colors[0].name : 'Standard'),
-      quantity: 1,
-    });
+  const handleBuyNow = (product: Product, size: string, color: string, quantity: number = 1) => {
+    const chosenSize = size || (product.sizes && product.sizes[0]) || 'Standard';
+    const chosenColor = color || (product.colors && product.colors[0] ? product.colors[0].name : 'Standard');
+
+    setDirectCheckoutItems([
+      {
+        product,
+        selectedSize: chosenSize,
+        selectedColor: chosenColor,
+        quantity: quantity > 0 ? quantity : 1,
+      },
+    ]);
     setCheckoutModalOpen(true);
-    setTimeout(() => {
-      setIsBuyNowProcessing(false);
-    }, 1000);
   };
 
   const handleUpdateCartQuantity = (id: string, size: string, color: string, qty: number) => {
@@ -345,11 +344,6 @@ function AppContent() {
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
-      {/* Dynamic Ambient Floating Particles Layer */}
-      <FloatingParticlesCanvas />
-
-      {/* Premium Decorative Hanging Shoe Lace Animation */}
-
       {/* 1. Announcement Bar */}
       <AnnouncementBar />
 
@@ -395,9 +389,9 @@ function AppContent() {
           onToggleWishlist={handleToggleWishlist}
           isWishlisted={activeRouteProduct ? wishlistIds.includes(activeRouteProduct.id) : false}
           onAddToCart={handleAddToCart}
+          onBuyNow={handleBuyNow}
           onQuickView={(p) => setQuickViewProduct(p)}
           wishlistIds={wishlistIds}
-          onBuyNow={handleBuyNow}
         />
       ) : (
         <>
@@ -481,6 +475,7 @@ function AppContent() {
       />
 
       {/* Interactive AI Pet Shoe Brand Mascot */}
+      <AIPetShoeMascot />
 
       {/* --- MODALS & DRAWERS --- */}
       {/* Quick View Modal */}
@@ -501,23 +496,25 @@ function AppContent() {
         onUpdateQuantity={handleUpdateCartQuantity}
         onRemoveItem={handleRemoveCartItem}
         onClearCart={() => setCartItems([])}
-        onProceedToCheckout={() => setCheckoutModalOpen(true)}
+        onProceedToCheckout={() => {
+          setDirectCheckoutItems(null);
+          setCheckoutModalOpen(true);
+        }}
       />
 
-      {/* Online Checkout Modal (UPI/QR, Cards, Netbanking) */}
+      {/* Online Checkout Modal (UPI/QR, Cards, Netbanking, Cashfree, COD) */}
       <CheckoutModal
         isOpen={checkoutModalOpen}
         onClose={() => {
           setCheckoutModalOpen(false);
-          setBuyNowItem(null);
+          setDirectCheckoutItems(null);
         }}
-        cartItems={cartItems}
-        buyNowItem={buyNowItem}
+        cartItems={directCheckoutItems || cartItems}
         onOrderComplete={(orderId) => {
-          if (!buyNowItem) {
+          if (!directCheckoutItems) {
             setCartItems([]);
           }
-          setBuyNowItem(null);
+          setDirectCheckoutItems(null);
           setCheckoutModalOpen(false);
           setCustomerAccountOpen(true);
         }}
@@ -629,14 +626,10 @@ function AppContent() {
   );
 }
 
-import { ErrorBoundary } from './components/Common/ErrorBoundary';
-
 export default function App() {
   return (
-    <ErrorBoundary fallbackTitle="Marudhar Fashion Application Error">
-      <ThemeProvider>
-        <AppContent />
-      </ThemeProvider>
-    </ErrorBoundary>
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

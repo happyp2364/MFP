@@ -30,10 +30,10 @@ import {
   SoundType,
   SoundConfig,
   CustomerSoundSettings,
+  PendingChangeItem,
 } from '../types';
 import { sendBrowserWebPushNotification } from '../utils/pushNotifications';
 import { splitProduct, stitchProduct, estimateObjectSizeKb } from '../utils/productSplitter';
-import { getProductSlug } from '../utils/productUtils';
 import {
   PRODUCTS_DATA,
   REVIEWS_DATA,
@@ -274,24 +274,19 @@ interface StoreContextType {
   orders: CustomerOrder[];
   notifications: AdminNotification[];
   hangingSneakerConfig: HangingSneakerConfig;
-  updateHangingSneakerConfig: (updated: Partial<HangingSneakerConfig>) => Promise<boolean>;
+  updateHangingSneakerConfig: (updated: Partial<HangingSneakerConfig>) => void;
   petShoeConfig: PetShoeConfig;
-  updatePetShoeConfig: (updated: Partial<PetShoeConfig>) => Promise<boolean>;
+  updatePetShoeConfig: (updated: Partial<PetShoeConfig>) => void;
   instagramConfig: InstagramConfig;
-  updateInstagramConfig: (updated: Partial<InstagramConfig>) => Promise<boolean>;
+  updateInstagramConfig: (updated: Partial<InstagramConfig>) => Promise<void>;
   updatePaymentSettings: (settings: Partial<PaymentSettings>) => Promise<boolean>;
 
   // Website Sound Engine & Customer Controls
   soundConfig: SoundConfig;
-  updateSoundConfig: (updated: Partial<SoundConfig>) => Promise<boolean>;
+  updateSoundConfig: (updated: Partial<SoundConfig>) => Promise<void>;
   customerSoundSettings: CustomerSoundSettings;
   updateCustomerSoundSettings: (updated: Partial<CustomerSoundSettings>) => void;
   playSiteSound: (type: SoundType) => void;
-  lastSaveMetrics: {
-    writeTimeMs: number;
-    docsUpdated: string[];
-    fieldsUpdated: Record<string, string[]>;
-  } | null;
   placeOrderAndPay: (
     shippingInfo: ShippingAddressInfo,
     items: import('../types').CartItem[],
@@ -362,6 +357,21 @@ interface StoreContextType {
   updateTrendingCollection: (id: string, updated: Partial<TrendingCollectionItem>) => void;
 
   // CMS Draft & Global Publish System
+  hasPendingDraft: boolean;
+  pendingDraftCount: number;
+  pendingChangesList: PendingChangeItem[];
+  lastPublishedAt: string | null;
+  lastPublishedBy: string | null;
+  publishedVersions: PublishedVersionHistory[];
+  previewMode: 'draft' | 'live';
+  publishWebsite: (
+    summary?: string,
+    onProgress?: (progress: PublishProgressState) => void
+  ) => Promise<PublishResult>;
+  restorePublishedVersion: (versionId: string) => Promise<boolean>;
+  togglePreviewMode: () => void;
+  discardDraft: () => Promise<void>;
+
   // Audit Logs & Recovery
   refreshAuditLogs: () => Promise<void>;
   createStoreBackup: () => Promise<StoreBackupSnapshot>;
@@ -374,22 +384,25 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // --- 1. PUBLISHED (LIVE WEBSITE) STATE ---
   const [publishedProducts, setPublishedProducts] = useState<Product[]>(() => {
-    return PRODUCTS_DATA;
+    const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+    return saved ? JSON.parse(saved) : PRODUCTS_DATA;
   });
 
   const [rawLiveProducts, setRawLiveProducts] = useState<any[]>([]);
   const [liveGalleries, setLiveGalleries] = useState<Record<string, any>>({});
   const [liveVariants, setLiveVariants] = useState<Record<string, any>>({});
-  const [liveProductReviews, setLiveProductReviews] = useState<Record<string, any>>({});
-  const [liveAi, setLiveAi] = useState<Record<string, any>>({});
-  const [liveSeo, setLiveSeo] = useState<Record<string, any>>({});
-  const [liveStatistics, setLiveStatistics] = useState<Record<string, any>>({});
-  const [liveRelated, setLiveRelated] = useState<Record<string, any>>({});
-  const [liveShipping, setLiveShipping] = useState<Record<string, any>>({});
+  const [liveAiMetadata, setLiveAiMetadata] = useState<Record<string, any>>({});
+  const [liveGalleryParts, setLiveGalleryParts] = useState<Record<string, any>>({});
 
+  const [rawDraftProducts, setRawDraftProducts] = useState<any[]>([]);
+  const [draftGalleries, setDraftGalleries] = useState<Record<string, any>>({});
+  const [draftVariants, setDraftVariants] = useState<Record<string, any>>({});
+  const [draftAiMetadata, setDraftAiMetadata] = useState<Record<string, any>>({});
+  const [draftGalleryParts, setDraftGalleryParts] = useState<Record<string, any>>({});
 
   const [publishedReviews, setPublishedReviews] = useState<Review[]>(() => {
-    return REVIEWS_DATA;
+    const saved = localStorage.getItem(STORAGE_KEYS.REVIEWS);
+    return saved ? JSON.parse(saved) : REVIEWS_DATA;
   });
 
   const [publishedStoreInfo, setPublishedStoreInfo] = useState<StoreInfo>(() => {
@@ -398,7 +411,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const [publishedHeroContent, setPublishedHeroContent] = useState<HeroContent>(() => {
-    return DEFAULT_HERO_CONTENT;
+    const saved = localStorage.getItem(STORAGE_KEYS.HERO_CONTENT);
+    return saved ? JSON.parse(saved) : DEFAULT_HERO_CONTENT;
   });
 
   const [publishedAnnouncements, setPublishedAnnouncements] = useState<string[]>(() => {
@@ -417,7 +431,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(() => {
-    return DEFAULT_PAYMENT_SETTINGS;
+    const saved = localStorage.getItem(STORAGE_KEYS.PAYMENT_SETTINGS);
+    return saved ? JSON.parse(saved) : DEFAULT_PAYMENT_SETTINGS;
   });
 
   const [publishedHangingSneakerConfig, setPublishedHangingSneakerConfig] = useState<HangingSneakerConfig>(() => {
@@ -445,15 +460,203 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return saved ? { ...DEFAULT_CUSTOMER_SOUND_SETTINGS, ...JSON.parse(saved) } : DEFAULT_CUSTOMER_SOUND_SETTINGS;
   });
 
-
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => localStorage.getItem(STORAGE_KEYS.IS_ADMIN) === 'true');
-  const [lastSaveMetrics, setLastSaveMetrics] = useState<{
-    writeTimeMs: number;
-    docsUpdated: string[];
-    fieldsUpdated: Record<string, string[]>;
-  } | null>(null);
+  // --- 2. DRAFT (ADMIN CMS EDITING WORKSPACE) STATE ---
+  const [draftProducts, setDraftProducts] = useState<Product[]>(publishedProducts);
+  const [draftReviews, setDraftReviews] = useState<Review[]>(publishedReviews);
+  const [draftStoreInfo, setDraftStoreInfo] = useState<StoreInfo>(publishedStoreInfo);
+  const [draftHeroContent, setDraftHeroContent] = useState<HeroContent>(publishedHeroContent);
+  const [draftAnnouncements, setDraftAnnouncements] = useState<string[]>(publishedAnnouncements);
+  const [draftCategoryHighlights, setDraftCategoryHighlights] = useState<CategoryHighlight[]>(publishedCategoryHighlights);
+  const [draftTrendingCollections, setDraftTrendingCollections] = useState<TrendingCollectionItem[]>(publishedTrendingCollections);
+  const [draftPaymentSettings, setDraftPaymentSettings] = useState<PaymentSettings>(publishedPaymentSettings);
+  const [draftHangingSneakerConfig, setDraftHangingSneakerConfig] = useState<HangingSneakerConfig>(publishedHangingSneakerConfig);
+  const [draftPetShoeConfig, setDraftPetShoeConfig] = useState<PetShoeConfig>(publishedPetShoeConfig);
+  const [draftInstagramConfig, setDraftInstagramConfig] = useState<InstagramConfig>(publishedInstagramConfig);
+  const [draftSoundConfig, setDraftSoundConfig] = useState<SoundConfig>(publishedSoundConfig);
 
   // --- 3. DRAFT STATUS TRACKING & VERSION HISTORY ---
+  const [previewMode, setPreviewMode] = useState<'draft' | 'live'>('draft');
+  const [hasPendingDraft, setHasPendingDraft] = useState<boolean>(() => {
+    return !!localStorage.getItem('mfp_cms_active_draft');
+  });
+  const [pendingDraftCount, setPendingDraftCount] = useState<number>(() => {
+    const raw = localStorage.getItem('mfp_cms_pending_count');
+    return raw ? parseInt(raw, 10) : 0;
+  });
+
+  // --- COMPUTE EXACT PENDING CHANGES LIST FOR DRAFT VS LIVE ---
+  const pendingChangesList: PendingChangeItem[] = React.useMemo(() => {
+    const list: PendingChangeItem[] = [];
+
+    // 1. Products diffing
+    const pubMap = new Map<string, Product>();
+    publishedProducts.forEach((p) => pubMap.set(p.id, p));
+
+    const draftIds = new Set<string>();
+
+    draftProducts.forEach((dp) => {
+      draftIds.add(dp.id);
+      const pub = pubMap.get(dp.id);
+
+      if (!pub) {
+        list.push({
+          id: `p-add-${dp.id}`,
+          type: 'PRODUCT_ADD',
+          title: `New Product Added: ${dp.name}`,
+          details: `Category: ${dp.category.toUpperCase()} • Price: ₹${dp.price.toLocaleString('en-IN')}`,
+        });
+      } else {
+        // Compare Price
+        if (dp.price !== pub.price || dp.originalPrice !== pub.originalPrice) {
+          list.push({
+            id: `p-price-${dp.id}`,
+            type: 'PRICE_CHANGE',
+            title: `Price Changed: ${dp.name}`,
+            details: `₹${pub.price.toLocaleString('en-IN')} → ₹${dp.price.toLocaleString('en-IN')}`,
+          });
+        }
+        // Compare Stock
+        if (dp.inStock !== pub.inStock || JSON.stringify(dp.sizeStocks || []) !== JSON.stringify(pub.sizeStocks || [])) {
+          list.push({
+            id: `p-stock-${dp.id}`,
+            type: 'STOCK_CHANGE',
+            title: `Stock Quantity Updated: ${dp.name}`,
+            details: dp.inStock ? 'In Stock (Inventory adjusted)' : 'Marked Out of Stock',
+          });
+        }
+        // Compare general product data
+        if (
+          dp.name !== pub.name ||
+          dp.category !== pub.category ||
+          dp.subcategory !== pub.subcategory ||
+          dp.description !== pub.description ||
+          JSON.stringify(dp.images || []) !== JSON.stringify(pub.images || [])
+        ) {
+          list.push({
+            id: `p-edit-${dp.id}`,
+            type: 'PRODUCT_UPDATE',
+            title: `Product Modified: ${dp.name}`,
+            details: 'Product details, images, or taxonomy modified',
+          });
+        }
+      }
+    });
+
+    // Products deleted
+    publishedProducts.forEach((pub) => {
+      if (!draftIds.has(pub.id)) {
+        list.push({
+          id: `p-del-${pub.id}`,
+          type: 'PRODUCT_DELETE',
+          title: `Product Deleted: ${pub.name}`,
+          details: `SKU: ${pub.sku || pub.id}`,
+        });
+      }
+    });
+
+    // 2. Hero Content diff
+    if (JSON.stringify(draftHeroContent) !== JSON.stringify(publishedHeroContent)) {
+      list.push({
+        id: 'diff-hero',
+        type: 'BANNER',
+        title: 'Homepage Hero Banner Updated',
+        details: `Headline: "${draftHeroContent.headlineMain || draftHeroContent.headlineHighlight || 'Hero banner'}"`,
+      });
+    }
+
+    // 3. Announcements diff
+    if (JSON.stringify(draftAnnouncements) !== JSON.stringify(publishedAnnouncements)) {
+      list.push({
+        id: 'diff-announcements',
+        type: 'OFFERS',
+        title: 'Announcement Bar Offers Updated',
+        details: `${draftAnnouncements.length} announcement lines`,
+      });
+    }
+
+    // 4. Categories diff
+    if (JSON.stringify(draftCategoryHighlights) !== JSON.stringify(publishedCategoryHighlights)) {
+      list.push({
+        id: 'diff-categories',
+        type: 'CATEGORIES',
+        title: 'Category Highlights Modified',
+        details: 'Men, Women, or Kids category spotlight cards updated',
+      });
+    }
+
+    // 5. Trending Collections diff
+    if (JSON.stringify(draftTrendingCollections) !== JSON.stringify(publishedTrendingCollections)) {
+      list.push({
+        id: 'diff-collections',
+        type: 'OFFERS',
+        title: 'Trending Collections Banner Updated',
+        details: 'Featured collection items updated on homepage',
+      });
+    }
+
+    // 6. Store Info diff
+    if (JSON.stringify(draftStoreInfo) !== JSON.stringify(publishedStoreInfo)) {
+      list.push({
+        id: 'diff-store-info',
+        type: 'SETTINGS',
+        title: 'Website Settings & Store Info Updated',
+        details: `Name: ${draftStoreInfo.name}, Address & Contact details`,
+      });
+    }
+
+    // 7. Payment Settings diff
+    if (JSON.stringify(draftPaymentSettings) !== JSON.stringify(publishedPaymentSettings)) {
+      list.push({
+        id: 'diff-payment',
+        type: 'SETTINGS',
+        title: 'Payment Gateway Configuration Modified',
+        details: `Provider: ${draftPaymentSettings.gatewayProvider}`,
+      });
+    }
+
+    // 8. Sound & Theme Config diff
+    if (JSON.stringify(draftSoundConfig) !== JSON.stringify(publishedSoundConfig)) {
+      list.push({
+        id: 'diff-sound',
+        type: 'THEME',
+        title: 'Website Theme & Audio Feedback Updated',
+        details: 'Audio effects & theme settings updated',
+      });
+    }
+
+    // 9. Reviews diff
+    if (JSON.stringify(draftReviews) !== JSON.stringify(publishedReviews)) {
+      list.push({
+        id: 'diff-reviews',
+        type: 'REVIEW',
+        title: 'Customer Reviews & Testimonials Modified',
+        details: `${draftReviews.length} customer reviews active`,
+      });
+    }
+
+    return list;
+  }, [
+    draftProducts, publishedProducts,
+    draftHeroContent, publishedHeroContent,
+    draftAnnouncements, publishedAnnouncements,
+    draftCategoryHighlights, publishedCategoryHighlights,
+    draftTrendingCollections, publishedTrendingCollections,
+    draftStoreInfo, publishedStoreInfo,
+    draftPaymentSettings, publishedPaymentSettings,
+    draftSoundConfig, publishedSoundConfig,
+    draftReviews, publishedReviews
+  ]);
+
+  const activeHasPendingDraft = pendingChangesList.length > 0 || hasPendingDraft;
+  const activePendingDraftCount = Math.max(pendingChangesList.length, pendingDraftCount);
+  const [lastPublishedAt, setLastPublishedAt] = useState<string | null>(() => localStorage.getItem('mfp_last_published_at'));
+  const [lastPublishedBy, setLastPublishedBy] = useState<string | null>(() => localStorage.getItem('mfp_last_published_by'));
+  const [publishedVersions, setPublishedVersions] = useState<PublishedVersionHistory[]>([]);
+
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.IS_ADMIN);
+    return saved === 'true';
+  });
 
   const [adminPassword, setAdminPassword] = useState<string>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.ADMIN_PASSWORD);
@@ -1086,7 +1289,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
 
     setPublishedProducts(reduceStockInProducts);
-    setPublishedProducts(reduceStockInProducts);
+    setDraftProducts(reduceStockInProducts);
 
     // Save to Firestore & local state
     await saveOrderInFirestore(newOrder);
@@ -1226,12 +1429,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     let unsubProducts: any = null;
     let unsubGallery: any = null;
     let unsubVariants: any = null;
-    let unsubReviews: any = null;
-    let unsubAi: any = null;
-    let unsubSeo: any = null;
-    let unsubStatistics: any = null;
-    let unsubRelated: any = null;
-    let unsubShipping: any = null;
+    let unsubAiMetadata: any = null;
+    let unsubGalleryParts: any = null;
 
     try {
       unsubProducts = onSnapshot(collection(db, 'products'), async (snapshot) => {
@@ -1250,12 +1449,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               batch.set(doc(db, 'products', p.id), split.metadata);
               batch.set(doc(db, 'product_gallery', p.id), split.gallery);
               batch.set(doc(db, 'product_variants', p.id), split.variants);
-              batch.set(doc(db, 'product_reviews', p.id), split.reviews);
-              batch.set(doc(db, 'product_ai', p.id), split.ai);
-              batch.set(doc(db, 'product_seo', p.id), split.seo);
-              batch.set(doc(db, 'product_statistics', p.id), split.statistics);
-              batch.set(doc(db, 'product_related', p.id), split.related);
-              batch.set(doc(db, 'product_shipping', p.id), split.shipping);
+              batch.set(doc(db, 'product_ai_metadata', p.id), split.aiMetadata);
+              for (const part of split.galleryParts) {
+                batch.set(doc(db, 'product_gallery_parts', part.id), part);
+              }
             }
             await batch.commit();
           } catch (seedErr) {
@@ -1282,52 +1479,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setLiveVariants(map);
       });
 
-      unsubReviews = onSnapshot(collection(db, 'product_reviews'), (snapshot) => {
+      unsubAiMetadata = onSnapshot(collection(db, 'product_ai_metadata'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => {
           map[docSnap.id] = docSnap.data();
         });
-        setLiveProductReviews(map);
+        setLiveAiMetadata(map);
       });
 
-      unsubAi = onSnapshot(collection(db, 'product_ai'), (snapshot) => {
+      unsubGalleryParts = onSnapshot(collection(db, 'product_gallery_parts'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => {
           map[docSnap.id] = docSnap.data();
         });
-        setLiveAi(map);
-      });
-
-      unsubSeo = onSnapshot(collection(db, 'product_seo'), (snapshot) => {
-        const map: Record<string, any> = {};
-        snapshot.forEach((docSnap) => {
-          map[docSnap.id] = docSnap.data();
-        });
-        setLiveSeo(map);
-      });
-
-      unsubStatistics = onSnapshot(collection(db, 'product_statistics'), (snapshot) => {
-        const map: Record<string, any> = {};
-        snapshot.forEach((docSnap) => {
-          map[docSnap.id] = docSnap.data();
-        });
-        setLiveStatistics(map);
-      });
-
-      unsubRelated = onSnapshot(collection(db, 'product_related'), (snapshot) => {
-        const map: Record<string, any> = {};
-        snapshot.forEach((docSnap) => {
-          map[docSnap.id] = docSnap.data();
-        });
-        setLiveRelated(map);
-      });
-
-      unsubShipping = onSnapshot(collection(db, 'product_shipping'), (snapshot) => {
-        const map: Record<string, any> = {};
-        snapshot.forEach((docSnap) => {
-          map[docSnap.id] = docSnap.data();
-        });
-        setLiveShipping(map);
+        setLiveGalleryParts(map);
       });
 
     } catch (e) {
@@ -1338,50 +1503,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (unsubProducts) unsubProducts();
       if (unsubGallery) unsubGallery();
       if (unsubVariants) unsubVariants();
-      if (unsubReviews) unsubReviews();
-      if (unsubAi) unsubAi();
-      if (unsubSeo) unsubSeo();
-      if (unsubStatistics) unsubStatistics();
-      if (unsubRelated) unsubRelated();
-      if (unsubShipping) unsubShipping();
+      if (unsubAiMetadata) unsubAiMetadata();
+      if (unsubGalleryParts) unsubGalleryParts();
     };
   }, []);
 
   // Stitch Published Products
   useEffect(() => {
     if (rawLiveProducts.length > 0) {
-      const stitched = rawLiveProducts
-        .map((p) => {
-          const existingLocal = publishedProducts.find((item) => item.id === p.id);
-          return stitchProduct(
-            p,
-            liveGalleries[p.id],
-            liveVariants[p.id],
-            liveProductReviews[p.id],
-            liveAi[p.id],
-            liveSeo[p.id],
-            liveStatistics[p.id],
-            liveRelated[p.id],
-            liveShipping[p.id],
-            existingLocal
-          );
-        })
-        .filter(Boolean);
-      if (stitched.length > 0) {
-        setPublishedProducts(stitched);
-      }
+      const stitched = rawLiveProducts.map((p) =>
+        stitchProduct(
+          p,
+          liveGalleries[p.id],
+          liveVariants[p.id],
+          liveAiMetadata[p.id],
+          liveGalleryParts
+        )
+      );
+      setPublishedProducts(stitched);
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(stitched));
     }
-  }, [
-    rawLiveProducts,
-    liveGalleries,
-    liveVariants,
-    liveProductReviews,
-    liveAi,
-    liveSeo,
-    liveStatistics,
-    liveRelated,
-    liveShipping,
-  ]);
+  }, [rawLiveProducts, liveGalleries, liveVariants, liveAiMetadata, liveGalleryParts]);
 
   // 4. Inactivity Auto-Logout Monitor (30 Minutes)
   const handleUserActivity = useCallback(() => {
@@ -1419,8 +1561,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         console.log('Starting automated product data migration and size verification...');
         const productsCol = collection(db, 'products');
+        const draftProductsCol = collection(db, 'draft_products');
 
         const liveSnap = await getDocs(productsCol);
+        const draftSnap = await getDocs(draftProductsCol);
 
         let migratedCount = 0;
 
@@ -1442,14 +1586,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               const split = splitProduct(fullProduct);
               const batch = writeBatch(db);
 
-              batch.set(doc(db, 'product_gallery', docSnap.id), split.gallery);
-              batch.set(doc(db, 'product_variants', docSnap.id), split.variants);
-              batch.set(doc(db, 'product_reviews', docSnap.id), split.reviews);
-              batch.set(doc(db, 'product_ai', docSnap.id), split.ai);
-              batch.set(doc(db, 'product_seo', docSnap.id), split.seo);
-              batch.set(doc(db, 'product_statistics', docSnap.id), split.statistics);
-              batch.set(doc(db, 'product_related', docSnap.id), split.related);
-              batch.set(doc(db, 'product_shipping', docSnap.id), split.shipping);
+              batch.set(doc(db, isDraft ? 'draft_product_gallery' : 'product_gallery', docSnap.id), split.gallery);
+              batch.set(doc(db, isDraft ? 'draft_product_variants' : 'product_variants', docSnap.id), split.variants);
+              batch.set(doc(db, isDraft ? 'draft_product_ai_metadata' : 'product_ai_metadata', docSnap.id), split.aiMetadata);
+
+              for (const part of split.galleryParts) {
+                batch.set(doc(db, isDraft ? 'draft_product_gallery_parts' : 'product_gallery_parts', part.id), part);
+              }
 
               const cleanedDoc = { ...split.metadata };
               batch.set(docSnap.ref, cleanedDoc);
@@ -1462,6 +1605,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
 
         await processSnap(liveSnap, false);
+        await processSnap(draftSnap, true);
 
         if (migratedCount > 0 && active) {
           recordAuditLog(
@@ -1600,32 +1744,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // --- HELPERS FOR SMART DIFFERENCE SAVE ENGINE ---
-  const getObjectDiff = (original: any, current: any): any => {
-    if (original === current) return null;
-    if (!original || !current || typeof original !== 'object' || typeof current !== 'object') {
-      return current;
-    }
-
-    const diff: any = {};
-    let hasChanges = false;
-
-    const allKeys = new Set([...Object.keys(original), ...Object.keys(current)]);
-    for (const key of allKeys) {
-      const valOrig = original[key];
-      const valCurr = current[key];
-
-      if (JSON.stringify(valOrig) !== JSON.stringify(valCurr)) {
-        diff[key] = valCurr;
-        hasChanges = true;
-      }
-    }
-
-    return hasChanges ? diff : null;
-  };
-
   // --- DRAFT AUTO-SAVE ENGINE ---
-  const saveLiveChanges = useCallback(async (overrides?: Partial<{
+  const saveDraftLocallyAndRemote = useCallback((overrides?: Partial<{
     products: Product[];
     reviews: Review[];
     storeInfo: StoreInfo;
@@ -1638,19 +1758,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     petShoeConfig: PetShoeConfig;
     instagramConfig: InstagramConfig;
     soundConfig: SoundConfig;
-  }>): Promise<boolean> => {
-    const nextProducts = overrides?.products ?? publishedProducts;
-    const nextReviews = overrides?.reviews ?? publishedReviews;
-    const nextStoreInfo = overrides?.storeInfo ?? publishedStoreInfo;
-    const nextHeroContent = overrides?.heroContent ?? publishedHeroContent;
-    const nextAnnouncements = overrides?.announcements ?? publishedAnnouncements;
-    const nextCategoryHighlights = overrides?.categoryHighlights ?? publishedCategoryHighlights;
-    const nextTrendingCollections = overrides?.trendingCollections ?? publishedTrendingCollections;
-    const nextPaymentSettings = overrides?.paymentSettings ?? publishedPaymentSettings;
-    const nextHangingSneakerConfig = overrides?.hangingSneakerConfig ?? publishedHangingSneakerConfig;
-    const nextPetShoeConfig = overrides?.petShoeConfig ?? publishedPetShoeConfig;
-    const nextInstagramConfig = overrides?.instagramConfig ?? publishedInstagramConfig;
-    const nextSoundConfig = overrides?.soundConfig ?? publishedSoundConfig;
+  }>) => {
+    const nextProducts = overrides?.products ?? draftProducts;
+    const nextReviews = overrides?.reviews ?? draftReviews;
+    const nextStoreInfo = overrides?.storeInfo ?? draftStoreInfo;
+    const nextHeroContent = overrides?.heroContent ?? draftHeroContent;
+    const nextAnnouncements = overrides?.announcements ?? draftAnnouncements;
+    const nextCategoryHighlights = overrides?.categoryHighlights ?? draftCategoryHighlights;
+    const nextTrendingCollections = overrides?.trendingCollections ?? draftTrendingCollections;
+    const nextPaymentSettings = overrides?.paymentSettings ?? draftPaymentSettings;
+    const nextHangingSneakerConfig = overrides?.hangingSneakerConfig ?? draftHangingSneakerConfig;
+    const nextPetShoeConfig = overrides?.petShoeConfig ?? draftPetShoeConfig;
+    const nextInstagramConfig = overrides?.instagramConfig ?? draftInstagramConfig;
+    const nextSoundConfig = overrides?.soundConfig ?? draftSoundConfig;
 
     const updatedDraft = {
       products: nextProducts,
@@ -1669,174 +1789,77 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       updatedBy: auth.currentUser?.email || 'Admin',
     };
 
+    const newCount = pendingDraftCount + 1;
+    setHasPendingDraft(true);
+    setPendingDraftCount(newCount);
+    localStorage.setItem('mfp_cms_active_draft', JSON.stringify(updatedDraft));
+    localStorage.setItem('mfp_cms_pending_count', newCount.toString());
 
-    const docsUpdated: string[] = [];
-    const fieldsUpdated: Record<string, string[]> = {};
-    const startTime = Date.now();
-
+    // Write to partitioned documents in Firestore using writeBatch
     try {
       const batch = writeBatch(db);
 
-      // Save individual config documents using getObjectDiff
+      // Save individual config documents
       if (overrides?.storeInfo) {
-        const diff = getObjectDiff(publishedStoreInfo, overrides.storeInfo);
-        if (diff) {
-          batch.set(doc(db, 'settings', 'store'), diff, { merge: true });
-          docsUpdated.push('settings/store');
-          fieldsUpdated['settings/store'] = Object.keys(diff);
-        }
+        batch.set(doc(db, 'draft_settings', 'store'), overrides.storeInfo, { merge: true });
       }
       if (overrides?.heroContent) {
-        const diff = getObjectDiff(publishedHeroContent, overrides.heroContent);
-        if (diff) {
-          batch.set(doc(db, 'hero', 'current'), diff, { merge: true });
-          docsUpdated.push('hero/current');
-          fieldsUpdated['hero/current'] = Object.keys(diff);
-        }
+        batch.set(doc(db, 'draft_hero', 'current'), overrides.heroContent, { merge: true });
       }
       if (overrides?.announcements) {
-        if (JSON.stringify(publishedAnnouncements) !== JSON.stringify(overrides.announcements)) {
-          batch.set(doc(db, 'homepage', 'announcements'), { items: overrides.announcements }, { merge: true });
-          docsUpdated.push('homepage/announcements');
-          fieldsUpdated['homepage/announcements'] = ['items'];
-        }
+        batch.set(doc(db, 'draft_homepage', 'announcements'), { items: overrides.announcements }, { merge: true });
       }
       if (overrides?.categoryHighlights) {
-        if (JSON.stringify(publishedCategoryHighlights) !== JSON.stringify(overrides.categoryHighlights)) {
-          batch.set(doc(db, 'categories', 'highlights'), { items: overrides.categoryHighlights }, { merge: true });
-          docsUpdated.push('categories/highlights');
-          fieldsUpdated['categories/highlights'] = ['items'];
-        }
+        batch.set(doc(db, 'draft_categories', 'highlights'), { items: overrides.categoryHighlights }, { merge: true });
       }
       if (overrides?.trendingCollections) {
-        if (JSON.stringify(publishedTrendingCollections) !== JSON.stringify(overrides.trendingCollections)) {
-          batch.set(doc(db, 'homepage', 'trendingCollections'), { items: overrides.trendingCollections }, { merge: true });
-          docsUpdated.push('homepage/trendingCollections');
-          fieldsUpdated['homepage/trendingCollections'] = ['items'];
-        }
+        batch.set(doc(db, 'draft_homepage', 'trendingCollections'), { items: overrides.trendingCollections }, { merge: true });
       }
       if (overrides?.paymentSettings) {
-        const diff = getObjectDiff(publishedPaymentSettings, overrides.paymentSettings);
-        if (diff) {
-          batch.set(doc(db, 'payment', 'config'), diff, { merge: true });
-          docsUpdated.push('payment/config');
-          fieldsUpdated['payment/config'] = Object.keys(diff);
-        }
+        batch.set(doc(db, 'draft_payment', 'config'), overrides.paymentSettings, { merge: true });
       }
       if (overrides?.hangingSneakerConfig) {
-        const diff = getObjectDiff(publishedHangingSneakerConfig, overrides.hangingSneakerConfig);
-        if (diff) {
-          batch.set(doc(db, 'animations', 'hangingSneakerConfig'), diff, { merge: true });
-          docsUpdated.push('animations/hangingSneakerConfig');
-          fieldsUpdated['animations/hangingSneakerConfig'] = Object.keys(diff);
-        }
+        batch.set(doc(db, 'draft_animations', 'hangingSneakerConfig'), overrides.hangingSneakerConfig, { merge: true });
       }
       if (overrides?.petShoeConfig) {
-        const diff = getObjectDiff(publishedPetShoeConfig, overrides.petShoeConfig);
-        if (diff) {
-          batch.set(doc(db, 'mascot', 'petShoeConfig'), diff, { merge: true });
-          docsUpdated.push('mascot/petShoeConfig');
-          fieldsUpdated['mascot/petShoeConfig'] = Object.keys(diff);
-        }
+        batch.set(doc(db, 'draft_mascot', 'petShoeConfig'), overrides.petShoeConfig, { merge: true });
       }
       if (overrides?.instagramConfig) {
-        const diff = getObjectDiff(publishedInstagramConfig, overrides.instagramConfig);
-        if (diff) {
-          batch.set(doc(db, 'social', 'instagramConfig'), diff, { merge: true });
-          docsUpdated.push('social/instagramConfig');
-          fieldsUpdated['social/instagramConfig'] = Object.keys(diff);
-        }
+        batch.set(doc(db, 'draft_social', 'instagramConfig'), overrides.instagramConfig, { merge: true });
       }
       if (overrides?.soundConfig) {
-        const diff = getObjectDiff(publishedSoundConfig, overrides.soundConfig);
-        if (diff) {
-          batch.set(doc(db, 'theme', 'current'), diff, { merge: true });
-          docsUpdated.push('theme/current');
-          fieldsUpdated['theme/current'] = Object.keys(diff);
-        }
+        batch.set(doc(db, 'draft_theme', 'current'), overrides.soundConfig, { merge: true });
       }
 
-      // Save Products that changed
+      // Save Products that changed (Split-Aware Draft Writing)
       if (overrides?.products) {
         const nextIds = new Set(overrides.products.map(p => p.id));
 
         // Added/Updated
         overrides.products.forEach(p => {
-          const existing = publishedProducts.find(item => item.id === p.id);
-          const split = splitProduct(p);
-
-          if (!existing) {
-            batch.set(doc(db, 'products', p.id), split.metadata);
-            batch.set(doc(db, 'product_gallery', p.id), split.gallery);
-            batch.set(doc(db, 'product_variants', p.id), split.variants);
-            batch.set(doc(db, 'product_reviews', p.id), split.reviews);
-            batch.set(doc(db, 'product_ai', p.id), split.ai);
-            batch.set(doc(db, 'product_seo', p.id), split.seo);
-            batch.set(doc(db, 'product_statistics', p.id), split.statistics);
-            batch.set(doc(db, 'product_related', p.id), split.related);
-            batch.set(doc(db, 'product_shipping', p.id), split.shipping);
-            docsUpdated.push(`products/${p.id} (All Segments)`);
-          } else {
-            const extSplit = splitProduct(existing);
-            const modifiedSegments: string[] = [];
-
-            if (JSON.stringify(split.metadata) !== JSON.stringify(extSplit.metadata)) {
-              batch.set(doc(db, 'products', p.id), split.metadata);
-              modifiedSegments.push('metadata');
-            }
-            if (JSON.stringify(split.gallery) !== JSON.stringify(extSplit.gallery)) {
-              batch.set(doc(db, 'product_gallery', p.id), split.gallery);
-              modifiedSegments.push('gallery');
-            }
-            if (JSON.stringify(split.variants) !== JSON.stringify(extSplit.variants)) {
-              batch.set(doc(db, 'product_variants', p.id), split.variants);
-              modifiedSegments.push('variants');
-            }
-            if (JSON.stringify(split.reviews) !== JSON.stringify(extSplit.reviews)) {
-              batch.set(doc(db, 'product_reviews', p.id), split.reviews);
-              modifiedSegments.push('reviews');
-            }
-            if (JSON.stringify(split.ai) !== JSON.stringify(extSplit.ai)) {
-              batch.set(doc(db, 'product_ai', p.id), split.ai);
-              modifiedSegments.push('ai');
-            }
-            if (JSON.stringify(split.seo) !== JSON.stringify(extSplit.seo)) {
-              batch.set(doc(db, 'product_seo', p.id), split.seo);
-              modifiedSegments.push('seo');
-            }
-            if (JSON.stringify(split.statistics) !== JSON.stringify(extSplit.statistics)) {
-              batch.set(doc(db, 'product_statistics', p.id), split.statistics);
-              modifiedSegments.push('statistics');
-            }
-            if (JSON.stringify(split.related) !== JSON.stringify(extSplit.related)) {
-              batch.set(doc(db, 'product_related', p.id), split.related);
-              modifiedSegments.push('related');
-            }
-            if (JSON.stringify(split.shipping) !== JSON.stringify(extSplit.shipping)) {
-              batch.set(doc(db, 'product_shipping', p.id), split.shipping);
-              modifiedSegments.push('shipping');
-            }
-
-            if (modifiedSegments.length > 0) {
-              docsUpdated.push(`products/${p.id}`);
-              fieldsUpdated[`products/${p.id}`] = modifiedSegments;
+          const existing = draftProducts.find(item => item.id === p.id);
+          if (!existing || JSON.stringify(existing) !== JSON.stringify(p)) {
+            const split = splitProduct(p);
+            batch.set(doc(db, 'draft_products', p.id), split.metadata);
+            batch.set(doc(db, 'draft_product_gallery', p.id), split.gallery);
+            batch.set(doc(db, 'draft_product_variants', p.id), split.variants);
+            batch.set(doc(db, 'draft_product_ai_metadata', p.id), split.aiMetadata);
+            for (const part of split.galleryParts) {
+              batch.set(doc(db, 'draft_product_gallery_parts', part.id), part);
             }
           }
         });
 
         // Deleted
-        publishedProducts.forEach(p => {
+        draftProducts.forEach(p => {
           if (!nextIds.has(p.id)) {
-            batch.delete(doc(db, 'products', p.id));
-            batch.delete(doc(db, 'product_gallery', p.id));
-            batch.delete(doc(db, 'product_variants', p.id));
-            batch.delete(doc(db, 'product_reviews', p.id));
-            batch.delete(doc(db, 'product_ai', p.id));
-            batch.delete(doc(db, 'product_seo', p.id));
-            batch.delete(doc(db, 'product_statistics', p.id));
-            batch.delete(doc(db, 'product_related', p.id));
-            batch.delete(doc(db, 'product_shipping', p.id));
-            docsUpdated.push(`products/${p.id} (Deleted)`);
+            batch.delete(doc(db, 'draft_products', p.id));
+            batch.delete(doc(db, 'draft_product_gallery', p.id));
+            batch.delete(doc(db, 'draft_product_variants', p.id));
+            batch.delete(doc(db, 'draft_product_ai_metadata', p.id));
+            for (let i = 1; i <= 5; i++) {
+              batch.delete(doc(db, 'draft_product_gallery_parts', `${p.id}_gallery_part${i}`));
+            }
           }
         });
       }
@@ -1847,108 +1870,1125 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         // Added/Updated
         overrides.reviews.forEach(r => {
-          const existing = publishedReviews.find(item => item.id === r.id);
+          const existing = draftReviews.find(item => item.id === r.id);
           if (!existing || JSON.stringify(existing) !== JSON.stringify(r)) {
-            batch.set(doc(db, 'reviews', r.id), r, { merge: true });
-            docsUpdated.push(`reviews/${r.id}`);
+            batch.set(doc(db, 'draft_reviews', r.id), r, { merge: true });
           }
         });
 
         // Deleted
-        publishedReviews.forEach(r => {
+        draftReviews.forEach(r => {
           if (!nextIds.has(r.id)) {
-            batch.delete(doc(db, 'reviews', r.id));
-            docsUpdated.push(`reviews/${r.id} (Deleted)`);
+            batch.delete(doc(db, 'draft_reviews', r.id));
           }
         });
       }
 
-      if (docsUpdated.length > 0) {
-        const writePromise = batch.commit();
-        const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 800));
-
-        await Promise.race([writePromise, timeoutPromise]);
-        const elapsed = Date.now() - startTime;
-        setLastSaveMetrics({
-          writeTimeMs: elapsed,
-          docsUpdated,
-          fieldsUpdated,
-        });
-      } else {
-        // No writes needed, resolve instantly
-        setLastSaveMetrics({
-          writeTimeMs: 0,
-          docsUpdated: [],
-          fieldsUpdated: {},
-        });
-      }
-    } catch (err) {
-      console.warn('Draft save notice (safe fallback):', err);
-      const elapsed = Date.now() - startTime;
-      setLastSaveMetrics({
-        writeTimeMs: elapsed,
-        docsUpdated,
-        fieldsUpdated,
+      batch.commit().catch(e => {
+        console.warn('Auto-save draft Firestore partition commit notice:', e);
       });
+    } catch (err) {
+      console.warn('Auto-save writeBatch initiation notice:', err);
     }
 
     showToast('🟡 Draft Saved (Pending Publish)', 'info');
-    return true;
   }, [
-    publishedProducts, publishedReviews, publishedStoreInfo, publishedHeroContent, publishedAnnouncements,
-    publishedCategoryHighlights, publishedTrendingCollections, publishedPaymentSettings,
+    draftProducts, draftReviews, draftStoreInfo, draftHeroContent, draftAnnouncements,
+    draftCategoryHighlights, draftTrendingCollections, draftPaymentSettings,
+    draftHangingSneakerConfig, draftPetShoeConfig, draftInstagramConfig, draftSoundConfig, pendingDraftCount, showToast
   ]);
 
-  const addProduct = async (p: Partial<Product>) => {
-    const cleanName = sanitizeString(p.name || 'New Product', 200);
-    const cleanDesc = sanitizeString(p.description || '', 2000);
-    const cleanBrand = sanitizeString(p.brand || 'Marudhar Fashion', 100);
-    const cleanPrice = sanitizePrice(p.price || 999);
-    const cleanOrigPrice = sanitizePrice(p.originalPrice || p.price || 1299);
+  // Load Active Draft Settings & Configuration from partitioned draft documents
+  useEffect(() => {
+    let unsubStore: any, unsubHero: any, unsubAnnounce: any, unsubCat: any, unsubTrend: any, unsubPay: any, unsubSneak: any, unsubPet: any, unsubInsta: any, unsubSound: any;
+    try {
+      unsubStore = onSnapshot(doc(db, 'draft_settings', 'store'), (snap) => {
+        if (snap.exists()) setDraftStoreInfo(snap.data() as StoreInfo);
+      });
+      unsubHero = onSnapshot(doc(db, 'draft_hero', 'current'), (snap) => {
+        if (snap.exists()) setDraftHeroContent(snap.data() as HeroContent);
+      });
+      unsubAnnounce = onSnapshot(doc(db, 'draft_homepage', 'announcements'), (snap) => {
+        if (snap.exists() && snap.data().items) setDraftAnnouncements(snap.data().items as string[]);
+      });
+      unsubCat = onSnapshot(doc(db, 'draft_categories', 'highlights'), (snap) => {
+        if (snap.exists() && snap.data().items) setDraftCategoryHighlights(snap.data().items as CategoryHighlight[]);
+      });
+      unsubTrend = onSnapshot(doc(db, 'draft_homepage', 'trendingCollections'), (snap) => {
+        if (snap.exists() && snap.data().items) setDraftTrendingCollections(snap.data().items as TrendingCollectionItem[]);
+      });
+      unsubPay = onSnapshot(doc(db, 'draft_payment', 'config'), (snap) => {
+        if (snap.exists()) setDraftPaymentSettings(snap.data() as PaymentSettings);
+      });
+      unsubSneak = onSnapshot(doc(db, 'draft_animations', 'hangingSneakerConfig'), (snap) => {
+        if (snap.exists()) setDraftHangingSneakerConfig(snap.data() as HangingSneakerConfig);
+      });
+      unsubPet = onSnapshot(doc(db, 'draft_mascot', 'petShoeConfig'), (snap) => {
+        if (snap.exists()) setDraftPetShoeConfig(snap.data() as PetShoeConfig);
+      });
+      unsubInsta = onSnapshot(doc(db, 'draft_social', 'instagramConfig'), (snap) => {
+        if (snap.exists()) setDraftInstagramConfig(snap.data() as InstagramConfig);
+      });
+      unsubSound = onSnapshot(doc(db, 'draft_theme', 'current'), (snap) => {
+        if (snap.exists()) setDraftSoundConfig(snap.data() as SoundConfig);
+      });
+      setHasPendingDraft(true);
+    } catch (e) {
+      console.warn('Draft individual document listeners notice:', e);
+    }
+    return () => {
+      if (unsubStore) unsubStore();
+      if (unsubHero) unsubHero();
+      if (unsubAnnounce) unsubAnnounce();
+      if (unsubCat) unsubCat();
+      if (unsubTrend) unsubTrend();
+      if (unsubPay) unsubPay();
+      if (unsubSneak) unsubSneak();
+      if (unsubPet) unsubPet();
+      if (unsubInsta) unsubInsta();
+      if (unsubSound) unsubSound();
+    };
+  }, []);
+
+  // Load draft products and reviews from their respective collections (Split-Aware & Stitched)
+  useEffect(() => {
+    let unsubDraftProducts: any = null;
+    let unsubDraftGallery: any = null;
+    let unsubDraftVariants: any = null;
+    let unsubDraftAiMetadata: any = null;
+    let unsubDraftGalleryParts: any = null;
+
+    try {
+      unsubDraftProducts = onSnapshot(collection(db, 'draft_products'), (snap) => {
+        if (!snap.empty) {
+          const list: any[] = [];
+          snap.forEach((d) => list.push({ ...d.data(), id: d.id }));
+          setRawDraftProducts(list);
+          setHasPendingDraft(true);
+        }
+      });
+
+      unsubDraftGallery = onSnapshot(collection(db, 'draft_product_gallery'), (snap) => {
+        const map: Record<string, any> = {};
+        snap.forEach((d) => { map[d.id] = d.data(); });
+        setDraftGalleries(map);
+      });
+
+      unsubDraftVariants = onSnapshot(collection(db, 'draft_product_variants'), (snap) => {
+        const map: Record<string, any> = {};
+        snap.forEach((d) => { map[d.id] = d.data(); });
+        setDraftVariants(map);
+      });
+
+      unsubDraftAiMetadata = onSnapshot(collection(db, 'draft_product_ai_metadata'), (snap) => {
+        const map: Record<string, any> = {};
+        snap.forEach((d) => { map[d.id] = d.data(); });
+        setDraftAiMetadata(map);
+      });
+
+      unsubDraftGalleryParts = onSnapshot(collection(db, 'draft_product_gallery_parts'), (snap) => {
+        const map: Record<string, any> = {};
+        snap.forEach((d) => { map[d.id] = d.data(); });
+        setDraftGalleryParts(map);
+      });
+
+    } catch (e) {}
+
+    return () => {
+      if (unsubDraftProducts) unsubDraftProducts();
+      if (unsubDraftGallery) unsubDraftGallery();
+      if (unsubDraftVariants) unsubDraftVariants();
+      if (unsubDraftAiMetadata) unsubDraftAiMetadata();
+      if (unsubDraftGalleryParts) unsubDraftGalleryParts();
+    };
+  }, []);
+
+  // Stitch Draft Products
+  useEffect(() => {
+    if (rawDraftProducts.length > 0) {
+      const stitched = rawDraftProducts.map((p) =>
+        stitchProduct(
+          p,
+          draftGalleries[p.id],
+          draftVariants[p.id],
+          draftAiMetadata[p.id],
+          draftGalleryParts
+        )
+      );
+      setDraftProducts(stitched);
+    }
+  }, [rawDraftProducts, draftGalleries, draftVariants, draftAiMetadata, draftGalleryParts]);
+
+  useEffect(() => {
+    let unsubscribe: any = null;
+    try {
+      unsubscribe = onSnapshot(collection(db, 'draft_reviews'), (snap) => {
+        if (!snap.empty) {
+          const list: Review[] = [];
+          snap.forEach((d) => list.push({ ...d.data(), id: d.id } as Review));
+          setDraftReviews(list);
+        }
+      });
+    } catch (e) {}
+    return () => unsubscribe && unsubscribe();
+  }, []);
+
+  // Load Version History from Firestore on Mount
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    try {
+      const versionsCol = collection(db, 'publishedVersions');
+      const q = query(versionsCol, orderBy('publishedAt', 'desc'), limit(50));
+      unsubscribe = onSnapshot(q, (snap) => {
+        if (!snap.empty) {
+          const historyList: PublishedVersionHistory[] = [];
+          snap.forEach((docSnap) => {
+            historyList.push({ id: docSnap.id, ...(docSnap.data() as PublishedVersionHistory) });
+          });
+          setPublishedVersions(historyList);
+          if (historyList.length > 0) {
+            setLastPublishedAt(historyList[0].publishedAt);
+            setLastPublishedBy(historyList[0].publishedBy);
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('Version history listener notice:', e);
+    }
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, []);
+
+  const publishWebsite = async (
+    summary?: string,
+    onProgress?: (progress: PublishProgressState) => void
+  ): Promise<PublishResult> => {
+    const adminEmail = auth.currentUser?.email || 'vpcreation2002@gmail.com';
+    const nowISO = new Date().toISOString();
+    const startTime = Date.now();
+
+    const estimateSizeInBytes = (obj: any): number => {
+      const str = JSON.stringify(obj);
+      return str ? str.length : 0;
+    };
+
+    // Strict Timeout Wrapper to Guarantee Async Operations Never Wait Forever
+    const promiseWithTimeout = <T,>(
+      promise: Promise<T>,
+      timeoutMs: number,
+      errorMessage: string
+    ): Promise<T> => {
+      let timer: any;
+      const timeoutPromise = new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject({
+            code: 'firestore/timeout',
+            message: errorMessage,
+          });
+        }, timeoutMs);
+      });
+      return Promise.race([promise, timeoutPromise]).finally(() => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+
+    interface BatchOperation {
+      type: 'set' | 'delete';
+      ref: any;
+      data?: any;
+      collectionName: string;
+      documentId: string;
+      description: string;
+    }
+
+    const executeBatchChunkWithRetry = async (
+      operations: BatchOperation[],
+      batchIndex: number,
+      totalBatches: number,
+      onProgressMessage?: (msg: string) => void
+    ) => {
+      const maxRetries = 3;
+      let lastError: any = null;
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const chunkStartTime = Date.now();
+        try {
+          if (onProgressMessage) {
+            onProgressMessage(
+              `Batch ${batchIndex + 1}/${totalBatches}: Attempt ${attempt}/${maxRetries} committing ${operations.length} doc(s)...`
+            );
+          }
+
+          const batch = writeBatch(db);
+          for (const op of operations) {
+            if (op.type === 'set') {
+              batch.set(op.ref, op.data, { merge: true });
+            } else if (op.type === 'delete') {
+              batch.delete(op.ref);
+            }
+          }
+
+          await promiseWithTimeout(
+            batch.commit(),
+            45000,
+            `WriteBatch commit for Batch ${batchIndex + 1}/${totalBatches} timed out (45s limit).`
+          );
+
+          const duration = ((Date.now() - chunkStartTime) / 1000).toFixed(2);
+          if (onProgressMessage) {
+            onProgressMessage(
+              `Batch ${batchIndex + 1}/${totalBatches}: Successfully committed ${operations.length} doc(s) in ${duration}s.`
+            );
+          }
+          return;
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`Batch ${batchIndex + 1}/${totalBatches} commit attempt ${attempt} error:`, err);
+
+          if (err.code === 'permission-denied') {
+            throw {
+              code: 'permission-denied',
+              message: 'Firestore Permission Denied: Admin permissions required for database write operations.',
+              collectionName: operations[0]?.collectionName || 'products',
+              documentId: operations[0]?.documentId || 'current',
+              stackTrace: err.stack,
+            };
+          }
+
+          if (attempt < maxRetries) {
+            await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
+          }
+        }
+      }
+
+      throw {
+        code: lastError?.code || 'firestore/batch-commit-failed',
+        message: lastError?.message || `Batch ${batchIndex + 1}/${totalBatches} commit failed after ${maxRetries} attempts.`,
+        collectionName: operations[0]?.collectionName || 'products',
+        documentId: operations[0]?.documentId || 'current',
+        stackTrace: lastError?.stack || lastError?.stackTrace || String(lastError),
+      };
+    };
+
+    const initialSteps: PublishStepLog[] = [
+      { id: 's1', name: 'Validate Draft & Firebase Credentials', status: 'pending' },
+      { id: 's2', name: 'Verify Media Assets & URIs', status: 'pending' },
+      { id: 's3', name: 'Prepare Operations Queue & Size Check', status: 'pending' },
+      { id: 's4', name: 'Synchronize Granular Live Updates', status: 'pending' },
+      { id: 's5', name: 'Refresh Search & Filter Indexes', status: 'pending' },
+      { id: 's6', name: 'Refresh Local Caches & Storage Keys', status: 'pending' },
+      { id: 's7', name: 'Refresh Live Website Data Across Clients', status: 'pending' },
+      { id: 's8', name: 'Confirm Version History Snapshot', status: 'pending' },
+      { id: 's9', name: 'Cleanup Draft References', status: 'pending' },
+      { id: 's10', name: 'Notify Connected Clients & Complete Release', status: 'pending' },
+    ];
+
+    let currentLogs = [...initialSteps];
+
+    // Initialize metrics variables so they can be captured and shared via the progress callback
+    let totalEstimatedSizeKb = 0;
+    let batchSizeMetric = 0;
+    let numDocsMetric = 0;
+    let commitDurationMetric = '0s';
+    let writeCountMetric = 0;
+
+    const updateStep = (
+      stepIdx: number,
+      status: 'pending' | 'running' | 'success' | 'failed',
+      message?: string,
+      errorInfo?: { code?: string; collectionName?: string; documentId?: string; stackTrace?: string }
+    ) => {
+      currentLogs = currentLogs.map((log, idx) => {
+        if (idx === stepIdx) {
+          return {
+            ...log,
+            status,
+            message: message || log.message,
+            timestamp: new Date().toLocaleTimeString(),
+            errorCode: errorInfo?.code,
+            collectionName: errorInfo?.collectionName,
+            documentId: errorInfo?.documentId,
+            stackTrace: errorInfo?.stackTrace,
+          };
+        }
+        return log;
+      });
+
+      const currentStepNum = stepIdx + 1;
+      const percentage = Math.min(100, Math.round((currentStepNum / 10) * 100));
+
+      if (onProgress) {
+        onProgress({
+          currentStep: currentStepNum,
+          totalSteps: 10,
+          stepName: currentLogs[stepIdx]?.name || 'Publishing...',
+          percentage,
+          logs: [...currentLogs],
+          isCompleted: status === 'success' && stepIdx === 9,
+          errorCode: errorInfo?.code,
+          collectionName: errorInfo?.collectionName,
+          documentId: errorInfo?.documentId,
+          stackTrace: errorInfo?.stackTrace,
+          documentSize: `${totalEstimatedSizeKb.toFixed(2)} KB`,
+          batchSize: batchSizeMetric,
+          numDocuments: numDocsMetric,
+          commitDuration: commitDurationMetric,
+          writeCount: writeCountMetric,
+        });
+      }
+    };
+
+    try {
+      // Step 1: Validate Draft & Pre-flight Diagnostics
+      updateStep(0, 'running', 'Validating Firebase connection, authentication, and draft schemas...');
+      await new Promise((r) => setTimeout(r, 40));
+
+      if (!db) {
+        throw {
+          code: 'firebase/connection-failed',
+          message: 'Firestore connection unavailable. Check network or initialization.',
+          collectionName: 'products',
+          documentId: 'validation',
+        };
+      }
+
+      if (!draftProducts || !Array.isArray(draftProducts)) {
+        throw {
+          code: 'draft/invalid-data',
+          message: 'Document Missing: Draft products collection is invalid or empty.',
+          collectionName: 'products',
+          documentId: 'validation',
+        };
+      }
+
+      for (const p of draftProducts) {
+        if (!p.id || !p.name) {
+          throw {
+            code: 'draft/invalid-product',
+            message: `Draft Validation Failed: Product missing required ID or name.`,
+            collectionName: 'products',
+            documentId: p.id || 'unknown',
+          };
+        }
+        if (typeof p.price !== 'number' || p.price < 0) {
+          throw {
+            code: 'draft/invalid-price',
+            message: `Draft Validation Failed: Product "${p.name}" has an invalid price (${p.price}).`,
+            collectionName: 'products',
+            documentId: p.id,
+          };
+        }
+      }
+      updateStep(0, 'success', `Validated ${draftProducts.length} draft products & store settings.`);
+
+      // Step 2: Verify Images
+      updateStep(1, 'running', 'Verifying image assets & media URIs (skipping already hosted URLs)...');
+      await new Promise((r) => setTimeout(r, 40));
+      let totalImages = 0;
+      let existingHostedImages = 0;
+      draftProducts.forEach((p) => {
+        if (p.images) {
+          p.images.forEach((img) => {
+            totalImages++;
+            if (img.startsWith('http') || img.startsWith('data:image')) existingHostedImages++;
+          });
+        }
+      });
+      if (draftHeroContent?.heroImage) totalImages++;
+      updateStep(1, 'success', `Verified ${totalImages} images (${existingHostedImages} hosted/cached).`);
+
+      // Step 3: Prepare Operations Queue & Size Check
+      updateStep(2, 'running', 'Building operations queue and diffing changed documents...');
+      await new Promise((r) => setTimeout(r, 40));
+
+      const versionNum = `v1.${publishedVersions.length + 1}`;
+      const operations: BatchOperation[] = [];
+
+      // A. Diff and queue products using Split Product Architecture
+      let addedProducts = 0;
+      let updatedProducts = 0;
+      let deletedProducts = 0;
+      const draftProductIds = new Set(draftProducts.map((p) => p.id));
+
+      for (const p of draftProducts) {
+        const pub = publishedProducts.find((item) => item.id === p.id);
+        const split = splitProduct(p);
+
+        if (!pub) {
+          // Add metadata
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'products', p.id),
+            data: split.metadata,
+            collectionName: 'products',
+            documentId: p.id,
+            description: `Added product metadata for "${p.name}"`,
+          });
+          // Add gallery
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'product_gallery', p.id),
+            data: split.gallery,
+            collectionName: 'product_gallery',
+            documentId: p.id,
+            description: `Added product gallery for "${p.name}"`,
+          });
+          // Add variants
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'product_variants', p.id),
+            data: split.variants,
+            collectionName: 'product_variants',
+            documentId: p.id,
+            description: `Added product variants for "${p.name}"`,
+          });
+          // Add AI Metadata
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'product_ai_metadata', p.id),
+            data: split.aiMetadata,
+            collectionName: 'product_ai_metadata',
+            documentId: p.id,
+            description: `Added product AI metadata for "${p.name}"`,
+          });
+          // Add gallery parts
+          for (const part of split.galleryParts) {
+            operations.push({
+              type: 'set',
+              ref: doc(db, 'product_gallery_parts', part.id),
+              data: part,
+              collectionName: 'product_gallery_parts',
+              documentId: part.id,
+              description: `Added product gallery part ${part.id}`,
+            });
+          }
+          addedProducts++;
+        } else if (JSON.stringify(pub) !== JSON.stringify(p)) {
+          // Update metadata
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'products', p.id),
+            data: split.metadata,
+            collectionName: 'products',
+            documentId: p.id,
+            description: `Updated product metadata for "${p.name}"`,
+          });
+          // Update gallery
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'product_gallery', p.id),
+            data: split.gallery,
+            collectionName: 'product_gallery',
+            documentId: p.id,
+            description: `Updated product gallery for "${p.name}"`,
+          });
+          // Update variants
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'product_variants', p.id),
+            data: split.variants,
+            collectionName: 'product_variants',
+            documentId: p.id,
+            description: `Updated product variants for "${p.name}"`,
+          });
+          // Update AI Metadata
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'product_ai_metadata', p.id),
+            data: split.aiMetadata,
+            collectionName: 'product_ai_metadata',
+            documentId: p.id,
+            description: `Updated product AI metadata for "${p.name}"`,
+          });
+          // Update gallery parts
+          for (const part of split.galleryParts) {
+            operations.push({
+              type: 'set',
+              ref: doc(db, 'product_gallery_parts', part.id),
+              data: part,
+              collectionName: 'product_gallery_parts',
+              documentId: part.id,
+              description: `Updated product gallery part ${part.id}`,
+            });
+          }
+          updatedProducts++;
+        }
+
+        // Cleanup draft sub-collection documents once published
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_products', p.id),
+          collectionName: 'draft_products',
+          documentId: p.id,
+          description: `Cleanup draft product "${p.name}"`,
+        });
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_product_gallery', p.id),
+          collectionName: 'draft_product_gallery',
+          documentId: p.id,
+          description: `Cleanup draft product gallery "${p.name}"`,
+        });
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_product_variants', p.id),
+          collectionName: 'draft_product_variants',
+          documentId: p.id,
+          description: `Cleanup draft product variants "${p.name}"`,
+        });
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_product_ai_metadata', p.id),
+          collectionName: 'draft_product_ai_metadata',
+          documentId: p.id,
+          description: `Cleanup draft product AI metadata "${p.name}"`,
+        });
+        for (let i = 1; i <= 5; i++) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'draft_product_gallery_parts', `${p.id}_gallery_part${i}`),
+            collectionName: 'draft_product_gallery_parts',
+            documentId: `${p.id}_gallery_part${i}`,
+            description: `Cleanup draft gallery part ${i} for "${p.name}"`,
+          });
+        }
+      }
+
+      for (const pub of publishedProducts) {
+        if (!draftProductIds.has(pub.id)) {
+          // Delete all live sub-collection documents
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'products', pub.id),
+            collectionName: 'products',
+            documentId: pub.id,
+            description: `Deleted product "${pub.name || pub.id}"`,
+          });
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'product_gallery', pub.id),
+            collectionName: 'product_gallery',
+            documentId: pub.id,
+            description: `Deleted product gallery "${pub.name || pub.id}"`,
+          });
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'product_variants', pub.id),
+            collectionName: 'product_variants',
+            documentId: pub.id,
+            description: `Deleted product variants "${pub.name || pub.id}"`,
+          });
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'product_ai_metadata', pub.id),
+            collectionName: 'product_ai_metadata',
+            documentId: pub.id,
+            description: `Deleted product AI metadata "${pub.name || pub.id}"`,
+          });
+          for (let i = 1; i <= 5; i++) {
+            operations.push({
+              type: 'delete',
+              ref: doc(db, 'product_gallery_parts', `${pub.id}_gallery_part${i}`),
+              collectionName: 'product_gallery_parts',
+              documentId: `${pub.id}_gallery_part${i}`,
+              description: `Deleted gallery part ${i} for "${pub.name || pub.id}"`,
+            });
+          }
+          deletedProducts++;
+        }
+      }
+
+      // B. Diff and queue reviews
+      let addedReviews = 0;
+      let updatedReviews = 0;
+      let deletedReviews = 0;
+      const draftReviewIds = new Set(draftReviews.map((r) => r.id));
+
+      for (const r of draftReviews) {
+        const pub = publishedReviews.find((item) => item.id === r.id);
+        if (!pub) {
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'reviews', r.id),
+            data: r,
+            collectionName: 'reviews',
+            documentId: r.id,
+            description: `Added review ${r.id}`,
+          });
+          addedReviews++;
+        } else if (JSON.stringify(pub) !== JSON.stringify(r)) {
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'reviews', r.id),
+            data: r,
+            collectionName: 'reviews',
+            documentId: r.id,
+            description: `Updated review ${r.id}`,
+          });
+          updatedReviews++;
+        }
+        // Remove from draft_reviews collection
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_reviews', r.id),
+          collectionName: 'draft_reviews',
+          documentId: r.id,
+          description: `Cleanup draft review ${r.id}`,
+        });
+      }
+
+      for (const pub of publishedReviews) {
+        if (!draftReviewIds.has(pub.id)) {
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'reviews', pub.id),
+            collectionName: 'reviews',
+            documentId: pub.id,
+            description: `Deleted review ${pub.id}`,
+          });
+          deletedReviews++;
+        }
+      }
+
+      // C. Synchronize settings only if they changed
+      if (JSON.stringify(draftStoreInfo) !== JSON.stringify(publishedStoreInfo)) {
+        operations.push({ type: 'set', ref: doc(db, 'settings', 'store'), data: draftStoreInfo, collectionName: 'settings', documentId: 'store', description: 'Store Info' });
+      }
+      if (JSON.stringify(draftHeroContent) !== JSON.stringify(publishedHeroContent)) {
+        operations.push({ type: 'set', ref: doc(db, 'hero', 'current'), data: draftHeroContent, collectionName: 'hero', documentId: 'current', description: 'Hero Content' });
+      }
+      if (JSON.stringify(draftAnnouncements) !== JSON.stringify(publishedAnnouncements)) {
+        operations.push({ type: 'set', ref: doc(db, 'homepage', 'announcements'), data: { items: draftAnnouncements }, collectionName: 'homepage', documentId: 'announcements', description: 'Announcements' });
+      }
+      if (JSON.stringify(draftCategoryHighlights) !== JSON.stringify(publishedCategoryHighlights)) {
+        operations.push({ type: 'set', ref: doc(db, 'categories', 'highlights'), data: { items: draftCategoryHighlights }, collectionName: 'categories', documentId: 'highlights', description: 'Categories' });
+      }
+      if (JSON.stringify(draftTrendingCollections) !== JSON.stringify(publishedTrendingCollections)) {
+        operations.push({ type: 'set', ref: doc(db, 'homepage', 'trendingCollections'), data: { items: draftTrendingCollections }, collectionName: 'homepage', documentId: 'trendingCollections', description: 'Collections' });
+      }
+      if (JSON.stringify(draftPaymentSettings) !== JSON.stringify(publishedPaymentSettings)) {
+        operations.push({ type: 'set', ref: doc(db, 'payment', 'config'), data: draftPaymentSettings, collectionName: 'payment', documentId: 'config', description: 'Payment Settings' });
+      }
+      if (JSON.stringify(draftHangingSneakerConfig) !== JSON.stringify(publishedHangingSneakerConfig)) {
+        operations.push({ type: 'set', ref: doc(db, 'animations', 'hangingSneakerConfig'), data: draftHangingSneakerConfig, collectionName: 'animations', documentId: 'hangingSneakerConfig', description: 'Hanging Sneaker Config' });
+      }
+      if (JSON.stringify(draftPetShoeConfig) !== JSON.stringify(publishedPetShoeConfig)) {
+        operations.push({ type: 'set', ref: doc(db, 'mascot', 'petShoeConfig'), data: draftPetShoeConfig, collectionName: 'mascot', documentId: 'petShoeConfig', description: 'Pet Shoe Config' });
+      }
+      if (JSON.stringify(draftInstagramConfig) !== JSON.stringify(publishedInstagramConfig)) {
+        operations.push({ type: 'set', ref: doc(db, 'social', 'instagramConfig'), data: draftInstagramConfig, collectionName: 'social', documentId: 'instagramConfig', description: 'Instagram Config' });
+      }
+      if (JSON.stringify(draftSoundConfig) !== JSON.stringify(publishedSoundConfig)) {
+        operations.push({ type: 'set', ref: doc(db, 'theme', 'current'), data: draftSoundConfig, collectionName: 'theme', documentId: 'current', description: 'Sound Config' });
+      }
+
+      // D. Version History Snapshot with Auto-Split Check
+      const newVersion: PublishedVersionHistory = {
+        id: `ver-${Date.now()}`,
+        versionNumber: versionNum,
+        publishedAt: nowISO,
+        publishedBy: adminEmail,
+        summary: summary || `Global CMS publish with ${pendingDraftCount || 1} changes approved`,
+        changeCount: pendingDraftCount || 1,
+        data: {
+          products: draftProducts,
+          reviews: draftReviews,
+          storeInfo: draftStoreInfo,
+          heroContent: draftHeroContent,
+          announcements: draftAnnouncements,
+          categoryHighlights: draftCategoryHighlights,
+          trendingCollections: draftTrendingCollections,
+          paymentSettings: draftPaymentSettings,
+          hangingSneakerConfig: draftHangingSneakerConfig,
+          petShoeConfig: draftPetShoeConfig,
+          instagramConfig: draftInstagramConfig,
+          soundConfig: draftSoundConfig,
+        },
+      };
+
+      const versionSize = estimateSizeInBytes(newVersion);
+      if (versionSize > 800 * 1024) {
+        const parentVersionDoc = { ...newVersion };
+        parentVersionDoc.data = { ...newVersion.data };
+        
+        const productsChunkSize = Math.ceil(draftProducts.length / 2);
+        const part1Products = draftProducts.slice(0, productsChunkSize);
+        const part2Products = draftProducts.slice(productsChunkSize);
+        
+        const part1Id = `${newVersion.id}_products_part1`;
+        const part2Id = `${newVersion.id}_products_part2`;
+        
+        operations.push({
+          type: 'set',
+          ref: doc(db, 'publishedVersions', part1Id),
+          data: { parentId: newVersion.id, products: part1Products },
+          collectionName: 'publishedVersions',
+          documentId: part1Id,
+          description: 'Version Products Part 1 (Split)',
+        });
+        
+        operations.push({
+          type: 'set',
+          ref: doc(db, 'publishedVersions', part2Id),
+          data: { parentId: newVersion.id, products: part2Products },
+          collectionName: 'publishedVersions',
+          documentId: part2Id,
+          description: 'Version Products Part 2 (Split)',
+        });
+        
+        parentVersionDoc.data.products = [];
+        (parentVersionDoc as any)._splittedProductsParts = [part1Id, part2Id];
+        
+        operations.push({
+          type: 'set',
+          ref: doc(db, 'publishedVersions', newVersion.id),
+          data: parentVersionDoc,
+          collectionName: 'publishedVersions',
+          documentId: newVersion.id,
+          description: `Split Version Snapshot ${versionNum}`,
+        });
+      } else {
+        operations.push({
+          type: 'set',
+          ref: doc(db, 'publishedVersions', newVersion.id),
+          data: newVersion,
+          collectionName: 'publishedVersions',
+          documentId: newVersion.id,
+          description: `Version Snapshot ${versionNum}`,
+        });
+      }
+
+      // Calculate sizes in KB/MB for debug display
+      let totalBytes = 0;
+      operations.forEach(op => {
+        if (op.data) totalBytes += estimateSizeInBytes(op.data);
+      });
+      totalEstimatedSizeKb = totalBytes / 1024;
+      numDocsMetric = operations.length;
+      writeCountMetric = operations.length;
+
+      updateStep(
+        2,
+        'success',
+        `Prepared ${operations.length} atomic ops (+${addedProducts} products, +${addedReviews} reviews) with total size of ${totalEstimatedSizeKb.toFixed(2)} KB.`
+      );
+
+      // Step 4: Synchronize Granular Live Updates
+      const step4Start = Date.now();
+      const BATCH_CHUNK_SIZE = 80; // Safe, efficient batch size
+      const batchChunks: BatchOperation[][] = [];
+      for (let i = 0; i < operations.length; i += BATCH_CHUNK_SIZE) {
+        batchChunks.push(operations.slice(i, i + BATCH_CHUNK_SIZE));
+      }
+
+      const totalBatches = batchChunks.length;
+      batchSizeMetric = BATCH_CHUNK_SIZE;
+
+      updateStep(
+        3,
+        'running',
+        `Synchronizing ${operations.length} granular updates across ${totalBatches} batches...`
+      );
+
+      for (let i = 0; i < totalBatches; i++) {
+        const chunkOps = batchChunks[i];
+        await executeBatchChunkWithRetry(chunkOps, i, totalBatches, (msg) => {
+          updateStep(3, 'running', msg);
+        });
+      }
+
+      const step4Duration = ((Date.now() - step4Start) / 1000).toFixed(2);
+      commitDurationMetric = `${step4Duration}s`;
+
+      updateStep(
+        3,
+        'success',
+        `Successfully synchronized ${operations.length} granular updates in ${commitDurationMetric}.`
+      );
+
+      // Step 5: Refresh Search & Filter Indexes
+      updateStep(4, 'running', 'Rebuilding product search & filter indexes...');
+      await new Promise((r) => setTimeout(r, 30));
+      updateStep(4, 'success', 'Refreshed product search & filter indexes.');
+
+      // Step 6: Refresh Local Caches & Storage Keys
+      updateStep(5, 'running', 'Updating localStorage and local cache keys...');
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(draftProducts));
+      localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(draftReviews));
+      localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(draftStoreInfo));
+      localStorage.setItem(STORAGE_KEYS.HERO_CONTENT, JSON.stringify(draftHeroContent));
+      localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(draftAnnouncements));
+      localStorage.setItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, JSON.stringify(draftCategoryHighlights));
+      localStorage.setItem(STORAGE_KEYS.TRENDING_COLLECTIONS, JSON.stringify(draftTrendingCollections));
+      localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(draftPaymentSettings));
+      localStorage.setItem(STORAGE_KEYS.HANGING_SNEAKER, JSON.stringify(draftHangingSneakerConfig));
+      localStorage.setItem(STORAGE_KEYS.PET_SHOE_CONFIG, JSON.stringify(draftPetShoeConfig));
+      localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(draftInstagramConfig));
+      localStorage.removeItem('mfp_cms_active_draft');
+      localStorage.removeItem('mfp_cms_pending_count');
+      updateStep(5, 'success', 'Local caches & storage keys updated.');
+
+      // Step 7: Refresh Homepage Data Across Connected Views
+      updateStep(6, 'running', 'Updating React published states across store views...');
+      setPublishedProducts(draftProducts);
+      setPublishedReviews(draftReviews);
+      setPublishedStoreInfo(draftStoreInfo);
+      setPublishedHeroContent(draftHeroContent);
+      setPublishedAnnouncements(draftAnnouncements);
+      setPublishedCategoryHighlights(draftCategoryHighlights);
+      setPublishedTrendingCollections(draftTrendingCollections);
+      setPublishedPaymentSettings(draftPaymentSettings);
+      setPublishedHangingSneakerConfig(draftHangingSneakerConfig);
+      setPublishedPetShoeConfig(draftPetShoeConfig);
+      setPublishedInstagramConfig(draftInstagramConfig);
+      setPublishedSoundConfig(draftSoundConfig);
+      updateStep(6, 'success', 'Live website state synchronized.');
+
+      // Step 8: Confirm Version History Snapshot
+      updateStep(7, 'running', 'Verifying release snapshot in publishedVersions...');
+      setPublishedVersions((prev) => [newVersion, ...prev]);
+      updateStep(7, 'success', `Version ${versionNum} snapshot confirmed.`);
+
+      // Step 9: Cleanup Draft References
+      updateStep(8, 'running', 'Cleaning up active drafts...');
+      setHasPendingDraft(false);
+      setPendingDraftCount(0);
+      setLastPublishedAt(nowISO);
+      setLastPublishedBy(adminEmail);
+      localStorage.setItem('mfp_last_published_at', nowISO);
+      localStorage.setItem('mfp_last_published_by', adminEmail);
+
+      try {
+        await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
+      } catch (e) {
+        console.warn('Draft cleanup notice:', e);
+      }
+      updateStep(8, 'success', 'Draft cleanup complete.');
+
+      // Step 10: Notify All Connected Clients & Complete Release
+      updateStep(9, 'running', 'Notifying connected clients and completing publish workflow...');
+      const durationSeconds = ((Date.now() - startTime) / 1000).toFixed(2);
+      const publishDurationStr = `${durationSeconds}s`;
+
+      updateStep(9, 'success', `Website Published Successfully in ${publishDurationStr}!`);
+
+      recordAuditLog(
+        'Website Published Globally',
+        'SETTINGS',
+        `Published ${versionNum} with ${operations.length} updates in ${publishDurationStr} by ${adminEmail}`,
+        'SUCCESS'
+      );
+      showToast(`🚀 Website Published Successfully! (${versionNum} in ${publishDurationStr})`, 'success');
+
+      const totalChangedDocs = addedProducts + updatedProducts + deletedProducts + addedReviews + updatedReviews + deletedReviews + operations.length;
+
+      return {
+        success: true,
+        versionNumber: versionNum,
+        publishedAt: nowISO,
+        totalUpdatedDocs: totalChangedDocs,
+        publishDuration: publishDurationStr,
+        logs: currentLogs,
+        documentSize: `${totalEstimatedSizeKb.toFixed(2)} KB`,
+        batchSize: batchSizeMetric,
+        numDocuments: numDocsMetric,
+        commitDuration: commitDurationMetric,
+        writeCount: writeCountMetric,
+      };
+    } catch (err: any) {
+      console.error('Failed to publish website:', err);
+
+      const runningIdx = currentLogs.findIndex((l) => l.status === 'running' || l.status === 'pending');
+      const failedIdx = runningIdx !== -1 ? runningIdx : 0;
+
+      const code = err.code || err.errorCode || 'firestore/unknown-error';
+      const msg = err.message || 'Publishing operation encountered an error.';
+      const col = err.collectionName || 'products';
+      const docId = err.documentId || 'current';
+      const stack = err.stackTrace || err.stack || '';
+
+      updateStep(failedIdx, 'failed', msg, {
+        code,
+        collectionName: col,
+        documentId: docId,
+        stackTrace: stack,
+      });
+
+      showToast(`❌ Publish Failed [${code}]: ${msg}`, 'error');
+
+      return {
+        success: false,
+        message: msg,
+        errorCode: code,
+        collectionName: col,
+        documentId: docId,
+        stackTrace: stack,
+        logs: currentLogs,
+        documentSize: `${totalEstimatedSizeKb.toFixed(2)} KB`,
+        batchSize: batchSizeMetric,
+        numDocuments: numDocsMetric,
+        commitDuration: commitDurationMetric,
+        writeCount: writeCountMetric,
+      };
+    }
+  };
+
+  const discardDraft = async () => {
+    setDraftProducts(publishedProducts);
+    setDraftReviews(publishedReviews);
+    setDraftStoreInfo(publishedStoreInfo);
+    setDraftHeroContent(publishedHeroContent);
+    setDraftAnnouncements(publishedAnnouncements);
+    setDraftCategoryHighlights(publishedCategoryHighlights);
+    setDraftTrendingCollections(publishedTrendingCollections);
+    setDraftPaymentSettings(publishedPaymentSettings);
+    setDraftHangingSneakerConfig(publishedHangingSneakerConfig);
+    setDraftPetShoeConfig(publishedPetShoeConfig);
+    setDraftInstagramConfig(publishedInstagramConfig);
+    setDraftSoundConfig(publishedSoundConfig);
+
+    setHasPendingDraft(false);
+    setPendingDraftCount(0);
+    localStorage.removeItem('mfp_cms_active_draft');
+    localStorage.removeItem('mfp_cms_pending_count');
+
+    try {
+      const batch = writeBatch(db);
+
+      batch.set(doc(db, 'draft_settings', 'store'), publishedStoreInfo);
+      batch.set(doc(db, 'draft_hero', 'current'), publishedHeroContent);
+      batch.set(doc(db, 'draft_homepage', 'announcements'), { items: publishedAnnouncements });
+      batch.set(doc(db, 'draft_categories', 'highlights'), { items: publishedCategoryHighlights });
+      batch.set(doc(db, 'draft_homepage', 'trendingCollections'), { items: publishedTrendingCollections });
+      batch.set(doc(db, 'draft_payment', 'config'), publishedPaymentSettings);
+      batch.set(doc(db, 'draft_animations', 'hangingSneakerConfig'), publishedHangingSneakerConfig);
+      batch.set(doc(db, 'draft_mascot', 'petShoeConfig'), publishedPetShoeConfig);
+      batch.set(doc(db, 'draft_social', 'instagramConfig'), publishedInstagramConfig);
+      batch.set(doc(db, 'draft_theme', 'current'), publishedSoundConfig);
+
+      const draftProdsSnap = await getDocs(collection(db, 'draft_products'));
+      draftProdsSnap.forEach((docSnap) => {
+        batch.delete(docSnap.ref);
+        batch.delete(doc(db, 'draft_product_gallery', docSnap.id));
+        batch.delete(doc(db, 'draft_product_variants', docSnap.id));
+        batch.delete(doc(db, 'draft_product_ai_metadata', docSnap.id));
+        for (let i = 1; i <= 5; i++) {
+          batch.delete(doc(db, 'draft_product_gallery_parts', `${docSnap.id}_gallery_part${i}`));
+        }
+      });
+
+      publishedProducts.forEach((p) => {
+        const split = splitProduct(p);
+        batch.set(doc(db, 'draft_products', p.id), split.metadata);
+        batch.set(doc(db, 'draft_product_gallery', p.id), split.gallery);
+        batch.set(doc(db, 'draft_product_variants', p.id), split.variants);
+        batch.set(doc(db, 'draft_product_ai_metadata', p.id), split.aiMetadata);
+        for (const part of split.galleryParts) {
+          batch.set(doc(db, 'draft_product_gallery_parts', part.id), part);
+        }
+      });
+
+      const draftRevsSnap = await getDocs(collection(db, 'draft_reviews'));
+      draftRevsSnap.forEach((docSnap) => {
+        batch.delete(docSnap.ref);
+      });
+
+      publishedReviews.forEach((r) => {
+        batch.set(doc(db, 'draft_reviews', r.id), r);
+      });
+
+      await batch.commit();
+      await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
+    } catch (err) {
+      console.warn('Discard draft database sync notice:', err);
+    }
+
+    showToast('Draft changes discarded. Reverted to last published state.', 'info');
+  };
+
+  const restorePublishedVersion = async (versionId: string): Promise<boolean> => {
+    try {
+      const targetVer = publishedVersions.find((v) => v.id === versionId);
+      if (!targetVer || !targetVer.data) return false;
+
+      let finalProducts = targetVer.data.products || [];
+      
+      // Rebuild products list if split version
+      if ((targetVer as any)._splittedProductsParts && Array.isArray((targetVer as any)._splittedProductsParts)) {
+        const parts: string[] = (targetVer as any)._splittedProductsParts;
+        const fetchedProducts: Product[] = [];
+        
+        for (const partId of parts) {
+          const partSnap = await getDoc(doc(db, 'publishedVersions', partId));
+          if (partSnap.exists() && partSnap.data().products) {
+            fetchedProducts.push(...(partSnap.data().products as Product[]));
+          }
+        }
+        finalProducts = fetchedProducts;
+      }
+
+      const data = targetVer.data;
+      setDraftProducts(finalProducts);
+      if (data.reviews) setDraftReviews(data.reviews);
+      if (data.storeInfo) setDraftStoreInfo(data.storeInfo);
+      if (data.heroContent) setDraftHeroContent(data.heroContent);
+      if (data.announcements) setDraftAnnouncements(data.announcements);
+      if (data.categoryHighlights) setDraftCategoryHighlights(data.categoryHighlights);
+      if (data.trendingCollections) setDraftTrendingCollections(data.trendingCollections);
+      if (data.paymentSettings) setDraftPaymentSettings(data.paymentSettings);
+      if (data.hangingSneakerConfig) setDraftHangingSneakerConfig(data.hangingSneakerConfig);
+      if (data.petShoeConfig) setDraftPetShoeConfig(data.petShoeConfig);
+      if (data.instagramConfig) setDraftInstagramConfig(data.instagramConfig);
+      if (data.soundConfig) setDraftSoundConfig(data.soundConfig);
+
+      saveDraftLocallyAndRemote({
+        products: finalProducts,
+        reviews: data.reviews,
+        storeInfo: data.storeInfo,
+        heroContent: data.heroContent,
+        announcements: data.announcements,
+        categoryHighlights: data.categoryHighlights,
+        trendingCollections: data.trendingCollections,
+        paymentSettings: data.paymentSettings,
+        hangingSneakerConfig: data.hangingSneakerConfig,
+        petShoeConfig: data.petShoeConfig,
+        instagramConfig: data.instagramConfig,
+        soundConfig: data.soundConfig,
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Error restoring published version parts:', err);
+      return false;
+    }
+  };
+
+  const togglePreviewMode = () => {
+    setPreviewMode((prev) => (prev === 'draft' ? 'live' : 'draft'));
+  };
+
+  // --- DRAFT-AWARE EDIT HANDLERS ---
+  const addProduct = async (p: Omit<Product, 'id'>) => {
+    const cleanName = sanitizeString(p.name, 200);
+    const cleanDesc = sanitizeString(p.description, 2000);
+    const cleanBrand = sanitizeString(p.brand, 100) || 'Marudhar Fashion';
+    const cleanPrice = sanitizePrice(p.price);
+    const cleanOrigPrice = sanitizePrice(p.originalPrice);
 
     const newId = `mfp-custom-${Date.now()}`;
-    const defaultImg = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80';
-    const images = p.images && p.images.length > 0 ? p.images : [defaultImg];
-
     const newProduct: Product = {
+      ...p,
       id: newId,
       name: cleanName,
       description: cleanDesc,
       brand: cleanBrand,
       price: cleanPrice,
       originalPrice: cleanOrigPrice,
-      category: p.category || 'men',
-      subcategory: p.subcategory || 'Footwear',
-      discountPercent: p.discountPercent || (cleanOrigPrice > cleanPrice ? Math.round(((cleanOrigPrice - cleanPrice) / cleanOrigPrice) * 100) : 0),
-      rating: p.rating || 4.5,
-      reviewsCount: p.reviewsCount || 1,
-      images,
-      sizes: p.sizes && p.sizes.length > 0 ? p.sizes : ['7', '8', '9', '10'],
-      sizeStocks: p.sizeStocks || [],
-      colors: p.colors && p.colors.length > 0 ? p.colors : [{ name: 'Standard', hex: '#000000' }],
-      isBestSeller: p.isBestSeller ?? false,
-      isNewArrival: p.isNewArrival ?? true,
-      isFeatured: p.isFeatured ?? true,
-      isLimitedStock: p.isLimitedStock ?? false,
-      isTrending: p.isTrending ?? false,
-      status: p.status || 'active',
-      collectionTags: p.collectionTags || ['New'],
-      material: p.material || 'Premium Material',
-      inStock: p.inStock ?? true,
-      sku: p.sku || `MFP-${Date.now()}`,
-      slug: p.slug || getProductSlug({ name: cleanName, id: newId } as any),
-      metaTitle: p.metaTitle || cleanName,
-      metaDescription: p.metaDescription || cleanDesc,
-      ogImage: p.ogImage || images[0],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
 
-    const updated = [newProduct, ...publishedProducts];
-    setPublishedProducts(updated);
-    saveLiveChanges({ products: updated });
-    recordAuditLog('Product Added ', 'PRODUCT', `Added "${cleanName}" (ID: ${newId})`, 'SUCCESS');
-    showToast('Product added successfully', 'info');
+    const updated = [newProduct, ...draftProducts];
+    setDraftProducts(updated);
+    saveDraftLocallyAndRemote({ products: updated });
+    recordAuditLog('Product Added (Draft)', 'PRODUCT', `Draft added "${cleanName}" (ID: ${newId})`, 'SUCCESS');
   };
 
   const updateProduct = async (id: string, updated: Partial<Product>) => {
@@ -1958,27 +2998,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (sanitized.price !== undefined) sanitized.price = sanitizePrice(sanitized.price);
     if (sanitized.originalPrice !== undefined) sanitized.originalPrice = sanitizePrice(sanitized.originalPrice);
 
-    const updatedProducts = publishedProducts.map((item) => (item.id === id ? { ...item, ...sanitized } : item));
-    setPublishedProducts(updatedProducts);
-    saveLiveChanges({ products: updatedProducts });
-    recordAuditLog('Product Updated ', 'PRODUCT', `Updated product ID: ${id}`, 'SUCCESS');
+    const updatedProducts = draftProducts.map((item) => (item.id === id ? { ...item, ...sanitized } : item));
+    setDraftProducts(updatedProducts);
+    saveDraftLocallyAndRemote({ products: updatedProducts });
+    recordAuditLog('Product Updated (Draft)', 'PRODUCT', `Draft updated product ID: ${id}`, 'SUCCESS');
   };
 
   const deleteProduct = async (id: string) => {
-    const target = publishedProducts.find((p) => p.id === id);
-    const updatedProducts = publishedProducts.filter((item) => item.id !== id);
-    setPublishedProducts(updatedProducts);
-    saveLiveChanges({ products: updatedProducts });
-    recordAuditLog('Product Deleted ', 'PRODUCT', `Deleted product "${target?.name || id}"`, 'DANGER');
+    const target = draftProducts.find((p) => p.id === id);
+    const updatedProducts = draftProducts.filter((item) => item.id !== id);
+    setDraftProducts(updatedProducts);
+    saveDraftLocallyAndRemote({ products: updatedProducts });
+    recordAuditLog('Product Deleted (Draft)', 'PRODUCT', `Draft deleted product "${target?.name || id}"`, 'DANGER');
   };
 
   const toggleInStock = async (id: string) => {
-    const target = publishedProducts.find((p) => p.id === id);
+    const target = draftProducts.find((p) => p.id === id);
     if (!target) return;
     const newInStock = !target.inStock;
-    const updatedProducts = publishedProducts.map((item) => (item.id === id ? { ...item, inStock: newInStock } : item));
-    setPublishedProducts(updatedProducts);
-    saveLiveChanges({ products: updatedProducts });
+    const updatedProducts = draftProducts.map((item) => (item.id === id ? { ...item, inStock: newInStock } : item));
+    setDraftProducts(updatedProducts);
+    saveDraftLocallyAndRemote({ products: updatedProducts });
   };
 
   // Reviews CRUD
@@ -1988,94 +3028,90 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const newId = `rev-${Date.now()}`;
     const newReview: Review = { ...r, id: newId, author: cleanAuthor, comment: cleanComment };
-    const updated = [newReview, ...publishedReviews];
-    setPublishedReviews(updated);
-    saveLiveChanges({ reviews: updated });
+    const updated = [newReview, ...draftReviews];
+    setDraftReviews(updated);
+    saveDraftLocallyAndRemote({ reviews: updated });
   };
 
   const updateReview = async (id: string, updated: Partial<Review>) => {
-    const updatedReviews = publishedReviews.map((r) => (r.id === id ? { ...r, ...updated } : r));
-    setPublishedReviews(updatedReviews);
-    saveLiveChanges({ reviews: updatedReviews });
+    const updatedReviews = draftReviews.map((r) => (r.id === id ? { ...r, ...updated } : r));
+    setDraftReviews(updatedReviews);
+    saveDraftLocallyAndRemote({ reviews: updatedReviews });
   };
 
   const deleteReview = async (id: string) => {
-    const updatedReviews = publishedReviews.filter((r) => r.id !== id);
-    setPublishedReviews(updatedReviews);
-    saveLiveChanges({ reviews: updatedReviews });
+    const updatedReviews = draftReviews.filter((r) => r.id !== id);
+    setDraftReviews(updatedReviews);
+    saveDraftLocallyAndRemote({ reviews: updatedReviews });
   };
 
   // Content Editors
-  const updateStoreInfo = async (info: Partial<StoreInfo>): Promise<boolean> => {
+  const updateStoreInfo = async (info: Partial<StoreInfo>) => {
     const cleanInfo: Partial<StoreInfo> = { ...info };
     if (cleanInfo.name) cleanInfo.name = sanitizeString(cleanInfo.name, 100);
     if (cleanInfo.tagline) cleanInfo.tagline = sanitizeString(cleanInfo.tagline, 200);
     if (cleanInfo.email) cleanInfo.email = sanitizeEmail(cleanInfo.email);
     if (cleanInfo.phone) cleanInfo.phone = sanitizePhone(cleanInfo.phone);
 
-    const updatedStoreInfo = { ...publishedStoreInfo, ...cleanInfo };
-    setPublishedStoreInfo(updatedStoreInfo);
-    const success = await saveLiveChanges({ storeInfo: updatedStoreInfo });
-    recordAuditLog('Store Info Updated ', 'SETTINGS', 'Draft store location and contact info', 'SUCCESS');
-    return success;
+    const updatedStoreInfo = { ...draftStoreInfo, ...cleanInfo };
+    setDraftStoreInfo(updatedStoreInfo);
+    saveDraftLocallyAndRemote({ storeInfo: updatedStoreInfo });
+    recordAuditLog('Store Info Updated (Draft)', 'SETTINGS', 'Draft store location and contact info', 'SUCCESS');
   };
 
-  const updateHeroContent = async (content: Partial<HeroContent>): Promise<boolean> => {
+  const updateHeroContent = async (content: Partial<HeroContent>) => {
     const cleanHero: Partial<HeroContent> = { ...content };
     if (cleanHero.headlineMain) cleanHero.headlineMain = sanitizeString(cleanHero.headlineMain, 200);
     if (cleanHero.subtitle) cleanHero.subtitle = sanitizeString(cleanHero.subtitle, 500);
 
-    const updatedHero = { ...publishedHeroContent, ...cleanHero };
-    setPublishedHeroContent(updatedHero);
-    const success = await saveLiveChanges({ heroContent: updatedHero });
-    recordAuditLog('Hero Banner Updated ', 'MEDIA', 'Draft hero banner content updated', 'SUCCESS');
-    return success;
+    const updatedHero = { ...draftHeroContent, ...cleanHero };
+    setDraftHeroContent(updatedHero);
+    saveDraftLocallyAndRemote({ heroContent: updatedHero });
+    recordAuditLog('Hero Banner Updated (Draft)', 'MEDIA', 'Draft hero banner content updated', 'SUCCESS');
   };
 
-  const setAnnouncementsList = async (items: string[]): Promise<boolean> => {
+  const setAnnouncementsList = async (items: string[]) => {
     const cleanItems = items.map((i) => sanitizeString(i, 200));
-    setPublishedAnnouncements(cleanItems);
-    const success = await saveLiveChanges({ announcements: cleanItems });
-    recordAuditLog('Announcements Updated ', 'SETTINGS', `Draft announcements list updated`, 'SUCCESS');
-    return success;
+    setDraftAnnouncements(cleanItems);
+    saveDraftLocallyAndRemote({ announcements: cleanItems });
+    recordAuditLog('Announcements Updated (Draft)', 'SETTINGS', `Draft announcements list updated`, 'SUCCESS');
   };
 
-  const updateCategoryHighlight = async (id: 'men' | 'women' | 'kids', updated: Partial<CategoryHighlight>): Promise<boolean> => {
-    const updatedCategories = publishedCategoryHighlights.map((cat) => (cat.id === id ? { ...cat, ...updated } : cat));
-    setPublishedCategoryHighlights(updatedCategories);
-    return await saveLiveChanges({ categoryHighlights: updatedCategories });
+  const updateCategoryHighlight = async (id: 'men' | 'women' | 'kids', updated: Partial<CategoryHighlight>) => {
+    const updatedCategories = draftCategoryHighlights.map((cat) => (cat.id === id ? { ...cat, ...updated } : cat));
+    setDraftCategoryHighlights(updatedCategories);
+    saveDraftLocallyAndRemote({ categoryHighlights: updatedCategories });
   };
 
-  const updateTrendingCollection = async (id: string, updated: Partial<TrendingCollectionItem>): Promise<boolean> => {
-    const updatedTrending = publishedTrendingCollections.map((col) => (col.id === id ? { ...col, ...updated } : col));
-    setPublishedTrendingCollections(updatedTrending);
-    return await saveLiveChanges({ trendingCollections: updatedTrending });
+  const updateTrendingCollection = async (id: string, updated: Partial<TrendingCollectionItem>) => {
+    const updatedTrending = draftTrendingCollections.map((col) => (col.id === id ? { ...col, ...updated } : col));
+    setDraftTrendingCollections(updatedTrending);
+    saveDraftLocallyAndRemote({ trendingCollections: updatedTrending });
   };
 
-  const updateHangingSneakerConfig = async (updated: Partial<HangingSneakerConfig>): Promise<boolean> => {
-    const newCfg = { ...publishedHangingSneakerConfig, ...updated };
-    setPublishedHangingSneakerConfig(newCfg);
-    return await saveLiveChanges({ hangingSneakerConfig: newCfg });
+  const updateHangingSneakerConfig = async (updated: Partial<HangingSneakerConfig>) => {
+    const newCfg = { ...draftHangingSneakerConfig, ...updated };
+    setDraftHangingSneakerConfig(newCfg);
+    saveDraftLocallyAndRemote({ hangingSneakerConfig: newCfg });
   };
 
-  const updatePetShoeConfig = async (updated: Partial<PetShoeConfig>): Promise<boolean> => {
-    const newCfg = { ...publishedPetShoeConfig, ...updated };
-    setPublishedPetShoeConfig(newCfg);
-    return await saveLiveChanges({ petShoeConfig: newCfg });
+  const updatePetShoeConfig = async (updated: Partial<PetShoeConfig>) => {
+    const newCfg = { ...draftPetShoeConfig, ...updated };
+    setDraftPetShoeConfig(newCfg);
+    saveDraftLocallyAndRemote({ petShoeConfig: newCfg });
   };
 
-  const updateInstagramConfig = async (updated: Partial<InstagramConfig>): Promise<boolean> => {
-    const newCfg = { ...publishedInstagramConfig, ...updated };
-    setPublishedInstagramConfig(newCfg);
-    return await saveLiveChanges({ instagramConfig: newCfg });
+  const updateInstagramConfig = async (updated: Partial<InstagramConfig>) => {
+    const newCfg = { ...draftInstagramConfig, ...updated };
+    setDraftInstagramConfig(newCfg);
+    saveDraftLocallyAndRemote({ instagramConfig: newCfg });
   };
 
-  const updateSoundConfig = async (updated: Partial<SoundConfig>): Promise<boolean> => {
-    const newCfg = { ...publishedSoundConfig, ...updated };
-    setPublishedSoundConfig(newCfg);
-    const success = await saveLiveChanges({ soundConfig: newCfg });
-    recordAuditLog('Sound Settings Updated ', 'SETTINGS', 'Admin updated website audio effects configuration', 'SUCCESS');
-    return success;
+  const updateSoundConfig = async (updated: Partial<SoundConfig>) => {
+    const newCfg = { ...draftSoundConfig, ...updated };
+    setDraftSoundConfig(newCfg);
+    saveDraftLocallyAndRemote({ soundConfig: newCfg });
+    recordAuditLog('Sound Settings Updated (Draft)', 'SETTINGS', 'Admin updated website audio effects configuration', 'SUCCESS');
   };
 
   const updateCustomerSoundSettings = (updated: Partial<CustomerSoundSettings>) => {
@@ -2092,25 +3128,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updatePaymentSettings = async (settings: Partial<PaymentSettings>): Promise<boolean> => {
-    const newCfg = { ...publishedPaymentSettings, ...settings };
-    setPublishedPaymentSettings(newCfg);
-    return await saveLiveChanges({ paymentSettings: newCfg });
+    const newCfg = { ...draftPaymentSettings, ...settings };
+    setDraftPaymentSettings(newCfg);
+    saveDraftLocallyAndRemote({ paymentSettings: newCfg });
+    return true;
   };
 
   // Evaluate active states based on previewMode and isAdmin
+  const isEditingDraft = isAdmin && previewMode === 'draft';
 
-  const activeProducts = publishedProducts;
-  const activeReviews = publishedReviews;
-  const activeStoreInfo = publishedStoreInfo;
-  const activeHeroContent = publishedHeroContent;
-  const activeAnnouncements = publishedAnnouncements;
-  const activeCategoryHighlights = publishedCategoryHighlights;
-  const activeTrendingCollections = publishedTrendingCollections;
-  const activePaymentSettings = publishedPaymentSettings;
-  const activeHangingSneakerConfig = publishedHangingSneakerConfig;
-  const activePetShoeConfig = publishedPetShoeConfig;
-  const activeInstagramConfig = publishedInstagramConfig;
-  const activeSoundConfig = publishedSoundConfig;
+  const activeProducts = isEditingDraft ? draftProducts : publishedProducts;
+  const activeReviews = isEditingDraft ? draftReviews : publishedReviews;
+  const activeStoreInfo = isEditingDraft ? draftStoreInfo : publishedStoreInfo;
+  const activeHeroContent = isEditingDraft ? draftHeroContent : publishedHeroContent;
+  const activeAnnouncements = isEditingDraft ? draftAnnouncements : publishedAnnouncements;
+  const activeCategoryHighlights = isEditingDraft ? draftCategoryHighlights : publishedCategoryHighlights;
+  const activeTrendingCollections = isEditingDraft ? draftTrendingCollections : publishedTrendingCollections;
+  const activePaymentSettings = isEditingDraft ? draftPaymentSettings : publishedPaymentSettings;
+  const activeHangingSneakerConfig = isEditingDraft ? draftHangingSneakerConfig : publishedHangingSneakerConfig;
+  const activePetShoeConfig = isEditingDraft ? draftPetShoeConfig : publishedPetShoeConfig;
+  const activeInstagramConfig = isEditingDraft ? draftInstagramConfig : publishedInstagramConfig;
+  const activeSoundConfig = isEditingDraft ? draftSoundConfig : publishedSoundConfig;
 
   // Keep Audio Engine synchronized with Active Sound Config and Customer Sound Settings
   useEffect(() => {
@@ -2200,15 +3238,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         snapshotData = backupInput.data;
       }
 
-      if (snapshotData.products) setPublishedProducts(snapshotData.products);
-      if (snapshotData.reviews) setPublishedReviews(snapshotData.reviews);
-      if (snapshotData.storeInfo) setPublishedStoreInfo(snapshotData.storeInfo);
-      if (snapshotData.heroContent) setPublishedHeroContent(snapshotData.heroContent);
-      if (snapshotData.announcements) setPublishedAnnouncements(snapshotData.announcements);
-      if (snapshotData.categoryHighlights) setPublishedCategoryHighlights(snapshotData.categoryHighlights);
-      if (snapshotData.trendingCollections) setPublishedTrendingCollections(snapshotData.trendingCollections);
+      if (snapshotData.products) setDraftProducts(snapshotData.products);
+      if (snapshotData.reviews) setDraftReviews(snapshotData.reviews);
+      if (snapshotData.storeInfo) setDraftStoreInfo(snapshotData.storeInfo);
+      if (snapshotData.heroContent) setDraftHeroContent(snapshotData.heroContent);
+      if (snapshotData.announcements) setDraftAnnouncements(snapshotData.announcements);
+      if (snapshotData.categoryHighlights) setDraftCategoryHighlights(snapshotData.categoryHighlights);
+      if (snapshotData.trendingCollections) setDraftTrendingCollections(snapshotData.trendingCollections);
 
-      saveLiveChanges();
+      saveDraftLocallyAndRemote();
       recordAuditLog('Store Data Restored from Backup', 'BACKUP', 'Successfully restored database from snapshot', 'WARNING');
       return true;
     } catch (err) {
@@ -2219,13 +3257,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Factory Reset
   const resetToDefaults = () => {
-    setPublishedProducts(PRODUCTS_DATA);
-    setPublishedReviews(REVIEWS_DATA);
-    setPublishedStoreInfo(STORE_INFO);
-    setPublishedHeroContent(DEFAULT_HERO_CONTENT);
-    setPublishedAnnouncements(ANNOUNCEMENT_ITEMS);
-    setPublishedCategoryHighlights(CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
-    setPublishedTrendingCollections(TRENDING_COLLECTIONS);
+    setDraftProducts(PRODUCTS_DATA);
+    setDraftReviews(REVIEWS_DATA);
+    setDraftStoreInfo(STORE_INFO);
+    setDraftHeroContent(DEFAULT_HERO_CONTENT);
+    setDraftAnnouncements(ANNOUNCEMENT_ITEMS);
+    setDraftCategoryHighlights(CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
+    setDraftTrendingCollections(TRENDING_COLLECTIONS);
     setPublishedProducts(PRODUCTS_DATA);
     setPublishedReviews(REVIEWS_DATA);
     setPublishedStoreInfo(STORE_INFO);
@@ -2266,6 +3304,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         customerSoundSettings,
         updateCustomerSoundSettings,
         playSiteSound,
+        hasPendingDraft: activeHasPendingDraft,
+        pendingDraftCount: activePendingDraftCount,
+        pendingChangesList,
+        lastPublishedAt,
+        lastPublishedBy,
+        publishedVersions,
+        previewMode,
+        publishWebsite,
+        restorePublishedVersion,
+        togglePreviewMode,
+        discardDraft,
         placeOrderAndPay,
         updateOrderStatus,
         cancelCustomerOrder,
@@ -2310,7 +3359,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         createStoreBackup,
         restoreStoreBackup,
         resetToDefaults,
-        lastSaveMetrics,
       }}
     >
       {children}

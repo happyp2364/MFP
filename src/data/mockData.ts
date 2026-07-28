@@ -17,10 +17,10 @@ export const STORE_INFO: StoreInfo = {
 };
 
 export const DEFAULT_HERO_CONTENT: HeroContent = {
-  badge: 'Marudhar New Season Collection 2026',
+  badge: 'Marudhar Fashion Point',
   headlineMain: 'Walk in Style.',
   headlineHighlight: 'Royal Comfort & Authentic Fashion.',
-  subtitle: 'Discover Marudhar Fashion Point\'s exclusive lineup of high-grade athletic sneakers, royal leather loafers, women\'s sports shoes, and durable school footwear.',
+  subtitle: 'Discover Marudhar Fashion Point\'s exclusive lineup of high-grade athletic sneakers, royal leather loafers, women\'s sports shoes, and durable footwear.',
   heroImage: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80',
   stat1Number: '15,000+',
   stat1Label: 'Happy Families Served',
@@ -28,46 +28,8 @@ export const DEFAULT_HERO_CONTENT: HeroContent = {
   stat2Label: 'Fit & Size Guarantee',
   stat3Number: '4.9★',
   stat3Label: 'Google Customer Rating',
-
-  bgType: 'gradient',
-  heroVideoUrl: '',
-  gradientTheme: 'deep_emerald',
-
-  primaryBtnText: 'Explore Collection',
-  primaryBtnLink: '#categories',
-  whatsappBtnText: 'Shop on WhatsApp',
-  whatsappBtnLink: '',
-  buyNowBtnText: 'Buy Now',
-  buyNowBtnLink: '#products',
-
-  floatingShoes: [
-    {
-      id: 'shoe-1',
-      name: 'AirGlide Red Runner',
-      imageUri: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
-      speedSec: 7.0,
-      rotationDeg: 12,
-      initialX: '82%',
-      initialY: '18%',
-      scale: 0.9,
-    },
-    {
-      id: 'shoe-2',
-      name: 'Royal Heritage Loafer',
-      imageUri: 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&w=600&q=80',
-      speedSec: 8.5,
-      rotationDeg: -14,
-      initialX: '8%',
-      initialY: '62%',
-      scale: 0.85,
-    },
-  ],
-
-  particleDensity: 'medium',
-  enableLightRays: true,
-  glowStrength: 'medium',
-  parallaxStrength: 'medium',
-  animationSpeed: 'normal',
+  primaryBtnText: 'Shop Now',
+  primaryBtnLink: '#products',
 };
 
 export const ANNOUNCEMENT_ITEMS = [

@@ -3,7 +3,7 @@ import { Sun, Moon, Sparkles, Clock, Check } from 'lucide-react';
 import { useTheme, ThemeMode } from '../../context/ThemeContext';
 
 export const ThemeToggleWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const { themeMode, setThemeMode, activePeriod, isDark, activeMood } = useTheme();
+  const { themeMode, setThemeMode, activePeriod, isDark } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -18,7 +18,7 @@ export const ThemeToggleWidget: React.FC<{ compact?: boolean }> = ({ compact = f
   }, []);
 
   const getPeriodLabel = () => {
-    switch (activeMood) {
+    switch (activePeriod) {
       case 'morning':
         return 'Morning Horizon';
       case 'afternoon':
@@ -27,20 +27,6 @@ export const ThemeToggleWidget: React.FC<{ compact?: boolean }> = ({ compact = f
         return 'Sunset Twilight';
       case 'night':
         return 'Midnight Navy';
-      case 'rain':
-        return 'Rainy Atmosphere';
-      case 'diwali':
-        return 'Festive Diwali';
-      case 'christmas':
-        return 'Christmas Snowy Vibe';
-      case 'holi':
-        return 'Playful Holi Colors';
-      case 'new_year':
-        return 'New Year Gala';
-      case 'independence_day':
-        return 'National Pride Theme';
-      default:
-        return 'Custom Canvas';
     }
   };
 
@@ -61,7 +47,7 @@ export const ThemeToggleWidget: React.FC<{ compact?: boolean }> = ({ compact = f
 
         {!compact && (
           <span className="capitalize font-semibold text-[11px] tracking-wide">
-            {themeMode === 'auto' ? `Auto • ${activeMood}` : themeMode}
+            {themeMode === 'auto' ? `Auto • ${activePeriod}` : themeMode}
           </span>
         )}
       </button>

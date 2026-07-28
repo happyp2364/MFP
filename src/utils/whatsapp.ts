@@ -38,6 +38,8 @@ export function generateProductWhatsAppLink(
   const sizeInfo = getSizeStockInfo(product, sizeText);
   const isSizeOutOfStock = sizeInfo ? (!sizeInfo.inStock || sizeInfo.stockQuantity <= 0) : false;
 
+  const mainImage = product.images && product.images.length > 0 ? product.images[0] : '';
+
   let text = '';
 
   if (isCompletelyOutOfStock || isSizeOutOfStock) {
@@ -61,12 +63,9 @@ ${colorText}
 ${quantity}
 
 💰 Price:
-₹${product.price.toLocaleString('en-IN')}
+₹${product.price.toLocaleString('en-IN')}${mainImage ? `\n\n🖼️ Product Image:\n${mainImage}` : ''}
 
-🖼️ Product Image:
-${product.images && product.images.length > 0 ? product.images[0] : 'N/A'}
-
-🔗 Product Link:
+🔗 Direct Product Link:
 ${productUrl}
 
 🔔 Please notify me as soon as this item/size is restocked in store!`;
@@ -91,12 +90,9 @@ ${colorText}
 ${quantity}
 
 💰 Price:
-₹${product.price.toLocaleString('en-IN')}
+₹${product.price.toLocaleString('en-IN')}${mainImage ? `\n\n🖼️ Product Image:\n${mainImage}` : ''}
 
-🖼️ Product Image:
-${product.images && product.images.length > 0 ? product.images[0] : 'N/A'}
-
-🔗 Product Link:
+🔗 Direct Product Link:
 ${productUrl}
 
 Please confirm availability.`;

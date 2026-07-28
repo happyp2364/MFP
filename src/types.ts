@@ -96,6 +96,7 @@ export interface StoreInfo {
   address: string;
   googleMapsEmbed: string;
   googleMapsLink?: string;
+  coordinates?: string | { lat: number; lng: number };
   businessHours: string;
   ownerContact: string;
   instagram: string;
@@ -120,17 +121,12 @@ export interface HeroContent {
   headlineHighlight: string;
   subtitle: string;
   heroImage: string;
-  stat1Number: string;
-  stat1Label: string;
-  stat2Number: string;
-  stat2Label: string;
-  stat3Number: string;
-  stat3Label: string;
-
-  // Premium Hero Experience V2.0 Controls
-  bgType?: 'gradient' | 'image' | 'video';
-  heroVideoUrl?: string;
-  gradientTheme?: 'deep_emerald' | 'warm_noir' | 'royal_gold' | 'midnight_luxury';
+  stat1Number?: string;
+  stat1Label?: string;
+  stat2Number?: string;
+  stat2Label?: string;
+  stat3Number?: string;
+  stat3Label?: string;
 
   primaryBtnText?: string;
   primaryBtnLink?: string;
@@ -139,8 +135,10 @@ export interface HeroContent {
   buyNowBtnText?: string;
   buyNowBtnLink?: string;
 
+  bgType?: 'gradient' | 'image' | 'video';
+  heroVideoUrl?: string;
+  gradientTheme?: 'deep_emerald' | 'warm_noir' | 'royal_gold' | 'midnight_luxury';
   floatingShoes?: FloatingShoeItem[];
-
   particleDensity?: 'off' | 'low' | 'medium' | 'high';
   enableLightRays?: boolean;
   glowStrength?: 'subtle' | 'medium' | 'intense';
@@ -261,21 +259,18 @@ export interface PaymentSettings {
   convenienceFeePercent?: number;
   applyFeeToOnlineOnly?: boolean;
 
-  // Premium Single Product Purchase Flow & Customizable Checkout Buttons
+  // Checkout & Product Action Button Customization Settings
   enableBuyNow?: boolean;
-  enableBuyOnWhatsApp?: boolean;
-  enableAddToBag?: boolean;
+  enableBuyWhatsApp?: boolean;
+  enableAddToCart?: boolean;
   enableCashfree?: boolean;
-  buttonOrder?: string[];
-  buyNowColor?: string;
-  buyWhatsappColor?: string;
-  addBagColor?: string;
-  buyNowTextColor?: string;
-  buyWhatsappTextColor?: string;
-  addBagTextColor?: string;
-  buyNowText?: string;
-  buyWhatsappText?: string;
-  addBagText?: string;
+  actionButtonsOrder?: string[];
+  buyNowButtonText?: string;
+  buyNowButtonColor?: string;
+  buyWhatsAppButtonText?: string;
+  buyWhatsAppButtonColor?: string;
+  addToBagButtonText?: string;
+  addToBagButtonColor?: string;
 }
 
 export interface ShippingAddressInfo {
@@ -560,6 +555,14 @@ export interface PublishedVersionHistory {
   };
 }
 
+export interface PendingChangeItem {
+  id: string;
+  type: 'PRODUCT_ADD' | 'PRODUCT_UPDATE' | 'PRODUCT_DELETE' | 'PRICE_CHANGE' | 'STOCK_CHANGE' | 'BANNER' | 'CATEGORIES' | 'OFFERS' | 'THEME' | 'SETTINGS' | 'REVIEW' | 'OTHER';
+  title: string;
+  details: string;
+  timestamp?: string;
+}
+
 export interface PublishStepLog {
   id: string;
   name: string;
@@ -609,40 +612,4 @@ export interface PublishResult {
   commitDuration?: string;
   writeCount?: number;
 }
-
-// DYNAMIC WEBSITE MOOD ENGINE TYPES
-export type MoodType =
-  | 'morning'
-  | 'afternoon'
-  | 'evening'
-  | 'night'
-  | 'rain'
-  | 'diwali'
-  | 'christmas'
-  | 'holi'
-  | 'new_year'
-  | 'independence_day'
-  | 'custom';
-
-export interface ScheduledThemeConfig {
-  enabled: boolean;
-  startDate: string; // YYYY-MM-DD
-  endDate: string;   // YYYY-MM-DD
-  theme: MoodType;
-}
-
-export interface MoodConfig {
-  isDynamicMoodEnabled: boolean;
-  overrideMode: 'none' | MoodType;
-  activeFestival: 'none' | 'diwali' | 'christmas' | 'holi' | 'new_year' | 'independence_day';
-  customBackgroundUrl: string;
-  customAnimationType: 'none' | 'dust' | 'stars' | 'rain' | 'snow' | 'diyas' | 'lanterns' | 'confetti' | 'colors' | 'balloons';
-  customSoundUrl: string;
-  scheduledTheme: ScheduledThemeConfig;
-  audioVolume: number; // 0 - 100
-  enableAudio: boolean; // Play ambient audio loops
-  lowEndReduction: boolean; // Optimization toggle
-  particleDensity: number; // multiplier, 0.1 to 2.0
-}
-
 

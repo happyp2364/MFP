@@ -14,7 +14,7 @@ interface ProductGridProps {
   onToggleWishlist: (product: Product) => void;
   onQuickView: (product: Product) => void;
   onAddToCart: (product: Product, size: string, color: string) => void;
-  onBuyNow?: (product: Product, size: string, color: string) => void;
+  onBuyNow?: (product: Product, size: string, color: string, quantity: number) => void;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({

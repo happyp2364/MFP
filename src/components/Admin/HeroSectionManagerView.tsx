@@ -36,7 +36,7 @@ export const HeroSectionManagerView: React.FC = () => {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-[#0B8F63] shrink-0" />
             <span>
-              <strong>Hero Section Updated!</strong> Your changes are saved to draft mode. Click <strong>🚀 Publish Website</strong> at the top to publish them live.
+              <strong>Hero Section Saved Live!</strong> Your changes have been synchronized successfully with Firebase and are active on the storefront.
             </span>
           </div>
         </div>

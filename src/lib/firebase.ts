@@ -754,6 +754,20 @@ export async function saveOrderInFirestore(order: import('../types').CustomerOrd
     const docRef = doc(db, 'orders', order.id);
     await setDoc(docRef, order);
 
+    // Create persistent Admin Notification in Firestore collection
+    const notifId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const notifRef = doc(db, 'notifications', notifId);
+    await setDoc(notifRef, {
+      id: notifId,
+      orderId: order.id,
+      customerName: order.customerName,
+      totalAmount: order.totalAmount,
+      productCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
+      paymentStatus: order.paymentStatus,
+      timestamp: new Date().toISOString(),
+      read: false,
+    });
+
     // If order is linked to a logged-in user, also sync to customer's order history array
     if (order.userId) {
       try {

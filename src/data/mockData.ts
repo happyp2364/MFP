@@ -1,4 +1,4 @@
-import { Product, Review, StoreInfo, HeroContent, CategoryHighlight, TrendingCollectionItem } from '../types';
+import { Product, Review, StoreInfo, HeroContent, CategoryHighlight, TrendingCollectionItem, TopAnnouncementBarConfig } from '../types';
 
 export const STORE_INFO: StoreInfo = {
   name: 'Marudhar Fashion Point',
@@ -680,4 +680,17 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
   buyNowButtonText: 'Buy Now',
   buyWhatsAppButtonText: 'Order on WhatsApp',
   addToBagButtonText: 'Add to Bag',
+};
+
+export const DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG: TopAnnouncementBarConfig = {
+  announcements: [
+    { id: '1', text: '🚚 Free Delivery on Selected Products Across India', enabled: true, icon: 'Truck' },
+    { id: '2', text: '👟 New Season Sports Shoes & Sneakers Just Arrived', enabled: true, icon: 'Sparkles' },
+    { id: '3', text: '⭐ Rated 4.9/5 by 15,000+ Happy Local Families', enabled: true, icon: 'Award' },
+    { id: '4', text: '📱 Easy WhatsApp Order & Instant Confirmation', enabled: true, icon: 'MessageCircle' },
+  ],
+  backgroundColor: '#00A5B5',
+  textColor: '#FFFFFF',
+  stylePreset: 'cyan',
+  intervalSpeed: 4000,
 };

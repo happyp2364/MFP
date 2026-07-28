@@ -60,6 +60,7 @@ import { InstagramSettingsView } from './InstagramSettingsView';
 import { MarketingCenterView } from './MarketingCenterView';
 import { VersionHistoryView } from './VersionHistoryView';
 import { HeroSectionManagerView } from './HeroSectionManagerView';
+import { TopAnnouncementBarSettingsView } from './TopAnnouncementBarSettingsView';
 import { SmartProductFormModal } from './SmartProductFormModal';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { validateFileUpload } from '../../lib/security';
@@ -70,7 +71,7 @@ interface AdminDashboardModalProps {
   onClose: () => void;
 }
 
-type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions';
+type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'top_announcement_bar' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -89,6 +90,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     auditLogs,
     orders,
     notifications,
+    activeOrderNotification,
+    setActiveOrderNotification,
+    markNotificationRead,
     isTwoFactorEnabled,
     logoutAdmin,
     addProduct,
@@ -501,6 +505,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('top_announcement_bar')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'top_announcement_bar'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Layers className="w-4 h-4 text-emerald-500" />
+              <span>Top Announcement Bar</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('hanging_shoe')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'hanging_shoe'
@@ -663,6 +679,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: HERO EXPERIENCE V2.0 ----------------- */}
             {activeTab === 'hero_v2' && <HeroSectionManagerView />}
+
+            {/* ----------------- TAB: TOP ANNOUNCEMENT BAR CUSTOMIZER ----------------- */}
+            {activeTab === 'top_announcement_bar' && <TopAnnouncementBarSettingsView />}
 
             {/* ----------------- TAB: HANGING SHOE AI MANAGER ----------------- */}
             {activeTab === 'hanging_shoe' && <HangingSneakerSettingsView />}
@@ -1423,6 +1442,71 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         isOpen={notifDrawerOpen}
         onClose={() => setNotifDrawerOpen(false)}
       />
+
+      {/* Real-time Order Popup Alert */}
+      {activeOrderNotification && (
+        <div className="fixed bottom-6 right-6 z-50 w-full max-w-sm bg-neutral-900 border border-neutral-800 text-white rounded-2xl shadow-2xl p-5 space-y-4 animate-in slide-in-from-bottom duration-300">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500 text-neutral-950 rounded-xl animate-bounce">
+                <Bell className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-sm tracking-tight text-white">🔔 New Order Received</h4>
+                <p className="text-[10px] text-neutral-400">Just now • Real-time Sync</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveOrderNotification(null)}
+              className="p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="space-y-2 bg-neutral-950/60 p-3 rounded-xl border border-neutral-800 text-xs">
+            <div className="flex justify-between">
+              <span className="text-neutral-400">Customer Name:</span>
+              <span className="font-semibold text-white">{activeOrderNotification.customerName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-neutral-400">Order ID:</span>
+              <span className="font-mono text-amber-400 font-bold">{activeOrderNotification.orderId}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-neutral-400">Amount:</span>
+              <span className="font-extrabold text-white text-sm">₹{activeOrderNotification.totalAmount}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-neutral-400">Time:</span>
+              <span className="text-neutral-300">
+                {new Date(activeOrderNotification.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setActiveTab('orders');
+                setActiveOrderNotification(null);
+              }}
+              className="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-neutral-950 font-extrabold text-xs rounded-xl transition-colors text-center cursor-pointer shadow-md"
+            >
+              View Order
+            </button>
+            <button
+              onClick={() => {
+                markNotificationRead(activeOrderNotification.id);
+                setActiveOrderNotification(null);
+              }}
+              className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer border border-neutral-700"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

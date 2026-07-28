@@ -622,3 +622,18 @@ export interface ToastState {
   type?: 'success' | 'error' | 'info';
 }
 
+export interface AnnouncementItem {
+  id: string;
+  text: string;
+  enabled: boolean;
+  icon?: string;
+}
+
+export interface TopAnnouncementBarConfig {
+  announcements: AnnouncementItem[];
+  backgroundColor: string;
+  textColor: string;
+  stylePreset: 'cyan' | 'emerald' | 'amber' | 'rose' | 'custom';
+  intervalSpeed: number;
+}
+

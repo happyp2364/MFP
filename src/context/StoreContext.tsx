@@ -30,6 +30,8 @@ import {
   PaymentMethodType,
   PaymentStatus,
   AdminNotification,
+  TopAnnouncementBarConfig,
+  AnnouncementItem,
 } from '../types';
 import {
   PRODUCTS_DATA,
@@ -45,6 +47,7 @@ import {
   DEFAULT_SOUND_CONFIG,
   DEFAULT_CUSTOMER_SOUND_SETTINGS,
   DEFAULT_PAYMENT_SETTINGS,
+  DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG,
 } from '../data/mockData';
 import {
   auth,
@@ -58,6 +61,7 @@ import {
   checkRedirectAuthResult,
   recordAuditLog,
   saveOrderInFirestore,
+  updateOrderStatusInFirestore,
   handleFirestoreError,
   OperationType,
 } from '../lib/firebase';
@@ -100,6 +104,7 @@ const STORAGE_KEYS = {
   PET_SHOE_CONFIG: 'mfp_pet_shoe_config_live',
   INSTAGRAM_CONFIG: 'mfp_instagram_config_live',
   SOUND_CONFIG: 'mfp_sound_config_live',
+  TOP_ANNOUNCEMENT_BAR_CONFIG: 'mfp_top_announcement_bar_config_live',
 };
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
@@ -119,6 +124,8 @@ interface StoreContextType {
   paymentSettings: PaymentSettings;
   orders: CustomerOrder[];
   notifications: AdminNotification[];
+  activeOrderNotification: AdminNotification | null;
+  setActiveOrderNotification: (notif: AdminNotification | null) => void;
 
   hangingSneakerConfig: HangingSneakerConfig;
   updateHangingSneakerConfig: (updated: Partial<HangingSneakerConfig>) => Promise<void>;
@@ -129,6 +136,8 @@ interface StoreContextType {
   updatePaymentSettings: (settings: Partial<PaymentSettings>) => Promise<boolean>;
   soundConfig: SoundConfig;
   updateSoundConfig: (updated: Partial<SoundConfig>) => Promise<void>;
+  topAnnouncementBarConfig: TopAnnouncementBarConfig;
+  updateTopAnnouncementBarConfig: (updated: Partial<TopAnnouncementBarConfig>) => Promise<void>;
   customerSoundSettings: CustomerSoundSettings;
   updateCustomerSoundSettings: (updated: Partial<CustomerSoundSettings>) => void;
   playSiteSound: (type: SoundType) => void;
@@ -275,6 +284,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return local ? JSON.parse(local) : DEFAULT_SOUND_CONFIG;
   });
 
+  const [publishedTopAnnouncementBarConfig, setPublishedTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG);
+    return local ? JSON.parse(local) : DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG;
+  });
+
   // Raw Live Products & Split subcollection maps
   const [rawLiveProducts, setRawLiveProducts] = useState<any[]>([]);
   const [productsFetched, setProductsFetched] = useState(false);
@@ -314,6 +328,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Orders & Notifications
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [activeOrderNotification, setActiveOrderNotification] = useState<AdminNotification | null>(null);
 
   // Marketing
   const [campaigns, setCampaigns] = useState<MarketingCampaign[]>([]);
@@ -549,6 +564,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
 
       unsubscribers.push(
+        onSnapshot(doc(db, 'topAnnouncementBar', 'config'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as TopAnnouncementBarConfig;
+            setPublishedTopAnnouncementBarConfig(data);
+            localStorage.setItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, JSON.stringify(data));
+          }
+        }, (err) => console.warn('Live top announcement bar listener notice:', err))
+      );
+
+      unsubscribers.push(
         onSnapshot(collection(db, 'reviews'), (snap) => {
           if (!snap.empty) {
             const list: Review[] = [];
@@ -557,6 +582,47 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(list));
           }
         }, (err) => console.warn('Live reviews listener notice:', err))
+      );
+
+      let isFirstNotificationsLoad = true;
+      unsubscribers.push(
+        onSnapshot(
+          query(collection(db, 'notifications'), orderBy('timestamp', 'desc')),
+          (snap) => {
+            const list: AdminNotification[] = [];
+            snap.forEach((d) => {
+              list.push({ ...d.data(), id: d.id } as AdminNotification);
+            });
+            setNotifications(list);
+
+            if (isFirstNotificationsLoad) {
+              isFirstNotificationsLoad = false;
+            } else {
+              snap.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                  const newNotif = { ...change.doc.data(), id: change.doc.id } as AdminNotification;
+                  playSound('notification');
+                  setActiveOrderNotification(newNotif);
+                }
+              });
+            }
+          },
+          (err) => console.warn('Live notifications listener notice:', err)
+        )
+      );
+
+      unsubscribers.push(
+        onSnapshot(
+          query(collection(db, 'orders'), orderBy('createdAt', 'desc')),
+          (snap) => {
+            const list: CustomerOrder[] = [];
+            snap.forEach((d) => {
+              list.push({ ...d.data(), id: d.id } as CustomerOrder);
+            });
+            setOrders(list);
+          },
+          (err) => console.warn('Live orders listener notice:', err)
+        )
       );
 
     } catch (e) {
@@ -1006,6 +1072,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const updateTopAnnouncementBarConfig = async (updated: Partial<TopAnnouncementBarConfig>) => {
+    try {
+      const newCfg = { ...publishedTopAnnouncementBarConfig, ...updated };
+      await setDoc(doc(db, 'topAnnouncementBar', 'config'), newCfg, { merge: true });
+      showToast('💾 Top Announcement Bar Config Saved Live', 'success');
+      recordAuditLog('Top Announcement Bar Updated', 'SETTINGS', 'Updated top announcement bar configuration live', 'SUCCESS');
+    } catch (err: any) {
+      console.error('Error updating top announcement bar config:', err);
+      showToast('Failed to save top announcement bar config', 'error');
+    }
+  };
+
   const updateCustomerSoundSettings = (updated: Partial<CustomerSoundSettings>) => {
     setCustomerSoundSettingsState((prev) => {
       const next = { ...prev, ...updated };
@@ -1098,11 +1176,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus, note?: string): Promise<boolean> => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, orderStatus: newStatus, updatedAt: new Date().toISOString() } : o))
-    );
-    showToast(`Order ${orderId} updated to ${newStatus}`, 'info');
-    return true;
+    try {
+      const success = await updateOrderStatusInFirestore(orderId, newStatus, note);
+      if (success) {
+        showToast(`Order ${orderId} updated to ${newStatus}`, 'success');
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      return false;
+    }
   };
 
   const cancelCustomerOrder = async (orderId: string, reason?: string): Promise<boolean> => {
@@ -1110,11 +1194,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const markNotificationRead = async (id: string): Promise<void> => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    try {
+      await setDoc(doc(db, 'notifications', id), { read: true }, { merge: true });
+    } catch (e) {
+      console.warn('Error marking notification read in Firestore:', e);
+    }
   };
 
   const clearAllNotifications = async (): Promise<void> => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      const unread = notifications.filter((n) => !n.read);
+      await Promise.all(
+        unread.map((n) => setDoc(doc(db, 'notifications', n.id), { read: true }, { merge: true }))
+      );
+      showToast('All notifications marked as read', 'success');
+    } catch (e) {
+      console.warn('Error clearing notifications in Firestore:', e);
+    }
   };
 
   const updateCustomerProfileInFirestore = async (data: Partial<CustomerProfile>): Promise<boolean> => {
@@ -1248,6 +1344,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         paymentSettings: publishedPaymentSettings,
         orders,
         notifications,
+        activeOrderNotification,
+        setActiveOrderNotification,
         hangingSneakerConfig: publishedHangingSneakerConfig,
         updateHangingSneakerConfig,
         petShoeConfig: publishedPetShoeConfig,
@@ -1257,6 +1355,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updatePaymentSettings,
         soundConfig: publishedSoundConfig,
         updateSoundConfig,
+        topAnnouncementBarConfig: publishedTopAnnouncementBarConfig,
+        updateTopAnnouncementBarConfig,
         customerSoundSettings,
         updateCustomerSoundSettings,
         playSiteSound,

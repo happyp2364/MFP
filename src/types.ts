@@ -43,6 +43,8 @@ export interface Product {
   collectionTags: string[];
   material?: string;
   inStock: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Review {

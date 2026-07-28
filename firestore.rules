@@ -135,6 +135,36 @@ service cloud.firestore {
     match /draft_reviews/{id} {
       allow read, write: if true;
     }
+    match /product_gallery/{id} {
+      allow read, write: if true;
+    }
+    match /draft_product_gallery/{id} {
+      allow read, write: if true;
+    }
+    match /product_gallery_parts/{id} {
+      allow read, write: if true;
+    }
+    match /draft_product_gallery_parts/{id} {
+      allow read, write: if true;
+    }
+    match /product_variants/{id} {
+      allow read, write: if true;
+    }
+    match /draft_product_variants/{id} {
+      allow read, write: if true;
+    }
+    match /product_ai_metadata/{id} {
+      allow read, write: if true;
+    }
+    match /draft_product_ai_metadata/{id} {
+      allow read, write: if true;
+    }
+    match /product_statistics/{id} {
+      allow read, write: if true;
+    }
+    match /draft_product_statistics/{id} {
+      allow read, write: if true;
+    }
 
     // Hero Banner Content
     match /hero/{heroId} {

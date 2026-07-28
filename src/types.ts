@@ -800,39 +800,162 @@ export interface PromoCoupon {
   createdAt: string;
 }
 
-export interface ScratchReward {
+export interface LuckyBoxReward {
   id: string;
-  name: string;
-  type: CouponType | 'NONE';
+  title: string;
+  type: CouponType | 'NONE' | 'POINTS' | 'GIFT' | 'BETTER_LUCK';
   value: number;
   probability: number;
   usageLimit: number;
   usageCount: number;
   perCustomerLimit: number;
-  expiryDate: string; // empty means no expiry, or X days, or absolute date
-  couponCode: string;
+  couponCode?: string;
+  image?: string;
+}
+
+export interface ScratchReward {
+  id: string;
+  name: string;
+  type: CouponType | 'NONE' | 'POINTS' | 'GIFT' | 'BETTER_LUCK';
+  value: number;
+  probability: number;
+  usageLimit: number;
+  usageCount: number;
+  perCustomerLimit: number;
+  expiryDate?: string;
+  couponCode?: string;
+  image?: string;
 }
 
 export interface ScratchWinConfig {
   enabled: boolean;
   permanentlyDisabled: boolean;
-  startDate: string;
-  endDate: string;
-  dailyActiveHoursStart: string;
-  dailyActiveHoursEnd: string;
-  firstVisitOnly: boolean;
-  firstOrderOnly: boolean;
-  festivalOnly: boolean;
-  newCustomerOnly: boolean;
-  returningCustomerOnly: boolean;
-  minCartValue: number;
-  showAfterSeconds: number;
-  showAfterPageViews: number;
-  showExitIntent: boolean;
   showOnHomepage: boolean;
   showOnProductPage: boolean;
   showOnCheckout: boolean;
+  showOnOrderSuccess: boolean;
+  firstVisitOnly: boolean;
+  firstOrderOnly: boolean;
+  returningCustomerOnly: boolean;
+  newCustomerOnly: boolean;
+  festivalOnly: boolean;
+  dailyLimit: number;
+  perCustomerLimit: number;
+  globalUsageLimit: number;
+  minCartValue: number;
+  startDate?: string;
+  endDate?: string;
+  dailyActiveHoursStart?: string;
+  dailyActiveHoursEnd?: string;
+  showAfterSeconds?: number;
+  showAfterPageViews?: number;
+  showExitIntent?: boolean;
   rewards: ScratchReward[];
+}
+
+export interface LuckyBoxConfig {
+  enabled: boolean;
+  permanentlyDisabled: boolean;
+  showOnHomepage: boolean;
+  showOnProductPage: boolean;
+  showOnCheckout: boolean;
+  showOnOrderSuccess: boolean;
+  firstVisitOnly: boolean;
+  firstOrderOnly: boolean;
+  returningCustomerOnly: boolean;
+  newCustomerOnly: boolean;
+  festivalOnly: boolean;
+  dailyLimit: number;
+  perCustomerLimit: number;
+  globalUsageLimit: number;
+  minCartValue: number;
+  startDate?: string;
+  endDate?: string;
+  dailyActiveHours?: { start: string; end: string };
+  showAfterSeconds?: number;
+  showAfterPageViews?: number;
+  showExitIntent?: boolean;
+  rewards: LuckyBoxReward[];
+}
+
+export interface WheelSection {
+  id: string;
+  title: string;
+  type: CouponType | 'NONE' | 'POINTS' | 'GIFT' | 'BETTER_LUCK';
+  value: number;
+  probability: number;
+  couponCode?: string;
+  color: string;
+  icon?: string;
+}
+
+export interface SpinWheelConfig {
+  enabled: boolean;
+  sectionsCount: 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12;
+  sections: WheelSection[];
+  soundEnabled: boolean;
+  celebrationEnabled: boolean;
+  autoApplyCoupon: boolean;
+  canSpinAgainDays: number;
+  minCartValue?: number;
+}
+
+export interface FlashDeal {
+  id: string;
+  title: string;
+  status: 'active' | 'paused' | 'scheduled' | 'expired';
+  targetType: 'ALL' | 'PRODUCTS' | 'CATEGORIES' | 'COLLECTIONS' | 'BRANDS' | 'SIZES' | 'COLORS' | 'PRICE_RANGE' | 'STOCK_STATUS' | 'FEATURED' | 'NEW_ARRIVALS' | 'BEST_SELLERS';
+  targetIds?: string[]; // e.g. Product IDs, Category names
+  targetPriceRange?: [number, number];
+  targetSizes?: string[];
+  targetColors?: string[];
+  
+  discountType: 'PERCENTAGE' | 'FLAT';
+  discountValue: number;
+  
+  startDate: string;
+  endDate: string;
+  timezone: string;
+  
+  showCountdown: boolean;
+  countdownFormat: { days: boolean; hours: boolean; minutes: boolean; seconds: boolean };
+  hideAfterExpiry: boolean;
+  replaceWithNextId?: string;
+  
+  lowStockMessageEnabled: boolean;
+  lowStockThreshold: number;
+  lowStockCustomMessage?: string;
+  
+  displayLocations: ('homepage_hero' | 'product_page' | 'checkout' | 'cart' | 'category_page' | 'floating_banner' | 'announcement_bar' | 'popup')[];
+  
+  styling: {
+    bgColor: string;
+    textColor: string;
+    borderColor?: string;
+    animation?: 'none' | 'pulse' | 'glow' | 'bounce';
+    countdownTheme?: 'minimal' | 'luxury' | 'bold' | 'classic';
+    fontFamily?: string;
+    glowEffect?: boolean;
+    buttonStyle?: string;
+  };
+  
+  analytics: {
+    clicks: number;
+    conversions: number;
+    revenue: number;
+  };
+}
+
+export interface EngagementAnalytics {
+  luckyBoxOpens: number;
+  wheelSpins: number;
+  couponsWon: number;
+  couponsUsed: number;
+  flashDealClicks: number;
+  flashDealConversions: number;
+  revenueGenerated: number;
+  topPerformingRewardId?: string;
+  mostClaimedCouponCode?: string;
 }
 
 export interface OrderCelebrationConfig {

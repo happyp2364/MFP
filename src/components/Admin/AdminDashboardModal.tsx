@@ -46,6 +46,8 @@ import {
   Check,
   XCircle,
   Ticket,
+  Gift,
+  Zap,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
@@ -68,6 +70,10 @@ import { TopAnnouncementBarSettingsView } from './TopAnnouncementBarSettingsView
 import { SmartProductFormModal } from './SmartProductFormModal';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { CouponManagementView } from './CouponManagementView';
+import { LuckyBoxSettingsView } from './LuckyBoxSettingsView';
+import { SpinWheelSettingsView } from './SpinWheelSettingsView';
+import { FlashDealSettingsView } from './FlashDealSettingsView';
+import { EngagementAnalyticsView } from './EngagementAnalyticsView';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -76,7 +82,7 @@ interface AdminDashboardModalProps {
   onClose: () => void;
 }
 
-type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'top_announcement_bar' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons';
+type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'top_announcement_bar' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'lucky_box' | 'spin_wheel' | 'flash_deals' | 'engagement_analytics';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -459,6 +465,59 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <span>Coupon & Promotions</span>
             </button>
 
+            <div className="my-1 border-t border-neutral-200 hidden md:block" />
+            <div className="px-3.5 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-widest hidden md:block">Reward Center</div>
+
+            <button
+              onClick={() => setActiveTab('lucky_box')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'lucky_box'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Gift className="w-4 h-4 text-indigo-500" />
+              <span>Lucky Box Rewards</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('spin_wheel')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'spin_wheel'
+                  ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-pink-500" />
+              <span>Spin the Wheel</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('flash_deals')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'flash_deals'
+                  ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Zap className="w-4 h-4 text-orange-500" />
+              <span>Flash Deals Live</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('engagement_analytics')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'engagement_analytics'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 text-blue-500" />
+              <span>Reward Analytics</span>
+            </button>
+
+            <div className="my-1 border-t border-neutral-200 hidden md:block" />
+
             <button
               onClick={() => setActiveTab('payment_settings')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
@@ -687,6 +746,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: COUPON & PROMOTIONS ----------------- */}
             {activeTab === 'coupons' && <CouponManagementView />}
+
+            {/* ----------------- TAB: LUCKY BOX REWARDS ----------------- */}
+            {activeTab === 'lucky_box' && <LuckyBoxSettingsView />}
+
+            {/* ----------------- TAB: SPIN THE WHEEL ----------------- */}
+            {activeTab === 'spin_wheel' && <SpinWheelSettingsView />}
+
+            {/* ----------------- TAB: FLASH DEALS LIVE ----------------- */}
+            {activeTab === 'flash_deals' && <FlashDealSettingsView />}
+
+            {/* ----------------- TAB: ENGAGEMENT ANALYTICS ----------------- */}
+            {activeTab === 'engagement_analytics' && <EngagementAnalyticsView />}
 
             {/* ----------------- TAB: PAYMENT & UPI CONFIGURATION ----------------- */}
             {activeTab === 'payment_settings' && <PaymentSettingsView />}

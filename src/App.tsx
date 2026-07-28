@@ -31,6 +31,9 @@ import { WorkspaceHubDrawer } from './components/GoogleWorkspace/WorkspaceHubDra
 import { ProductDetailPage } from './components/Products/ProductDetailPage';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ScratchCardPopup } from './components/Promo/ScratchCardPopup';
+import { LuckyBoxPopup } from './components/Promo/LuckyBoxPopup';
+import { SpinWheelPopup } from './components/Promo/SpinWheelPopup';
+import { FlashDealSection } from './components/Promo/FlashDealSection';
 import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebration';
 
 import { useStore } from './context/StoreContext';
@@ -411,6 +414,9 @@ function AppContent() {
             onSelectCategory={handleSelectCategory}
           />
 
+          {/* Flash Deals Section */}
+          <FlashDealSection />
+
           {/* 5. Best Sellers Auto Carousel */}
           <ProductCarousel
             title="Best Sellers in Store"
@@ -632,6 +638,12 @@ function AppContent() {
 
       {/* Scratch & Win Popup Overlay */}
       <ScratchCardPopup currentPath={scratchCurrentPath} cartSubtotal={scratchCartSubtotal} />
+
+      {/* Lucky Box Rewards Popup Overlay */}
+      <LuckyBoxPopup currentPath={scratchCurrentPath} cartSubtotal={scratchCartSubtotal} />
+
+      {/* Spin the Wheel Popup Overlay */}
+      <SpinWheelPopup currentPath={scratchCurrentPath} />
 
       {/* Order Success Celebration Visual Effects Canvas Overlay */}
       <OrderSuccessCelebration />

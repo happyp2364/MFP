@@ -188,5 +188,15 @@ service cloud.firestore {
     match /marketingSubscribers/{subscriberId} {
       allow read, write: if true;
     }
+
+    // Flash Deals & Customer Engagement Analytics
+    match /flashDeals/{dealId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /analytics/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }

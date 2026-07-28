@@ -36,8 +36,14 @@ import {
   SocialAnalyticsLog,
   PromoCoupon,
   CouponType,
+  LuckyBoxReward,
+  LuckyBoxConfig,
   ScratchReward,
   ScratchWinConfig,
+  SpinWheelConfig,
+  WheelSection,
+  FlashDeal,
+  EngagementAnalytics,
   OrderCelebrationConfig,
 } from '../types';
 import {
@@ -245,99 +251,161 @@ interface StoreContextType {
   validateCoupon: (code: string, cartItems: CartItem[]) => { valid: boolean; reason?: string; discountAmount?: number; freeShipping?: boolean; freeGift?: boolean; giftName?: string; eligibleProductIds?: string[] };
   trackCouponUse: (code: string, success: boolean, revenue?: number, discount?: number) => Promise<void>;
 
-  // Customer Engagement Settings
-  scratchWinConfig: ScratchWinConfig;
-  updateScratchWinConfig: (updated: Partial<ScratchWinConfig>) => Promise<boolean>;
+  // Customer Engagement Reward Center
+  luckyBoxConfig: LuckyBoxConfig;
+  updateLuckyBoxConfig: (updated: Partial<LuckyBoxConfig>) => Promise<boolean>;
+  spinWheelConfig: SpinWheelConfig;
+  updateSpinWheelConfig: (updated: Partial<SpinWheelConfig>) => Promise<boolean>;
+  flashDeals: FlashDeal[];
+  addFlashDeal: (deal: Omit<FlashDeal, 'id' | 'analytics'>) => Promise<boolean>;
+  updateFlashDeal: (id: string, updated: Partial<FlashDeal>) => Promise<boolean>;
+  deleteFlashDeal: (id: string) => Promise<boolean>;
+  engagementAnalytics: EngagementAnalytics;
+  recordEngagementMetric: (metric: keyof EngagementAnalytics, value?: number) => Promise<void>;
+
   orderCelebrationConfig: OrderCelebrationConfig;
   updateOrderCelebrationConfig: (updated: Partial<OrderCelebrationConfig>) => Promise<boolean>;
   isCelebrating: boolean;
   setIsCelebrating: (celebrating: boolean) => void;
   triggerGlobalCelebration: () => void;
-}
 
-const StoreContext = createContext<StoreContextType | undefined>(undefined);
+  scratchWinConfig: ScratchWinConfig;
+  updateScratchWinConfig: (updated: Partial<ScratchWinConfig>) => Promise<boolean>;
+}
 
 const DEFAULT_SCRATCH_WIN_CONFIG: ScratchWinConfig = {
   enabled: true,
   permanentlyDisabled: false,
-  startDate: '',
-  endDate: '',
-  dailyActiveHoursStart: '00:00',
-  dailyActiveHoursEnd: '23:59',
-  firstVisitOnly: false,
-  firstOrderOnly: false,
-  festivalOnly: false,
-  newCustomerOnly: false,
-  returningCustomerOnly: false,
-  minCartValue: 0,
-  showAfterSeconds: 5,
-  showAfterPageViews: 1,
-  showExitIntent: false,
   showOnHomepage: true,
   showOnProductPage: true,
   showOnCheckout: true,
+  showOnOrderSuccess: true,
+  firstVisitOnly: false,
+  firstOrderOnly: false,
+  returningCustomerOnly: false,
+  newCustomerOnly: false,
+  festivalOnly: false,
+  dailyLimit: 50,
+  perCustomerLimit: 1,
+  globalUsageLimit: 1000,
+  minCartValue: 0,
   rewards: [
     {
-      id: 'reward-10-percent',
+      id: 'sw-10-percent',
       name: '10% OFF',
       type: 'PERCENTAGE',
       value: 10,
-      probability: 25,
-      usageLimit: 100,
+      probability: 40,
+      usageLimit: 1000,
       usageCount: 0,
       perCustomerLimit: 1,
-      expiryDate: '',
       couponCode: 'SCRATCH10'
-    },
+    }
+  ]
+};
+
+const StoreContext = createContext<StoreContextType | undefined>(undefined);
+
+const DEFAULT_LUCKY_BOX_CONFIG: LuckyBoxConfig = {
+  enabled: true,
+  permanentlyDisabled: false,
+  showOnHomepage: true,
+  showOnProductPage: true,
+  showOnCheckout: true,
+  showOnOrderSuccess: true,
+  firstVisitOnly: false,
+  firstOrderOnly: false,
+  returningCustomerOnly: false,
+  newCustomerOnly: false,
+  festivalOnly: false,
+  dailyLimit: 50,
+  perCustomerLimit: 1,
+  globalUsageLimit: 1000,
+  minCartValue: 0,
+  rewards: [
     {
-      id: 'reward-15-percent',
-      name: '15% OFF',
-      type: 'PERCENTAGE',
-      value: 15,
-      probability: 15,
-      usageLimit: 50,
-      usageCount: 0,
-      perCustomerLimit: 1,
-      expiryDate: '',
-      couponCode: 'SCRATCH15'
-    },
-    {
-      id: 'reward-100-flat',
-      name: '₹100 OFF',
+      id: 'lb-100-off',
+      title: '₹100 OFF',
       type: 'FLAT',
       value: 100,
-      probability: 20,
-      usageLimit: 100,
+      probability: 30,
+      usageLimit: 500,
       usageCount: 0,
       perCustomerLimit: 1,
-      expiryDate: '',
-      couponCode: 'SCRATCH100'
+      couponCode: 'LUCKY100'
     },
     {
-      id: 'reward-free-shipping',
-      name: 'Free Delivery',
+      id: 'lb-5-percent',
+      title: '5% OFF',
+      type: 'PERCENTAGE',
+      value: 5,
+      probability: 25,
+      usageLimit: 1000,
+      usageCount: 0,
+      perCustomerLimit: 1,
+      couponCode: 'LUCKY5'
+    },
+    {
+      id: 'lb-free-shipping',
+      title: 'Free Delivery',
       type: 'FREE_SHIPPING',
       value: 0,
       probability: 15,
-      usageLimit: 200,
+      usageLimit: 500,
       usageCount: 0,
       perCustomerLimit: 1,
-      expiryDate: '',
       couponCode: 'FREESHIP'
     },
     {
-      id: 'reward-better-luck',
-      name: 'Better Luck Next Time',
-      type: 'NONE',
+      id: 'lb-mystery',
+      title: 'Mystery Gift',
+      type: 'GIFT',
+      value: 0,
+      probability: 5,
+      usageLimit: 50,
+      usageCount: 0,
+      perCustomerLimit: 1
+    },
+    {
+      id: 'lb-better-luck',
+      title: 'Better Luck Next Time',
+      type: 'BETTER_LUCK',
       value: 0,
       probability: 25,
       usageLimit: 0,
       usageCount: 0,
-      perCustomerLimit: 0,
-      expiryDate: '',
-      couponCode: ''
+      perCustomerLimit: 0
     }
   ]
+};
+
+const DEFAULT_SPIN_WHEEL_CONFIG: SpinWheelConfig = {
+  enabled: true,
+  sectionsCount: 8,
+  soundEnabled: true,
+  celebrationEnabled: true,
+  autoApplyCoupon: true,
+  canSpinAgainDays: 7,
+  sections: [
+    { id: 'w1', title: '5% OFF', type: 'PERCENTAGE', value: 5, probability: 20, couponCode: 'WHEEL5', color: '#EF4444' },
+    { id: 'w2', title: '10% OFF', type: 'PERCENTAGE', value: 10, probability: 15, couponCode: 'WHEEL10', color: '#3B82F6' },
+    { id: 'w3', title: 'Free Delivery', type: 'FREE_SHIPPING', value: 0, probability: 15, couponCode: 'FREESHIP', color: '#10B981' },
+    { id: 'w4', title: '₹100 OFF', type: 'FLAT', value: 100, probability: 15, couponCode: 'WHEEL100', color: '#F59E0B' },
+    { id: 'w5', title: 'Better Luck', type: 'BETTER_LUCK', value: 0, probability: 20, color: '#6B7280' },
+    { id: 'w6', title: '15% OFF', type: 'PERCENTAGE', value: 15, probability: 10, couponCode: 'WHEEL15', color: '#EC4899' },
+    { id: 'w7', title: 'Mystery Gift', type: 'GIFT', value: 0, probability: 3, color: '#8B5CF6' },
+    { id: 'w8', title: '₹200 OFF', type: 'FLAT', value: 200, probability: 2, couponCode: 'WHEEL200', color: '#111827' }
+  ]
+};
+
+const DEFAULT_ENGAGEMENT_ANALYTICS: EngagementAnalytics = {
+  luckyBoxOpens: 0,
+  wheelSpins: 0,
+  couponsWon: 0,
+  couponsUsed: 0,
+  flashDealClicks: 0,
+  flashDealConversions: 0,
+  revenueGenerated: 0
 };
 
 const DEFAULT_ORDER_CELEBRATION_CONFIG: OrderCelebrationConfig = {
@@ -479,9 +547,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [subscribers, setSubscribers] = useState<MarketingSubscriber[]>([]);
 
   // Customer Engagement State
+  const [luckyBoxConfig, setLuckyBoxConfig] = useState<LuckyBoxConfig>(() => {
+    const local = localStorage.getItem('mfp_lucky_box_config');
+    return local ? JSON.parse(local) : DEFAULT_LUCKY_BOX_CONFIG;
+  });
+
+  const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(() => {
+    const local = localStorage.getItem('mfp_spin_wheel_config');
+    return local ? JSON.parse(local) : DEFAULT_SPIN_WHEEL_CONFIG;
+  });
+
   const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(() => {
     const local = localStorage.getItem('mfp_scratch_win_config');
     return local ? JSON.parse(local) : DEFAULT_SCRATCH_WIN_CONFIG;
+  });
+
+  const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
+
+  const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(() => {
+    const local = localStorage.getItem('mfp_engagement_analytics');
+    return local ? JSON.parse(local) : DEFAULT_ENGAGEMENT_ANALYTICS;
   });
 
   const [orderCelebrationConfig, setOrderCelebrationConfig] = useState<OrderCelebrationConfig>(() => {
@@ -610,8 +695,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           liveGalleryParts
         )
       );
-      setPublishedProducts(stitched);
-      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(stitched));
+      
+      // Deep compare or check length to avoid unnecessary state updates if nothing changed
+      setPublishedProducts(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(stitched)) return prev;
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(stitched));
+        return stitched;
+      });
     }
   }, [productsFetched, rawLiveProducts, liveGalleries, liveVariants, liveAiMetadata, liveGalleryParts]);
 
@@ -631,6 +721,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
 
       unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'luckyBox'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as LuckyBoxConfig;
+            setLuckyBoxConfig(data);
+            localStorage.setItem('mfp_lucky_box_config', JSON.stringify(data));
+          }
+        }, (err) => console.warn('Live lucky box listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'spinWheel'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as SpinWheelConfig;
+            setSpinWheelConfig(data);
+            localStorage.setItem('mfp_spin_wheel_config', JSON.stringify(data));
+          }
+        }, (err) => console.warn('Live spin wheel listener notice:', err))
+      );
+
+      unsubscribers.push(
         onSnapshot(doc(db, 'settings', 'scratchWin'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as ScratchWinConfig;
@@ -638,6 +748,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem('mfp_scratch_win_config', JSON.stringify(data));
           }
         }, (err) => console.warn('Live scratch win listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'analytics', 'engagement'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as EngagementAnalytics;
+            setEngagementAnalytics(data);
+            localStorage.setItem('mfp_engagement_analytics', JSON.stringify(data));
+          }
+        }, (err) => console.warn('Live engagement analytics listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(collection(db, 'flashDeals'), (snap) => {
+          const list: FlashDeal[] = [];
+          snap.forEach((d) => list.push({ ...d.data(), id: d.id } as FlashDeal));
+          setFlashDeals(list);
+        }, (err) => console.warn('Live flash deals listener notice:', err))
       );
 
       unsubscribers.push(
@@ -867,9 +995,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setCustomerUser(user);
       setIsCustomerAuthLoading(false);
       if (user) {
-        if (user.email === 'vpcreation2002@gmail.com') {
-          setIsAdmin(true);
-        }
+        setIsAdmin(user.email === 'vpcreation2002@gmail.com');
         try {
           const prof = await syncCustomerProfileInFirestore(user);
           if (isMounted) setCustomerProfile(prof);
@@ -878,6 +1004,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       } else {
         setCustomerProfile(null);
+        setIsAdmin(false);
       }
     });
 
@@ -888,8 +1015,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [showToast]);
 
   // Inactivity Auto-Logout Monitor
+  const lastUpdateRef = useRef<number>(Date.now());
   const handleUserActivity = useCallback(() => {
-    setLastActivityTime(Date.now());
+    const now = Date.now();
+    // Only update state if it's been more than 30 seconds to prevent excessive re-renders
+    if (now - lastUpdateRef.current > 30000) {
+      setLastActivityTime(now);
+      lastUpdateRef.current = now;
+    }
   }, []);
 
   useEffect(() => {
@@ -1974,19 +2107,98 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     recordAuditLog('Factory Reset Performed', 'SECURITY', 'Restored store defaults', 'DANGER');
   };
 
+  const updateLuckyBoxConfig = async (updated: Partial<LuckyBoxConfig>): Promise<boolean> => {
+    try {
+      const next = { ...luckyBoxConfig, ...updated };
+      setLuckyBoxConfig(next);
+      localStorage.setItem('mfp_lucky_box_config', JSON.stringify(next));
+      await setDoc(doc(db, 'settings', 'luckyBox'), next);
+      recordAuditLog('Updated Lucky Box Config', 'SETTINGS', 'Successfully updated Lucky Box reward settings', 'SUCCESS');
+      showToast('Lucky Box settings saved successfully', 'success');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to save Lucky Box settings', 'error');
+      return false;
+    }
+  };
+
+  const updateSpinWheelConfig = async (updated: Partial<SpinWheelConfig>): Promise<boolean> => {
+    try {
+      const next = { ...spinWheelConfig, ...updated };
+      setSpinWheelConfig(next);
+      localStorage.setItem('mfp_spin_wheel_config', JSON.stringify(next));
+      await setDoc(doc(db, 'settings', 'spinWheel'), next);
+      recordAuditLog('Updated Spin Wheel Config', 'SETTINGS', 'Successfully updated Spin Wheel reward settings', 'SUCCESS');
+      showToast('Spin Wheel settings saved successfully', 'success');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to save Spin Wheel settings', 'error');
+      return false;
+    }
+  };
+
   const updateScratchWinConfig = async (updated: Partial<ScratchWinConfig>): Promise<boolean> => {
     try {
       const next = { ...scratchWinConfig, ...updated };
       setScratchWinConfig(next);
       localStorage.setItem('mfp_scratch_win_config', JSON.stringify(next));
       await setDoc(doc(db, 'settings', 'scratchWin'), next);
-      recordAuditLog('Updated Scratch & Win Config', 'SETTINGS', 'Successfully updated Scratch & Win promotion settings', 'SUCCESS');
+      recordAuditLog('Updated Scratch & Win Config', 'SETTINGS', 'Successfully updated Scratch & Win reward settings', 'SUCCESS');
       showToast('Scratch & Win settings saved successfully', 'success');
       return true;
     } catch (e) {
       console.error(e);
       showToast('Failed to save Scratch & Win settings', 'error');
       return false;
+    }
+  };
+
+  const addFlashDeal = async (deal: Omit<FlashDeal, 'id' | 'analytics'>): Promise<boolean> => {
+    try {
+      const id = `fd-${Date.now()}`;
+      const newDeal: FlashDeal = { ...deal, id, analytics: { clicks: 0, conversions: 0, revenue: 0 } };
+      await setDoc(doc(db, 'flashDeals', id), newDeal);
+      showToast('Flash Deal created successfully', 'success');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to create Flash Deal', 'error');
+      return false;
+    }
+  };
+
+  const updateFlashDeal = async (id: string, updated: Partial<FlashDeal>): Promise<boolean> => {
+    try {
+      await updateDoc(doc(db, 'flashDeals', id), updated);
+      showToast('Flash Deal updated', 'success');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to update Flash Deal', 'error');
+      return false;
+    }
+  };
+
+  const deleteFlashDeal = async (id: string): Promise<boolean> => {
+    try {
+      await deleteDoc(doc(db, 'flashDeals', id));
+      showToast('Flash Deal deleted', 'info');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to delete Flash Deal', 'error');
+      return false;
+    }
+  };
+
+  const recordEngagementMetric = async (metric: keyof EngagementAnalytics, value: number = 1): Promise<void> => {
+    try {
+      const next = { ...engagementAnalytics, [metric]: (engagementAnalytics[metric] || 0) + value };
+      await setDoc(doc(db, 'analytics', 'engagement'), next, { merge: true });
+    } catch (e) {
+      console.warn('Engagement analytics update failed:', e);
     }
   };
 
@@ -2013,135 +2225,173 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const contextValue = React.useMemo(() => ({
+    products: publishedProducts,
+    reviews: publishedReviews,
+    storeInfo: publishedStoreInfo,
+    heroContent: publishedHeroContent,
+    announcements: publishedAnnouncements,
+    categoryHighlights: publishedCategoryHighlights,
+    trendingCollections: publishedTrendingCollections,
+    isAdmin,
+    isTwoFactorEnabled,
+    auditLogs,
+    lastActivityTime,
+    paymentSettings: publishedPaymentSettings,
+    orders,
+    notifications,
+    activeOrderNotification,
+    setActiveOrderNotification,
+    hangingSneakerConfig: publishedHangingSneakerConfig,
+    updateHangingSneakerConfig,
+    petShoeConfig: publishedPetShoeConfig,
+    updatePetShoeConfig,
+    instagramConfig: publishedInstagramConfig,
+    updateInstagramConfig,
+    updatePaymentSettings,
+    soundConfig: publishedSoundConfig,
+    updateSoundConfig,
+    topAnnouncementBarConfig: publishedTopAnnouncementBarConfig,
+    updateTopAnnouncementBarConfig,
+    customerSoundSettings,
+    updateCustomerSoundSettings,
+    playSiteSound,
+
+    socialMediaConfig,
+    updateSocialMediaConfig,
+    socialAnalytics,
+    recordSocialClick,
+
+    // Customer Engagement
+    luckyBoxConfig,
+    updateLuckyBoxConfig,
+    spinWheelConfig,
+    updateSpinWheelConfig,
+    scratchWinConfig,
+    updateScratchWinConfig,
+    flashDeals,
+    addFlashDeal,
+    updateFlashDeal,
+    deleteFlashDeal,
+    engagementAnalytics,
+    recordEngagementMetric,
+    orderCelebrationConfig,
+    updateOrderCelebrationConfig,
+    isCelebrating,
+    setIsCelebrating,
+    triggerGlobalCelebration,
+
+    // Legacy compatibility properties (Stubbed)
+    hasPendingDraft: false,
+    pendingDraftCount: 0,
+    pendingChangesList: [],
+    lastPublishedAt: new Date().toISOString(),
+    lastPublishedBy: 'Real-Time Firestore System',
+    publishedVersions: [],
+    previewMode: 'live' as const,
+    publishWebsite: async () => ({
+      success: true,
+      versionNumber: 'Live',
+      publishedAt: new Date().toISOString(),
+      totalUpdatedDocs: 0,
+      publishDuration: '0s',
+      logs: [],
+      documentSize: '0 KB',
+      batchSize: 0,
+      numDocuments: 0,
+      commitDuration: '0s',
+      writeCount: 0,
+    }),
+    restorePublishedVersion: async () => true,
+    togglePreviewMode: () => {},
+    discardDraft: async () => {},
+
+    placeOrderAndPay,
+    updateOrderStatus,
+    cancelCustomerOrder,
+    markNotificationRead,
+    clearAllNotifications,
+    customerUser,
+    customerProfile,
+    isCustomerAuthLoading,
+    customerAuthError,
+    toastMessage,
+    showToast,
+    customerSignInWithGoogle,
+    customerSignOut,
+    updateCustomerProfileInFirestore,
+    campaigns,
+    subscribers,
+    updateCustomerMarketingConsent,
+    saveCampaign,
+    deleteCampaign,
+    sendCampaign,
+    updateSubscriberConsent,
+    refreshMarketingData,
+    loginAdmin,
+    loginWithGoogleAdmin,
+    logoutAdmin,
+    changeAdminPassword,
+    toggleTwoFactor,
+    verifyReAuthentication,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    toggleInStock,
+    addReview,
+    updateReview,
+    deleteReview,
+    updateStoreInfo,
+    updateHeroContent,
+    setAnnouncementsList,
+    updateCategoryHighlight,
+    saveCategoryHighlights,
+    updateTrendingCollection,
+    refreshAuditLogs,
+    createStoreBackup,
+    restoreStoreBackup,
+    resetToDefaults,
+
+    // Coupon Management System
+    coupons,
+    addCoupon,
+    updateCoupon,
+    deleteCoupon,
+    duplicateCoupon,
+    validateCoupon,
+    trackCouponUse,
+  }), [
+    publishedProducts, publishedReviews, publishedStoreInfo, publishedHeroContent,
+    publishedAnnouncements, publishedCategoryHighlights, publishedTrendingCollections,
+    isAdmin, isTwoFactorEnabled, auditLogs, lastActivityTime, publishedPaymentSettings,
+    orders, notifications, activeOrderNotification, publishedHangingSneakerConfig,
+    publishedPetShoeConfig, publishedInstagramConfig, publishedSoundConfig,
+    publishedTopAnnouncementBarConfig, customerSoundSettings, socialMediaConfig,
+    socialAnalytics, luckyBoxConfig, spinWheelConfig, flashDeals, engagementAnalytics,
+    orderCelebrationConfig, isCelebrating, customerUser, customerProfile,
+    isCustomerAuthLoading, customerAuthError, toastMessage, campaigns, subscribers,
+    coupons,
+    // callbacks and functions
+    updateHangingSneakerConfig, updatePetShoeConfig, updateInstagramConfig,
+    updatePaymentSettings, updateSoundConfig, updateTopAnnouncementBarConfig,
+    updateCustomerSoundSettings, playSiteSound, updateSocialMediaConfig,
+    recordSocialClick, updateLuckyBoxConfig, updateSpinWheelConfig, addFlashDeal,
+    updateFlashDeal, deleteFlashDeal, recordEngagementMetric, updateOrderCelebrationConfig,
+    setIsCelebrating, triggerGlobalCelebration, placeOrderAndPay, updateOrderStatus,
+    cancelCustomerOrder, markNotificationRead, clearAllNotifications, showToast,
+    customerSignInWithGoogle, customerSignOut, updateCustomerProfileInFirestore,
+    updateCustomerMarketingConsent, saveCampaign, deleteCampaign, sendCampaign,
+    updateSubscriberConsent, refreshMarketingData, loginAdmin, loginWithGoogleAdmin,
+    logoutAdmin, changeAdminPassword, toggleTwoFactor, verifyReAuthentication,
+    addProduct, updateProduct, deleteProduct, toggleInStock, addReview, updateReview,
+    deleteReview, updateStoreInfo, updateHeroContent, setAnnouncementsList,
+    updateCategoryHighlight, saveCategoryHighlights, updateTrendingCollection,
+    refreshAuditLogs, createStoreBackup, restoreStoreBackup, resetToDefaults,
+    addCoupon, updateCoupon, deleteCoupon, duplicateCoupon, validateCoupon, trackCouponUse
+  ]);
+
   return (
-    <StoreContext.Provider
-      value={{
-        products: publishedProducts,
-        reviews: publishedReviews,
-        storeInfo: publishedStoreInfo,
-        heroContent: publishedHeroContent,
-        announcements: publishedAnnouncements,
-        categoryHighlights: publishedCategoryHighlights,
-        trendingCollections: publishedTrendingCollections,
-        isAdmin,
-        isTwoFactorEnabled,
-        auditLogs,
-        lastActivityTime,
-        paymentSettings: publishedPaymentSettings,
-        orders,
-        notifications,
-        activeOrderNotification,
-        setActiveOrderNotification,
-        hangingSneakerConfig: publishedHangingSneakerConfig,
-        updateHangingSneakerConfig,
-        petShoeConfig: publishedPetShoeConfig,
-        updatePetShoeConfig,
-        instagramConfig: publishedInstagramConfig,
-        updateInstagramConfig,
-        updatePaymentSettings,
-        soundConfig: publishedSoundConfig,
-        updateSoundConfig,
-        topAnnouncementBarConfig: publishedTopAnnouncementBarConfig,
-        updateTopAnnouncementBarConfig,
-        customerSoundSettings,
-        updateCustomerSoundSettings,
-        playSiteSound,
-
-        socialMediaConfig,
-        updateSocialMediaConfig,
-        socialAnalytics,
-        recordSocialClick,
-
-        // Customer Engagement
-        scratchWinConfig,
-        updateScratchWinConfig,
-        orderCelebrationConfig,
-        updateOrderCelebrationConfig,
-        isCelebrating,
-        setIsCelebrating,
-        triggerGlobalCelebration,
-
-        // Legacy compatibility properties (Stubbed)
-        hasPendingDraft: false,
-        pendingDraftCount: 0,
-        pendingChangesList: [],
-        lastPublishedAt: new Date().toISOString(),
-        lastPublishedBy: 'Real-Time Firestore System',
-        publishedVersions: [],
-        previewMode: 'live',
-        publishWebsite: async () => ({
-          success: true,
-          versionNumber: 'Live',
-          publishedAt: new Date().toISOString(),
-          totalUpdatedDocs: 0,
-          publishDuration: '0s',
-          logs: [],
-          documentSize: '0 KB',
-          batchSize: 0,
-          numDocuments: 0,
-          commitDuration: '0s',
-          writeCount: 0,
-        }),
-        restorePublishedVersion: async () => true,
-        togglePreviewMode: () => {},
-        discardDraft: async () => {},
-
-        placeOrderAndPay,
-        updateOrderStatus,
-        cancelCustomerOrder,
-        markNotificationRead,
-        clearAllNotifications,
-        customerUser,
-        customerProfile,
-        isCustomerAuthLoading,
-        customerAuthError,
-        toastMessage,
-        showToast,
-        customerSignInWithGoogle,
-        customerSignOut,
-        updateCustomerProfileInFirestore,
-        campaigns,
-        subscribers,
-        updateCustomerMarketingConsent,
-        saveCampaign,
-        deleteCampaign,
-        sendCampaign,
-        updateSubscriberConsent,
-        refreshMarketingData,
-        loginAdmin,
-        loginWithGoogleAdmin,
-        logoutAdmin,
-        changeAdminPassword,
-        toggleTwoFactor,
-        verifyReAuthentication,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        toggleInStock,
-        addReview,
-        updateReview,
-        deleteReview,
-        updateStoreInfo,
-        updateHeroContent,
-        setAnnouncementsList,
-        updateCategoryHighlight,
-        saveCategoryHighlights,
-        updateTrendingCollection,
-        refreshAuditLogs,
-        createStoreBackup,
-        restoreStoreBackup,
-        resetToDefaults,
-
-        // Coupon Management System
-        coupons,
-        addCoupon,
-        updateCoupon,
-        deleteCoupon,
-        duplicateCoupon,
-        validateCoupon,
-        trackCouponUse,
-      }}
-    >
+    <StoreContext.Provider value={contextValue}>
       {children}
     </StoreContext.Provider>
   );

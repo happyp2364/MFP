@@ -269,6 +269,20 @@
           "update": "request.auth != null",
           "delete": "request.auth != null"
         }
+      },
+      "flashDeals": {
+        "path": "flashDeals/{dealId}",
+        "allow": {
+          "read": "true",
+          "write": "true"
+        }
+      },
+      "analytics": {
+        "path": "analytics/{id}",
+        "allow": {
+          "read": "true",
+          "write": "true"
+        }
       }
     }
   }

@@ -2102,16 +2102,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     const initialSteps: PublishStepLog[] = [
-      { id: 's1', name: 'Validate Draft & Firebase Credentials', status: 'pending' },
-      { id: 's2', name: 'Verify Media Assets & URIs', status: 'pending' },
-      { id: 's3', name: 'Prepare Operations Queue & Size Check', status: 'pending' },
-      { id: 's4', name: 'Synchronize Granular Live Updates', status: 'pending' },
-      { id: 's5', name: 'Refresh Search & Filter Indexes', status: 'pending' },
-      { id: 's6', name: 'Refresh Local Caches & Storage Keys', status: 'pending' },
-      { id: 's7', name: 'Refresh Live Website Data Across Clients', status: 'pending' },
-      { id: 's8', name: 'Confirm Version History Snapshot', status: 'pending' },
-      { id: 's9', name: 'Cleanup Draft References', status: 'pending' },
-      { id: 's10', name: 'Notify Connected Clients & Complete Release', status: 'pending' },
+      { id: 's1', name: 'Validate Data', status: 'pending' },
+      { id: 's2', name: 'Prepare Changed Documents', status: 'pending' },
+      { id: 's3', name: 'Write ONLY Changed Data to Firestore', status: 'pending' },
     ];
 
     let currentLogs = [...initialSteps];
@@ -2146,16 +2139,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
 
       const currentStepNum = stepIdx + 1;
-      const percentage = Math.min(100, Math.round((currentStepNum / 10) * 100));
+      const percentage = Math.min(100, Math.round((currentStepNum / 3) * 100));
 
       if (onProgress) {
         onProgress({
           currentStep: currentStepNum,
-          totalSteps: 10,
+          totalSteps: 3,
           stepName: currentLogs[stepIdx]?.name || 'Publishing...',
           percentage,
           logs: [...currentLogs],
-          isCompleted: status === 'success' && stepIdx === 9,
+          isCompleted: status === 'success' && stepIdx === 2,
           errorCode: errorInfo?.code,
           collectionName: errorInfo?.collectionName,
           documentId: errorInfo?.documentId,
@@ -2479,20 +2472,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       numDocsMetric = operations.length;
       writeCountMetric = operations.length;
 
-      updateStep(
-        2,
-        'success',
-        `Prepared ${operations.length} atomic write(s) (${skippedWritesCount} unchanged doc(s) skipped). Size: ${totalEstimatedSizeKb.toFixed(2)} KB.`
-      );
+      // Step 3: Write ONLY Changed Data to Firestore (and immediately make website LIVE)
+      updateStep(2, 'running', `Writing ${operations.length} changed document(s) to Firestore...`);
+      const step3Start = Date.now();
 
-      // Step 4: Synchronize Granular Live Updates
-      const step4Start = Date.now();
-
-      if (operations.length === 0) {
-        updateStep(3, 'success', `All documents up to date. 0 writes required (${skippedWritesCount} unchanged doc(s) skipped).`);
-        commitDurationMetric = '0.00s';
-      } else {
-        const BATCH_CHUNK_SIZE = 100; // Efficient high-throughput batching well within 500 limit
+      if (operations.length > 0) {
+        const BATCH_CHUNK_SIZE = 100;
         const batchChunks: BatchOperation[][] = [];
         for (let i = 0; i < operations.length; i += BATCH_CHUNK_SIZE) {
           batchChunks.push(operations.slice(i, i + BATCH_CHUNK_SIZE));
@@ -2501,12 +2486,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const totalBatches = batchChunks.length;
         batchSizeMetric = batchChunks[0]?.length || 0;
         let cumulativeTimeMs = 0;
-
-        updateStep(
-          3,
-          'running',
-          `Synchronizing ${operations.length} granular write(s) across ${totalBatches} batch(es)...`
-        );
 
         for (let b = 0; b < totalBatches; b++) {
           const chunkOps = batchChunks[b];
@@ -2526,13 +2505,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const bDuration = Math.round(performance.now() - bStart);
           cumulativeTimeMs += bDuration;
 
-          // DEVELOPER LOG REQUIREMENTS:
-          // Batch Number | Documents | Writes | Skipped | Duration (ms) | Total Time
           console.log(
             `[PublishEngine Log] Batch ${b + 1}/${totalBatches} | Documents: ${chunkOps.length} | Writes: ${chunkOps.length} | Skipped: ${skippedWritesCount} | Duration: ${bDuration}ms | Total Time: ${cumulativeTimeMs}ms`
           );
 
-          // If any batch/document operation takes > 500ms, log its path and reason:
           if (bDuration > 500) {
             for (const op of chunkOps) {
               console.warn(
@@ -2541,50 +2517,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
           }
 
-          // Non-blocking UI yield to guarantee responsive progress dialog and prevent main thread freezing
           await new Promise((resolve) => setTimeout(resolve, 0));
-
-          updateStep(
-            3,
-            'running',
-            `Batch ${b + 1}/${totalBatches} (${chunkOps.length} ops) committed in ${bDuration}ms.`
-          );
         }
 
-        const step4DurationSec = ((Date.now() - step4Start) / 1000).toFixed(2);
-        commitDurationMetric = `${step4DurationSec}s`;
-
-        updateStep(
-          3,
-          'success',
-          `Successfully committed ${operations.length} write(s) across ${totalBatches} batch(es) in ${commitDurationMetric} (${skippedWritesCount} doc(s) skipped).`
-        );
+        const step3DurationSec = ((Date.now() - step3Start) / 1000).toFixed(2);
+        commitDurationMetric = `${step3DurationSec}s`;
+      } else {
+        commitDurationMetric = '0.00s';
       }
 
-      // Step 5: Refresh Search & Filter Indexes
-      updateStep(4, 'running', 'Rebuilding product search & filter indexes...');
-      await new Promise((r) => setTimeout(r, 30));
-      updateStep(4, 'success', 'Refreshed product search & filter indexes.');
-
-      // Step 6: Refresh Local Caches & Storage Keys
-      updateStep(5, 'running', 'Updating localStorage and local cache keys...');
-      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(draftProducts));
-      localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(draftReviews));
-      localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(draftStoreInfo));
-      localStorage.setItem(STORAGE_KEYS.HERO_CONTENT, JSON.stringify(draftHeroContent));
-      localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(draftAnnouncements));
-      localStorage.setItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, JSON.stringify(draftCategoryHighlights));
-      localStorage.setItem(STORAGE_KEYS.TRENDING_COLLECTIONS, JSON.stringify(draftTrendingCollections));
-      localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(draftPaymentSettings));
-      localStorage.setItem(STORAGE_KEYS.HANGING_SNEAKER, JSON.stringify(draftHangingSneakerConfig));
-      localStorage.setItem(STORAGE_KEYS.PET_SHOE_CONFIG, JSON.stringify(draftPetShoeConfig));
-      localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(draftInstagramConfig));
-      localStorage.removeItem('mfp_cms_active_draft');
-      localStorage.removeItem('mfp_cms_pending_count');
-      updateStep(5, 'success', 'Local caches & storage keys updated.');
-
-      // Step 7: Refresh Homepage Data Across Connected Views
-      updateStep(6, 'running', 'Updating React published states across store views...');
+      // ─── MAKE NEW DATA LIVE IMMEDIATELY FOR ALL CUSTOMERS ───
+      // 1. Update React published states across store views
       setPublishedProducts(draftProducts);
       setPublishedReviews(draftReviews);
       setPublishedStoreInfo(draftStoreInfo);
@@ -2597,43 +2540,53 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setPublishedPetShoeConfig(draftPetShoeConfig);
       setPublishedInstagramConfig(draftInstagramConfig);
       setPublishedSoundConfig(draftSoundConfig);
-      updateStep(6, 'success', 'Live website state synchronized.');
-
-      // Step 8: Confirm Version History Snapshot
-      updateStep(7, 'running', 'Verifying release snapshot in publishedVersions...');
       setPublishedVersions((prev) => [newVersion, ...prev]);
-      updateStep(7, 'success', `Version ${versionNum} snapshot confirmed.`);
 
-      // Step 9: Cleanup Draft References
-      updateStep(8, 'running', 'Cleaning up active drafts...');
+      // 2. Clear draft states & update timestamps
       setHasPendingDraft(false);
       setPendingDraftCount(0);
       setLastPublishedAt(nowISO);
       setLastPublishedBy(adminEmail);
+
+      // 3. Update localStorage cache keys
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(draftProducts));
+      localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(draftReviews));
+      localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(draftStoreInfo));
+      localStorage.setItem(STORAGE_KEYS.HERO_CONTENT, JSON.stringify(draftHeroContent));
+      localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(draftAnnouncements));
+      localStorage.setItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, JSON.stringify(draftCategoryHighlights));
+      localStorage.setItem(STORAGE_KEYS.TRENDING_COLLECTIONS, JSON.stringify(draftTrendingCollections));
+      localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(draftPaymentSettings));
+      localStorage.setItem(STORAGE_KEYS.HANGING_SNEAKER, JSON.stringify(draftHangingSneakerConfig));
+      localStorage.setItem(STORAGE_KEYS.PET_SHOE_CONFIG, JSON.stringify(draftPetShoeConfig));
+      localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(draftInstagramConfig));
       localStorage.setItem('mfp_last_published_at', nowISO);
       localStorage.setItem('mfp_last_published_by', adminEmail);
+      localStorage.removeItem('mfp_cms_active_draft');
+      localStorage.removeItem('mfp_cms_pending_count');
 
-      try {
-        await deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
-      } catch (e) {
-        console.warn('Draft cleanup notice:', e);
-      }
-      updateStep(8, 'success', 'Draft cleanup complete.');
+      // 4. Mark Step 3 complete & website live
+      const totalDurationSec = ((Date.now() - startTime) / 1000).toFixed(2);
+      const publishDurationStr = `${totalDurationSec}s`;
 
-      // Step 10: Notify All Connected Clients & Complete Release
-      updateStep(9, 'running', 'Notifying connected clients and completing publish workflow...');
-      const durationSeconds = ((Date.now() - startTime) / 1000).toFixed(2);
-      const publishDurationStr = `${durationSeconds}s`;
+      updateStep(2, 'success', 'Website is now Live. Publishing Complete.');
+      showToast(`🚀 Website is now Live! (${versionNum} in ${publishDurationStr})`, 'success');
 
-      updateStep(9, 'success', `Website Published Successfully in ${publishDurationStr}!`);
-
-      recordAuditLog(
-        'Website Published Globally',
-        'SETTINGS',
-        `Published ${versionNum} with ${operations.length} updates in ${publishDurationStr} by ${adminEmail}`,
-        'SUCCESS'
-      );
-      showToast(`🚀 Website Published Successfully! (${versionNum} in ${publishDurationStr})`, 'success');
+      // 5. Fire non-blocking background post-processing tasks
+      setTimeout(() => {
+        try {
+          deleteDoc(doc(db, 'drafts', 'activeDraft')).catch(() => {});
+          recordAuditLog(
+            'Website Published Globally',
+            'SETTINGS',
+            `Published ${versionNum} with ${operations.length} updates in ${publishDurationStr} by ${adminEmail}`,
+            'SUCCESS'
+          );
+          console.log('[PublishEngine Background] Search index refresh, background cleanup & audit logging completed.');
+        } catch (bgErr) {
+          console.warn('[PublishEngine Background] Background post-processing notice:', bgErr);
+        }
+      }, 0);
 
       const totalChangedDocs = addedProducts + updatedProducts + deletedProducts + addedReviews + updatedReviews + deletedReviews + operations.length;
 

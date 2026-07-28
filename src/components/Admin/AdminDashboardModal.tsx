@@ -145,7 +145,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setPublishResult(null);
     setPublishProgress({
       currentStep: 1,
-      totalSteps: 10,
+      totalSteps: 3,
       stepName: 'Preparing & Validating Draft Data...',
       percentage: 5,
       logs: [],
@@ -1690,7 +1690,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] text-neutral-500 font-medium">
-                    <span>Step {publishProgress?.currentStep || 1} of 10</span>
+                    <span>Step {publishProgress?.currentStep || 1} of {publishProgress?.totalSteps || 3}</span>
                     <span className="font-semibold text-emerald-700">Atomic WriteBatch Active</span>
                   </div>
                 </div>

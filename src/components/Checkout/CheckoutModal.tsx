@@ -64,6 +64,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     updateCustomerMarketingConsent,
     coupons,
     validateCoupon,
+    triggerGlobalCelebration,
   } = useStore();
 
   const [step, setStep] = useState<CheckoutStep>('SHIPPING');
@@ -367,6 +368,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Auto-apply coupons if available, eligible and no coupon is manually applied
   useEffect(() => {
     if (isOpen && coupons && coupons.length > 0 && !appliedCoupon) {
+      // Prioritize scratched coupon code if found in local storage
+      const scratchedCode = localStorage.getItem('mfp_scratched_coupon');
+      if (scratchedCode) {
+        const valResult = validateCoupon(scratchedCode, cartItems);
+        if (valResult.valid) {
+          handleApplyCoupon(scratchedCode);
+          localStorage.removeItem('mfp_scratched_coupon');
+          return;
+        }
+      }
+
       const autoCoupons = coupons.filter(c => c.status === 'active' && c.autoApply);
       let bestCoupon: import('../../types').PromoCoupon | null = null;
       let bestDiscount = -1;
@@ -648,6 +660,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         setCreatedOrder(matchedOrder);
         setStep('SUCCESS');
+        triggerGlobalCelebration();
         onOrderComplete(res.orderId);
       } else {
         setFailedReason(res.message || 'Payment verification failed. Please verify your reference details.');

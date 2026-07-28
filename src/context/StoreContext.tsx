@@ -36,6 +36,9 @@ import {
   SocialAnalyticsLog,
   PromoCoupon,
   CouponType,
+  ScratchReward,
+  ScratchWinConfig,
+  OrderCelebrationConfig,
 } from '../types';
 import {
   PRODUCTS_DATA,
@@ -241,9 +244,114 @@ interface StoreContextType {
   duplicateCoupon: (id: string) => Promise<boolean>;
   validateCoupon: (code: string, cartItems: CartItem[]) => { valid: boolean; reason?: string; discountAmount?: number; freeShipping?: boolean; freeGift?: boolean; giftName?: string; eligibleProductIds?: string[] };
   trackCouponUse: (code: string, success: boolean, revenue?: number, discount?: number) => Promise<void>;
+
+  // Customer Engagement Settings
+  scratchWinConfig: ScratchWinConfig;
+  updateScratchWinConfig: (updated: Partial<ScratchWinConfig>) => Promise<boolean>;
+  orderCelebrationConfig: OrderCelebrationConfig;
+  updateOrderCelebrationConfig: (updated: Partial<OrderCelebrationConfig>) => Promise<boolean>;
+  isCelebrating: boolean;
+  setIsCelebrating: (celebrating: boolean) => void;
+  triggerGlobalCelebration: () => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
+
+const DEFAULT_SCRATCH_WIN_CONFIG: ScratchWinConfig = {
+  enabled: true,
+  permanentlyDisabled: false,
+  startDate: '',
+  endDate: '',
+  dailyActiveHoursStart: '00:00',
+  dailyActiveHoursEnd: '23:59',
+  firstVisitOnly: false,
+  firstOrderOnly: false,
+  festivalOnly: false,
+  newCustomerOnly: false,
+  returningCustomerOnly: false,
+  minCartValue: 0,
+  showAfterSeconds: 5,
+  showAfterPageViews: 1,
+  showExitIntent: false,
+  showOnHomepage: true,
+  showOnProductPage: true,
+  showOnCheckout: true,
+  rewards: [
+    {
+      id: 'reward-10-percent',
+      name: '10% OFF',
+      type: 'PERCENTAGE',
+      value: 10,
+      probability: 25,
+      usageLimit: 100,
+      usageCount: 0,
+      perCustomerLimit: 1,
+      expiryDate: '',
+      couponCode: 'SCRATCH10'
+    },
+    {
+      id: 'reward-15-percent',
+      name: '15% OFF',
+      type: 'PERCENTAGE',
+      value: 15,
+      probability: 15,
+      usageLimit: 50,
+      usageCount: 0,
+      perCustomerLimit: 1,
+      expiryDate: '',
+      couponCode: 'SCRATCH15'
+    },
+    {
+      id: 'reward-100-flat',
+      name: '₹100 OFF',
+      type: 'FLAT',
+      value: 100,
+      probability: 20,
+      usageLimit: 100,
+      usageCount: 0,
+      perCustomerLimit: 1,
+      expiryDate: '',
+      couponCode: 'SCRATCH100'
+    },
+    {
+      id: 'reward-free-shipping',
+      name: 'Free Delivery',
+      type: 'FREE_SHIPPING',
+      value: 0,
+      probability: 15,
+      usageLimit: 200,
+      usageCount: 0,
+      perCustomerLimit: 1,
+      expiryDate: '',
+      couponCode: 'FREESHIP'
+    },
+    {
+      id: 'reward-better-luck',
+      name: 'Better Luck Next Time',
+      type: 'NONE',
+      value: 0,
+      probability: 25,
+      usageLimit: 0,
+      usageCount: 0,
+      perCustomerLimit: 0,
+      expiryDate: '',
+      couponCode: ''
+    }
+  ]
+};
+
+const DEFAULT_ORDER_CELEBRATION_CONFIG: OrderCelebrationConfig = {
+  enabled: true,
+  confetti: true,
+  sparkles: true,
+  balloons: true,
+  sound: true,
+  successAnimation: true,
+  duration: 5,
+  speed: 'medium',
+  mobileOnly: false,
+  desktopOnly: false
+};
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Real-time Live State
@@ -369,6 +477,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Marketing
   const [campaigns, setCampaigns] = useState<MarketingCampaign[]>([]);
   const [subscribers, setSubscribers] = useState<MarketingSubscriber[]>([]);
+
+  // Customer Engagement State
+  const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(() => {
+    const local = localStorage.getItem('mfp_scratch_win_config');
+    return local ? JSON.parse(local) : DEFAULT_SCRATCH_WIN_CONFIG;
+  });
+
+  const [orderCelebrationConfig, setOrderCelebrationConfig] = useState<OrderCelebrationConfig>(() => {
+    const local = localStorage.getItem('mfp_order_celebration_config');
+    return local ? JSON.parse(local) : DEFAULT_ORDER_CELEBRATION_CONFIG;
+  });
+
+  const [isCelebrating, setIsCelebrating] = useState<boolean>(false);
 
   // Audit Logger Helper
   const recordAuditLog = (
@@ -507,6 +628,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(data));
           }
         }, (err) => console.warn('Live store settings listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'scratchWin'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as ScratchWinConfig;
+            setScratchWinConfig(data);
+            localStorage.setItem('mfp_scratch_win_config', JSON.stringify(data));
+          }
+        }, (err) => console.warn('Live scratch win listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'orderCelebration'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as OrderCelebrationConfig;
+            setOrderCelebrationConfig(data);
+            localStorage.setItem('mfp_order_celebration_config', JSON.stringify(data));
+          }
+        }, (err) => console.warn('Live order celebration listener notice:', err))
       );
 
       unsubscribers.push(
@@ -1833,6 +1974,45 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     recordAuditLog('Factory Reset Performed', 'SECURITY', 'Restored store defaults', 'DANGER');
   };
 
+  const updateScratchWinConfig = async (updated: Partial<ScratchWinConfig>): Promise<boolean> => {
+    try {
+      const next = { ...scratchWinConfig, ...updated };
+      setScratchWinConfig(next);
+      localStorage.setItem('mfp_scratch_win_config', JSON.stringify(next));
+      await setDoc(doc(db, 'settings', 'scratchWin'), next);
+      recordAuditLog('Updated Scratch & Win Config', 'SETTINGS', 'Successfully updated Scratch & Win promotion settings', 'SUCCESS');
+      showToast('Scratch & Win settings saved successfully', 'success');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to save Scratch & Win settings', 'error');
+      return false;
+    }
+  };
+
+  const updateOrderCelebrationConfig = async (updated: Partial<OrderCelebrationConfig>): Promise<boolean> => {
+    try {
+      const next = { ...orderCelebrationConfig, ...updated };
+      setOrderCelebrationConfig(next);
+      localStorage.setItem('mfp_order_celebration_config', JSON.stringify(next));
+      await setDoc(doc(db, 'settings', 'orderCelebration'), next);
+      recordAuditLog('Updated Order Celebration Config', 'SETTINGS', 'Successfully updated Order Success Celebration settings', 'SUCCESS');
+      showToast('Order Celebration settings saved successfully', 'success');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to save Order Celebration settings', 'error');
+      return false;
+    }
+  };
+
+  const triggerGlobalCelebration = () => {
+    if (orderCelebrationConfig.enabled) {
+      setIsCelebrating(true);
+      setTimeout(() => setIsCelebrating(false), (orderCelebrationConfig.duration || 5) * 1000);
+    }
+  };
+
   return (
     <StoreContext.Provider
       value={{
@@ -1871,6 +2051,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateSocialMediaConfig,
         socialAnalytics,
         recordSocialClick,
+
+        // Customer Engagement
+        scratchWinConfig,
+        updateScratchWinConfig,
+        orderCelebrationConfig,
+        updateOrderCelebrationConfig,
+        isCelebrating,
+        setIsCelebrating,
+        triggerGlobalCelebration,
 
         // Legacy compatibility properties (Stubbed)
         hasPendingDraft: false,

@@ -800,5 +800,54 @@ export interface PromoCoupon {
   createdAt: string;
 }
 
+export interface ScratchReward {
+  id: string;
+  name: string;
+  type: CouponType | 'NONE';
+  value: number;
+  probability: number;
+  usageLimit: number;
+  usageCount: number;
+  perCustomerLimit: number;
+  expiryDate: string; // empty means no expiry, or X days, or absolute date
+  couponCode: string;
+}
+
+export interface ScratchWinConfig {
+  enabled: boolean;
+  permanentlyDisabled: boolean;
+  startDate: string;
+  endDate: string;
+  dailyActiveHoursStart: string;
+  dailyActiveHoursEnd: string;
+  firstVisitOnly: boolean;
+  firstOrderOnly: boolean;
+  festivalOnly: boolean;
+  newCustomerOnly: boolean;
+  returningCustomerOnly: boolean;
+  minCartValue: number;
+  showAfterSeconds: number;
+  showAfterPageViews: number;
+  showExitIntent: boolean;
+  showOnHomepage: boolean;
+  showOnProductPage: boolean;
+  showOnCheckout: boolean;
+  rewards: ScratchReward[];
+}
+
+export interface OrderCelebrationConfig {
+  enabled: boolean;
+  confetti: boolean;
+  sparkles: boolean;
+  balloons: boolean;
+  sound: boolean;
+  successAnimation: boolean;
+  duration: number; // in seconds
+  speed: 'slow' | 'medium' | 'fast';
+  mobileOnly: boolean;
+  desktopOnly: boolean;
+}
+
+
 
 

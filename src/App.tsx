@@ -30,6 +30,8 @@ import { GmailInquiryModal } from './components/GoogleWorkspace/GmailInquiryModa
 import { WorkspaceHubDrawer } from './components/GoogleWorkspace/WorkspaceHubDrawer';
 import { ProductDetailPage } from './components/Products/ProductDetailPage';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ScratchCardPopup } from './components/Promo/ScratchCardPopup';
+import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebration';
 
 import { useStore } from './context/StoreContext';
 import { Product, FilterState, GenderCategory, CartItem } from './types';
@@ -84,6 +86,11 @@ function AppContent() {
 
   // --- DYNAMIC PUBLIC PRODUCT URL ROUTING ---
   const [productRouteSlug, setProductRouteSlug] = useState<string | null>(null);
+
+  const scratchCurrentPath = productRouteSlug ? `/product/${productRouteSlug}` : checkoutModalOpen ? '/checkout' : '/';
+  const scratchCartSubtotal = useMemo(() => {
+    return cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+  }, [cartItems]);
 
   React.useEffect(() => {
     const handleUrlChange = () => {
@@ -622,6 +629,12 @@ function AppContent() {
           <span className="text-xs font-bold leading-tight">{toastMessage.text}</span>
         </div>
       )}
+
+      {/* Scratch & Win Popup Overlay */}
+      <ScratchCardPopup currentPath={scratchCurrentPath} cartSubtotal={scratchCartSubtotal} />
+
+      {/* Order Success Celebration Visual Effects Canvas Overlay */}
+      <OrderSuccessCelebration />
     </div>
   );
 }

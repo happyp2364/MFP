@@ -36,6 +36,7 @@ interface CheckoutModalProps {
   onClose: () => void;
   cartItems: CartItem[];
   onOrderComplete: (orderId: string) => void;
+  buyNowItem?: CartItem | null;
 }
 
 export type CheckoutStep =
@@ -50,6 +51,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onClose,
   cartItems,
   onOrderComplete,
+  buyNowItem = null,
 }) => {
   const { paymentSettings, customerProfile, placeOrderAndPay, storeInfo, orders, updateCustomerMarketingConsent } = useStore();
 
@@ -131,8 +133,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   if (!isOpen) return null;
 
+  const checkoutItems = buyNowItem ? [buyNowItem] : cartItems;
+
   // Price calculations
-  const subtotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+  const subtotal = checkoutItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
   const shippingFee = subtotal >= (paymentSettings.freeShippingMinAmount || 999) ? 0 : paymentSettings.flatShippingRate || 0;
   const gstPercent = paymentSettings.gstPercent || 5;
   const taxAmount = Math.round((subtotal * gstPercent) / 100);
@@ -295,7 +299,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
       const res = await placeOrderAndPay(
         shippingInfo,
-        cartItems,
+        checkoutItems,
         subtotal,
         shippingFee,
         0,
@@ -317,7 +321,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           customerPhone: shippingInfo.phone,
           customerEmail: shippingInfo.email,
           shippingAddress: shippingInfo,
-          items: cartItems,
+          items: checkoutItems,
           subtotal,
           shippingFee,
           discountAmount: 0,
@@ -709,7 +713,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* Price Summary */}
             <div className="mt-4 p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-1.5">
               <div className="flex justify-between text-neutral-600">
-                <span>Subtotal ({cartItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
+                <span>Subtotal ({checkoutItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
                 <span>₹{subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-neutral-600">

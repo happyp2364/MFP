@@ -259,6 +259,22 @@ export interface PaymentSettings {
   enableConvenienceFee?: boolean;
   convenienceFeePercent?: number;
   applyFeeToOnlineOnly?: boolean;
+
+  // Premium Single Product Purchase Flow & Customizable Checkout Buttons
+  enableBuyNow?: boolean;
+  enableBuyOnWhatsApp?: boolean;
+  enableAddToBag?: boolean;
+  enableCashfree?: boolean;
+  buttonOrder?: string[];
+  buyNowColor?: string;
+  buyWhatsappColor?: string;
+  addBagColor?: string;
+  buyNowTextColor?: string;
+  buyWhatsappTextColor?: string;
+  addBagTextColor?: string;
+  buyNowText?: string;
+  buyWhatsappText?: string;
+  addBagText?: string;
 }
 
 export interface ShippingAddressInfo {
@@ -591,4 +607,40 @@ export interface PublishResult {
   commitDuration?: string;
   writeCount?: number;
 }
+
+// DYNAMIC WEBSITE MOOD ENGINE TYPES
+export type MoodType =
+  | 'morning'
+  | 'afternoon'
+  | 'evening'
+  | 'night'
+  | 'rain'
+  | 'diwali'
+  | 'christmas'
+  | 'holi'
+  | 'new_year'
+  | 'independence_day'
+  | 'custom';
+
+export interface ScheduledThemeConfig {
+  enabled: boolean;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  theme: MoodType;
+}
+
+export interface MoodConfig {
+  isDynamicMoodEnabled: boolean;
+  overrideMode: 'none' | MoodType;
+  activeFestival: 'none' | 'diwali' | 'christmas' | 'holi' | 'new_year' | 'independence_day';
+  customBackgroundUrl: string;
+  customAnimationType: 'none' | 'dust' | 'stars' | 'rain' | 'snow' | 'diyas' | 'lanterns' | 'confetti' | 'colors' | 'balloons';
+  customSoundUrl: string;
+  scheduledTheme: ScheduledThemeConfig;
+  audioVolume: number; // 0 - 100
+  enableAudio: boolean; // Play ambient audio loops
+  lowEndReduction: boolean; // Optimization toggle
+  particleDensity: number; // multiplier, 0.1 to 2.0
+}
+
 

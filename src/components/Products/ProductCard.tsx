@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Eye, MessageCircle, Star, Sparkles, Flame, Bell, ImageOff } from 'lucide-react';
+import { Heart, Eye, MessageCircle, Star, Sparkles, Flame, Bell, ImageOff, CreditCard, ShoppingBag } from 'lucide-react';
 import { Product } from '../../types';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
@@ -16,6 +16,7 @@ interface ProductCardProps {
   onToggleWishlist: (product: Product) => void;
   isWishlisted: boolean;
   onAddToCart?: (product: Product, size: string, color: string) => void;
+  onBuyNow?: (product: Product, size: string, color: string) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -23,10 +24,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onQuickView,
   onToggleWishlist,
   isWishlisted,
+  onAddToCart,
+  onBuyNow,
 }) => {
-  const { playSiteSound } = useStore();
+  const { playSiteSound, paymentSettings, showToast } = useStore();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
+  const [addedNotice, setAddedNotice] = useState(false);
   const sizeStocks = normalizeProductSizeStocks(product);
   const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
 
@@ -280,7 +284,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             )}
           </div>
 
-          {/* Prominent BUY / NOTIFY ON WHATSAPP Button */}
+          {/* Customizable Dynamic CTA Buttons Grid */}
           {isCompletelyOutOfStock ? (
             <button
               onClick={handleWhatsAppBuy}
@@ -289,15 +293,121 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <Bell className="w-4 h-4 fill-white text-amber-600" />
               <span>NOTIFY ON WHATSAPP</span>
             </button>
-          ) : (
-            <button
-              onClick={handleWhatsAppBuy}
-              className="w-full bg-[#0B8F63] hover:bg-[#086F4C] text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-md shadow-[#0B8F63]/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <MessageCircle className="w-4 h-4 fill-white text-[#0B8F63]" />
-              <span>BUY ON WHATSAPP</span>
-            </button>
-          )}
+          ) : (() => {
+            const buyNowText = paymentSettings.buyNowText || 'Buy Now';
+            const buyWhatsappText = paymentSettings.buyWhatsappText || 'Buy on WhatsApp';
+            const addBagText = addedNotice ? '✓ Added' : (paymentSettings.addBagText || 'Add to Bag');
+
+            const buyNowColor = paymentSettings.buyNowColor || '#000000';
+            const buyWhatsappColor = paymentSettings.buyWhatsappColor || '#25D366';
+            const addBagColor = paymentSettings.addBagColor || '#FFFFFF';
+
+            const buyNowTextColor = paymentSettings.buyNowTextColor || '#FFFFFF';
+            const buyWhatsappTextColor = paymentSettings.buyWhatsappTextColor || '#FFFFFF';
+            const addBagTextColor = paymentSettings.addBagTextColor || '#000000';
+
+            const enableBuyNow = paymentSettings.enableBuyNow !== false;
+            const enableBuyOnWhatsApp = paymentSettings.enableBuyOnWhatsApp !== false;
+            const enableAddToBag = paymentSettings.enableAddToBag !== false;
+
+            const buttonOrder = paymentSettings.buttonOrder || ['buy_now', 'buy_whatsapp', 'add_bag'];
+
+            const handleBuyNow = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              playSiteSound('checkoutOpen');
+              if (onBuyNow) {
+                onBuyNow(product, selectedSize, selectedColor);
+              } else {
+                showToast('Buy Now helper is not provided.', 'error');
+              }
+            };
+
+            const handleAddBag = (e: React.MouseEvent) => {
+              e.stopPropagation();
+              playSiteSound('addToCart');
+              if (onAddToCart) {
+                onAddToCart(product, selectedSize, selectedColor);
+              } else {
+                showToast('Add to Bag helper is not provided.', 'error');
+              }
+              setAddedNotice(true);
+              setTimeout(() => setAddedNotice(false), 2000);
+            };
+
+            const buttonConfigs = {
+              buy_now: enableBuyNow && (
+                <button
+                  key="buy_now"
+                  onClick={handleBuyNow}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wide shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  style={{
+                    backgroundColor: buyNowColor,
+                    color: buyNowTextColor,
+                  }}
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>{buyNowText}</span>
+                </button>
+              ),
+              buy_whatsapp: enableBuyOnWhatsApp && (
+                <button
+                  key="buy_whatsapp"
+                  onClick={handleWhatsAppBuy}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wide shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  style={{
+                    backgroundColor: buyWhatsappColor,
+                    color: buyWhatsappTextColor,
+                  }}
+                >
+                  <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                  <span>{buyWhatsappText}</span>
+                </button>
+              ),
+              add_bag: enableAddToBag && (
+                <button
+                  key="add_bag"
+                  onClick={handleAddBag}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wide border border-neutral-200/60 shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  style={{
+                    backgroundColor: addBagColor,
+                    color: addBagTextColor,
+                  }}
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <span>{addBagText}</span>
+                </button>
+              ),
+            };
+
+            const renderedButtons = buttonOrder
+              .map(key => buttonConfigs[key as keyof typeof buttonConfigs])
+              .filter(Boolean);
+
+            if (renderedButtons.length === 0) return null;
+            
+            if (renderedButtons.length === 1) {
+              return <div className="w-full">{renderedButtons[0]}</div>;
+            }
+            
+            if (renderedButtons.length === 2) {
+              return (
+                <div className="grid grid-cols-2 gap-1.5 w-full">
+                  {renderedButtons[0]}
+                  {renderedButtons[1]}
+                </div>
+              );
+            }
+            
+            return (
+              <div className="flex flex-col gap-1.5 w-full">
+                <div>{renderedButtons[0]}</div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {renderedButtons[1]}
+                  {renderedButtons[2]}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

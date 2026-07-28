@@ -45,6 +45,7 @@ import {
   Terminal,
   Check,
   XCircle,
+  Palette,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
@@ -60,6 +61,7 @@ import { InstagramSettingsView } from './InstagramSettingsView';
 import { MarketingCenterView } from './MarketingCenterView';
 import { VersionHistoryView } from './VersionHistoryView';
 import { HeroSectionManagerView } from './HeroSectionManagerView';
+import { WebsiteMoodManagerView } from './WebsiteMoodManagerView';
 import { SmartProductFormModal } from './SmartProductFormModal';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { validateFileUpload } from '../../lib/security';
@@ -70,7 +72,7 @@ interface AdminDashboardModalProps {
   onClose: () => void;
 }
 
-type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions';
+type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'mood_engine' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -640,6 +642,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('mood_engine')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'mood_engine'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Palette className="w-4 h-4 text-amber-500" />
+              <span>Website Mood Manager</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('categories')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'categories'
@@ -775,6 +789,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: LIVE INSTAGRAM INTEGRATION ----------------- */}
             {activeTab === 'instagram' && <InstagramSettingsView />}
+
+            {/* ----------------- TAB: WEBSITE MOOD ENGINE ----------------- */}
+            {activeTab === 'mood_engine' && <WebsiteMoodManagerView />}
 
             {/* ----------------- TAB: PRODUCTS & PRICES ----------------- */}
             {activeTab === 'products' && (

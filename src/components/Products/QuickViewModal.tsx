@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Heart, MessageCircle, Star, Sparkles, ShieldCheck, Truck, RotateCcw, ShoppingBag, Bell, ImageOff, Share2, Copy, Check } from 'lucide-react';
+import { X, Heart, MessageCircle, Star, Sparkles, ShieldCheck, Truck, RotateCcw, ShoppingBag, Bell, ImageOff, Share2, Copy, Check, CreditCard } from 'lucide-react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
@@ -18,6 +18,7 @@ interface QuickViewModalProps {
   onToggleWishlist: (product: Product) => void;
   isWishlisted: boolean;
   onAddToCart: (product: Product, size: string, color: string) => void;
+  onBuyNow?: (product: Product, size: string, color: string) => void;
 }
 
 export const QuickViewModal: React.FC<QuickViewModalProps> = ({
@@ -26,6 +27,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   onToggleWishlist,
   isWishlisted,
   onAddToCart,
+  onBuyNow,
 }) => {
   const { paymentSettings } = useStore();
 
@@ -355,7 +357,6 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
           {/* Action CTAs */}
           <div className="space-y-3 pt-4 border-t border-neutral-200">
-            {/* Direct WhatsApp Order / Notify CTA */}
             {isCompletelyOutOfStock || isSelectedSizeOutOfStock ? (
               <button
                 onClick={handleWhatsAppBuy}
@@ -364,28 +365,91 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 <Bell className="w-5 h-5 fill-white text-amber-600" />
                 <span>NOTIFY ME ON WHATSAPP (RESTOCK INQUIRY)</span>
               </button>
-            ) : (
-              <button
-                onClick={handleWhatsAppBuy}
-                className="w-full bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-sm py-3.5 px-6 rounded-2xl shadow-lg shadow-[#0B8F63]/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <MessageCircle className="w-5 h-5 fill-white text-[#0B8F63]" />
-                <span>BUY ON WHATSAPP</span>
-              </button>
-            )}
+            ) : (() => {
+              const buyNowText = paymentSettings.buyNowText || 'Buy Now';
+              const buyWhatsappText = paymentSettings.buyWhatsappText || 'Buy on WhatsApp';
+              const addBagText = addedNotice ? '✓ Added' : (paymentSettings.addBagText || 'Add to Bag');
 
-            {/* Save to Order Bag & Wishlist Buttons */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={handleAddBag}
-                className="w-full bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>{addedNotice ? 'Added to Bag!' : 'Add to Bag'}</span>
-              </button>
+              const buyNowColor = paymentSettings.buyNowColor || '#000000';
+              const buyWhatsappColor = paymentSettings.buyWhatsappColor || '#25D366';
+              const addBagColor = paymentSettings.addBagColor || '#000000';
 
+              const buyNowTextColor = paymentSettings.buyNowTextColor || '#FFFFFF';
+              const buyWhatsappTextColor = paymentSettings.buyWhatsappTextColor || '#FFFFFF';
+              const addBagTextColor = paymentSettings.addBagTextColor || '#FFFFFF';
+
+              const enableBuyNow = paymentSettings.enableBuyNow !== false;
+              const enableBuyOnWhatsApp = paymentSettings.enableBuyOnWhatsApp !== false;
+              const enableAddToBag = paymentSettings.enableAddToBag !== false;
+
+              const buttonOrder = paymentSettings.buttonOrder || ['buy_now', 'buy_whatsapp', 'add_bag'];
+
+              const handleBuyNow = () => {
+                if (!product) return;
+                if (onBuyNow) {
+                  onBuyNow(product, selectedSize, selectedColor);
+                }
+              };
+
+              const buttonConfigs = {
+                buy_now: enableBuyNow && (
+                  <button
+                    key="buy_now"
+                    onClick={handleBuyNow}
+                    className="w-full text-white font-extrabold text-sm py-3 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                    style={{
+                      backgroundColor: buyNowColor,
+                      color: buyNowTextColor,
+                    }}
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>{buyNowText}</span>
+                  </button>
+                ),
+                buy_whatsapp: enableBuyOnWhatsApp && (
+                  <button
+                    key="buy_whatsapp"
+                    onClick={handleWhatsAppBuy}
+                    className="w-full text-white font-extrabold text-sm py-3 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                    style={{
+                      backgroundColor: buyWhatsappColor,
+                      color: buyWhatsappTextColor,
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4 fill-current" />
+                    <span>{buyWhatsappText}</span>
+                  </button>
+                ),
+                add_bag: enableAddToBag && (
+                  <button
+                    key="add_bag"
+                    onClick={handleAddBag}
+                    className="w-full font-extrabold text-sm py-3 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer border border-neutral-200/50"
+                    style={{
+                      backgroundColor: addBagColor,
+                      color: addBagTextColor,
+                    }}
+                  >
+                    <ShoppingBag className="w-4 h-4" />
+                    <span>{addBagText}</span>
+                  </button>
+                ),
+              };
+
+              const renderedButtons = buttonOrder
+                .map(key => buttonConfigs[key as keyof typeof buttonConfigs])
+                .filter(Boolean);
+
+              return (
+                <div className="flex flex-col gap-2">
+                  {renderedButtons}
+                </div>
+              );
+            })()}
+
+            <div className="pt-1">
               <button
-                onClick={() => onToggleWishlist(product)}
+                onClick={() => product && onToggleWishlist(product)}
                 className={`w-full font-bold text-xs py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-colors ${
                   isWishlisted
                     ? 'bg-rose-50 border-rose-200 text-rose-600'

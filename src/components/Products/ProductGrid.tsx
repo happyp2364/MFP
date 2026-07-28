@@ -14,6 +14,7 @@ interface ProductGridProps {
   onToggleWishlist: (product: Product) => void;
   onQuickView: (product: Product) => void;
   onAddToCart: (product: Product, size: string, color: string) => void;
+  onBuyNow?: (product: Product, size: string, color: string) => void;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
@@ -26,6 +27,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   onToggleWishlist,
   onQuickView,
   onAddToCart,
+  onBuyNow,
 }) => {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -161,6 +163,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                     onToggleWishlist={onToggleWishlist}
                     isWishlisted={wishlistIds.includes(product.id)}
                     onAddToCart={onAddToCart}
+                    onBuyNow={onBuyNow}
                   />
                 ))}
               </div>

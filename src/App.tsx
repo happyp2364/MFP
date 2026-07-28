@@ -66,6 +66,7 @@ function AppContent() {
       },
     ] : []
   );
+  const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(null);
 
   // Modals
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
@@ -205,6 +206,22 @@ function AppContent() {
         },
       ];
     });
+  };
+
+  const [isBuyNowProcessing, setIsBuyNowProcessing] = useState(false);
+  const handleBuyNow = (product: Product, size: string, color: string) => {
+    if (isBuyNowProcessing) return;
+    setIsBuyNowProcessing(true);
+    setBuyNowItem({
+      product,
+      selectedSize: size || product.sizes[0] || 'Standard',
+      selectedColor: color || (product.colors[0] ? product.colors[0].name : 'Standard'),
+      quantity: 1,
+    });
+    setCheckoutModalOpen(true);
+    setTimeout(() => {
+      setIsBuyNowProcessing(false);
+    }, 1000);
   };
 
   const handleUpdateCartQuantity = (id: string, size: string, color: string, qty: number) => {
@@ -383,6 +400,7 @@ function AppContent() {
           onAddToCart={handleAddToCart}
           onQuickView={(p) => setQuickViewProduct(p)}
           wishlistIds={wishlistIds}
+          onBuyNow={handleBuyNow}
         />
       ) : (
         <>
@@ -404,6 +422,7 @@ function AppContent() {
             onToggleWishlist={handleToggleWishlist}
             onQuickView={(p) => setQuickViewProduct(p)}
             onAddToCart={handleAddToCart}
+            onBuyNow={handleBuyNow}
           />
 
           {/* 6. Main Interactive Product Catalog */}
@@ -417,6 +436,7 @@ function AppContent() {
             onToggleWishlist={handleToggleWishlist}
             onQuickView={(p) => setQuickViewProduct(p)}
             onAddToCart={handleAddToCart}
+            onBuyNow={handleBuyNow}
           />
 
           {/* 7. Trending Collections */}
@@ -431,6 +451,7 @@ function AppContent() {
             onToggleWishlist={handleToggleWishlist}
             onQuickView={(p) => setQuickViewProduct(p)}
             onAddToCart={handleAddToCart}
+            onBuyNow={handleBuyNow}
           />
 
           {/* 9. Customer Testimonials */}
@@ -473,6 +494,7 @@ function AppContent() {
         onToggleWishlist={handleToggleWishlist}
         isWishlisted={quickViewProduct ? wishlistIds.includes(quickViewProduct.id) : false}
         onAddToCart={handleAddToCart}
+        onBuyNow={handleBuyNow}
       />
 
       {/* Order Bag Sheet Drawer */}
@@ -489,10 +511,17 @@ function AppContent() {
       {/* Online Checkout Modal (UPI/QR, Cards, Netbanking) */}
       <CheckoutModal
         isOpen={checkoutModalOpen}
-        onClose={() => setCheckoutModalOpen(false)}
+        onClose={() => {
+          setCheckoutModalOpen(false);
+          setBuyNowItem(null);
+        }}
         cartItems={cartItems}
+        buyNowItem={buyNowItem}
         onOrderComplete={(orderId) => {
-          setCartItems([]);
+          if (!buyNowItem) {
+            setCartItems([]);
+          }
+          setBuyNowItem(null);
           setCheckoutModalOpen(false);
           setCustomerAccountOpen(true);
         }}

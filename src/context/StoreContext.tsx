@@ -389,14 +389,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [rawLiveProducts, setRawLiveProducts] = useState<any[]>([]);
   const [liveGalleries, setLiveGalleries] = useState<Record<string, any>>({});
   const [liveVariants, setLiveVariants] = useState<Record<string, any>>({});
-  const [liveAiMetadata, setLiveAiMetadata] = useState<Record<string, any>>({});
-  const [liveGalleryParts, setLiveGalleryParts] = useState<Record<string, any>>({});
+  const [liveProductReviews, setLiveProductReviews] = useState<Record<string, any>>({});
+  const [liveAi, setLiveAi] = useState<Record<string, any>>({});
+  const [liveSeo, setLiveSeo] = useState<Record<string, any>>({});
+  const [liveStatistics, setLiveStatistics] = useState<Record<string, any>>({});
+  const [liveRelated, setLiveRelated] = useState<Record<string, any>>({});
+  const [liveShipping, setLiveShipping] = useState<Record<string, any>>({});
 
   const [rawDraftProducts, setRawDraftProducts] = useState<any[]>([]);
   const [draftGalleries, setDraftGalleries] = useState<Record<string, any>>({});
   const [draftVariants, setDraftVariants] = useState<Record<string, any>>({});
-  const [draftAiMetadata, setDraftAiMetadata] = useState<Record<string, any>>({});
-  const [draftGalleryParts, setDraftGalleryParts] = useState<Record<string, any>>({});
+  const [draftProductReviews, setDraftProductReviews] = useState<Record<string, any>>({});
+  const [draftAi, setDraftAi] = useState<Record<string, any>>({});
+  const [draftSeo, setDraftSeo] = useState<Record<string, any>>({});
+  const [draftStatistics, setDraftStatistics] = useState<Record<string, any>>({});
+  const [draftRelated, setDraftRelated] = useState<Record<string, any>>({});
+  const [draftShipping, setDraftShipping] = useState<Record<string, any>>({});
 
   const [publishedReviews, setPublishedReviews] = useState<Review[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.REVIEWS);
@@ -1261,8 +1269,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     let unsubProducts: any = null;
     let unsubGallery: any = null;
     let unsubVariants: any = null;
-    let unsubAiMetadata: any = null;
-    let unsubGalleryParts: any = null;
+    let unsubReviews: any = null;
+    let unsubAi: any = null;
+    let unsubSeo: any = null;
+    let unsubStatistics: any = null;
+    let unsubRelated: any = null;
+    let unsubShipping: any = null;
 
     try {
       unsubProducts = onSnapshot(collection(db, 'products'), async (snapshot) => {
@@ -1281,10 +1293,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               batch.set(doc(db, 'products', p.id), split.metadata);
               batch.set(doc(db, 'product_gallery', p.id), split.gallery);
               batch.set(doc(db, 'product_variants', p.id), split.variants);
-              batch.set(doc(db, 'product_ai_metadata', p.id), split.aiMetadata);
-              for (const part of split.galleryParts) {
-                batch.set(doc(db, 'product_gallery_parts', part.id), part);
-              }
+              batch.set(doc(db, 'product_reviews', p.id), split.reviews);
+              batch.set(doc(db, 'product_ai', p.id), split.ai);
+              batch.set(doc(db, 'product_seo', p.id), split.seo);
+              batch.set(doc(db, 'product_statistics', p.id), split.statistics);
+              batch.set(doc(db, 'product_related', p.id), split.related);
+              batch.set(doc(db, 'product_shipping', p.id), split.shipping);
             }
             await batch.commit();
           } catch (seedErr) {
@@ -1311,20 +1325,52 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setLiveVariants(map);
       });
 
-      unsubAiMetadata = onSnapshot(collection(db, 'product_ai_metadata'), (snapshot) => {
+      unsubReviews = onSnapshot(collection(db, 'product_reviews'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => {
           map[docSnap.id] = docSnap.data();
         });
-        setLiveAiMetadata(map);
+        setLiveProductReviews(map);
       });
 
-      unsubGalleryParts = onSnapshot(collection(db, 'product_gallery_parts'), (snapshot) => {
+      unsubAi = onSnapshot(collection(db, 'product_ai'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => {
           map[docSnap.id] = docSnap.data();
         });
-        setLiveGalleryParts(map);
+        setLiveAi(map);
+      });
+
+      unsubSeo = onSnapshot(collection(db, 'product_seo'), (snapshot) => {
+        const map: Record<string, any> = {};
+        snapshot.forEach((docSnap) => {
+          map[docSnap.id] = docSnap.data();
+        });
+        setLiveSeo(map);
+      });
+
+      unsubStatistics = onSnapshot(collection(db, 'product_statistics'), (snapshot) => {
+        const map: Record<string, any> = {};
+        snapshot.forEach((docSnap) => {
+          map[docSnap.id] = docSnap.data();
+        });
+        setLiveStatistics(map);
+      });
+
+      unsubRelated = onSnapshot(collection(db, 'product_related'), (snapshot) => {
+        const map: Record<string, any> = {};
+        snapshot.forEach((docSnap) => {
+          map[docSnap.id] = docSnap.data();
+        });
+        setLiveRelated(map);
+      });
+
+      unsubShipping = onSnapshot(collection(db, 'product_shipping'), (snapshot) => {
+        const map: Record<string, any> = {};
+        snapshot.forEach((docSnap) => {
+          map[docSnap.id] = docSnap.data();
+        });
+        setLiveShipping(map);
       });
 
     } catch (e) {
@@ -1335,8 +1381,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (unsubProducts) unsubProducts();
       if (unsubGallery) unsubGallery();
       if (unsubVariants) unsubVariants();
-      if (unsubAiMetadata) unsubAiMetadata();
-      if (unsubGalleryParts) unsubGalleryParts();
+      if (unsubReviews) unsubReviews();
+      if (unsubAi) unsubAi();
+      if (unsubSeo) unsubSeo();
+      if (unsubStatistics) unsubStatistics();
+      if (unsubRelated) unsubRelated();
+      if (unsubShipping) unsubShipping();
     };
   }, []);
 
@@ -1348,14 +1398,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           p,
           liveGalleries[p.id],
           liveVariants[p.id],
-          liveAiMetadata[p.id],
-          liveGalleryParts
+          liveProductReviews[p.id],
+          liveAi[p.id],
+          liveSeo[p.id],
+          liveStatistics[p.id],
+          liveRelated[p.id],
+          liveShipping[p.id]
         )
       );
       setPublishedProducts(stitched);
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(stitched));
     }
-  }, [rawLiveProducts, liveGalleries, liveVariants, liveAiMetadata, liveGalleryParts]);
+  }, [
+    rawLiveProducts,
+    liveGalleries,
+    liveVariants,
+    liveProductReviews,
+    liveAi,
+    liveSeo,
+    liveStatistics,
+    liveRelated,
+    liveShipping,
+  ]);
 
   // 4. Inactivity Auto-Logout Monitor (30 Minutes)
   const handleUserActivity = useCallback(() => {
@@ -1420,11 +1484,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
               batch.set(doc(db, isDraft ? 'draft_product_gallery' : 'product_gallery', docSnap.id), split.gallery);
               batch.set(doc(db, isDraft ? 'draft_product_variants' : 'product_variants', docSnap.id), split.variants);
-              batch.set(doc(db, isDraft ? 'draft_product_ai_metadata' : 'product_ai_metadata', docSnap.id), split.aiMetadata);
-
-              for (const part of split.galleryParts) {
-                batch.set(doc(db, isDraft ? 'draft_product_gallery_parts' : 'product_gallery_parts', part.id), part);
-              }
+              batch.set(doc(db, isDraft ? 'draft_product_reviews' : 'product_reviews', docSnap.id), split.reviews);
+              batch.set(doc(db, isDraft ? 'draft_product_ai' : 'product_ai', docSnap.id), split.ai);
+              batch.set(doc(db, isDraft ? 'draft_product_seo' : 'product_seo', docSnap.id), split.seo);
+              batch.set(doc(db, isDraft ? 'draft_product_statistics' : 'product_statistics', docSnap.id), split.statistics);
+              batch.set(doc(db, isDraft ? 'draft_product_related' : 'product_related', docSnap.id), split.related);
+              batch.set(doc(db, isDraft ? 'draft_product_shipping' : 'product_shipping', docSnap.id), split.shipping);
 
               const cleanedDoc = { ...split.metadata };
               batch.set(docSnap.ref, cleanedDoc);
@@ -1670,14 +1735,47 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Added/Updated
         overrides.products.forEach(p => {
           const existing = draftProducts.find(item => item.id === p.id);
-          if (!existing || JSON.stringify(existing) !== JSON.stringify(p)) {
-            const split = splitProduct(p);
+          const split = splitProduct(p);
+
+          if (!existing) {
             batch.set(doc(db, 'draft_products', p.id), split.metadata);
             batch.set(doc(db, 'draft_product_gallery', p.id), split.gallery);
             batch.set(doc(db, 'draft_product_variants', p.id), split.variants);
-            batch.set(doc(db, 'draft_product_ai_metadata', p.id), split.aiMetadata);
-            for (const part of split.galleryParts) {
-              batch.set(doc(db, 'draft_product_gallery_parts', part.id), part);
+            batch.set(doc(db, 'draft_product_reviews', p.id), split.reviews);
+            batch.set(doc(db, 'draft_product_ai', p.id), split.ai);
+            batch.set(doc(db, 'draft_product_seo', p.id), split.seo);
+            batch.set(doc(db, 'draft_product_statistics', p.id), split.statistics);
+            batch.set(doc(db, 'draft_product_related', p.id), split.related);
+            batch.set(doc(db, 'draft_product_shipping', p.id), split.shipping);
+          } else {
+            const extSplit = splitProduct(existing);
+
+            if (JSON.stringify(split.metadata) !== JSON.stringify(extSplit.metadata)) {
+              batch.set(doc(db, 'draft_products', p.id), split.metadata);
+            }
+            if (JSON.stringify(split.gallery) !== JSON.stringify(extSplit.gallery)) {
+              batch.set(doc(db, 'draft_product_gallery', p.id), split.gallery);
+            }
+            if (JSON.stringify(split.variants) !== JSON.stringify(extSplit.variants)) {
+              batch.set(doc(db, 'draft_product_variants', p.id), split.variants);
+            }
+            if (JSON.stringify(split.reviews) !== JSON.stringify(extSplit.reviews)) {
+              batch.set(doc(db, 'draft_product_reviews', p.id), split.reviews);
+            }
+            if (JSON.stringify(split.ai) !== JSON.stringify(extSplit.ai)) {
+              batch.set(doc(db, 'draft_product_ai', p.id), split.ai);
+            }
+            if (JSON.stringify(split.seo) !== JSON.stringify(extSplit.seo)) {
+              batch.set(doc(db, 'draft_product_seo', p.id), split.seo);
+            }
+            if (JSON.stringify(split.statistics) !== JSON.stringify(extSplit.statistics)) {
+              batch.set(doc(db, 'draft_product_statistics', p.id), split.statistics);
+            }
+            if (JSON.stringify(split.related) !== JSON.stringify(extSplit.related)) {
+              batch.set(doc(db, 'draft_product_related', p.id), split.related);
+            }
+            if (JSON.stringify(split.shipping) !== JSON.stringify(extSplit.shipping)) {
+              batch.set(doc(db, 'draft_product_shipping', p.id), split.shipping);
             }
           }
         });
@@ -1688,10 +1786,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             batch.delete(doc(db, 'draft_products', p.id));
             batch.delete(doc(db, 'draft_product_gallery', p.id));
             batch.delete(doc(db, 'draft_product_variants', p.id));
-            batch.delete(doc(db, 'draft_product_ai_metadata', p.id));
-            for (let i = 1; i <= 5; i++) {
-              batch.delete(doc(db, 'draft_product_gallery_parts', `${p.id}_gallery_part${i}`));
-            }
+            batch.delete(doc(db, 'draft_product_reviews', p.id));
+            batch.delete(doc(db, 'draft_product_ai', p.id));
+            batch.delete(doc(db, 'draft_product_seo', p.id));
+            batch.delete(doc(db, 'draft_product_statistics', p.id));
+            batch.delete(doc(db, 'draft_product_related', p.id));
+            batch.delete(doc(db, 'draft_product_shipping', p.id));
           }
         });
       }
@@ -1787,8 +1887,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     let unsubDraftProducts: any = null;
     let unsubDraftGallery: any = null;
     let unsubDraftVariants: any = null;
-    let unsubDraftAiMetadata: any = null;
-    let unsubDraftGalleryParts: any = null;
+    let unsubDraftReviewsCol: any = null;
+    let unsubDraftAi: any = null;
+    let unsubDraftSeo: any = null;
+    let unsubDraftStatistics: any = null;
+    let unsubDraftRelated: any = null;
+    let unsubDraftShipping: any = null;
 
     try {
       unsubDraftProducts = onSnapshot(collection(db, 'draft_products'), (snap) => {
@@ -1812,16 +1916,40 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setDraftVariants(map);
       });
 
-      unsubDraftAiMetadata = onSnapshot(collection(db, 'draft_product_ai_metadata'), (snap) => {
+      unsubDraftReviewsCol = onSnapshot(collection(db, 'draft_product_reviews'), (snap) => {
         const map: Record<string, any> = {};
         snap.forEach((d) => { map[d.id] = d.data(); });
-        setDraftAiMetadata(map);
+        setDraftProductReviews(map);
       });
 
-      unsubDraftGalleryParts = onSnapshot(collection(db, 'draft_product_gallery_parts'), (snap) => {
+      unsubDraftAi = onSnapshot(collection(db, 'draft_product_ai'), (snap) => {
         const map: Record<string, any> = {};
         snap.forEach((d) => { map[d.id] = d.data(); });
-        setDraftGalleryParts(map);
+        setDraftAi(map);
+      });
+
+      unsubDraftSeo = onSnapshot(collection(db, 'draft_product_seo'), (snap) => {
+        const map: Record<string, any> = {};
+        snap.forEach((d) => { map[d.id] = d.data(); });
+        setDraftSeo(map);
+      });
+
+      unsubDraftStatistics = onSnapshot(collection(db, 'draft_product_statistics'), (snap) => {
+        const map: Record<string, any> = {};
+        snap.forEach((d) => { map[d.id] = d.data(); });
+        setDraftStatistics(map);
+      });
+
+      unsubDraftRelated = onSnapshot(collection(db, 'draft_product_related'), (snap) => {
+        const map: Record<string, any> = {};
+        snap.forEach((d) => { map[d.id] = d.data(); });
+        setDraftRelated(map);
+      });
+
+      unsubDraftShipping = onSnapshot(collection(db, 'draft_product_shipping'), (snap) => {
+        const map: Record<string, any> = {};
+        snap.forEach((d) => { map[d.id] = d.data(); });
+        setDraftShipping(map);
       });
 
     } catch (e) {}
@@ -1830,8 +1958,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (unsubDraftProducts) unsubDraftProducts();
       if (unsubDraftGallery) unsubDraftGallery();
       if (unsubDraftVariants) unsubDraftVariants();
-      if (unsubDraftAiMetadata) unsubDraftAiMetadata();
-      if (unsubDraftGalleryParts) unsubDraftGalleryParts();
+      if (unsubDraftReviewsCol) unsubDraftReviewsCol();
+      if (unsubDraftAi) unsubDraftAi();
+      if (unsubDraftSeo) unsubDraftSeo();
+      if (unsubDraftStatistics) unsubDraftStatistics();
+      if (unsubDraftRelated) unsubDraftRelated();
+      if (unsubDraftShipping) unsubDraftShipping();
     };
   }, []);
 
@@ -1843,13 +1975,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           p,
           draftGalleries[p.id],
           draftVariants[p.id],
-          draftAiMetadata[p.id],
-          draftGalleryParts
+          draftProductReviews[p.id],
+          draftAi[p.id],
+          draftSeo[p.id],
+          draftStatistics[p.id],
+          draftRelated[p.id],
+          draftShipping[p.id]
         )
       );
       setDraftProducts(stitched);
     }
-  }, [rawDraftProducts, draftGalleries, draftVariants, draftAiMetadata, draftGalleryParts]);
+  }, [
+    rawDraftProducts,
+    draftGalleries,
+    draftVariants,
+    draftProductReviews,
+    draftAi,
+    draftSeo,
+    draftStatistics,
+    draftRelated,
+    draftShipping,
+  ]);
 
   useEffect(() => {
     let unsubscribe: any = null;
@@ -2146,7 +2292,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const split = splitProduct(p);
 
         if (!pub) {
-          // Add metadata
+          // New product - add all 9 subcollections
           operations.push({
             type: 'set',
             ref: doc(db, 'products', p.id),
@@ -2155,7 +2301,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             documentId: p.id,
             description: `Added product metadata for "${p.name}"`,
           });
-          // Add gallery
           operations.push({
             type: 'set',
             ref: doc(db, 'product_gallery', p.id),
@@ -2164,7 +2309,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             documentId: p.id,
             description: `Added product gallery for "${p.name}"`,
           });
-          // Add variants
           operations.push({
             type: 'set',
             ref: doc(db, 'product_variants', p.id),
@@ -2173,76 +2317,163 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             documentId: p.id,
             description: `Added product variants for "${p.name}"`,
           });
-          // Add AI Metadata
           operations.push({
             type: 'set',
-            ref: doc(db, 'product_ai_metadata', p.id),
-            data: split.aiMetadata,
-            collectionName: 'product_ai_metadata',
+            ref: doc(db, 'product_reviews', p.id),
+            data: split.reviews,
+            collectionName: 'product_reviews',
+            documentId: p.id,
+            description: `Added product reviews for "${p.name}"`,
+          });
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'product_ai', p.id),
+            data: split.ai,
+            collectionName: 'product_ai',
             documentId: p.id,
             description: `Added product AI metadata for "${p.name}"`,
           });
-          // Add gallery parts
-          for (const part of split.galleryParts) {
-            operations.push({
-              type: 'set',
-              ref: doc(db, 'product_gallery_parts', part.id),
-              data: part,
-              collectionName: 'product_gallery_parts',
-              documentId: part.id,
-              description: `Added product gallery part ${part.id}`,
-            });
-          }
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'product_seo', p.id),
+            data: split.seo,
+            collectionName: 'product_seo',
+            documentId: p.id,
+            description: `Added product SEO for "${p.name}"`,
+          });
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'product_statistics', p.id),
+            data: split.statistics,
+            collectionName: 'product_statistics',
+            documentId: p.id,
+            description: `Added product statistics for "${p.name}"`,
+          });
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'product_related', p.id),
+            data: split.related,
+            collectionName: 'product_related',
+            documentId: p.id,
+            description: `Added product related for "${p.name}"`,
+          });
+          operations.push({
+            type: 'set',
+            ref: doc(db, 'product_shipping', p.id),
+            data: split.shipping,
+            collectionName: 'product_shipping',
+            documentId: p.id,
+            description: `Added product shipping for "${p.name}"`,
+          });
           addedProducts++;
-        } else if (JSON.stringify(pub) !== JSON.stringify(p)) {
-          // Update metadata
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'products', p.id),
-            data: split.metadata,
-            collectionName: 'products',
-            documentId: p.id,
-            description: `Updated product metadata for "${p.name}"`,
-          });
-          // Update gallery
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'product_gallery', p.id),
-            data: split.gallery,
-            collectionName: 'product_gallery',
-            documentId: p.id,
-            description: `Updated product gallery for "${p.name}"`,
-          });
-          // Update variants
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'product_variants', p.id),
-            data: split.variants,
-            collectionName: 'product_variants',
-            documentId: p.id,
-            description: `Updated product variants for "${p.name}"`,
-          });
-          // Update AI Metadata
-          operations.push({
-            type: 'set',
-            ref: doc(db, 'product_ai_metadata', p.id),
-            data: split.aiMetadata,
-            collectionName: 'product_ai_metadata',
-            documentId: p.id,
-            description: `Updated product AI metadata for "${p.name}"`,
-          });
-          // Update gallery parts
-          for (const part of split.galleryParts) {
+        } else {
+          // Existing product - publish only changed subcollections (Differential updates)
+          const pubSplit = splitProduct(pub);
+          let changed = false;
+
+          if (JSON.stringify(split.metadata) !== JSON.stringify(pubSplit.metadata)) {
             operations.push({
               type: 'set',
-              ref: doc(db, 'product_gallery_parts', part.id),
-              data: part,
-              collectionName: 'product_gallery_parts',
-              documentId: part.id,
-              description: `Updated product gallery part ${part.id}`,
+              ref: doc(db, 'products', p.id),
+              data: split.metadata,
+              collectionName: 'products',
+              documentId: p.id,
+              description: `Updated product metadata for "${p.name}"`,
             });
+            changed = true;
           }
-          updatedProducts++;
+          if (JSON.stringify(split.gallery) !== JSON.stringify(pubSplit.gallery)) {
+            operations.push({
+              type: 'set',
+              ref: doc(db, 'product_gallery', p.id),
+              data: split.gallery,
+              collectionName: 'product_gallery',
+              documentId: p.id,
+              description: `Updated product gallery for "${p.name}"`,
+            });
+            changed = true;
+          }
+          if (JSON.stringify(split.variants) !== JSON.stringify(pubSplit.variants)) {
+            operations.push({
+              type: 'set',
+              ref: doc(db, 'product_variants', p.id),
+              data: split.variants,
+              collectionName: 'product_variants',
+              documentId: p.id,
+              description: `Updated product variants for "${p.name}"`,
+            });
+            changed = true;
+          }
+          if (JSON.stringify(split.reviews) !== JSON.stringify(pubSplit.reviews)) {
+            operations.push({
+              type: 'set',
+              ref: doc(db, 'product_reviews', p.id),
+              data: split.reviews,
+              collectionName: 'product_reviews',
+              documentId: p.id,
+              description: `Updated product reviews for "${p.name}"`,
+            });
+            changed = true;
+          }
+          if (JSON.stringify(split.ai) !== JSON.stringify(pubSplit.ai)) {
+            operations.push({
+              type: 'set',
+              ref: doc(db, 'product_ai', p.id),
+              data: split.ai,
+              collectionName: 'product_ai',
+              documentId: p.id,
+              description: `Updated product AI metadata for "${p.name}"`,
+            });
+            changed = true;
+          }
+          if (JSON.stringify(split.seo) !== JSON.stringify(pubSplit.seo)) {
+            operations.push({
+              type: 'set',
+              ref: doc(db, 'product_seo', p.id),
+              data: split.seo,
+              collectionName: 'product_seo',
+              documentId: p.id,
+              description: `Updated product SEO for "${p.name}"`,
+            });
+            changed = true;
+          }
+          if (JSON.stringify(split.statistics) !== JSON.stringify(pubSplit.statistics)) {
+            operations.push({
+              type: 'set',
+              ref: doc(db, 'product_statistics', p.id),
+              data: split.statistics,
+              collectionName: 'product_statistics',
+              documentId: p.id,
+              description: `Updated product statistics for "${p.name}"`,
+            });
+            changed = true;
+          }
+          if (JSON.stringify(split.related) !== JSON.stringify(pubSplit.related)) {
+            operations.push({
+              type: 'set',
+              ref: doc(db, 'product_related', p.id),
+              data: split.related,
+              collectionName: 'product_related',
+              documentId: p.id,
+              description: `Updated product related for "${p.name}"`,
+            });
+            changed = true;
+          }
+          if (JSON.stringify(split.shipping) !== JSON.stringify(pubSplit.shipping)) {
+            operations.push({
+              type: 'set',
+              ref: doc(db, 'product_shipping', p.id),
+              data: split.shipping,
+              collectionName: 'product_shipping',
+              documentId: p.id,
+              description: `Updated product shipping for "${p.name}"`,
+            });
+            changed = true;
+          }
+
+          if (changed) {
+            updatedProducts++;
+          }
         }
 
         // Cleanup draft sub-collection documents once published
@@ -2269,20 +2500,46 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
         operations.push({
           type: 'delete',
-          ref: doc(db, 'draft_product_ai_metadata', p.id),
-          collectionName: 'draft_product_ai_metadata',
+          ref: doc(db, 'draft_product_reviews', p.id),
+          collectionName: 'draft_product_reviews',
+          documentId: p.id,
+          description: `Cleanup draft product reviews "${p.name}"`,
+        });
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_product_ai', p.id),
+          collectionName: 'draft_product_ai',
           documentId: p.id,
           description: `Cleanup draft product AI metadata "${p.name}"`,
         });
-        for (let i = 1; i <= 5; i++) {
-          operations.push({
-            type: 'delete',
-            ref: doc(db, 'draft_product_gallery_parts', `${p.id}_gallery_part${i}`),
-            collectionName: 'draft_product_gallery_parts',
-            documentId: `${p.id}_gallery_part${i}`,
-            description: `Cleanup draft gallery part ${i} for "${p.name}"`,
-          });
-        }
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_product_seo', p.id),
+          collectionName: 'draft_product_seo',
+          documentId: p.id,
+          description: `Cleanup draft product SEO "${p.name}"`,
+        });
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_product_statistics', p.id),
+          collectionName: 'draft_product_statistics',
+          documentId: p.id,
+          description: `Cleanup draft product statistics "${p.name}"`,
+        });
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_product_related', p.id),
+          collectionName: 'draft_product_related',
+          documentId: p.id,
+          description: `Cleanup draft product related "${p.name}"`,
+        });
+        operations.push({
+          type: 'delete',
+          ref: doc(db, 'draft_product_shipping', p.id),
+          collectionName: 'draft_product_shipping',
+          documentId: p.id,
+          description: `Cleanup draft product shipping "${p.name}"`,
+        });
       }
 
       for (const pub of publishedProducts) {
@@ -2311,20 +2568,46 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
           operations.push({
             type: 'delete',
-            ref: doc(db, 'product_ai_metadata', pub.id),
-            collectionName: 'product_ai_metadata',
+            ref: doc(db, 'product_reviews', pub.id),
+            collectionName: 'product_reviews',
+            documentId: pub.id,
+            description: `Deleted product reviews "${pub.name || pub.id}"`,
+          });
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'product_ai', pub.id),
+            collectionName: 'product_ai',
             documentId: pub.id,
             description: `Deleted product AI metadata "${pub.name || pub.id}"`,
           });
-          for (let i = 1; i <= 5; i++) {
-            operations.push({
-              type: 'delete',
-              ref: doc(db, 'product_gallery_parts', `${pub.id}_gallery_part${i}`),
-              collectionName: 'product_gallery_parts',
-              documentId: `${pub.id}_gallery_part${i}`,
-              description: `Deleted gallery part ${i} for "${pub.name || pub.id}"`,
-            });
-          }
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'product_seo', pub.id),
+            collectionName: 'product_seo',
+            documentId: pub.id,
+            description: `Deleted product SEO "${pub.name || pub.id}"`,
+          });
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'product_statistics', pub.id),
+            collectionName: 'product_statistics',
+            documentId: pub.id,
+            description: `Deleted product statistics "${pub.name || pub.id}"`,
+          });
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'product_related', pub.id),
+            collectionName: 'product_related',
+            documentId: pub.id,
+            description: `Deleted product related "${pub.name || pub.id}"`,
+          });
+          operations.push({
+            type: 'delete',
+            ref: doc(db, 'product_shipping', pub.id),
+            collectionName: 'product_shipping',
+            documentId: pub.id,
+            description: `Deleted product shipping "${pub.name || pub.id}"`,
+          });
           deletedProducts++;
         }
       }
@@ -2702,10 +2985,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         batch.delete(docSnap.ref);
         batch.delete(doc(db, 'draft_product_gallery', docSnap.id));
         batch.delete(doc(db, 'draft_product_variants', docSnap.id));
-        batch.delete(doc(db, 'draft_product_ai_metadata', docSnap.id));
-        for (let i = 1; i <= 5; i++) {
-          batch.delete(doc(db, 'draft_product_gallery_parts', `${docSnap.id}_gallery_part${i}`));
-        }
+        batch.delete(doc(db, 'draft_product_reviews', docSnap.id));
+        batch.delete(doc(db, 'draft_product_ai', docSnap.id));
+        batch.delete(doc(db, 'draft_product_seo', docSnap.id));
+        batch.delete(doc(db, 'draft_product_statistics', docSnap.id));
+        batch.delete(doc(db, 'draft_product_related', docSnap.id));
+        batch.delete(doc(db, 'draft_product_shipping', docSnap.id));
       });
 
       publishedProducts.forEach((p) => {
@@ -2713,10 +2998,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         batch.set(doc(db, 'draft_products', p.id), split.metadata);
         batch.set(doc(db, 'draft_product_gallery', p.id), split.gallery);
         batch.set(doc(db, 'draft_product_variants', p.id), split.variants);
-        batch.set(doc(db, 'draft_product_ai_metadata', p.id), split.aiMetadata);
-        for (const part of split.galleryParts) {
-          batch.set(doc(db, 'draft_product_gallery_parts', part.id), part);
-        }
+        batch.set(doc(db, 'draft_product_reviews', p.id), split.reviews);
+        batch.set(doc(db, 'draft_product_ai', p.id), split.ai);
+        batch.set(doc(db, 'draft_product_seo', p.id), split.seo);
+        batch.set(doc(db, 'draft_product_statistics', p.id), split.statistics);
+        batch.set(doc(db, 'draft_product_related', p.id), split.related);
+        batch.set(doc(db, 'draft_product_shipping', p.id), split.shipping);
       });
 
       const draftRevsSnap = await getDocs(collection(db, 'draft_reviews'));

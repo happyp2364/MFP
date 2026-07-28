@@ -63,6 +63,9 @@ ${quantity}
 💰 Price:
 ₹${product.price.toLocaleString('en-IN')}
 
+🖼️ Product Image:
+${product.images && product.images.length > 0 ? product.images[0] : 'N/A'}
+
 🔗 Product Link:
 ${productUrl}
 
@@ -89,6 +92,9 @@ ${quantity}
 
 💰 Price:
 ₹${product.price.toLocaleString('en-IN')}
+
+🖼️ Product Image:
+${product.images && product.images.length > 0 ? product.images[0] : 'N/A'}
 
 🔗 Product Link:
 ${productUrl}

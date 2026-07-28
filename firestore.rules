@@ -141,28 +141,46 @@ service cloud.firestore {
     match /draft_product_gallery/{id} {
       allow read, write: if true;
     }
-    match /product_gallery_parts/{id} {
-      allow read, write: if true;
-    }
-    match /draft_product_gallery_parts/{id} {
-      allow read, write: if true;
-    }
     match /product_variants/{id} {
       allow read, write: if true;
     }
     match /draft_product_variants/{id} {
       allow read, write: if true;
     }
-    match /product_ai_metadata/{id} {
+    match /product_reviews/{id} {
       allow read, write: if true;
     }
-    match /draft_product_ai_metadata/{id} {
+    match /draft_product_reviews/{id} {
+      allow read, write: if true;
+    }
+    match /product_ai/{id} {
+      allow read, write: if true;
+    }
+    match /draft_product_ai/{id} {
+      allow read, write: if true;
+    }
+    match /product_seo/{id} {
+      allow read, write: if true;
+    }
+    match /draft_product_seo/{id} {
       allow read, write: if true;
     }
     match /product_statistics/{id} {
       allow read, write: if true;
     }
     match /draft_product_statistics/{id} {
+      allow read, write: if true;
+    }
+    match /product_related/{id} {
+      allow read, write: if true;
+    }
+    match /draft_product_related/{id} {
+      allow read, write: if true;
+    }
+    match /product_shipping/{id} {
+      allow read, write: if true;
+    }
+    match /draft_product_shipping/{id} {
       allow read, write: if true;
     }
 

@@ -96,6 +96,57 @@ export const PaymentSettingsView: React.FC = () => {
   const [isTestingGateway, setIsTestingGateway] = useState(false);
   const [testProbeResult, setTestProbeResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Premium Single Product Purchase Flow & Customizable Checkout Buttons States
+  const [enableBuyNow, setEnableBuyNow] = useState<boolean>(paymentSettings.enableBuyNow !== false);
+  const [enableBuyOnWhatsApp, setEnableBuyOnWhatsApp] = useState<boolean>(paymentSettings.enableBuyOnWhatsApp !== false);
+  const [enableAddToBag, setEnableAddToBag] = useState<boolean>(paymentSettings.enableAddToBag !== false);
+  const [enableCashfree, setEnableCashfree] = useState<boolean>(paymentSettings.enableCashfree !== false);
+
+  const [buttonOrder, setButtonOrder] = useState<string[]>(
+    paymentSettings.buttonOrder || ['buy_now', 'buy_whatsapp', 'add_bag']
+  );
+
+  const [buyNowColor, setBuyNowColor] = useState<string>(paymentSettings.buyNowColor || '#000000');
+  const [buyWhatsappColor, setBuyWhatsappColor] = useState<string>(paymentSettings.buyWhatsappColor || '#25D366');
+  const [addBagColor, setAddBagColor] = useState<string>(paymentSettings.addBagColor || '#FFFFFF');
+
+  const [buyNowTextColor, setBuyNowTextColor] = useState<string>(paymentSettings.buyNowTextColor || '#FFFFFF');
+  const [buyWhatsappTextColor, setBuyWhatsappTextColor] = useState<string>(paymentSettings.buyWhatsappTextColor || '#FFFFFF');
+  const [addBagTextColor, setAddBagTextColor] = useState<string>(paymentSettings.addBagTextColor || '#000000');
+
+  const [buyNowText, setBuyNowText] = useState<string>(paymentSettings.buyNowText || 'Buy Now');
+  const [buyWhatsappText, setBuyWhatsappText] = useState<string>(paymentSettings.buyWhatsappText || 'Buy on WhatsApp');
+  const [addBagText, setAddBagText] = useState<string>(paymentSettings.addBagText || 'Add to Bag');
+
+  const moveButtonUp = (index: number) => {
+    if (index === 0) return;
+    const newOrder = [...buttonOrder];
+    const temp = newOrder[index];
+    newOrder[index] = newOrder[index - 1];
+    newOrder[index - 1] = temp;
+    setButtonOrder(newOrder);
+    setSaveStatus('IDLE');
+  };
+
+  const moveButtonDown = (index: number) => {
+    if (index === buttonOrder.length - 1) return;
+    const newOrder = [...buttonOrder];
+    const temp = newOrder[index];
+    newOrder[index] = newOrder[index + 1];
+    newOrder[index + 1] = temp;
+    setButtonOrder(newOrder);
+    setSaveStatus('IDLE');
+  };
+
+  const getButtonKeyLabel = (key: string) => {
+    switch (key) {
+      case 'buy_now': return 'Buy Now (Direct Checkout)';
+      case 'buy_whatsapp': return 'Buy on WhatsApp';
+      case 'add_bag': return 'Add to Bag';
+      default: return key;
+    }
+  };
+
   // Payment Transactions Ledger
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoadingTx, setIsLoadingTx] = useState(false);
@@ -171,6 +222,20 @@ export const PaymentSettingsView: React.FC = () => {
       setCustomQrImage(paymentSettings.qrCodeCustomImage);
       setQrMode('CUSTOM');
     }
+    setEnableBuyNow(paymentSettings.enableBuyNow !== false);
+    setEnableBuyOnWhatsApp(paymentSettings.enableBuyOnWhatsApp !== false);
+    setEnableAddToBag(paymentSettings.enableAddToBag !== false);
+    setEnableCashfree(paymentSettings.enableCashfree !== false);
+    if (paymentSettings.buttonOrder) setButtonOrder(paymentSettings.buttonOrder);
+    setBuyNowColor(paymentSettings.buyNowColor || '#000000');
+    setBuyWhatsappColor(paymentSettings.buyWhatsappColor || '#25D366');
+    setAddBagColor(paymentSettings.addBagColor || '#FFFFFF');
+    setBuyNowTextColor(paymentSettings.buyNowTextColor || '#FFFFFF');
+    setBuyWhatsappTextColor(paymentSettings.buyWhatsappTextColor || '#FFFFFF');
+    setAddBagTextColor(paymentSettings.addBagTextColor || '#000000');
+    setBuyNowText(paymentSettings.buyNowText || 'Buy Now');
+    setBuyWhatsappText(paymentSettings.buyWhatsappText || 'Buy on WhatsApp');
+    setAddBagText(paymentSettings.addBagText || 'Add to Bag');
   }, [paymentSettings]);
 
   // VPA Validation Regex
@@ -279,6 +344,20 @@ export const PaymentSettingsView: React.FC = () => {
       deliveryMessage: deliveryMessage.trim(),
       estimatedDeliveryTime: estimatedDeliveryTime.trim(),
       enableQR: true,
+      enableBuyNow,
+      enableBuyOnWhatsApp,
+      enableAddToBag,
+      enableCashfree,
+      buttonOrder,
+      buyNowColor,
+      buyWhatsappColor,
+      addBagColor,
+      buyNowTextColor,
+      buyWhatsappTextColor,
+      addBagTextColor,
+      buyNowText,
+      buyWhatsappText,
+      addBagText,
     };
 
     try {
@@ -670,6 +749,288 @@ export const PaymentSettingsView: React.FC = () => {
                 />
                 <span>Pay on Delivery (COD)</span>
               </label>
+            </div>
+          </div>
+
+          {/* Section 2C: Checkout Buttons & Purchase Flow Customization */}
+          <div className="p-5 bg-white rounded-2xl border border-neutral-200/80 shadow-sm space-y-5">
+            <h3 className="font-bold text-neutral-900 text-xs uppercase tracking-wider border-b border-neutral-100 pb-2.5 flex items-center justify-between">
+              <span>Checkout Buttons & Purchase Flow Settings</span>
+              <span className="text-[10px] text-neutral-400 font-normal">Button customization & priority order</span>
+            </h3>
+
+            {/* Enable/Disable Core Purchase Options */}
+            <div className="space-y-2">
+              <span className="text-xs font-bold text-neutral-800 block">Enable/Disable Core Purchase CTA Buttons</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">
+                  <input
+                    type="checkbox"
+                    checked={enableBuyNow}
+                    onChange={(e) => { setEnableBuyNow(e.target.checked); setSaveStatus('IDLE'); }}
+                    className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                  />
+                  <span>☑ Enable Buy Now (Checkout)</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">
+                  <input
+                    type="checkbox"
+                    checked={enableBuyOnWhatsApp}
+                    onChange={(e) => { setEnableBuyOnWhatsApp(e.target.checked); setSaveStatus('IDLE'); }}
+                    className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                  />
+                  <span>☑ Enable Buy on WhatsApp</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">
+                  <input
+                    type="checkbox"
+                    checked={enableAddToBag}
+                    onChange={(e) => { setEnableAddToBag(e.target.checked); setSaveStatus('IDLE'); }}
+                    className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                  />
+                  <span>☑ Enable Add to Bag</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Custom Cashfree toggle */}
+            <div className="space-y-2 pt-2 border-t border-neutral-100">
+              <span className="text-xs font-bold text-neutral-800 block">Additional Payment Modes</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">
+                  <input
+                    type="checkbox"
+                    checked={enableCashfree}
+                    onChange={(e) => { setEnableCashfree(e.target.checked); setSaveStatus('IDLE'); }}
+                    className="rounded text-[#0B8F63] focus:ring-[#0B8F63] w-4 h-4"
+                  />
+                  <span>☑ Enable Cashfree Payment Gateway</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Button priority ordering */}
+            <div className="space-y-3 pt-3 border-t border-neutral-100">
+              <div>
+                <span className="text-xs font-bold text-neutral-800 block">Change Button Priority Order</span>
+                <p className="text-[10px] text-neutral-500">Rearrange buttons to change how they render on Product Cards and Detail pages.</p>
+              </div>
+
+              <div className="space-y-2 max-w-md">
+                {buttonOrder.map((key, index) => (
+                  <div key={key} className="flex items-center justify-between p-3 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-800">
+                    <div className="flex items-center gap-2">
+                      <span className="text-neutral-400 font-mono">#{index + 1}</span>
+                      <span>{getButtonKeyLabel(key)}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => moveButtonUp(index)}
+                        className="p-1 hover:bg-neutral-200 rounded disabled:opacity-30 disabled:hover:bg-transparent"
+                        title="Move Up"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        disabled={index === buttonOrder.length - 1}
+                        onClick={() => moveButtonDown(index)}
+                        className="p-1 hover:bg-neutral-200 rounded disabled:opacity-30 disabled:hover:bg-transparent"
+                        title="Move Down"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Button customization & texts */}
+            <div className="space-y-4 pt-3 border-t border-neutral-100">
+              <span className="text-xs font-bold text-neutral-800 block">Customize Button Colors & Text labels</span>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Buy Now settings */}
+                <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 space-y-2.5 text-xs">
+                  <span className="font-bold text-neutral-900 block border-b border-neutral-200 pb-1">Buy Now Button Settings</span>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-neutral-500">Button Text</label>
+                    <input
+                      type="text"
+                      value={buyNowText}
+                      onChange={(e) => { setBuyNowText(e.target.value); setSaveStatus('IDLE'); }}
+                      className="w-full px-2 py-1.5 border border-neutral-300 rounded-lg text-neutral-900 font-semibold"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-neutral-500">Bg Color</label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="color"
+                          value={buyNowColor}
+                          onChange={(e) => { setBuyNowColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-7 h-7 rounded border border-neutral-300 cursor-pointer shrink-0 animate-pulse"
+                        />
+                        <input
+                          type="text"
+                          value={buyNowColor}
+                          onChange={(e) => { setBuyNowColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-full text-[10px] px-1 py-1 border border-neutral-300 rounded font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-neutral-500">Text Color</label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="color"
+                          value={buyNowTextColor}
+                          onChange={(e) => { setBuyNowTextColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-7 h-7 rounded border border-neutral-300 cursor-pointer shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={buyNowTextColor}
+                          onChange={(e) => { setBuyNowTextColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-full text-[10px] px-1 py-1 border border-neutral-300 rounded font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Buy WhatsApp settings */}
+                <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 space-y-2.5 text-xs">
+                  <span className="font-bold text-neutral-900 block border-b border-neutral-200 pb-1">WhatsApp Button Settings</span>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-neutral-500">Button Text</label>
+                    <input
+                      type="text"
+                      value={buyWhatsappText}
+                      onChange={(e) => { setBuyWhatsappText(e.target.value); setSaveStatus('IDLE'); }}
+                      className="w-full px-2 py-1.5 border border-neutral-300 rounded-lg text-neutral-900 font-semibold"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-neutral-500">Bg Color</label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="color"
+                          value={buyWhatsappColor}
+                          onChange={(e) => { setBuyWhatsappColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-7 h-7 rounded border border-neutral-300 cursor-pointer shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={buyWhatsappColor}
+                          onChange={(e) => { setBuyWhatsappColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-full text-[10px] px-1 py-1 border border-neutral-300 rounded font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-neutral-500">Text Color</label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="color"
+                          value={buyWhatsappTextColor}
+                          onChange={(e) => { setBuyWhatsappTextColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-7 h-7 rounded border border-neutral-300 cursor-pointer shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={buyWhatsappTextColor}
+                          onChange={(e) => { setBuyWhatsappTextColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-full text-[10px] px-1 py-1 border border-neutral-300 rounded font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Add to Bag settings */}
+                <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 space-y-2.5 text-xs">
+                  <span className="font-bold text-neutral-900 block border-b border-neutral-200 pb-1">Add to Bag Button Settings</span>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-neutral-500">Button Text</label>
+                    <input
+                      type="text"
+                      value={addBagText}
+                      onChange={(e) => { setAddBagText(e.target.value); setSaveStatus('IDLE'); }}
+                      className="w-full px-2 py-1.5 border border-neutral-300 rounded-lg text-neutral-900 font-semibold"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-neutral-500">Bg Color</label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="color"
+                          value={addBagColor}
+                          onChange={(e) => { setAddBagColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-7 h-7 rounded border border-neutral-300 cursor-pointer shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={addBagColor}
+                          onChange={(e) => { setAddBagColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-full text-[10px] px-1 py-1 border border-neutral-300 rounded font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-neutral-500">Text Color</label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="color"
+                          value={addBagTextColor}
+                          onChange={(e) => { setAddBagTextColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-7 h-7 rounded border border-neutral-300 cursor-pointer shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={addBagTextColor}
+                          onChange={(e) => { setAddBagTextColor(e.target.value); setSaveStatus('IDLE'); }}
+                          className="w-full text-[10px] px-1 py-1 border border-neutral-300 rounded font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Live CTA button grid preview */}
+            <div className="space-y-2 pt-3 border-t border-neutral-100">
+              <span className="text-xs font-bold text-neutral-500 block">Desktop / Mobile Buttons Live Preview</span>
+              <div className="p-4 bg-neutral-100 rounded-2xl flex flex-col sm:flex-row gap-2 max-w-2xl">
+                {buttonOrder.map(key => {
+                  const isEnabled = key === 'buy_now' ? enableBuyNow : key === 'buy_whatsapp' ? enableBuyOnWhatsApp : enableAddToBag;
+                  const buttonStyle = key === 'buy_now'
+                    ? { backgroundColor: buyNowColor, color: buyNowTextColor }
+                    : key === 'buy_whatsapp'
+                    ? { backgroundColor: buyWhatsappColor, color: buyWhatsappTextColor }
+                    : { backgroundColor: addBagColor, color: addBagTextColor };
+                  const buttonLabel = key === 'buy_now' ? buyNowText : key === 'buy_whatsapp' ? buyWhatsappText : addBagText;
+
+                  return isEnabled ? (
+                    <div
+                      key={key}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl text-xs font-extrabold tracking-wide border border-neutral-200/50 shadow-sm transition-all"
+                      style={buttonStyle}
+                    >
+                      <span>{buttonLabel}</span>
+                    </div>
+                  ) : null;
+                })}
+              </div>
             </div>
           </div>
 

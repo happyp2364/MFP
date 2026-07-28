@@ -58,6 +58,9 @@ import { HangingSneakerSettingsView } from './HangingSneakerSettingsView';
 import { AIShoePetSettingsView } from './AIShoePetSettingsView';
 import { InstagramSettingsView } from './InstagramSettingsView';
 import { MarketingCenterView } from './MarketingCenterView';
+import { CategoriesSettingsView } from './CategoriesSettingsView';
+import { ReviewsSettingsView } from './ReviewsSettingsView';
+import { SocialMediaSettingsView } from './SocialMediaSettingsView';
 import { VersionHistoryView } from './VersionHistoryView';
 import { HeroSectionManagerView } from './HeroSectionManagerView';
 import { TopAnnouncementBarSettingsView } from './TopAnnouncementBarSettingsView';
@@ -548,8 +551,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   : 'text-neutral-600 hover:bg-neutral-100'
               }`}
             >
-              <Instagram className="w-4 h-4 text-rose-500" />
-              <span>Live Instagram Integration</span>
+              <Share2 className="w-4 h-4 text-emerald-500" />
+              <span>Social Media Center</span>
             </button>
 
             <button
@@ -690,7 +693,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {activeTab === 'ai_pet_shoe' && <AIShoePetSettingsView />}
 
             {/* ----------------- TAB: LIVE INSTAGRAM INTEGRATION ----------------- */}
-            {activeTab === 'instagram' && <InstagramSettingsView />}
+            {activeTab === 'instagram' && <SocialMediaSettingsView />}
+
+            {/* ----------------- TAB: CATEGORIES & HIGHLIGHTS ----------------- */}
+            {activeTab === 'categories' && <CategoriesSettingsView />}
+
+            {/* ----------------- TAB: CUSTOMER REVIEWS MANAGEMENT ----------------- */}
+            {activeTab === 'reviews' && <ReviewsSettingsView />}
 
             {/* ----------------- TAB: PRODUCTS & PRICES ----------------- */}
             {activeTab === 'products' && (

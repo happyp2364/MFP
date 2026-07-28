@@ -32,6 +32,8 @@ import {
   AdminNotification,
   TopAnnouncementBarConfig,
   AnnouncementItem,
+  SocialMediaCenterConfig,
+  SocialAnalyticsLog,
 } from '../types';
 import {
   PRODUCTS_DATA,
@@ -48,6 +50,8 @@ import {
   DEFAULT_CUSTOMER_SOUND_SETTINGS,
   DEFAULT_PAYMENT_SETTINGS,
   DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG,
+  DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG,
+  DEFAULT_SOCIAL_ANALYTICS,
 } from '../data/mockData';
 import {
   auth,
@@ -105,6 +109,8 @@ const STORAGE_KEYS = {
   INSTAGRAM_CONFIG: 'mfp_instagram_config_live',
   SOUND_CONFIG: 'mfp_sound_config_live',
   TOP_ANNOUNCEMENT_BAR_CONFIG: 'mfp_top_announcement_bar_config_live',
+  SOCIAL_MEDIA_CONFIG: 'mfp_social_media_config_live_v2',
+  SOCIAL_ANALYTICS: 'mfp_social_analytics_live_v2',
 };
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
@@ -141,6 +147,11 @@ interface StoreContextType {
   customerSoundSettings: CustomerSoundSettings;
   updateCustomerSoundSettings: (updated: Partial<CustomerSoundSettings>) => void;
   playSiteSound: (type: SoundType) => void;
+
+  socialMediaConfig: SocialMediaCenterConfig;
+  updateSocialMediaConfig: (updated: Partial<SocialMediaCenterConfig>) => Promise<void>;
+  socialAnalytics: SocialAnalyticsLog;
+  recordSocialClick: (platformId: string) => Promise<void>;
 
   placeOrderAndPay: (
     cartItems: CartItem[],
@@ -197,7 +208,8 @@ interface StoreContextType {
   updateStoreInfo: (info: Partial<StoreInfo>) => Promise<void>;
   updateHeroContent: (content: Partial<HeroContent>) => Promise<void>;
   setAnnouncementsList: (items: string[]) => Promise<void>;
-  updateCategoryHighlight: (id: 'men' | 'women' | 'kids', updated: Partial<CategoryHighlight>) => Promise<void>;
+  updateCategoryHighlight: (id: string, updated: Partial<CategoryHighlight>) => Promise<void>;
+  saveCategoryHighlights: (items: CategoryHighlight[]) => Promise<void>;
   updateTrendingCollection: (id: string, updated: Partial<TrendingCollectionItem>) => Promise<void>;
 
   // Legacy compatibility declarations (Stubbed/Empty)
@@ -287,6 +299,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [publishedTopAnnouncementBarConfig, setPublishedTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(() => {
     const local = localStorage.getItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG);
     return local ? JSON.parse(local) : DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG;
+  });
+
+  const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaCenterConfig>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG);
+    return local ? JSON.parse(local) : DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG;
+  });
+
+  const [socialAnalytics, setSocialAnalytics] = useState<SocialAnalyticsLog>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.SOCIAL_ANALYTICS);
+    return local ? JSON.parse(local) : DEFAULT_SOCIAL_ANALYTICS;
   });
 
   // Raw Live Products & Split subcollection maps
@@ -571,6 +593,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, JSON.stringify(data));
           }
         }, (err) => console.warn('Live top announcement bar listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'social', 'socialMediaConfig'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as SocialMediaCenterConfig;
+            setSocialMediaConfig(data);
+            localStorage.setItem(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, JSON.stringify(data));
+          }
+        }, (err) => console.warn('Live social media config listener error:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'analytics', 'social_clicks'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as SocialAnalyticsLog;
+            setSocialAnalytics(data);
+            localStorage.setItem(STORAGE_KEYS.SOCIAL_ANALYTICS, JSON.stringify(data));
+          }
+        }, (err) => console.warn('Live social analytics listener error:', err))
       );
 
       unsubscribers.push(
@@ -1005,13 +1047,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const updateCategoryHighlight = async (id: 'men' | 'women' | 'kids', updated: Partial<CategoryHighlight>) => {
+  const updateCategoryHighlight = async (id: string, updated: Partial<CategoryHighlight>) => {
     try {
       const updatedCategories = publishedCategoryHighlights.map((cat) => (cat.id === id ? { ...cat, ...updated } : cat));
       await setDoc(doc(db, 'categories', 'highlights'), { items: updatedCategories }, { merge: true });
       showToast('💾 Categories Saved Live Successfully', 'success');
     } catch (err: any) {
       console.error('Error updating category highlight:', err);
+      showToast('Failed to save categories to Firestore', 'error');
+    }
+  };
+
+  const saveCategoryHighlights = async (items: CategoryHighlight[]) => {
+    try {
+      await setDoc(doc(db, 'categories', 'highlights'), { items }, { merge: true });
+      showToast('💾 Categories Saved Live Successfully', 'success');
+      recordAuditLog('Categories Saved', 'SETTINGS', 'Category highlights saved live', 'SUCCESS');
+    } catch (err: any) {
+      console.error('Error saving categories:', err);
       showToast('Failed to save categories to Firestore', 'error');
     }
   };
@@ -1057,6 +1110,56 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (err: any) {
       console.error('Error updating instagram config:', err);
       showToast('Failed to save instagram config', 'error');
+    }
+  };
+
+  const updateSocialMediaConfig = async (updated: Partial<SocialMediaCenterConfig>) => {
+    try {
+      const newCfg = { ...socialMediaConfig, ...updated };
+      await setDoc(doc(db, 'social', 'socialMediaConfig'), newCfg, { merge: true });
+      showToast('💾 Social Media Config Saved Live', 'success');
+    } catch (err: any) {
+      console.error('Error updating social media config:', err);
+      showToast('Failed to save social config', 'error');
+    }
+  };
+
+  const recordSocialClick = async (platformId: string) => {
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const firstJan = new Date(now.getFullYear(), 0, 1);
+      const numberOfDays = Math.floor((now.getTime() - firstJan.getTime()) / (24 * 60 * 60 * 1000));
+      const weekNum = Math.ceil((numberOfDays + firstJan.getDay() + 1) / 7);
+      const weekStr = `${now.getFullYear()}-W${weekNum < 10 ? '0' + weekNum : weekNum}`;
+      const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      const updatedClickCount = { ...socialAnalytics.clickCount };
+      updatedClickCount[platformId] = (updatedClickCount[platformId] || 0) + 1;
+
+      const updatedLastClick = { ...socialAnalytics.lastClickTimestamp };
+      updatedLastClick[platformId] = new Date().toISOString();
+
+      const updatedDaily = { ...socialAnalytics.dailyClicks };
+      updatedDaily[todayStr] = (updatedDaily[todayStr] || 0) + 1;
+
+      const updatedWeekly = { ...socialAnalytics.weeklyClicks };
+      updatedWeekly[weekStr] = (updatedWeekly[weekStr] || 0) + 1;
+
+      const updatedMonthly = { ...socialAnalytics.monthlyClicks };
+      updatedMonthly[monthStr] = (updatedMonthly[monthStr] || 0) + 1;
+
+      const nextAnalytics: SocialAnalyticsLog = {
+        clickCount: updatedClickCount,
+        lastClickTimestamp: updatedLastClick,
+        dailyClicks: updatedDaily,
+        weeklyClicks: updatedWeekly,
+        monthlyClicks: updatedMonthly
+      };
+
+      await setDoc(doc(db, 'analytics', 'social_clicks'), nextAnalytics, { merge: true });
+    } catch (err: any) {
+      console.warn('Error recording social click:', err);
     }
   };
 
@@ -1375,6 +1478,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateCustomerSoundSettings,
         playSiteSound,
 
+        socialMediaConfig,
+        updateSocialMediaConfig,
+        socialAnalytics,
+        recordSocialClick,
+
         // Legacy compatibility properties (Stubbed)
         hasPendingDraft: false,
         pendingDraftCount: 0,
@@ -1439,6 +1547,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateHeroContent,
         setAnnouncementsList,
         updateCategoryHighlight,
+        saveCategoryHighlights,
         updateTrendingCollection,
         refreshAuditLogs,
         createStoreBackup,

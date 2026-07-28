@@ -57,6 +57,12 @@ export interface Review {
   verified: boolean;
   productBought?: string;
   avatar?: string;
+  approved?: boolean;
+  hidden?: boolean;
+  deleted?: boolean;
+  pinned?: boolean;
+  featured?: boolean;
+  reply?: string;
 }
 
 export interface FilterState {
@@ -147,13 +153,19 @@ export interface HeroContent {
 }
 
 export interface CategoryHighlight {
-  id: 'men' | 'women' | 'kids';
+  id: string;
   title: string;
   subtitle: string;
   image: string;
   itemCount: string;
   icon: string;
   subcategories: string[];
+  featured?: boolean;
+  trending?: boolean;
+  popular?: boolean;
+  newBadge?: boolean;
+  enabled?: boolean;
+  displayOrder?: number;
 }
 
 export interface TrendingCollectionItem {
@@ -658,4 +670,83 @@ export interface TopAnnouncementBarConfig {
   countdownExpiryOption?: 'hide' | 'ended_text' | 'switch_slide';
   countdownReverseMode?: boolean; // Enable Reverse Timeline
 }
+
+export interface SocialPlatformConfig {
+  id: string; // 'instagram' | 'facebook' | 'whatsapp' | 'youtube' | 'telegram' | 'twitter' | 'threads' | 'pinterest' | 'snapchat' | 'linkedin' | 'google_business'
+  name: string;
+  enabled: boolean;
+  username: string;
+  profileUrl: string;
+  customIcon?: string;
+  customButtonText?: string;
+  customLabel?: string;
+  displayOrder: number;
+  openInNewTab: boolean;
+  showAsFloating: boolean;
+  showHeader: boolean;
+  showFooter: boolean;
+  showOnContact: boolean;
+  showOnProduct: boolean;
+  showOnHome: boolean;
+  showOnMobile: boolean;
+  showOnDesktop: boolean;
+  iconColor: string;
+  bgColor: string;
+  hoverEffect: 'scale' | 'glow' | 'bounce' | 'fade' | 'rotate';
+  animationType: 'none' | 'bounce' | 'pulse' | 'pulse-slow' | 'shake' | 'float';
+}
+
+export interface InstagramStoryHighlight {
+  id: string;
+  title: string;
+  coverUrl: string;
+  linkUrl: string;
+}
+
+export interface SocialInstagramMediaItem {
+  id: string;
+  type: 'post' | 'reel';
+  imageUrl: string;
+  caption: string;
+  likes: number;
+  comments: number;
+  postUrl: string;
+  createdAt: string;
+}
+
+export interface YouTubeVideoItem {
+  id: string;
+  title: string;
+  thumbnailUrl: string;
+  views: string;
+  duration: string;
+  publishedAt: string;
+  videoUrl: string;
+}
+
+export interface SocialMediaCenterConfig {
+  platforms: SocialPlatformConfig[];
+  instagramHighlights: InstagramStoryHighlight[];
+  instagramMedia: SocialInstagramMediaItem[];
+  youtubeVideos: YouTubeVideoItem[];
+  youtubeShorts: YouTubeVideoItem[];
+  youtubeFeaturedVideo?: YouTubeVideoItem;
+  youtubePlaylists?: { id: string; name: string; count: string; url: string }[];
+  whatsappPredefinedMessage?: string;
+  whatsappSupportName?: string;
+  whatsappSupportAvatar?: string;
+  whatsappSupportRole?: string;
+  facebookPageLikeUrl?: string;
+  facebookMessengerUrl?: string;
+  facebookFeedEmbed?: string;
+}
+
+export interface SocialAnalyticsLog {
+  clickCount: Record<string, number>;
+  lastClickTimestamp: Record<string, string>;
+  dailyClicks: Record<string, number>; // date string "YYYY-MM-DD" -> click count
+  weeklyClicks: Record<string, number>; // week string "YYYY-[W]WW" -> click count
+  monthlyClicks: Record<string, number>; // month string "YYYY-MM" -> click count
+}
+
 

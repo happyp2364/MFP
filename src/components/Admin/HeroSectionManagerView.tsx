@@ -107,7 +107,7 @@ export const HeroSectionManagerView: React.FC = () => {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-[#0B8F63] shrink-0" />
             <span>
-              <strong>Draft Saved Successfully!</strong> Your Hero Section updates have been saved to draft mode. Click <strong>🚀 Publish Website</strong> at the top to make them live.
+              <strong>Saved Successfully ✓</strong> 
             </span>
           </div>
         </div>
@@ -482,7 +482,7 @@ export const HeroSectionManagerView: React.FC = () => {
         className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-7 py-3.5 rounded-2xl shadow-lg flex items-center gap-2 transition-all cursor-pointer"
       >
         <Save className="w-4 h-4" />
-        <span>SAVE HERO SECTION SETTINGS TO DRAFT</span>
+        <span>Save Changes</span>
       </button>
     </form>
   );

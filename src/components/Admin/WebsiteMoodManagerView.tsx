@@ -742,7 +742,7 @@ export const WebsiteMoodManagerView: React.FC = () => {
             className="px-6 py-3 bg-[#0B8F63] text-white hover:bg-[#097a54] disabled:opacity-60 rounded-2xl text-xs font-extrabold shadow-md shadow-[#0B8F63]/20 flex items-center gap-2 transition-all active:scale-95"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSaving ? 'animate-spin' : ''}`} />
-            {isSaving ? 'Saving Changes...' : 'Save Global Atmosphere'}
+            {isSaving ? 'Saving...' : saveSuccess ? 'Saved Successfully ✓' : 'Save Changes'}
           </button>
         </div>
 

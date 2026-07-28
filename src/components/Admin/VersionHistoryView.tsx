@@ -8,10 +8,10 @@ export const VersionHistoryView: React.FC = () => {
     publishedVersions,
     lastPublishedAt,
     lastPublishedBy,
-    hasPendingDraft,
+    
     pendingDraftCount,
     restorePublishedVersion,
-    publishWebsite,
+    
   } = useStore();
 
   const [restoringId, setRestoringId] = useState<string | null>(null);
@@ -37,9 +37,9 @@ export const VersionHistoryView: React.FC = () => {
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-neutral-900 text-base">Global Draft & Version Control System</h3>
               <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
-                hasPendingDraft ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                false ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
               }`}>
-                {hasPendingDraft ? `🟡 Draft Changes Pending (${pendingDraftCount})` : '🟢 Live (Synced)'}
+                {false ? `🟡 Draft Changes Pending (${pendingDraftCount})` : '🟢 Live (Synced)'}
               </span>
             </div>
             <p className="text-xs text-neutral-500 mt-0.5">
@@ -69,12 +69,12 @@ export const VersionHistoryView: React.FC = () => {
         {publishedVersions.length === 0 ? (
           <div className="p-8 text-center text-neutral-500 text-sm">
             <AlertCircle className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
-            No previous version snapshots stored yet. Click "🚀 Publish Website" in the admin header to create your first version snapshot.
+            No previous version snapshots stored yet. Version history is maintained automatically when significant changes are made.
           </div>
         ) : (
           <div className="divide-y divide-neutral-200">
             {publishedVersions.map((ver, idx) => {
-              const isCurrentLive = idx === 0 && !hasPendingDraft;
+              const isCurrentLive = idx === 0 && !false;
               const isExpanded = expandedVerId === ver.id;
 
               return (

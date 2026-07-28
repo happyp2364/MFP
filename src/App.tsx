@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { AppErrorBoundary } from './components/Admin/AppErrorBoundary';
 import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { AnnouncementBar } from './components/Header/AnnouncementBar';
 import { Navbar } from './components/Header/Navbar';
@@ -653,8 +654,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <AppErrorBoundary name="Main Application Root">
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </AppErrorBoundary>
   );
 }

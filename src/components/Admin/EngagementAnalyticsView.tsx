@@ -41,7 +41,7 @@ export const EngagementAnalyticsView: React.FC = () => {
     },
     {
       label: 'Engagement Revenue',
-      value: `₹${engagementAnalytics.revenueGenerated.toLocaleString()}`,
+      value: `₹${(engagementAnalytics.revenueGenerated || 0).toLocaleString()}`,
       icon: IndianRupee,
       color: 'bg-blue-100 text-blue-600',
     },

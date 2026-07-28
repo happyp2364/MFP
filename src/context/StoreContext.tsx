@@ -168,7 +168,9 @@ interface StoreContextType {
     cartItems: CartItem[],
     shippingAddress: any,
     paymentMethod: PaymentMethodType | 'ONLINE' | 'NETBANKING',
-    paymentDetails?: any
+    paymentDetails?: any,
+    couponCode?: string,
+    discountAmount?: number
   ) => Promise<{ success: boolean; orderId?: string; message?: string }>;
   updateOrderStatus: (orderId: string, newStatus: OrderStatus, note?: string) => Promise<boolean>;
   cancelCustomerOrder: (orderId: string, reason?: string) => Promise<boolean>;
@@ -421,82 +423,44 @@ const DEFAULT_ORDER_CELEBRATION_CONFIG: OrderCelebrationConfig = {
   desktopOnly: false
 };
 
+// Safe JSON parsing helper to prevent initialization crashes
+const safeJSONParse = (key: string, fallback: any) => {
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return fallback;
+    return JSON.parse(item);
+  } catch (e) {
+    console.warn(`LocalStorage parse error for key "${key}":`, e);
+    return fallback;
+  }
+};
+
+// Safe LocalStorage set helper
+const safeLocalStorageSet = (key: string, value: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn(`LocalStorage write error for key "${key}":`, e);
+  }
+};
+
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Real-time Live State
-  const [publishedProducts, setPublishedProducts] = useState<Product[]>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-    return local ? JSON.parse(local) : PRODUCTS_DATA;
-  });
-
-  const [publishedReviews, setPublishedReviews] = useState<Review[]>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.REVIEWS);
-    return local ? JSON.parse(local) : REVIEWS_DATA;
-  });
-
-  const [publishedStoreInfo, setPublishedStoreInfo] = useState<StoreInfo>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.STORE_INFO);
-    return local ? JSON.parse(local) : STORE_INFO;
-  });
-
-  const [publishedHeroContent, setPublishedHeroContent] = useState<HeroContent>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.HERO_CONTENT);
-    return local ? JSON.parse(local) : DEFAULT_HERO_CONTENT;
-  });
-
-  const [publishedAnnouncements, setPublishedAnnouncements] = useState<string[]>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS);
-    return local ? JSON.parse(local) : ANNOUNCEMENT_ITEMS;
-  });
-
-  const [publishedCategoryHighlights, setPublishedCategoryHighlights] = useState<CategoryHighlight[]>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS);
-    return local ? JSON.parse(local) : (CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
-  });
-
-  const [publishedTrendingCollections, setPublishedTrendingCollections] = useState<TrendingCollectionItem[]>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.TRENDING_COLLECTIONS);
-    return local ? JSON.parse(local) : TRENDING_COLLECTIONS;
-  });
-
-  const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.PAYMENT_SETTINGS);
-    return local ? JSON.parse(local) : DEFAULT_PAYMENT_SETTINGS;
-  });
-
-  const [publishedHangingSneakerConfig, setPublishedHangingSneakerConfig] = useState<HangingSneakerConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.HANGING_SNEAKER_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_HANGING_SNEAKER_CONFIG;
-  });
-
-  const [publishedPetShoeConfig, setPublishedPetShoeConfig] = useState<PetShoeConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.PET_SHOE_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_PET_SHOE_CONFIG;
-  });
-
-  const [publishedInstagramConfig, setPublishedInstagramConfig] = useState<InstagramConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.INSTAGRAM_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_INSTAGRAM_CONFIG;
-  });
-
-  const [publishedSoundConfig, setPublishedSoundConfig] = useState<SoundConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.SOUND_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_SOUND_CONFIG;
-  });
-
-  const [publishedTopAnnouncementBarConfig, setPublishedTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG;
-  });
-
-  const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaCenterConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG;
-  });
-
-  const [socialAnalytics, setSocialAnalytics] = useState<SocialAnalyticsLog>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.SOCIAL_ANALYTICS);
-    return local ? JSON.parse(local) : DEFAULT_SOCIAL_ANALYTICS;
-  });
+  const [publishedProducts, setPublishedProducts] = useState<Product[]>(() => safeJSONParse(STORAGE_KEYS.PRODUCTS, PRODUCTS_DATA));
+  const [publishedReviews, setPublishedReviews] = useState<Review[]>(() => safeJSONParse(STORAGE_KEYS.REVIEWS, REVIEWS_DATA));
+  const [publishedStoreInfo, setPublishedStoreInfo] = useState<StoreInfo>(() => safeJSONParse(STORAGE_KEYS.STORE_INFO, STORE_INFO));
+  const [publishedHeroContent, setPublishedHeroContent] = useState<HeroContent>(() => safeJSONParse(STORAGE_KEYS.HERO_CONTENT, DEFAULT_HERO_CONTENT));
+  const [publishedAnnouncements, setPublishedAnnouncements] = useState<string[]>(() => safeJSONParse(STORAGE_KEYS.ANNOUNCEMENTS, ANNOUNCEMENT_ITEMS));
+  const [publishedCategoryHighlights, setPublishedCategoryHighlights] = useState<CategoryHighlight[]>(() => safeJSONParse(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, CATEGORY_HIGHLIGHTS));
+  const [publishedTrendingCollections, setPublishedTrendingCollections] = useState<TrendingCollectionItem[]>(() => safeJSONParse(STORAGE_KEYS.TRENDING_COLLECTIONS, TRENDING_COLLECTIONS));
+  const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(() => safeJSONParse(STORAGE_KEYS.PAYMENT_SETTINGS, DEFAULT_PAYMENT_SETTINGS));
+  const [publishedHangingSneakerConfig, setPublishedHangingSneakerConfig] = useState<HangingSneakerConfig>(() => safeJSONParse(STORAGE_KEYS.HANGING_SNEAKER_CONFIG, DEFAULT_HANGING_SNEAKER_CONFIG));
+  const [publishedPetShoeConfig, setPublishedPetShoeConfig] = useState<PetShoeConfig>(() => safeJSONParse(STORAGE_KEYS.PET_SHOE_CONFIG, DEFAULT_PET_SHOE_CONFIG));
+  const [publishedInstagramConfig, setPublishedInstagramConfig] = useState<InstagramConfig>(() => safeJSONParse(STORAGE_KEYS.INSTAGRAM_CONFIG, DEFAULT_INSTAGRAM_CONFIG));
+  const [publishedSoundConfig, setPublishedSoundConfig] = useState<SoundConfig>(() => safeJSONParse(STORAGE_KEYS.SOUND_CONFIG, DEFAULT_SOUND_CONFIG));
+  const [publishedTopAnnouncementBarConfig, setPublishedTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(() => safeJSONParse(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG));
+  const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaCenterConfig>(() => safeJSONParse(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG));
+  const [socialAnalytics, setSocialAnalytics] = useState<SocialAnalyticsLog>(() => safeJSONParse(STORAGE_KEYS.SOCIAL_ANALYTICS, DEFAULT_SOCIAL_ANALYTICS));
 
   // Coupons state
   const [coupons, setCoupons] = useState<PromoCoupon[]>([]);
@@ -531,11 +495,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isCustomerAuthLoading, setIsCustomerAuthLoading] = useState<boolean>(true);
   const [customerAuthError, setCustomerAuthError] = useState<string | null>(null);
 
-  // Sound Engine
-  const [customerSoundSettings, setCustomerSoundSettingsState] = useState<CustomerSoundSettings>(() => {
-    const local = localStorage.getItem('mfp_customer_sound_settings');
-    return local ? JSON.parse(local) : DEFAULT_CUSTOMER_SOUND_SETTINGS;
-  });
+  // Customer Sound Settings
+  const [customerSoundSettings, setCustomerSoundSettingsState] = useState<CustomerSoundSettings>(() => safeJSONParse('mfp_customer_sound_settings', DEFAULT_CUSTOMER_SOUND_SETTINGS));
 
   // Orders & Notifications
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
@@ -547,37 +508,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [subscribers, setSubscribers] = useState<MarketingSubscriber[]>([]);
 
   // Customer Engagement State
-  const [luckyBoxConfig, setLuckyBoxConfig] = useState<LuckyBoxConfig>(() => {
-    const local = localStorage.getItem('mfp_lucky_box_config');
-    return local ? JSON.parse(local) : DEFAULT_LUCKY_BOX_CONFIG;
-  });
-
-  const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(() => {
-    const local = localStorage.getItem('mfp_spin_wheel_config');
-    return local ? JSON.parse(local) : DEFAULT_SPIN_WHEEL_CONFIG;
-  });
-
-  const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(() => {
-    const local = localStorage.getItem('mfp_scratch_win_config');
-    return local ? JSON.parse(local) : DEFAULT_SCRATCH_WIN_CONFIG;
-  });
-
+  const [luckyBoxConfig, setLuckyBoxConfig] = useState<LuckyBoxConfig>(() => safeJSONParse('mfp_lucky_box_config', DEFAULT_LUCKY_BOX_CONFIG));
+  const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(() => safeJSONParse('mfp_spin_wheel_config', DEFAULT_SPIN_WHEEL_CONFIG));
+  const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(() => safeJSONParse('mfp_scratch_win_config', DEFAULT_SCRATCH_WIN_CONFIG));
   const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
-
-  const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(() => {
-    const local = localStorage.getItem('mfp_engagement_analytics');
-    return local ? JSON.parse(local) : DEFAULT_ENGAGEMENT_ANALYTICS;
-  });
-
-  const [orderCelebrationConfig, setOrderCelebrationConfig] = useState<OrderCelebrationConfig>(() => {
-    const local = localStorage.getItem('mfp_order_celebration_config');
-    return local ? JSON.parse(local) : DEFAULT_ORDER_CELEBRATION_CONFIG;
-  });
+  const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(() => safeJSONParse('mfp_engagement_analytics', DEFAULT_ENGAGEMENT_ANALYTICS));
+  const [orderCelebrationConfig, setOrderCelebrationConfig] = useState<OrderCelebrationConfig>(() => safeJSONParse('mfp_order_celebration_config', DEFAULT_ORDER_CELEBRATION_CONFIG));
 
   const [isCelebrating, setIsCelebrating] = useState<boolean>(false);
 
   // Audit Logger Helper
-  const recordAuditLog = (
+  const recordAuditLog = useCallback((
     action: string,
     category: 'AUTH' | 'PRODUCT' | 'SETTINGS' | 'SECURITY' | 'BACKUP' | 'MEDIA',
     details: string,
@@ -595,7 +536,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     setAuditLogs((prev) => [newLog, ...prev]);
-  };
+  }, []);
 
   // 1. Real-Time Firestore Listeners for Live Products (Split-Aware & Stitched)
   useEffect(() => {
@@ -612,7 +553,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           snapshot.forEach((docSnap) => {
             remote.push({ ...docSnap.data(), id: docSnap.id });
           });
-          setRawLiveProducts(remote);
+          setRawLiveProducts(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(remote)) return prev;
+            return remote;
+          });
           setProductsFetched(true);
         } else {
           setProductsFetched(true);
@@ -641,7 +585,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubGallery = onSnapshot(collection(db, 'product_gallery'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
-        setLiveGalleries(map);
+        setLiveGalleries(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(map)) return prev;
+          return map;
+        });
       }, (err) => {
         handleFirestoreError(err, OperationType.GET, 'product_gallery');
       });
@@ -649,7 +596,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubVariants = onSnapshot(collection(db, 'product_variants'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
-        setLiveVariants(map);
+        setLiveVariants(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(map)) return prev;
+          return map;
+        });
       }, (err) => {
         handleFirestoreError(err, OperationType.GET, 'product_variants');
       });
@@ -657,7 +607,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubAiMetadata = onSnapshot(collection(db, 'product_ai_metadata'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
-        setLiveAiMetadata(map);
+        setLiveAiMetadata(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(map)) return prev;
+          return map;
+        });
       }, (err) => {
         handleFirestoreError(err, OperationType.GET, 'product_ai_metadata');
       });
@@ -665,7 +618,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubGalleryParts = onSnapshot(collection(db, 'product_gallery_parts'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
-        setLiveGalleryParts(map);
+        setLiveGalleryParts(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(map)) return prev;
+          return map;
+        });
       }, (err) => {
         handleFirestoreError(err, OperationType.GET, 'product_gallery_parts');
       });
@@ -699,7 +655,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Deep compare or check length to avoid unnecessary state updates if nothing changed
       setPublishedProducts(prev => {
         if (JSON.stringify(prev) === JSON.stringify(stitched)) return prev;
-        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(stitched));
+        safeLocalStorageSet(STORAGE_KEYS.PRODUCTS, stitched);
         return stitched;
       });
     }
@@ -714,8 +670,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'settings', 'store'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as StoreInfo;
-            setPublishedStoreInfo(data);
-            localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(data));
+            setPublishedStoreInfo(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.STORE_INFO, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live store settings listener notice:', err))
       );
@@ -724,8 +683,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'settings', 'luckyBox'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as LuckyBoxConfig;
-            setLuckyBoxConfig(data);
-            localStorage.setItem('mfp_lucky_box_config', JSON.stringify(data));
+            setLuckyBoxConfig(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet('mfp_lucky_box_config', data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live lucky box listener notice:', err))
       );
@@ -734,8 +696,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'settings', 'spinWheel'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as SpinWheelConfig;
-            setSpinWheelConfig(data);
-            localStorage.setItem('mfp_spin_wheel_config', JSON.stringify(data));
+            setSpinWheelConfig(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet('mfp_spin_wheel_config', data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live spin wheel listener notice:', err))
       );
@@ -744,8 +709,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'settings', 'scratchWin'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as ScratchWinConfig;
-            setScratchWinConfig(data);
-            localStorage.setItem('mfp_scratch_win_config', JSON.stringify(data));
+            setScratchWinConfig(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet('mfp_scratch_win_config', data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live scratch win listener notice:', err))
       );
@@ -754,8 +722,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'analytics', 'engagement'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as EngagementAnalytics;
-            setEngagementAnalytics(data);
-            localStorage.setItem('mfp_engagement_analytics', JSON.stringify(data));
+            setEngagementAnalytics(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet('mfp_engagement_analytics', data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live engagement analytics listener notice:', err))
       );
@@ -764,7 +735,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(collection(db, 'flashDeals'), (snap) => {
           const list: FlashDeal[] = [];
           snap.forEach((d) => list.push({ ...d.data(), id: d.id } as FlashDeal));
-          setFlashDeals(list);
+          setFlashDeals(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(list)) return prev;
+            return list;
+          });
         }, (err) => console.warn('Live flash deals listener notice:', err))
       );
 
@@ -772,8 +746,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'settings', 'orderCelebration'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as OrderCelebrationConfig;
-            setOrderCelebrationConfig(data);
-            localStorage.setItem('mfp_order_celebration_config', JSON.stringify(data));
+            setOrderCelebrationConfig(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet('mfp_order_celebration_config', data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live order celebration listener notice:', err))
       );
@@ -782,8 +759,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'hero', 'current'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as HeroContent;
-            setPublishedHeroContent(data);
-            localStorage.setItem(STORAGE_KEYS.HERO_CONTENT, JSON.stringify(data));
+            setPublishedHeroContent(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.HERO_CONTENT, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live hero listener notice:', err))
       );
@@ -792,8 +772,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'homepage', 'announcements'), (snap) => {
           if (snap.exists() && snap.data()?.items) {
             const data = snap.data().items as string[];
-            setPublishedAnnouncements(data);
-            localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(data));
+            setPublishedAnnouncements(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.ANNOUNCEMENTS, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live announcements listener notice:', err))
       );
@@ -802,8 +785,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'categories', 'highlights'), (snap) => {
           if (snap.exists() && snap.data()?.items) {
             const data = snap.data().items as CategoryHighlight[];
-            setPublishedCategoryHighlights(data);
-            localStorage.setItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, JSON.stringify(data));
+            setPublishedCategoryHighlights(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live categories listener notice:', err))
       );
@@ -812,8 +798,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'homepage', 'trendingCollections'), (snap) => {
           if (snap.exists() && snap.data()?.items) {
             const data = snap.data().items as TrendingCollectionItem[];
-            setPublishedTrendingCollections(data);
-            localStorage.setItem(STORAGE_KEYS.TRENDING_COLLECTIONS, JSON.stringify(data));
+            setPublishedTrendingCollections(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.TRENDING_COLLECTIONS, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live trending collections listener notice:', err))
       );
@@ -822,8 +811,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'payment', 'config'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as PaymentSettings;
-            setPublishedPaymentSettings(data);
-            localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(data));
+            setPublishedPaymentSettings(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.PAYMENT_SETTINGS, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live payment listener notice:', err))
       );
@@ -832,8 +824,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'animations', 'hangingSneakerConfig'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as HangingSneakerConfig;
-            setPublishedHangingSneakerConfig(data);
-            localStorage.setItem(STORAGE_KEYS.HANGING_SNEAKER_CONFIG, JSON.stringify(data));
+            setPublishedHangingSneakerConfig(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.HANGING_SNEAKER_CONFIG, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live sneaker animation listener notice:', err))
       );
@@ -842,8 +837,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'mascot', 'petShoeConfig'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as PetShoeConfig;
-            setPublishedPetShoeConfig(data);
-            localStorage.setItem(STORAGE_KEYS.PET_SHOE_CONFIG, JSON.stringify(data));
+            setPublishedPetShoeConfig(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.PET_SHOE_CONFIG, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live pet shoe listener notice:', err))
       );
@@ -852,8 +850,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'social', 'instagramConfig'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as InstagramConfig;
-            setPublishedInstagramConfig(data);
-            localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(data));
+            setPublishedInstagramConfig(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.INSTAGRAM_CONFIG, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live instagram listener notice:', err))
       );
@@ -862,8 +863,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'theme', 'current'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as SoundConfig;
-            setPublishedSoundConfig(data);
-            localStorage.setItem(STORAGE_KEYS.SOUND_CONFIG, JSON.stringify(data));
+            setPublishedSoundConfig(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.SOUND_CONFIG, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live sound listener notice:', err))
       );
@@ -872,8 +876,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'homepage', 'topAnnouncementBarConfig'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as TopAnnouncementBarConfig;
-            setPublishedTopAnnouncementBarConfig(data);
-            localStorage.setItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, JSON.stringify(data));
+            setPublishedTopAnnouncementBarConfig(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live top announcement bar listener notice:', err))
       );
@@ -882,8 +889,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'social', 'socialMediaConfig'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as SocialMediaCenterConfig;
-            setSocialMediaConfig(data);
-            localStorage.setItem(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, JSON.stringify(data));
+            setSocialMediaConfig(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live social media config listener error:', err))
       );
@@ -892,8 +902,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'analytics', 'social_clicks'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as SocialAnalyticsLog;
-            setSocialAnalytics(data);
-            localStorage.setItem(STORAGE_KEYS.SOCIAL_ANALYTICS, JSON.stringify(data));
+            setSocialAnalytics(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.SOCIAL_ANALYTICS, data);
+              return data;
+            });
           }
         }, (err) => console.warn('Live social analytics listener error:', err))
       );
@@ -903,8 +916,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (!snap.empty) {
             const list: Review[] = [];
             snap.forEach((d) => list.push({ ...d.data(), id: d.id } as Review));
-            setPublishedReviews(list);
-            localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(list));
+            setPublishedReviews(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(list)) return prev;
+              safeLocalStorageSet(STORAGE_KEYS.REVIEWS, list);
+              return list;
+            });
           }
         }, (err) => console.warn('Live reviews listener notice:', err))
       );
@@ -918,7 +934,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             snap.forEach((d) => {
               list.push({ ...d.data(), id: d.id } as AdminNotification);
             });
-            setNotifications(list);
+            setNotifications(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(list)) return prev;
+              return list;
+            });
 
             if (isFirstNotificationsLoad) {
               isFirstNotificationsLoad = false;
@@ -944,7 +963,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             snap.forEach((d) => {
               list.push({ ...d.data(), id: d.id } as CustomerOrder);
             });
-            setOrders(list);
+            setOrders(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(list)) return prev;
+              return list;
+            });
           },
           (err) => console.warn('Live orders listener notice:', err)
         )
@@ -960,7 +982,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             });
             // sort coupons by priority (highest first), then by code
             list.sort((a, b) => (b.priority || 0) - (a.priority || 0));
-            setCoupons(list);
+            setCoupons(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(list)) return prev;
+              return list;
+            });
           },
           (err) => console.warn('Live coupons listener notice:', err)
         )
@@ -1044,19 +1069,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, [isAdmin, lastActivityTime, handleUserActivity]);
 
-  useEffect(() => {
-    refreshAuditLogs();
-  }, []);
-
-  const refreshAuditLogs = async () => {
+  const refreshAuditLogs = useCallback(async () => {
     try {
       const logs = await fetchRemoteAuditLogs();
       setAuditLogs(logs);
-      localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(logs));
+      safeLocalStorageSet(STORAGE_KEYS.AUDIT_LOGS, logs);
     } catch (e) {
       console.warn('Audit logs fetch notice:', e);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    refreshAuditLogs();
+  }, [refreshAuditLogs]);
 
   // Auth Methods
   const loginAdmin = async (password: string, twoFactorCode?: string) => {
@@ -2107,11 +2132,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     recordAuditLog('Factory Reset Performed', 'SECURITY', 'Restored store defaults', 'DANGER');
   };
 
-  const updateLuckyBoxConfig = async (updated: Partial<LuckyBoxConfig>): Promise<boolean> => {
+  const updateLuckyBoxConfig = useCallback(async (updated: Partial<LuckyBoxConfig>): Promise<boolean> => {
     try {
       const next = { ...luckyBoxConfig, ...updated };
       setLuckyBoxConfig(next);
-      localStorage.setItem('mfp_lucky_box_config', JSON.stringify(next));
+      safeLocalStorageSet('mfp_lucky_box_config', next);
       await setDoc(doc(db, 'settings', 'luckyBox'), next);
       recordAuditLog('Updated Lucky Box Config', 'SETTINGS', 'Successfully updated Lucky Box reward settings', 'SUCCESS');
       showToast('Lucky Box settings saved successfully', 'success');
@@ -2121,13 +2146,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       showToast('Failed to save Lucky Box settings', 'error');
       return false;
     }
-  };
+  }, [luckyBoxConfig, recordAuditLog, showToast]);
 
-  const updateSpinWheelConfig = async (updated: Partial<SpinWheelConfig>): Promise<boolean> => {
+  const updateSpinWheelConfig = useCallback(async (updated: Partial<SpinWheelConfig>): Promise<boolean> => {
     try {
       const next = { ...spinWheelConfig, ...updated };
       setSpinWheelConfig(next);
-      localStorage.setItem('mfp_spin_wheel_config', JSON.stringify(next));
+      safeLocalStorageSet('mfp_spin_wheel_config', next);
       await setDoc(doc(db, 'settings', 'spinWheel'), next);
       recordAuditLog('Updated Spin Wheel Config', 'SETTINGS', 'Successfully updated Spin Wheel reward settings', 'SUCCESS');
       showToast('Spin Wheel settings saved successfully', 'success');
@@ -2137,13 +2162,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       showToast('Failed to save Spin Wheel settings', 'error');
       return false;
     }
-  };
+  }, [spinWheelConfig, recordAuditLog, showToast]);
 
-  const updateScratchWinConfig = async (updated: Partial<ScratchWinConfig>): Promise<boolean> => {
+  const updateScratchWinConfig = useCallback(async (updated: Partial<ScratchWinConfig>): Promise<boolean> => {
     try {
       const next = { ...scratchWinConfig, ...updated };
       setScratchWinConfig(next);
-      localStorage.setItem('mfp_scratch_win_config', JSON.stringify(next));
+      safeLocalStorageSet('mfp_scratch_win_config', next);
       await setDoc(doc(db, 'settings', 'scratchWin'), next);
       recordAuditLog('Updated Scratch & Win Config', 'SETTINGS', 'Successfully updated Scratch & Win reward settings', 'SUCCESS');
       showToast('Scratch & Win settings saved successfully', 'success');
@@ -2153,7 +2178,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       showToast('Failed to save Scratch & Win settings', 'error');
       return false;
     }
-  };
+  }, [scratchWinConfig, recordAuditLog, showToast]);
 
   const addFlashDeal = async (deal: Omit<FlashDeal, 'id' | 'analytics'>): Promise<boolean> => {
     try {
@@ -2193,20 +2218,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const recordEngagementMetric = async (metric: keyof EngagementAnalytics, value: number = 1): Promise<void> => {
+  const recordEngagementMetric = useCallback(async (metric: keyof EngagementAnalytics, value: number = 1): Promise<void> => {
     try {
-      const next = { ...engagementAnalytics, [metric]: (engagementAnalytics[metric] || 0) + value };
+      const currentVal = engagementAnalytics[metric];
+      const nextVal = typeof currentVal === 'number' ? (currentVal || 0) + value : value;
+      const next = { ...engagementAnalytics, [metric]: nextVal };
       await setDoc(doc(db, 'analytics', 'engagement'), next, { merge: true });
     } catch (e) {
       console.warn('Engagement analytics update failed:', e);
     }
-  };
+  }, [engagementAnalytics]);
 
-  const updateOrderCelebrationConfig = async (updated: Partial<OrderCelebrationConfig>): Promise<boolean> => {
+  const updateOrderCelebrationConfig = useCallback(async (updated: Partial<OrderCelebrationConfig>): Promise<boolean> => {
     try {
       const next = { ...orderCelebrationConfig, ...updated };
       setOrderCelebrationConfig(next);
-      localStorage.setItem('mfp_order_celebration_config', JSON.stringify(next));
+      safeLocalStorageSet('mfp_order_celebration_config', next);
       await setDoc(doc(db, 'settings', 'orderCelebration'), next);
       recordAuditLog('Updated Order Celebration Config', 'SETTINGS', 'Successfully updated Order Success Celebration settings', 'SUCCESS');
       showToast('Order Celebration settings saved successfully', 'success');
@@ -2216,14 +2243,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       showToast('Failed to save Order Celebration settings', 'error');
       return false;
     }
-  };
+  }, [orderCelebrationConfig, recordAuditLog, showToast]);
 
-  const triggerGlobalCelebration = () => {
+  const triggerGlobalCelebration = useCallback(() => {
     if (orderCelebrationConfig.enabled) {
       setIsCelebrating(true);
       setTimeout(() => setIsCelebrating(false), (orderCelebrationConfig.duration || 5) * 1000);
     }
-  };
+  }, [orderCelebrationConfig]);
 
   const contextValue = React.useMemo(() => ({
     products: publishedProducts,

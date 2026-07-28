@@ -11,7 +11,7 @@ export const FlashDealSection: React.FC = () => {
 
   const activeDeals = flashDeals.filter(d => {
     const now = new Date();
-    return d.active && new Date(d.startTime) <= now && new Date(d.endTime) > now;
+    return d.status === 'active' && new Date(d.startDate) <= now && new Date(d.endDate) > now;
   });
 
   if (activeDeals.length === 0) return null;
@@ -46,13 +46,14 @@ export const FlashDealSection: React.FC = () => {
 
 const FlashDealCard: React.FC<{ deal: FlashDeal }> = ({ deal }) => {
   const { products, recordEngagementMetric } = useStore();
-  const product = products.find(p => p.id === deal.productId);
+  const productId = deal.targetIds?.[0] || '';
+  const product = products.find(p => p.id === productId);
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
     const updateTimer = () => {
       const now = new Date().getTime();
-      const end = new Date(deal.endTime).getTime();
+      const end = new Date(deal.endDate).getTime();
       const diff = end - now;
 
       if (diff <= 0) {
@@ -70,7 +71,7 @@ const FlashDealCard: React.FC<{ deal: FlashDeal }> = ({ deal }) => {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [deal.endTime]);
+  }, [deal.endDate]);
 
   if (!product) return null;
 
@@ -84,7 +85,7 @@ const FlashDealCard: React.FC<{ deal: FlashDeal }> = ({ deal }) => {
       {/* Product Image */}
       <div className="relative aspect-[4/5] overflow-hidden bg-neutral-100">
         <img
-          src={product.image}
+          src={product.images[0]}
           alt={product.name}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           referrerPolicy="no-referrer"
@@ -93,11 +94,11 @@ const FlashDealCard: React.FC<{ deal: FlashDeal }> = ({ deal }) => {
         {/* Overlay Badges */}
         <div className="absolute top-4 left-4 flex flex-col gap-2">
           <div className="px-3 py-1.5 bg-neutral-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">
-            -{Math.round(((product.price - deal.discountPrice) / product.price) * 100)}% OFF
+            {deal.discountType === 'PERCENTAGE' ? `-${deal.discountValue}% OFF` : `₹${deal.discountValue} OFF`}
           </div>
-          {deal.showLowStockMessage && deal.stockLimit <= deal.lowStockThreshold && (
+          {deal.lowStockMessageEnabled && (product.isLimitedStock || (product.sizeStocks && product.sizeStocks.some(s => s.stockQuantity > 0 && s.stockQuantity <= deal.lowStockThreshold))) && (
             <div className="px-3 py-1.5 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl animate-pulse">
-              Only {deal.stockLimit} Left!
+              Limited Stock!
             </div>
           )}
         </div>
@@ -135,7 +136,7 @@ const FlashDealCard: React.FC<{ deal: FlashDeal }> = ({ deal }) => {
           <div className="space-y-0.5">
             <span className="text-xs text-neutral-400 line-through">₹{product.price}</span>
             <div className="text-2xl font-black text-neutral-900 tracking-tighter italic">
-              ₹{deal.discountPrice}
+              ₹{deal.discountType === 'PERCENTAGE' ? Math.round(product.price * (1 - deal.discountValue / 100)) : product.price - deal.discountValue}
             </div>
           </div>
           

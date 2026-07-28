@@ -21,20 +21,32 @@ export const FlashDealSettingsView: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newDeal, setNewDeal] = useState<Omit<FlashDeal, 'id' | 'analytics'>>({
     title: '',
-    productId: '',
-    discountPrice: 0,
-    startTime: new Date().toISOString(),
-    endTime: new Date(Date.now() + 3600000).toISOString(),
-    stockLimit: 10,
-    active: true,
+    status: 'active',
+    targetType: 'PRODUCTS',
+    targetIds: [],
+    discountType: 'PERCENTAGE',
+    discountValue: 20,
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 3600000 * 24).toISOString(),
+    timezone: 'Asia/Kolkata',
     showCountdown: true,
-    showLowStockMessage: true,
+    countdownFormat: { days: true, hours: true, minutes: true, seconds: true },
+    hideAfterExpiry: true,
+    lowStockMessageEnabled: true,
     lowStockThreshold: 5,
+    displayLocations: ['homepage_hero', 'product_page'],
+    styling: {
+      bgColor: '#FFFFFF',
+      textColor: '#111827',
+      animation: 'pulse',
+      countdownTheme: 'bold',
+      glowEffect: true,
+    }
   });
 
   const handleCreate = async () => {
-    if (!newDeal.productId || !newDeal.title) {
-      alert('Fill all required fields');
+    if (!newDeal.targetIds || newDeal.targetIds.length === 0 || !newDeal.title) {
+      alert('Fill all required fields (Title and at least one Product)');
       return;
     }
     await addFlashDeal(newDeal);
@@ -71,18 +83,18 @@ export const FlashDealSettingsView: React.FC = () => {
       {/* Deals List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {flashDeals.map((deal) => {
-          const product = getProduct(deal.productId);
+          const product = getProduct(deal.targetIds?.[0] || '');
           return (
             <div key={deal.id} className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden group">
               <div className="p-4 border-b border-neutral-100 bg-neutral-50/50 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${deal.active ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-300'}`} />
+                  <div className={`w-2 h-2 rounded-full ${deal.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-300'}`} />
                   <span className="text-xs font-bold text-neutral-800">{deal.title}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button 
-                    onClick={() => updateFlashDeal(deal.id, { active: !deal.active })}
-                    className={`p-1.5 rounded-lg transition-colors ${deal.active ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                    onClick={() => updateFlashDeal(deal.id, { status: deal.status === 'active' ? 'paused' : 'active' })}
+                    className={`p-1.5 rounded-lg transition-colors ${deal.status === 'active' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
                   >
                     <Clock className="w-4 h-4" />
                   </button>
@@ -99,7 +111,7 @@ export const FlashDealSettingsView: React.FC = () => {
                 {product && (
                   <div className="flex gap-4">
                     <img 
-                      src={product.image} 
+                      src={product.images[0]} 
                       alt={product.name} 
                       className="w-16 h-16 rounded-xl object-cover border border-neutral-100"
                       referrerPolicy="no-referrer"
@@ -108,9 +120,11 @@ export const FlashDealSettingsView: React.FC = () => {
                       <h4 className="text-sm font-bold text-neutral-800 truncate">{product.name}</h4>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-neutral-400 line-through">₹{product.price}</span>
-                        <span className="text-sm font-bold text-orange-600">₹{deal.discountPrice}</span>
+                        <span className="text-sm font-bold text-orange-600">
+                          ₹{deal.discountType === 'PERCENTAGE' ? Math.round(product.price * (1 - deal.discountValue / 100)) : product.price - deal.discountValue}
+                        </span>
                         <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded text-[10px] font-bold">
-                          {Math.round(((product.price - deal.discountPrice) / product.price) * 100)}% OFF
+                          {deal.discountType === 'PERCENTAGE' ? `${deal.discountValue}% OFF` : `₹${deal.discountValue} OFF`}
                         </span>
                       </div>
                     </div>
@@ -119,9 +133,9 @@ export const FlashDealSettingsView: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-100">
-                    <p className="text-[10px] font-bold text-neutral-400 uppercase">Stock Remaining</p>
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase">Stock Threshold</p>
                     <div className="flex items-end justify-between mt-1">
-                      <span className="text-lg font-bold text-neutral-800">{deal.stockLimit}</span>
+                      <span className="text-lg font-bold text-neutral-800">{deal.lowStockThreshold}</span>
                       <Package className="w-4 h-4 text-neutral-300" />
                     </div>
                   </div>
@@ -137,7 +151,7 @@ export const FlashDealSettingsView: React.FC = () => {
                 <div className="flex items-center justify-between text-[10px] text-neutral-500 pt-2">
                   <div className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
-                    <span>Ends: {new Date(deal.endTime).toLocaleDateString()} at {new Date(deal.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span>Ends: {new Date(deal.endDate).toLocaleDateString()} at {new Date(deal.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="flex items-center gap-1"><ArrowRight className="w-3 h-3" /> {deal.analytics?.clicks || 0} Clicks</span>
@@ -174,13 +188,11 @@ export const FlashDealSettingsView: React.FC = () => {
               <div>
                 <label className="block text-[11px] font-bold text-neutral-600 mb-1">Select Product</label>
                 <select
-                  value={newDeal.productId}
+                  value={newDeal.targetIds?.[0] || ''}
                   onChange={(e) => {
-                    const p = getProduct(e.target.value);
                     setNewDeal(prev => ({ 
                       ...prev, 
-                      productId: e.target.value,
-                      discountPrice: p ? Math.round(p.price * 0.8) : 0 
+                      targetIds: [e.target.value]
                     }));
                   }}
                   className="w-full text-xs border border-neutral-300 rounded-lg p-2 focus:ring-1 focus:ring-orange-500"
@@ -194,21 +206,23 @@ export const FlashDealSettingsView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-neutral-600 mb-1">Flash Price (₹)</label>
-                  <input
-                    type="number"
-                    value={newDeal.discountPrice}
-                    onChange={(e) => setNewDeal(prev => ({ ...prev, discountPrice: Number(e.target.value) }))}
-                    className="w-full text-xs border border-neutral-300 rounded-lg p-2 focus:ring-1 focus:ring-orange-500 font-bold text-orange-600"
-                  />
+                  <label className="block text-[11px] font-bold text-neutral-600 mb-1">Discount Type</label>
+                  <select
+                    value={newDeal.discountType}
+                    onChange={(e) => setNewDeal(prev => ({ ...prev, discountType: e.target.value as 'PERCENTAGE' | 'FLAT' }))}
+                    className="w-full text-xs border border-neutral-300 rounded-lg p-2 focus:ring-1 focus:ring-orange-500"
+                  >
+                    <option value="PERCENTAGE">Percentage (%)</option>
+                    <option value="FLAT">Flat (₹)</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-neutral-600 mb-1">Flash Stock Limit</label>
+                  <label className="block text-[11px] font-bold text-neutral-600 mb-1">Discount Value</label>
                   <input
                     type="number"
-                    value={newDeal.stockLimit}
-                    onChange={(e) => setNewDeal(prev => ({ ...prev, stockLimit: Number(e.target.value) }))}
-                    className="w-full text-xs border border-neutral-300 rounded-lg p-2 focus:ring-1 focus:ring-orange-500"
+                    value={newDeal.discountValue}
+                    onChange={(e) => setNewDeal(prev => ({ ...prev, discountValue: Number(e.target.value) }))}
+                    className="w-full text-xs border border-neutral-300 rounded-lg p-2 focus:ring-1 focus:ring-orange-500 font-bold text-orange-600"
                   />
                 </div>
               </div>
@@ -218,8 +232,8 @@ export const FlashDealSettingsView: React.FC = () => {
                   <label className="block text-[11px] font-bold text-neutral-600 mb-1">Start Date & Time</label>
                   <input
                     type="datetime-local"
-                    value={newDeal.startTime.slice(0, 16)}
-                    onChange={(e) => setNewDeal(prev => ({ ...prev, startTime: new Date(e.target.value).toISOString() }))}
+                    value={newDeal.startDate.slice(0, 16)}
+                    onChange={(e) => setNewDeal(prev => ({ ...prev, startDate: new Date(e.target.value).toISOString() }))}
                     className="w-full text-xs border border-neutral-300 rounded-lg p-2 focus:ring-1 focus:ring-orange-500"
                   />
                 </div>
@@ -227,8 +241,8 @@ export const FlashDealSettingsView: React.FC = () => {
                   <label className="block text-[11px] font-bold text-neutral-600 mb-1">End Date & Time</label>
                   <input
                     type="datetime-local"
-                    value={newDeal.endTime.slice(0, 16)}
-                    onChange={(e) => setNewDeal(prev => ({ ...prev, endTime: new Date(e.target.value).toISOString() }))}
+                    value={newDeal.endDate.slice(0, 16)}
+                    onChange={(e) => setNewDeal(prev => ({ ...prev, endDate: new Date(e.target.value).toISOString() }))}
                     className="w-full text-xs border border-neutral-300 rounded-lg p-2 focus:ring-1 focus:ring-orange-500"
                   />
                 </div>
@@ -247,8 +261,8 @@ export const FlashDealSettingsView: React.FC = () => {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={newDeal.showLowStockMessage}
-                    onChange={(e) => setNewDeal(prev => ({ ...prev, showLowStockMessage: e.target.checked }))}
+                    checked={newDeal.lowStockMessageEnabled}
+                    onChange={(e) => setNewDeal(prev => ({ ...prev, lowStockMessageEnabled: e.target.checked }))}
                     className="rounded border-neutral-300 text-orange-600 focus:ring-orange-500"
                   />
                   <span className="text-xs font-bold text-neutral-700">Display "Low Stock" Warning</span>

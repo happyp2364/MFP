@@ -158,7 +158,7 @@ export function initAutoContrastEngine() {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['class', 'style'],
+    attributeFilter: ['class'],
   });
 
   // Run audit on window events too

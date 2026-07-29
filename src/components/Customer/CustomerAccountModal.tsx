@@ -268,7 +268,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
 
                         <div className="flex items-center space-x-2">
                           <span className="px-2.5 py-1 bg-amber-100 text-amber-900 font-bold rounded-md uppercase text-[10px]">
-                            {order.orderStatus.replace(/_/g, ' ')}
+                            {(order.orderStatus || '').replace(/_/g, ' ')}
                           </span>
                           <button
                             onClick={() => setSelectedInvoiceOrder(order)}

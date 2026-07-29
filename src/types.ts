@@ -57,6 +57,7 @@ export interface Review {
   verified: boolean;
   productBought?: string;
   avatar?: string;
+  instagramHandle?: string;
   approved?: boolean;
   hidden?: boolean;
   deleted?: boolean;

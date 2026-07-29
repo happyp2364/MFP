@@ -1850,7 +1850,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Gender/Collection restriction
       if (coupon.restrictType === 'COLLECTIONS' && coupon.restrictCollections && coupon.restrictCollections.length > 0) {
         const cat = (p.category || '').toLowerCase();
-        const allowedCats = coupon.restrictCollections.map((c) => c.toLowerCase());
+        const allowedCats = coupon.restrictCollections.map((c) => (c || '').toLowerCase());
         const isAllowed = allowedCats.some((ac) => ac.includes(cat) || cat.includes(ac));
         if (!isAllowed) {
           const collName = coupon.restrictCollections.includes('men') ? "Men's Collection" : coupon.restrictCollections.includes('women') ? "Women's Collection" : "Kids Collection";
@@ -1871,7 +1871,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (coupon.restrictType === 'CATEGORIES' && coupon.restrictCategories && coupon.restrictCategories.length > 0) {
         const subLower = (p.subcategory || '').toLowerCase();
         const catLower = (p.category || '').toLowerCase();
-        const allowedCats = coupon.restrictCategories.map((c) => c.toLowerCase());
+        const allowedCats = coupon.restrictCategories.map((c) => (c || '').toLowerCase());
         const isAllowed = allowedCats.some((ac) => subLower.includes(ac) || ac.includes(subLower) || catLower.includes(ac) || ac.includes(catLower));
         if (!isAllowed) {
           const catName = coupon.restrictCategories[0] || 'Sports Shoes';
@@ -1883,7 +1883,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Brand restriction
       if (coupon.restrictType === 'BRANDS' && coupon.restrictBrands && coupon.restrictBrands.length > 0) {
         const brandLower = (p.brand || '').toLowerCase();
-        const allowedBrands = coupon.restrictBrands.map((b) => b.toLowerCase());
+        const allowedBrands = coupon.restrictBrands.map((b) => (b || '').toLowerCase());
         if (!allowedBrands.includes(brandLower)) {
           itemReasons.push(`❌ Coupon Works Only On Brand: ${coupon.restrictBrands.join(', ')}`);
           return false;
@@ -1906,7 +1906,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Size restriction
       if (coupon.restrictSizes && coupon.restrictSizes.length > 0) {
-        const allowedSizes = coupon.restrictSizes.map((s) => s.trim().toLowerCase());
+        const allowedSizes = coupon.restrictSizes.map((s) => (s || '').trim().toLowerCase());
         const selSize = (item.selectedSize || '').trim().toLowerCase();
         if (!allowedSizes.includes(selSize)) {
           const firstAllowed = coupon.restrictSizes[0] || '7';

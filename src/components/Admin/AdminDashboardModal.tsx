@@ -269,11 +269,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const adminFilteredProducts = products.filter((p) => {
     if (selectedCategoryFilter !== 'all' && p.category !== selectedCategoryFilter) return false;
     if (adminSearch.trim()) {
-      const q = adminSearch.toLowerCase();
+      const q = (adminSearch || '').toLowerCase();
       return (
-        p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        p.subcategory.toLowerCase().includes(q)
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.brand || '').toLowerCase().includes(q) ||
+        (p.subcategory || '').toLowerCase().includes(q)
       );
     }
     return true;
@@ -283,11 +283,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const filteredAuditLogs = auditLogs.filter((log) => {
     if (auditCategoryFilter !== 'ALL' && log.category !== auditCategoryFilter) return false;
     if (auditSearch.trim()) {
-      const q = auditSearch.toLowerCase();
+      const q = (auditSearch || '').toLowerCase();
       return (
-        log.action.toLowerCase().includes(q) ||
-        log.details.toLowerCase().includes(q) ||
-        log.userEmail.toLowerCase().includes(q)
+        (log.action || '').toLowerCase().includes(q) ||
+        (log.details || '').toLowerCase().includes(q) ||
+        (log.userEmail || '').toLowerCase().includes(q)
       );
     }
     return true;

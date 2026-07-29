@@ -115,8 +115,8 @@ export const CouponManagementView: React.FC = () => {
 
   // Filter coupons
   const filteredCoupons = coupons.filter(c => {
-    const matchesSearch = c.code.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          c.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (c.code || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
+                          (c.name || '').toLowerCase().includes((searchQuery || '').toLowerCase());
     const matchesType = typeFilter === 'all' || c.type === typeFilter;
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
     return matchesSearch && matchesType && matchesStatus;
@@ -434,7 +434,7 @@ export const CouponManagementView: React.FC = () => {
                         {c.type === 'BUY_X_GET_Y' && <Gift className="w-3.5 h-3.5 text-rose-500" />}
                         {c.type === 'FREE_SHIPPING' && <Truck className="w-3.5 h-3.5 text-indigo-500" />}
                         {c.type === 'FREE_GIFT' && <Gift className="w-3.5 h-3.5 text-rose-400" />}
-                        <span>{c.type.replace(/_/g, ' ')}</span>
+                        <span>{(c.type || '').replace(/_/g, ' ')}</span>
                       </div>
                     </td>
 

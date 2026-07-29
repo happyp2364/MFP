@@ -225,7 +225,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // COLOR MANAGEMENT
   const handleAddPresetColor = (colorObj: ProductColor) => {
     const exists = productState.colors.some(
-      (c) => c.name.toLowerCase() === colorObj.name.toLowerCase()
+      (c) => (c.name || '').toLowerCase() === (colorObj.name || '').toLowerCase()
     );
     if (exists) return;
 

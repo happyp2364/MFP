@@ -325,19 +325,19 @@ function AppContent() {
       // Collection Filter
       if (filterState.collection) {
         const colMatch = p.collectionTags.some(
-          (tag) => tag.toLowerCase() === filterState.collection.toLowerCase()
+          (tag) => (tag || '').toLowerCase() === (filterState.collection || '').toLowerCase()
         );
         if (!colMatch) return false;
       }
 
       // Search Query
       if (filterState.searchQuery) {
-        const q = filterState.searchQuery.toLowerCase();
+        const q = (filterState.searchQuery || '').toLowerCase();
         const match =
-          p.name.toLowerCase().includes(q) ||
-          p.brand.toLowerCase().includes(q) ||
-          p.subcategory.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q);
+          (p.name || '').toLowerCase().includes(q) ||
+          (p.brand || '').toLowerCase().includes(q) ||
+          (p.subcategory || '').toLowerCase().includes(q) ||
+          (p.description || '').toLowerCase().includes(q);
         if (!match) return false;
       }
 

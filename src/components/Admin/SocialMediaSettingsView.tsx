@@ -84,7 +84,7 @@ export const SocialMediaSettingsView: React.FC = () => {
   // Icon Helper mapping
   const getIcon = (iconName: string, color?: string) => {
     const style = color ? { color } : undefined;
-    switch (iconName.toLowerCase()) {
+    switch ((iconName || '').toLowerCase()) {
       case 'instagram': return <Instagram className="w-5 h-5" style={style} />;
       case 'facebook': return <Facebook className="w-5 h-5" style={style} />;
       case 'messagecircle': return <MessageCircle className="w-5 h-5" style={style} />;

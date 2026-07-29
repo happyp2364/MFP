@@ -44,10 +44,10 @@ export const OrderManagementView: React.FC = () => {
   // Filter orders
   const filteredOrders = orders.filter((o) => {
     const matchesSearch =
-      o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (o.id || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      (o.customerName || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
       o.customerPhone.includes(searchQuery) ||
-      o.customerEmail.toLowerCase().includes(searchQuery.toLowerCase());
+      (o.customerEmail || '').toLowerCase().includes((searchQuery || '').toLowerCase());
 
     const matchesStatus = selectedStatusFilter === 'ALL' || o.orderStatus === selectedStatusFilter;
 

@@ -638,7 +638,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         // Find newly created order object for invoice & WhatsApp
         const matchedOrder = orders.find((o) => o.id === res.orderId) || {
           id: res.orderId,
-          orderNumber: parseInt(res.orderId.replace('#MFP', ''), 10) || 1025,
+          orderNumber: parseInt((res.orderId || '').replace('#MFP', ''), 10) || 1025,
           userId: customerProfile?.uid,
           customerName: shippingInfo.name,
           customerPhone: shippingInfo.phone,

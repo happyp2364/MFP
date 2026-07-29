@@ -67,7 +67,7 @@ export const SizeStockManager: React.FC<SizeStockManagerProps> = ({
     if (!customInput.trim()) return;
 
     const trimmed = customInput.trim();
-    if (sizeStocks.some((s) => s.size.toLowerCase() === trimmed.toLowerCase())) {
+    if (sizeStocks.some((s) => (s.size || '').toLowerCase() === (trimmed || '').toLowerCase())) {
       alert(`Size "${trimmed}" is already added.`);
       return;
     }

@@ -78,7 +78,7 @@ export const FlashDealRenderer: React.FC<{ location: FlashDeal['displayLocations
           if (minStock <= deal.lowStockThreshold) {
             let msg = deal.scarcityMessageTemplate || 'Only {count} Left';
             if (msg === 'custom') msg = deal.lowStockCustomMessage || '';
-            msg = msg.replace('{count}', minStock.toString());
+            msg = (msg || '').replace('{count}', minStock.toString());
             
             const style = deal.scarcityStyling || { textColor: '#FFFFFF', bgColor: '#DC2626', animation: 'pulse' };
             scarcityContent = (
@@ -241,7 +241,7 @@ const FlashDealCard: React.FC<{ deal: FlashDeal }> = ({ deal }) => {
   
   let scarcityMessage = deal.scarcityMessageTemplate || 'Only {count} Left';
   if (scarcityMessage === 'custom') scarcityMessage = deal.lowStockCustomMessage || '';
-  scarcityMessage = scarcityMessage.replace('{count}', totalStock.toString());
+  scarcityMessage = (scarcityMessage || '').replace('{count}', totalStock.toString());
   
   const scarcityStyle = deal.scarcityStyling || { textColor: '#FFFFFF', bgColor: '#DC2626', animation: 'pulse' };
 

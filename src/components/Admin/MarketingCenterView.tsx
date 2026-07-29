@@ -146,7 +146,7 @@ export const MarketingCenterView: React.FC = () => {
 
   // Filtered Campaigns
   const filteredCampaigns = campaigns.filter((c) => {
-    const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (c.title || '').toLowerCase().includes((searchTerm || '').toLowerCase());
     const matchesChannel = channelFilter === 'ALL' || c.channel === channelFilter;
     const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter;
     return matchesSearch && matchesChannel && matchesStatus;
@@ -154,8 +154,8 @@ export const MarketingCenterView: React.FC = () => {
 
   // Filtered Subscribers
   const filteredSubscribers = subscribers.filter((s) => {
-    const term = searchTerm.toLowerCase();
-    const matchesSearch = s.name.toLowerCase().includes(term) || s.email.toLowerCase().includes(term) || (s.phoneNumber || '').includes(term);
+    const term = (searchTerm || '').toLowerCase();
+    const matchesSearch = (s.name || '').toLowerCase().includes(term) || (s.email || '').toLowerCase().includes(term) || (s.phoneNumber || '').includes(term);
     const matchesChannel =
       channelFilter === 'ALL' ||
       (channelFilter === 'EMAIL' && s.preferences.email) ||
@@ -179,7 +179,7 @@ export const MarketingCenterView: React.FC = () => {
         
         <div style="margin-top: 24px; text-align: center;">
           <span style="background: #fef3c7; color: #92400e; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 9999px; text-transform: uppercase;">
-            ${campaignCategory.replace('_', ' ')}
+            ${(campaignCategory || '').replace('_', ' ')}
           </span>
           <h2 style="color: #18181b; font-size: 20px; margin-top: 12px;">${p.name}</h2>
           <img src="${p.images?.[0] || ''}" alt="${p.name}" style="width: 100%; max-height: 280px; object-fit: cover; border-radius: 12px; margin: 16px 0;"  referrerPolicy="no-referrer" />
@@ -275,7 +275,7 @@ export const MarketingCenterView: React.FC = () => {
     const headers = ['ID', 'Name', 'Email', 'Phone Number', 'Email OptIn', 'Push OptIn', 'WhatsApp OptIn', 'Subscribed At'];
     const rows = subscribers.map((s) => [
       s.id,
-      `"${s.name.replace(/"/g, '""')}"`,
+      `"${(s.name || '').replace(/"/g, '""')}"`,
       s.email,
       s.phoneNumber || '',
       s.preferences.email ? 'YES' : 'NO',
@@ -494,7 +494,7 @@ export const MarketingCenterView: React.FC = () => {
                       </span>
 
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 text-neutral-700">
-                        {campaign.category.replace('_', ' ')}
+                        {(campaign.category || '').replace('_', ' ')}
                       </span>
 
                       <span

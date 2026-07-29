@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { AppErrorBoundary } from './components/Admin/AppErrorBoundary';
 import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { AnnouncementBar } from './components/Header/AnnouncementBar';
 import { Navbar } from './components/Header/Navbar';
@@ -17,38 +16,33 @@ import { SocialFollowCTA } from './components/Social/SocialFollowCTA';
 import { Footer } from './components/Footer/Footer';
 import { FloatingActionHub } from './components/FloatingActions/FloatingActionHub';
 import { AIPetShoeMascot } from './components/Mascot/AIPetShoeMascot';
-const QuickViewModal = React.lazy(() => import('./components/Products/QuickViewModal').then(module => ({ default: module.QuickViewModal })));
+import { QuickViewModal } from './components/Products/QuickViewModal';
 import { OrderSheet } from './components/Cart/OrderSheet';
-const LiveSearchModal = React.lazy(() => import('./components/Search/LiveSearchModal').then(module => ({ default: module.LiveSearchModal })));
-const WishlistModal = React.lazy(() => import('./components/Wishlist/WishlistModal').then(module => ({ default: module.WishlistModal })));
-const AdminLoginModal = React.lazy(() => import('./components/Admin/AdminLoginModal').then(module => ({ default: module.AdminLoginModal })));
-const AdminDashboardModal = React.lazy(() => import('./components/Admin/AdminDashboardModal').then(module => ({ default: module.AdminDashboardModal })));
-const CheckoutModal = React.lazy(() => import('./components/Checkout/CheckoutModal').then(module => ({ default: module.CheckoutModal })));
-const CustomerAccountModal = React.lazy(() => import('./components/Customer/CustomerAccountModal').then(module => ({ default: module.CustomerAccountModal })));
-const SoundSettingsModal = React.lazy(() => import('./components/Customer/SoundSettingsModal').then(module => ({ default: module.SoundSettingsModal })));
-const CalendarBookingModal = React.lazy(() => import('./components/GoogleWorkspace/CalendarBookingModal').then(module => ({ default: module.CalendarBookingModal })));
-const GmailInquiryModal = React.lazy(() => import('./components/GoogleWorkspace/GmailInquiryModal').then(module => ({ default: module.GmailInquiryModal })));
-const WorkspaceHubDrawer = React.lazy(() => import('./components/GoogleWorkspace/WorkspaceHubDrawer').then(module => ({ default: module.WorkspaceHubDrawer })));
-const ProductDetailPage = React.lazy(() => import('./components/Products/ProductDetailPage').then(module => ({ default: module.ProductDetailPage })));
+import { LiveSearchModal } from './components/Search/LiveSearchModal';
+import { WishlistModal } from './components/Wishlist/WishlistModal';
+import { AdminLoginModal } from './components/Admin/AdminLoginModal';
+import { AdminDashboardModal } from './components/Admin/AdminDashboardModal';
+import { CheckoutModal } from './components/Checkout/CheckoutModal';
+import { CustomerAccountModal } from './components/Customer/CustomerAccountModal';
+import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
+import { CalendarBookingModal } from './components/GoogleWorkspace/CalendarBookingModal';
+import { GmailInquiryModal } from './components/GoogleWorkspace/GmailInquiryModal';
+import { WorkspaceHubDrawer } from './components/GoogleWorkspace/WorkspaceHubDrawer';
+import { ProductDetailPage } from './components/Products/ProductDetailPage';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-const ScratchCardPopup = React.lazy(() => import('./components/Promo/ScratchCardPopup').then(module => ({ default: module.ScratchCardPopup })));
-const SpinWheelPopup = React.lazy(() => import('./components/Promo/SpinWheelPopup').then(module => ({ default: module.SpinWheelPopup })));
-const OrderSuccessCelebration = React.lazy(() => import('./components/Promo/OrderSuccessCelebration').then(module => ({ default: module.OrderSuccessCelebration })));
+import { ScratchCardPopup } from './components/Promo/ScratchCardPopup';
+import { LuckyBoxPopup } from './components/Promo/LuckyBoxPopup';
+import { SpinWheelPopup } from './components/Promo/SpinWheelPopup';
+import { FlashDealSection } from './components/Promo/FlashDealSection';
+import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebration';
 
 import { useStore } from './context/StoreContext';
 import { Product, FilterState, GenderCategory, CartItem } from './types';
-import { getProductSlug, findProductBySlugOrId } from './utils/productUtils';
-import { initAutoContrastEngine } from './utils/autoContrastEngine';
+import { findProductBySlugOrId, getProductSlug } from './utils/productUtils';
 
 function AppContent() {
   const { products, isAdmin, toastMessage } = useStore();
   const { backgroundGradientClass } = useTheme();
-
-  // --- INITIALIZE AUTO CONTRAST ENGINE ---
-  React.useEffect(() => {
-    const cleanup = initAutoContrastEngine();
-    return cleanup;
-  }, []);
 
   // --- STATE ---
   const [activeCategory, setActiveCategory] = useState<GenderCategory>('all');
@@ -323,19 +317,19 @@ function AppContent() {
       // Collection Filter
       if (filterState.collection) {
         const colMatch = p.collectionTags.some(
-          (tag) => (tag || '').toLowerCase() === (filterState.collection || '').toLowerCase()
+          (tag) => tag.toLowerCase() === filterState.collection.toLowerCase()
         );
         if (!colMatch) return false;
       }
 
       // Search Query
       if (filterState.searchQuery) {
-        const q = (filterState.searchQuery || '').toLowerCase();
+        const q = filterState.searchQuery.toLowerCase();
         const match =
-          (p.name || '').toLowerCase().includes(q) ||
-          (p.brand || '').toLowerCase().includes(q) ||
-          (p.subcategory || '').toLowerCase().includes(q) ||
-          (p.description || '').toLowerCase().includes(q);
+          p.name.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q) ||
+          p.subcategory.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q);
         if (!match) return false;
       }
 
@@ -391,7 +385,7 @@ function AppContent() {
       </div>
 
       {productRouteSlug !== null ? (
-        <React.Suspense fallback={<div className="h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900"></div></div>}><ProductDetailPage
+        <ProductDetailPage
           product={activeRouteProduct}
           targetSlug={productRouteSlug}
           allProducts={products}
@@ -408,7 +402,7 @@ function AppContent() {
           onBuyNow={handleBuyNow}
           onQuickView={(p) => setQuickViewProduct(p)}
           wishlistIds={wishlistIds}
-        /></React.Suspense>
+        />
       ) : (
         <>
           {/* 3. Hero Section */}
@@ -419,6 +413,9 @@ function AppContent() {
             activeCategory={activeCategory}
             onSelectCategory={handleSelectCategory}
           />
+
+          {/* Flash Deals Section */}
+          <FlashDealSection />
 
           {/* 5. Best Sellers Auto Carousel */}
           <ProductCarousel
@@ -495,14 +492,14 @@ function AppContent() {
 
       {/* --- MODALS & DRAWERS --- */}
       {/* Quick View Modal */}
-      {quickViewProduct && <React.Suspense fallback={null}><QuickViewModal
-        product={products.find((p) => p.id === quickViewProduct.id) || quickViewProduct}
+      <QuickViewModal
+        product={quickViewProduct}
         onClose={() => setQuickViewProduct(null)}
         onToggleWishlist={handleToggleWishlist}
         isWishlisted={quickViewProduct ? wishlistIds.includes(quickViewProduct.id) : false}
         onAddToCart={handleAddToCart}
         onBuyNow={handleBuyNow}
-      /></React.Suspense>}
+      />
 
       {/* Order Bag Sheet Drawer */}
       <OrderSheet
@@ -519,7 +516,7 @@ function AppContent() {
       />
 
       {/* Online Checkout Modal (UPI/QR, Cards, Netbanking, Cashfree, COD) */}
-      {checkoutModalOpen && <React.Suspense fallback={null}><CheckoutModal
+      <CheckoutModal
         isOpen={checkoutModalOpen}
         onClose={() => {
           setCheckoutModalOpen(false);
@@ -534,23 +531,23 @@ function AppContent() {
           setCheckoutModalOpen(false);
           setCustomerAccountOpen(true);
         }}
-      /></React.Suspense>}
+      />
 
       {/* Customer Account & Order Tracking Modal */}
-      {customerAccountOpen && <React.Suspense fallback={null}><CustomerAccountModal
+      <CustomerAccountModal
         isOpen={customerAccountOpen}
         onClose={() => setCustomerAccountOpen(false)}
         onQuickViewProduct={(p) => setQuickViewProduct(p)}
-      /></React.Suspense>}
+      />
 
       {/* Customer Sound & Audio Preferences Modal */}
-      {soundSettingsOpen && <React.Suspense fallback={null}><SoundSettingsModal
+      <SoundSettingsModal
         isOpen={soundSettingsOpen}
         onClose={() => setSoundSettingsOpen(false)}
-      /></React.Suspense>}
+      />
 
       {/* Live Search Modal */}
-      {searchModalOpen && <React.Suspense fallback={null}><LiveSearchModal
+      <LiveSearchModal
         isOpen={searchModalOpen}
         onClose={() => setSearchModalOpen(false)}
         products={products}
@@ -559,49 +556,49 @@ function AppContent() {
           setFilterState((prev) => ({ ...prev, searchQuery: catQuery }));
           handleNavigateToSection('products');
         }}
-      /></React.Suspense>}
+      />
 
       {/* Wishlist Saved Items Modal */}
-      {wishlistModalOpen && <React.Suspense fallback={null}><WishlistModal
+      <WishlistModal
         isOpen={wishlistModalOpen}
         onClose={() => setWishlistModalOpen(false)}
         wishlistedProducts={wishlistedProducts}
         onToggleWishlist={handleToggleWishlist}
         onQuickView={(p) => setQuickViewProduct(p)}
-      /></React.Suspense>}
+      />
 
       {/* Admin Login Modal */}
-      {adminLoginOpen && <React.Suspense fallback={null}><AdminLoginModal
+      <AdminLoginModal
         isOpen={adminLoginOpen}
         onClose={() => setAdminLoginOpen(false)}
         onLoginSuccess={() => setAdminDashboardOpen(true)}
-      /></React.Suspense>}
+      />
 
       {/* Admin Dashboard Modal */}
-      {adminDashboardOpen && <React.Suspense fallback={null}><AdminDashboardModal
+      <AdminDashboardModal
         isOpen={adminDashboardOpen}
         onClose={() => setAdminDashboardOpen(false)}
-      /></React.Suspense>}
+      />
 
       {/* Google Calendar VIP Store Fitting Booking Modal */}
-      {calendarModalOpen && <React.Suspense fallback={null}><CalendarBookingModal
+      <CalendarBookingModal
         isOpen={calendarModalOpen}
         onClose={() => setCalendarModalOpen(false)}
-      /></React.Suspense>}
+      />
 
       {/* Gmail Direct Inquiry Modal */}
-      {gmailModalOpen && <React.Suspense fallback={null}><GmailInquiryModal
+      <GmailInquiryModal
         isOpen={gmailModalOpen}
         onClose={() => setGmailModalOpen(false)}
-      /></React.Suspense>}
+      />
 
       {/* Google Workspace Account Hub Drawer */}
-      {workspaceHubOpen && <React.Suspense fallback={null}><WorkspaceHubDrawer
+      <WorkspaceHubDrawer
         isOpen={workspaceHubOpen}
         onClose={() => setWorkspaceHubOpen(false)}
         onOpenCalendarModal={() => setCalendarModalOpen(true)}
         onOpenGmailModal={() => setGmailModalOpen(true)}
-      /></React.Suspense>}
+      />
 
       {/* Toast Notification Banner */}
       {toastMessage && (
@@ -642,6 +639,9 @@ function AppContent() {
       {/* Scratch & Win Popup Overlay */}
       <ScratchCardPopup currentPath={scratchCurrentPath} cartSubtotal={scratchCartSubtotal} />
 
+      {/* Lucky Box Rewards Popup Overlay */}
+      <LuckyBoxPopup currentPath={scratchCurrentPath} cartSubtotal={scratchCartSubtotal} />
+
       {/* Spin the Wheel Popup Overlay */}
       <SpinWheelPopup currentPath={scratchCurrentPath} />
 
@@ -653,10 +653,8 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AppErrorBoundary name="Main Application Root">
-      <ThemeProvider>
-        <AppContent />
-      </ThemeProvider>
-    </AppErrorBoundary>
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

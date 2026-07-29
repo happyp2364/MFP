@@ -81,30 +81,17 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // Auto-Save Draft logic for NEW products
   useEffect(() => {
     if (isCreating) {
-      try {
-        const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
-        if (savedDraft) {
-          setHasDraft(true);
-        }
-      } catch (e) {
-        console.warn('Could not read product form draft:', e);
+      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (savedDraft) {
+        setHasDraft(true);
       }
     }
   }, [isCreating]);
 
-  // Persist draft on change (omit large image base64 data to avoid localStorage quota errors)
+  // Persist draft on change
   useEffect(() => {
     if (isCreating && productState.name) {
-      try {
-        const lightweightDraft = {
-          ...productState,
-          images: [],
-          gallery: [],
-        };
-        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(lightweightDraft));
-      } catch (e) {
-        console.warn('Could not save product form draft to localStorage:', e);
-      }
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(productState));
     }
   }, [productState, isCreating]);
 
@@ -112,8 +99,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     try {
       const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        setProductState((prev) => ({ ...prev, ...parsed }));
+        setProductState(JSON.parse(saved));
         setHasDraft(false);
       }
     } catch (e) {
@@ -122,9 +108,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   };
 
   const handleClearDraft = () => {
-    try {
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
-    } catch (e) {}
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
     setHasDraft(false);
   };
 
@@ -241,7 +225,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // COLOR MANAGEMENT
   const handleAddPresetColor = (colorObj: ProductColor) => {
     const exists = productState.colors.some(
-      (c) => (c.name || '').toLowerCase() === (colorObj.name || '').toLowerCase()
+      (c) => c.name.toLowerCase() === colorObj.name.toLowerCase()
     );
     if (exists) return;
 
@@ -540,7 +524,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                     key={idx}
                     className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-100 group shadow-xs"
                   >
-                    <img src={imgUrl} alt={`Product ${idx + 1}`} className="w-full h-full object-cover"  referrerPolicy="no-referrer" />
+                    <img src={imgUrl} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
                       <button
                         type="button"

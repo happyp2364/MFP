@@ -59,7 +59,7 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
           title={`Google Account: ${user.email}`}
         >
           {user.photoURL ? (
-            <img src={user.photoURL} alt={user.displayName || 'User'} className="w-6 h-6 rounded-full"  referrerPolicy="no-referrer" />
+            <img src={user.photoURL} alt={user.displayName || 'User'} className="w-6 h-6 rounded-full" />
           ) : (
             <div className="w-6 h-6 rounded-full bg-[#0B8F63] text-white flex items-center justify-center text-xs font-bold">
               {user.email?.[0].toUpperCase() || 'G'}
@@ -83,7 +83,7 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
           className="flex items-center gap-2.5 flex-1 text-left group"
         >
           {user.photoURL ? (
-            <img src={user.photoURL} alt={user.displayName || 'User'} className="w-8 h-8 rounded-full border border-emerald-400/40"  referrerPolicy="no-referrer" />
+            <img src={user.photoURL} alt={user.displayName || 'User'} className="w-8 h-8 rounded-full border border-emerald-400/40" />
           ) : (
             <div className="w-8 h-8 rounded-full bg-[#0B8F63] text-white flex items-center justify-center font-bold text-xs">
               {user.email?.[0].toUpperCase() || 'G'}

@@ -57,7 +57,6 @@ export interface Review {
   verified: boolean;
   productBought?: string;
   avatar?: string;
-  instagramHandle?: string;
   approved?: boolean;
   hidden?: boolean;
   deleted?: boolean;
@@ -486,6 +485,21 @@ export interface PetShoeConfig {
   scheduleMode: 'always' | 'homepage_only' | 'festival_only';
 }
 
+export interface HangingSneakerConfig {
+  enabled: boolean;
+  imageUri: string; // custom uploaded image URL, or fallback default studio photograph
+  laceLength: number; // lace drop length in px (e.g. 240)
+  sizePx: number; // shoe width/scale in desktop view (e.g. 260)
+  positionRight: number; // right offset spacing in rem/px (e.g. 10)
+  positionTop: number; // top offset in px (e.g. 180)
+  swingSpeedSec: number; // pendulum swing speed duration in seconds (6-8s)
+  swingAngleDeg: number; // pendulum swing angle in degrees (3-5deg)
+  baseRotationDeg: number; // base tilt angle in degrees (e.g. -18deg)
+  enablePhysicsAnimation: boolean;
+  enableShineEffect?: boolean; // gentle luxury glossy shine overlay
+  colorTheme?: 'ONE8_BURGUNDY' | 'MARUDHAR_HERITAGE' | 'MIDNIGHT_NAVY' | 'GOLD_LUXURY';
+}
+
 export type SoundType =
   | 'click'
   | 'hover'
@@ -547,6 +561,7 @@ export interface PublishedVersionHistory {
     categoryHighlights: CategoryHighlight[];
     trendingCollections: TrendingCollectionItem[];
     paymentSettings?: PaymentSettings;
+    hangingSneakerConfig?: HangingSneakerConfig;
     petShoeConfig?: PetShoeConfig;
     instagramConfig?: InstagramConfig;
     soundConfig?: SoundConfig;
@@ -785,6 +800,19 @@ export interface PromoCoupon {
   createdAt: string;
 }
 
+export interface LuckyBoxReward {
+  id: string;
+  title: string;
+  type: CouponType | 'NONE' | 'POINTS' | 'GIFT' | 'BETTER_LUCK';
+  value: number;
+  probability: number;
+  usageLimit: number;
+  usageCount: number;
+  perCustomerLimit: number;
+  couponCode?: string;
+  image?: string;
+}
+
 export interface ScratchReward {
   id: string;
   name: string;
@@ -794,7 +822,6 @@ export interface ScratchReward {
   usageLimit: number;
   usageCount: number;
   perCustomerLimit: number;
-  enabled: boolean;
   expiryDate?: string;
   couponCode?: string;
   image?: string;
@@ -826,6 +853,31 @@ export interface ScratchWinConfig {
   rewards: ScratchReward[];
 }
 
+export interface LuckyBoxConfig {
+  enabled: boolean;
+  permanentlyDisabled: boolean;
+  showOnHomepage: boolean;
+  showOnProductPage: boolean;
+  showOnCheckout: boolean;
+  showOnOrderSuccess: boolean;
+  firstVisitOnly: boolean;
+  firstOrderOnly: boolean;
+  returningCustomerOnly: boolean;
+  newCustomerOnly: boolean;
+  festivalOnly: boolean;
+  dailyLimit: number;
+  perCustomerLimit: number;
+  globalUsageLimit: number;
+  minCartValue: number;
+  startDate?: string;
+  endDate?: string;
+  dailyActiveHours?: { start: string; end: string };
+  showAfterSeconds?: number;
+  showAfterPageViews?: number;
+  showExitIntent?: boolean;
+  rewards: LuckyBoxReward[];
+}
+
 export interface WheelSection {
   id: string;
   title: string;
@@ -848,10 +900,59 @@ export interface SpinWheelConfig {
   minCartValue?: number;
 }
 
+export interface FlashDeal {
+  id: string;
+  title: string;
+  status: 'active' | 'paused' | 'scheduled' | 'expired';
+  targetType: 'ALL' | 'PRODUCTS' | 'CATEGORIES' | 'COLLECTIONS' | 'BRANDS' | 'SIZES' | 'COLORS' | 'PRICE_RANGE' | 'STOCK_STATUS' | 'FEATURED' | 'NEW_ARRIVALS' | 'BEST_SELLERS';
+  targetIds?: string[]; // e.g. Product IDs, Category names
+  targetPriceRange?: [number, number];
+  targetSizes?: string[];
+  targetColors?: string[];
+  
+  discountType: 'PERCENTAGE' | 'FLAT';
+  discountValue: number;
+  
+  startDate: string;
+  endDate: string;
+  timezone: string;
+  
+  showCountdown: boolean;
+  countdownFormat: { days: boolean; hours: boolean; minutes: boolean; seconds: boolean };
+  hideAfterExpiry: boolean;
+  replaceWithNextId?: string;
+  
+  lowStockMessageEnabled: boolean;
+  lowStockThreshold: number;
+  lowStockCustomMessage?: string;
+  
+  displayLocations: ('homepage_hero' | 'product_page' | 'checkout' | 'cart' | 'category_page' | 'floating_banner' | 'announcement_bar' | 'popup')[];
+  
+  styling: {
+    bgColor: string;
+    textColor: string;
+    borderColor?: string;
+    animation?: 'none' | 'pulse' | 'glow' | 'bounce';
+    countdownTheme?: 'minimal' | 'luxury' | 'bold' | 'classic';
+    fontFamily?: string;
+    glowEffect?: boolean;
+    buttonStyle?: string;
+  };
+  
+  analytics: {
+    clicks: number;
+    conversions: number;
+    revenue: number;
+  };
+}
+
 export interface EngagementAnalytics {
+  luckyBoxOpens: number;
   wheelSpins: number;
   couponsWon: number;
   couponsUsed: number;
+  flashDealClicks: number;
+  flashDealConversions: number;
   revenueGenerated: number;
   topPerformingRewardId?: string;
   mostClaimedCouponCode?: string;
@@ -869,73 +970,6 @@ export interface OrderCelebrationConfig {
   mobileOnly: boolean;
   desktopOnly: boolean;
 }
-
-export interface BackupHistoryItem {
-  id: string;
-  timestamp: string;
-  fileName: string;
-  fileId: string;
-  size: number;
-  status: 'SUCCESS' | 'FAILED';
-  type: 'MANUAL' | 'AUTO_DAILY' | 'AUTO_WEEKLY' | 'AUTO_MONTHLY';
-  entitiesIncluded: string[];
-}
-
-export interface DriveBackupConfig {
-  isConnected: boolean;
-  connectedEmail?: string;
-  driveFolderId?: string;
-  autoBackupEnabled: boolean;
-  dailyEnabled: boolean;
-  weeklyEnabled: boolean;
-  monthlyEnabled: boolean;
-  lastBackupAt?: string;
-  history: BackupHistoryItem[];
-}
-
-
-export interface DiagnosticIssue {
-  id: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  category: 'runtime' | 'performance' | 'security' | 'accessibility' | 'ui' | 'firestore' | 'logic';
-  location: {
-    file?: string;
-    component?: string;
-    function?: string;
-  };
-  description: string;
-  suggestedFix: string;
-  isSafeToFix: boolean;
-  status: 'detected' | 'fixing' | 'fixed' | 'failed' | 'ignored';
-  detectedAt: string;
-}
-
-export interface DiagnosticScanResult {
-  scanId: string;
-  timestamp: string;
-  issues: DiagnosticIssue[];
-  healthScores: {
-    performance: number;
-    security: number;
-    accessibility: number;
-    ui: number;
-    firestore: number;
-    overall: number;
-  };
-}
-
-export interface DiagnosticCenterState {
-  lastScan?: DiagnosticScanResult;
-  isScanning: boolean;
-  activeFixes: string[]; // Issue IDs
-  restorePoints: {
-    id: string;
-    timestamp: string;
-    description: string;
-    data: any; // Snapshot of state or code
-  }[];
-}
-
 
 
 

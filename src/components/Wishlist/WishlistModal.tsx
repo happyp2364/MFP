@@ -66,7 +66,8 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                 key={product.id}
                 className="flex items-center gap-3 p-3 rounded-2xl bg-[#F7F7F7] border border-neutral-200/80 hover:border-neutral-300 transition-colors"
               >
-                <img                   src={product.images && product.images.length > 0 ? product.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
+                <img
+                  src={product.images && product.images.length > 0 ? product.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
                   alt={product.name}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = CLEAN_IMAGE_COMING_SOON_SVG;

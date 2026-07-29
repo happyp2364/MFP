@@ -260,10 +260,11 @@ export const ReportsAnalyticsView: React.FC = () => {
                   className="p-2.5 bg-amber-50/60 rounded-xl border border-amber-200 flex items-center justify-between"
                 >
                   <div className="flex items-center space-x-2.5">
-                    <img                       src={p.images[0]}
+                    <img
+                      src={p.images[0]}
                       alt={p.name}
                       className="w-10 h-10 object-cover rounded-md"
-                     referrerPolicy="no-referrer" />
+                    />
                     <div>
                       <p className="font-bold text-neutral-900 line-clamp-1">{p.name}</p>
                       <p className="text-[10px] text-amber-800">Category: {p.category}</p>

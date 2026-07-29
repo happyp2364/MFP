@@ -361,7 +361,7 @@ export const CategoriesSettingsView: React.FC = () => {
                     required
                     disabled={!isAddMode}
                     value={formId}
-                    onChange={(e) => setFormId((e.target.value || '').toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                    onChange={(e) => setFormId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
                     placeholder="e.g. wedding_shoes"
                     className="w-full bg-neutral-50 disabled:opacity-60 border border-neutral-200 rounded-xl p-2.5 font-mono focus:ring-2 focus:ring-[#0B8F63] outline-none"
                   />

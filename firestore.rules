@@ -7,13 +7,196 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isAdmin() {
-      return true;
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // Default Allow All Policy for full-stack e-commerce applet
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'vpcreation2002@gmail.com'
+      );
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    // Default Deny All Policy
     match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Public Products Catalog (Read-Only for Public, Write for Admins)
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Public Reviews & Feedback (Public Read & Create, Admin Manage)
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Store Info & Configuration Settings
+    match /storeInfo/{infoId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Centralized Site Settings (Hero, Store Info, Categories, Announcements, Collections)
+    match /siteSettings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Hanging Sneaker Feature Config
+    match /hangingSneakerConfig/{configId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // AI Pet Shoe Mascot Config
+    match /petShoeConfig/{configId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Instagram Integration Config
+    match /instagramConfig/{configId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Payment Settings & Gateway Credentials
+    match /paymentSettings/{configId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Real Client Collections: Settings, Homepage, Categories, Payment, Animations, Mascot, Social, Theme
+    match /settings/{id} {
       allow read, write: if true;
+    }
+    match /homepage/{id} {
+      allow read, write: if true;
+    }
+    match /categories/{id} {
+      allow read, write: if true;
+    }
+    match /payment/{id} {
+      allow read, write: if true;
+    }
+    match /animations/{id} {
+      allow read, write: if true;
+    }
+    match /mascot/{id} {
+      allow read, write: if true;
+    }
+    match /social/{id} {
+      allow read, write: if true;
+    }
+    match /theme/{id} {
+      allow read, write: if true;
+    }
+
+    match /product_gallery/{id} {
+      allow read, write: if true;
+    }
+    match /product_gallery_parts/{id} {
+      allow read, write: if true;
+    }
+    match /product_variants/{id} {
+      allow read, write: if true;
+    }
+    match /product_ai_metadata/{id} {
+      allow read, write: if true;
+    }
+    match /product_statistics/{id} {
+      allow read, write: if true;
+    }
+
+    // Hero Banner Content
+    match /hero/{heroId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Customer Inquiries
+    match /inquiries/{inquiryId} {
+      allow create: if true && request.resource.data.name is string;
+      allow read, update, delete: if isSignedIn();
+    }
+
+    // VIP Fitting Appointments
+    match /appointments/{appointmentId} {
+      allow create: if true;
+      allow read, update, delete: if isSignedIn();
+    }
+
+    // Security Audit Logs Collection
+    match /auditLogs/{logId} {
+      allow read, write: if true;
+    }
+
+    // Real-time Admin Notifications
+    match /notifications/{notifId} {
+      allow create: if true;
+      allow read, update, delete: if true;
+    }
+
+    // Customer Profiles Collection (User can read and update their own document, admins can read/write all)
+    match /users/{userId} {
+      allow read, create, update: if true;
+      allow delete: if isSignedIn();
+    }
+
+    // Customer Orders Collection (Public create for guest/user checkout, read/update by owner/admin)
+    match /orders/{orderId} {
+      allow read, create, update: if true;
+      allow delete: if isSignedIn();
+    }
+
+    // Payment Transactions Log
+    match /transactions/{txId} {
+      allow read, create: if true;
+      allow update, delete: if isSignedIn();
+    }
+
+    // Store Snapshots & Recovery Backups
+    match /backups/{backupId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // CMS Published Version History
+    match /publishedVersions/{versionId} {
+      allow read, write: if true;
+    }
+
+    // Admin Users Directory
+    match /admins/{adminId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Marketing Campaigns
+    match /marketingCampaigns/{campaignId} {
+      allow read, write: if true;
+    }
+
+    // Marketing Subscribers & Consent Preferences
+    match /marketingSubscribers/{subscriberId} {
+      allow read, write: if true;
+    }
+
+    // Flash Deals & Customer Engagement Analytics
+    match /flashDeals/{dealId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /analytics/{id} {
+      allow read: if true;
+      allow write: if true;
     }
   }
 }

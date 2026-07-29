@@ -32,10 +32,10 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
   const filteredProducts = query.trim()
     ? products.filter(
         (p) =>
-          (p.name || '').toLowerCase().includes((query || '').toLowerCase()) ||
-          (p.category || '').toLowerCase().includes((query || '').toLowerCase()) ||
-          (p.subcategory || '').toLowerCase().includes((query || '').toLowerCase()) ||
-          (p.brand || '').toLowerCase().includes((query || '').toLowerCase())
+          p.name.toLowerCase().includes(query.toLowerCase()) ||
+          p.category.toLowerCase().includes(query.toLowerCase()) ||
+          p.subcategory.toLowerCase().includes(query.toLowerCase()) ||
+          p.brand.toLowerCase().includes(query.toLowerCase())
       )
     : [];
 
@@ -109,7 +109,8 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
                       onClick={() => handleProductClick(p)}
                       className="flex items-center gap-3 p-2.5 rounded-2xl bg-[#F7F7F7] hover:bg-[#0B8F63]/10 border border-neutral-200/60 cursor-pointer transition-colors group"
                     >
-                      <img                         src={p.images && p.images.length > 0 ? p.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
+                      <img
+                        src={p.images && p.images.length > 0 ? p.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
                         alt={p.name}
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = CLEAN_IMAGE_COMING_SOON_SVG;

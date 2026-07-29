@@ -250,7 +250,7 @@ export const AIShoePetSettingsView: React.FC = () => {
   };
 
   // Save Config
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
@@ -276,17 +276,11 @@ export const AIShoePetSettingsView: React.FC = () => {
       scheduleMode,
     };
 
-    try {
-      await updatePetShoeConfig(updated);
-      setSaveSuccess(true);
-      showToast('AI Pet Shoe Mascot settings saved successfully!', 'success');
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err: any) {
-      console.error('Error saving AI Pet Shoe mascot settings:', err);
-      showToast('Failed to save AI Pet Shoe settings', 'error');
-    } finally {
-      setIsSaving(false);
-    }
+    updatePetShoeConfig(updated);
+    setIsSaving(false);
+    setSaveSuccess(true);
+    showToast('AI Pet Shoe Mascot settings saved successfully!', 'success');
+    setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   return (
@@ -420,10 +414,11 @@ export const AIShoePetSettingsView: React.FC = () => {
                     className="p-2.5 bg-neutral-50 hover:bg-amber-50 rounded-2xl border border-neutral-200 hover:border-amber-300 text-left transition-all flex items-center gap-2.5 group"
                   >
                     <div className="w-10 h-10 rounded-xl bg-white border border-neutral-200 flex items-center justify-center p-1 shrink-0 overflow-hidden">
-                      <img                         src={preset.url}
+                      <img
+                        src={preset.url}
                         alt={preset.name}
                         className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform"
-                       referrerPolicy="no-referrer" />
+                      />
                     </div>
                     <div>
                       <span className="text-[11px] font-bold text-neutral-800 line-clamp-1 group-hover:text-amber-700">
@@ -463,7 +458,7 @@ export const AIShoePetSettingsView: React.FC = () => {
                   </span>
                   <div className="w-full h-36 bg-neutral-950 rounded-2xl border border-neutral-800 flex items-center justify-center p-2 overflow-hidden relative">
                     {originalImage ? (
-                      <img src={originalImage} alt="Original uploaded" className="max-w-full max-h-full object-contain"  referrerPolicy="no-referrer" />
+                      <img src={originalImage} alt="Original uploaded" className="max-w-full max-h-full object-contain" />
                     ) : (
                       <span className="text-xs text-neutral-600">No image loaded</span>
                     )}
@@ -502,10 +497,11 @@ export const AIShoePetSettingsView: React.FC = () => {
                         <span className="text-xs font-bold">{processingStage}</span>
                       </div>
                     ) : extractedShoePng ? (
-                      <img                         src={extractedShoePng}
+                      <img
+                        src={extractedShoePng}
                         alt="Extracted transparent shoe"
                         className="max-w-full max-h-full object-contain filter drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)]"
-                       referrerPolicy="no-referrer" />
+                      />
                     ) : (
                       <span className="text-xs text-neutral-600">Pending extraction</span>
                     )}

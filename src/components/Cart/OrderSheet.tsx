@@ -70,7 +70,6 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
 
         {/* Drawer Body Items */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          
           {cartItems.length === 0 ? (
             <div className="text-center py-16 space-y-3">
               <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400 mx-auto">
@@ -89,7 +88,8 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
                 key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}-${idx}`}
                 className="flex items-center gap-3 p-3 rounded-2xl bg-[#F7F7F7] border border-neutral-200/80"
               >
-                <img                   src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
+                <img
+                  src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
                   alt={item.product.name}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = CLEAN_IMAGE_COMING_SOON_SVG;

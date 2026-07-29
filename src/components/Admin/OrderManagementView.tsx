@@ -44,10 +44,10 @@ export const OrderManagementView: React.FC = () => {
   // Filter orders
   const filteredOrders = orders.filter((o) => {
     const matchesSearch =
-      (o.id || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-      (o.customerName || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       o.customerPhone.includes(searchQuery) ||
-      (o.customerEmail || '').toLowerCase().includes((searchQuery || '').toLowerCase());
+      o.customerEmail.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = selectedStatusFilter === 'ALL' || o.orderStatus === selectedStatusFilter;
 
@@ -249,10 +249,11 @@ export const OrderManagementView: React.FC = () => {
                             className="p-2.5 bg-white rounded-xl border border-neutral-200 flex items-center justify-between"
                           >
                             <div className="flex items-center space-x-3">
-                              <img                                 src={item.product.images[0]}
+                              <img
+                                src={item.product.images[0]}
                                 alt={item.product.name}
                                 className="w-12 h-12 object-cover rounded-lg"
-                               referrerPolicy="no-referrer" />
+                              />
                               <div>
                                 <p className="font-bold text-neutral-900">{item.product.name}</p>
                                 <p className="text-neutral-500 text-[11px]">

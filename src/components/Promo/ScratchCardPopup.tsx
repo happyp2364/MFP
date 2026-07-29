@@ -30,7 +30,11 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
     if (scratchWinConfig.dailyActiveHoursStart && scratchWinConfig.dailyActiveHoursEnd) {
       const now = new Date();
       const currentHourStr = now.toTimeString().slice(0, 5); // "HH:MM"
-      if (currentHourStr < scratchWinConfig.dailyActiveHoursStart || currentHourStr > scratchWinConfig.dailyActiveHoursEnd) return;
+      const start = scratchWinConfig.dailyActiveHoursStart;
+      const end = scratchWinConfig.dailyActiveHoursEnd;
+      if (start && end) {
+        if (currentHourStr < start || currentHourStr > end) return;
+      }
     }
 
     // Schedule Start & End Date Check
@@ -81,11 +85,9 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
     if (scratchWinConfig.firstOrderOnly && userOrdersCount > 0) return;
 
     // Track page views counter
-    let pageViews = 0;
-    try {
-      pageViews = parseInt(sessionStorage.getItem('mfp_scratch_pageviews') || '0', 10) + 1;
-      sessionStorage.setItem('mfp_scratch_pageviews', pageViews.toString());
-    } catch (e) {}
+    let pageViews = parseInt(sessionStorage.getItem('mfp_scratch_pageviews') || '0', 10);
+    pageViews += 1;
+    sessionStorage.setItem('mfp_scratch_pageviews', pageViews.toString());
 
     if (scratchWinConfig.showAfterPageViews && pageViews < scratchWinConfig.showAfterPageViews) {
       return;
@@ -93,7 +95,7 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
 
     // Select reward tier in advance (so it's painted behind canvas)
     const selectReward = () => {
-      const activeRewards = scratchWinConfig.rewards.filter((r) => r.enabled);
+      const activeRewards = scratchWinConfig.rewards || [];
       if (activeRewards.length === 0) return null;
 
       // Weighted random selection
@@ -116,19 +118,13 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
     let timerId: NodeJS.Timeout | null = null;
     const showPopup = () => {
       // Avoid duplicate triggers in same session
-      let alreadyShownThisSession = false;
-      try {
-        alreadyShownThisSession = sessionStorage.getItem('mfp_scratch_shown_session') === 'true';
-      } catch (e) {}
-
+      const alreadyShownThisSession = sessionStorage.getItem('mfp_scratch_shown_session') === 'true';
       if (!alreadyShownThisSession) {
         setIsVisible(true);
-        try {
-          sessionStorage.setItem('mfp_scratch_shown_session', 'true');
-          if (scratchWinConfig.firstVisitOnly) {
-            localStorage.setItem('mfp_scratch_visited', 'true');
-          }
-        } catch (e) {}
+        sessionStorage.setItem('mfp_scratch_shown_session', 'true');
+        if (scratchWinConfig.firstVisitOnly) {
+          localStorage.setItem('mfp_scratch_visited', 'true');
+        }
       }
     };
 
@@ -225,9 +221,7 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
 
   const triggerSuccessReveal = () => {
     if (selectedReward && selectedReward.couponCode) {
-      try {
-        localStorage.setItem('mfp_scratched_coupon', selectedReward.couponCode.toUpperCase());
-      } catch (e) {}
+      localStorage.setItem('mfp_scratched_coupon', selectedReward.couponCode.toUpperCase());
     }
     triggerGlobalCelebration();
   };
@@ -307,9 +301,7 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
   };
 
   const handlePermanentlyDisable = () => {
-    try {
-      localStorage.setItem('mfp_scratch_permanently_disabled', 'true');
-    } catch (e) {}
+    localStorage.setItem('mfp_scratch_permanently_disabled', 'true');
     setIsVisible(false);
   };
 

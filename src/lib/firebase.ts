@@ -20,7 +20,7 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import {
-  getFirestore, initializeFirestore,
+  getFirestore,
   doc,
   getDoc,
   setDoc,
@@ -39,9 +39,7 @@ import { CustomerProfile, MarketingConsent, MarketingSubscriber, MarketingCampai
 // Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-}, (firebaseConfig as any).firestoreDatabaseId || undefined);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined);
 
 // Enable persistent auth session across page reloads & tabs
 setPersistence(auth, browserLocalPersistence).catch((err) => {
@@ -127,10 +125,7 @@ googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.file');
 googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.metadata.readonly');
 
 // In-memory token store for Google Workspace API calls
-let cachedAccessToken: string | null = null;
-try {
-  cachedAccessToken = localStorage.getItem('mfp_google_access_token');
-} catch (e) {}
+let cachedAccessToken: string | null = localStorage.getItem('mfp_google_access_token');
 
 export function getCachedAccessToken(): string | null {
   return cachedAccessToken;
@@ -138,14 +133,10 @@ export function getCachedAccessToken(): string | null {
 
 export function setCachedAccessToken(token: string | null) {
   cachedAccessToken = token;
-  try {
-    if (token) {
-      localStorage.setItem('mfp_google_access_token', token);
-    } else {
-      localStorage.removeItem('mfp_google_access_token');
-    }
-  } catch (e) {
-    console.warn('Could not store google access token in localStorage:', e);
+  if (token) {
+    localStorage.setItem('mfp_google_access_token', token);
+  } else {
+    localStorage.removeItem('mfp_google_access_token');
   }
 }
 
@@ -356,7 +347,17 @@ export async function recordAuditLog(
     ipAddress: '127.0.0.1 (Client Applet)',
   };
 
-  // 1. Persist directly to Firestore auditLogs collection (single source of truth)
+  // 1. Save to local storage cache for instant UI rendering
+  try {
+    const cached = localStorage.getItem('mfp_audit_logs');
+    const logs: AuditLogItem[] = cached ? JSON.parse(cached) : [];
+    logs.unshift(logItem);
+    localStorage.setItem('mfp_audit_logs', JSON.stringify(logs.slice(0, 100)));
+  } catch (e) {
+    console.warn('Could not cache audit log in localStorage:', e);
+  }
+
+  // 2. Persist to Firestore auditLogs collection
   try {
     await addDoc(collection(db, 'auditLogs'), logItem);
   } catch (err) {
@@ -377,7 +378,9 @@ export async function fetchRemoteAuditLogs(): Promise<AuditLogItem[]> {
     return logs;
   } catch (err) {
     handleFirestoreError(err, OperationType.LIST, 'auditLogs');
-    return [];
+    // Fallback to local storage
+    const cached = localStorage.getItem('mfp_audit_logs');
+    return cached ? JSON.parse(cached) : [];
   }
 }
 

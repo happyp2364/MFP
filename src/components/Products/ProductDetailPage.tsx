@@ -308,7 +308,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <span className="text-[10px] font-medium text-neutral-400">Marudhar Fashion Point</span>
               </div>
             ) : (
-              <img                 src={displayImageSrc}
+              <img
+                src={displayImageSrc}
                 alt={product.name}
                 onError={() => setImageError(true)}
                 className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"

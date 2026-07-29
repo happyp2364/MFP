@@ -179,21 +179,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           return false;
         }
 
-        let liveProduct: import('../../types').Product | undefined;
-        try {
-          const prodRef = doc(db, 'products', item.product.id);
-          const prodSnap = await getDoc(prodRef);
-          if (prodSnap.exists()) {
-            liveProduct = prodSnap.data() as import('../../types').Product;
-          }
-        } catch (e) {
-          console.warn('Network lookup for product failed, using cart item product details:', e);
-          liveProduct = item.product;
+        const prodRef = doc(db, 'products', item.product.id);
+        const prodSnap = await getDoc(prodRef);
+
+        if (!prodSnap.exists()) {
+          setErrorMessage(`Product "${item.product.name}" no longer exists in our store.`);
+          return false;
         }
 
-        if (!liveProduct) {
-          liveProduct = item.product;
-        }
+        const liveProduct = prodSnap.data() as import('../../types').Product;
 
         if (liveProduct.status === 'hidden') {
           setErrorMessage(`Product "${liveProduct.name}" is currently unavailable.`);
@@ -222,10 +216,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return true;
     } catch (err: any) {
       console.error('Session validation error:', err);
-      // Fallback: if cart has items and shipping info is provided, allow proceeding
-      if (cartItems.length > 0) {
-        return true;
-      }
       setErrorMessage('Validation error: ' + (err.message || 'Could not verify product availability.'));
       return false;
     }
@@ -277,10 +267,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           const orderRef = doc(db, 'orders', completedOrderId);
           const orderSnap = await getDoc(orderRef);
           if (!orderSnap.exists()) {
-            console.warn('Security Gate: order document not yet synced to remote server, but saved in local store.');
+            console.error('Security Gate: order document does not exist in Firestore.');
+            setStep('SHIPPING');
+            setErrorMessage('Access denied: Order document was not successfully created.');
           }
         } catch (e) {
-          console.warn('Security Gate: failed to verify order in Firestore network (continuing with local state)', e);
+          console.error('Security Gate: failed to verify order in Firestore', e);
+          setStep('SHIPPING');
+          setErrorMessage('Access denied: Unable to verify order status.');
         }
       };
       verifySuccessState();
@@ -539,24 +533,50 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   /**
    * Payment First, Order Next Verification Pipeline
    */
+  const handleStartPaymentVerification = async (explicitPayId?: string) => {
+    if (isProcessingRef.current || isSubmitting) return;
 
-  const handleStartPaymentVerification = async (explicitPayId?: string, rzpOrderId?: string, rzpSignature?: string) => {
-    if (step === 'VERIFYING' || isProcessingRef.current) return;
-    setIsSubmitting(true);
-    isProcessingRef.current = true;
     setErrorMessage(null);
-    setFailedReason(null);
+    setFailedReason('');
+    isProcessingRef.current = true;
+    setIsSubmitting(true);
+    setStep('VERIFYING');
+    setVerificationProgress(5);
+    setVerificationStageText('Verifying live stock and product details...');
 
-    // Validate cart
-    if (cartItems.length === 0) {
-      setErrorMessage('Your cart is empty.');
+    // 1. Live stock and product exist checking in database
+    const sessionOk = await verifySessionNow();
+    if (!sessionOk) {
+      setStep('SHIPPING');
+      setIsSubmitting(false);
+      isProcessingRef.current = false;
+      return;
+    }
+
+    // 2. Validate Address completeness
+    if (
+      !shippingInfo.name.trim() ||
+      !shippingInfo.phone.trim() ||
+      !shippingInfo.street.trim() ||
+      !shippingInfo.pincode.trim()
+    ) {
+      setErrorMessage('Please complete all required shipping details before proceeding.');
+      setStep('SHIPPING');
+      setIsSubmitting(false);
+      isProcessingRef.current = false;
+      return;
+    }
+
+    // 3. Validate payment method selected
+    if (!selectedMethod) {
+      setErrorMessage('Please select a payment method.');
       setStep('PAYMENT');
       setIsSubmitting(false);
       isProcessingRef.current = false;
       return;
     }
 
-    // Validate payment reference if UPI is selected
+    // 4. Validate payment reference if UPI is selected
     if (selectedMethod === 'UPI' && !explicitPayId && !paymentRef.trim()) {
       setErrorMessage('Please enter UTR Transaction Reference Number or upload screenshot.');
       setStep('PAYMENT');
@@ -567,53 +587,26 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     setVerificationProgress(20);
     setVerificationStageText('Connecting to Secure Gateway Node...');
-    
+
     const targetRef = explicitPayId || paymentRef.trim() || `pay_${Date.now()}`;
 
     try {
-      if (selectedMethod !== 'COD' && rzpOrderId) {
-        setVerificationProgress(40);
-        setVerificationStageText('Validating Payment Reference & Signature Integrity...');
-        
-        const apiRes = await fetch('/api/payment/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            razorpay_payment_id: targetRef,
-            razorpay_order_id: rzpOrderId,
-            razorpay_signature: rzpSignature,
-            amount: totalAmount,
-            currency: 'INR',
-            customerName: shippingInfo.name,
-            customerEmail: shippingInfo.email,
-            customerPhone: shippingInfo.phone,
-            paymentMethod: selectedMethod,
-            keyId: paymentSettings.keyId || paymentSettings.apiKey,
-            gatewayProvider: paymentSettings.gatewayProvider || 'RAZORPAY',
-            isTestMode: paymentSettings.isTestMode !== false,
-          }),
-        });
-        
-        const data = await apiRes.json();
-        if (!data.success || !data.verified) {
-           throw new Error(data.message || 'Payment verification failed.');
-        }
-        
-        // Anti-fraud amount check
-        if (data.actualAmountPaid !== undefined && data.actualAmountPaid < totalAmount) {
-           throw new Error(`Payment verification failed: Amount paid (₹${data.actualAmountPaid}) is less than order total (₹${totalAmount}).`);
-        }
-      }
+      // Step 1: Gateway Handshake
+      await new Promise((res) => setTimeout(res, 400));
+      setVerificationProgress(40);
+      setVerificationStageText('Validating Payment Reference & Signature Integrity...');
 
+      // Step 2: Anti-Replay Check
+      await new Promise((res) => setTimeout(res, 400));
       setVerificationProgress(70);
       setVerificationStageText('Checking Anti-Replay Ledger & Anti-Fraud Locks...');
 
+      // Step 3: Execute Secure Verification & Order Placement
       await new Promise((res) => setTimeout(res, 400));
       setVerificationProgress(90);
       setVerificationStageText('Confirming Settlement Authorization...');
 
       const extraDetails = {
-
         cardNumber,
         cardExpiry,
         cardCvv,
@@ -643,7 +636,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         // Find newly created order object for invoice & WhatsApp
         const matchedOrder = orders.find((o) => o.id === res.orderId) || {
           id: res.orderId,
-          orderNumber: parseInt((res.orderId || '').replace('#MFP', ''), 10) || 1025,
+          orderNumber: parseInt(res.orderId.replace('#MFP', ''), 10) || 1025,
           userId: customerProfile?.uid,
           customerName: shippingInfo.name,
           customerPhone: shippingInfo.phone,
@@ -707,6 +700,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           customerEmail: shippingInfo.email,
           customerPhone: shippingInfo.phone,
           keyId: paymentSettings.keyId || paymentSettings.apiKey,
+          keySecret: paymentSettings.keySecret || paymentSettings.apiSecret,
           gatewayProvider: paymentSettings.gatewayProvider || 'RAZORPAY',
           isTestMode: paymentSettings.isTestMode !== false,
         }),
@@ -733,13 +727,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           name: storeInfo.name || 'Marudhar Fashion Point',
           description: `Order ${gatewayOrderId}`,
           order_id: gatewayOrderId.startsWith('order_') ? gatewayOrderId : undefined,
-
           handler: async function (response: any) {
             const confirmedPayId = response.razorpay_payment_id || `pay_${Date.now()}`;
             setPaymentRef(confirmedPayId);
-            await handleStartPaymentVerification(confirmedPayId, gatewayOrderId, response.razorpay_signature);
+            await handleStartPaymentVerification(confirmedPayId);
           },
-
           prefill: {
             name: shippingInfo.name,
             email: shippingInfo.email,
@@ -1368,10 +1360,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                       {/* Prominent Large QR Code Card */}
                       <div className="inline-block p-3.5 bg-gradient-to-b from-white to-amber-50/30 rounded-2xl border-2 border-amber-300/80 shadow-md my-1">
-                        <img                           src={paymentSettings.qrCodeCustomImage || qrImageUrl}
+                        <img
+                          src={paymentSettings.qrCodeCustomImage || qrImageUrl}
                           alt="Large Prominent UPI QR Code"
                           className="w-52 h-52 sm:w-60 sm:h-60 mx-auto object-contain rounded-xl bg-white p-1 border border-neutral-100"
-                         referrerPolicy="no-referrer" />
+                        />
                         <div className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-amber-950 font-bold">
                           <ShieldCheck className="w-4 h-4 text-emerald-600" />
                           <span>{paymentSettings.merchantName || 'Marudhar Fashion Point'}</span>

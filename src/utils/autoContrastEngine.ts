@@ -1,12 +1,12 @@
 /**
- * Auto Contrast Engine (WCAG AAA Compliant)
+ * Auto Contrast Engine (WCAG AA Compliant)
  * Automatically detects elements with poor text-to-background contrast
  * and dynamically overrides their style to guarantee visibility.
  */
 
 function parseColor(colorStr: string): { r: number; g: number; b: number; a: number } | null {
   if (!colorStr) return null;
-
+  
   // rgb(r, g, b) or rgba(r, g, b, a)
   const rgbMatch = colorStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
   if (rgbMatch) {
@@ -18,7 +18,7 @@ function parseColor(colorStr: string): { r: number; g: number; b: number; a: num
     };
   }
 
-  // hex #fff or var(--auto-text-light)
+  // hex #fff or #ffffff
   if (colorStr.startsWith('#')) {
     const hex = colorStr.slice(1);
     if (hex.length === 3 || hex.length === 4) {
@@ -62,18 +62,11 @@ function getActualBackgroundColor(el: HTMLElement): { r: number; g: number; b: n
   let current: HTMLElement | null = el;
   while (current) {
     const computed = window.getComputedStyle(current);
-    const bgImage = computed.backgroundImage;
-    if (bgImage && bgImage.includes('gradient')) {
-      const parsedBgImg = parseColor(bgImage);
-      if (parsedBgImg && parsedBgImg.a > 0.3) {
-        return parsedBgImg;
-      }
-    }
     const bg = computed.backgroundColor;
     if (bg) {
       const parsed = parseColor(bg);
       // Ensure the background is solid (non-transparent)
-      if (parsed && parsed.a > 0.3) {
+      if (parsed && parsed.a > 0.1) {
         return parsed;
       }
     }
@@ -85,28 +78,20 @@ function getActualBackgroundColor(el: HTMLElement): { r: number; g: number; b: n
 export function runAutoContrastAudit() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
-  const elements = document.querySelectorAll<HTMLElement>('*');
-  
+  // We target any elements containing text or interaction elements
+  const elements = document.querySelectorAll<HTMLElement>(
+    'span, p, h1, h2, h3, h4, h5, h6, label, td, th, input, textarea, select, button, a, li, option, div[role="tab"]'
+  );
+
   elements.forEach((el) => {
-    if (el.tagName === 'SVG' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE' || el.tagName === 'HTML' || el.tagName === 'BODY' || el.tagName === 'HEAD') {
-      return;
-    }
-    if (el.closest('svg')) {
+    // Skip SVG, icons, or specific badge elements we don't want to affect
+    if (el.tagName === 'svg' || el.classList.contains('lucide') || el.closest('svg')) {
       return;
     }
 
-    let hasDirectText = false;
-    for (let i = 0; i < el.childNodes.length; i++) {
-      const node = el.childNodes[i];
-      if (node.nodeType === Node.TEXT_NODE && node.nodeValue && node.nodeValue.trim() !== '') {
-        hasDirectText = true;
-        break;
-      }
-    }
-    
-    const isControl = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.tagName === 'BUTTON' || el.tagName === 'A';
-
-    if (!hasDirectText && !isControl) {
+    // Only inspect items with text or interactive form fields
+    const text = (el.textContent || el.innerText || '').trim();
+    if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA' && el.tagName !== 'SELECT' && !text) {
       return;
     }
 
@@ -117,31 +102,24 @@ export function runAutoContrastAudit() {
     if (!parsedText) return;
 
     const parsedBg = getActualBackgroundColor(el);
+
     const bgLuminance = getRelativeLuminance(parsedBg.r, parsedBg.g, parsedBg.b);
     const textLuminance = getRelativeLuminance(parsedText.r, parsedText.g, parsedText.b);
-    
+
     const contrast = getContrastRatio(bgLuminance, textLuminance);
 
+    // WCAG AA threshold is 4.5:1 for body, 3.0:1 for headings
     const isHeading = !!el.tagName.match(/^H[1-6]$/);
-    const threshold = isHeading ? 4.5 : 5.5;
+    const threshold = isHeading ? 3.0 : 4.0;
 
     if (contrast < threshold) {
+      // Contrast is too low! Override text color
       if (bgLuminance >= 0.5) {
-        if (el.style.getPropertyValue('color') !== 'var(--auto-text-dark)') {
-           el.style.setProperty('color', 'var(--auto-text-dark)', 'important');
-           el.setAttribute('data-contrast-audited', 'true');
-        }
-        if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !el.classList.contains('auto-contrast-light-bg')) {
-           el.classList.add('auto-contrast-light-bg');
-        }
+        // Light background -> force dark gray/black text
+        el.style.setProperty('color', '#111827', 'important');
       } else {
-        if (el.style.getPropertyValue('color') !== 'var(--auto-text-light)') {
-           el.style.setProperty('color', 'var(--auto-text-light)', 'important');
-           el.setAttribute('data-contrast-audited', 'true');
-        }
-        if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !el.classList.contains('auto-contrast-dark-bg')) {
-           el.classList.add('auto-contrast-dark-bg');
-        }
+        // Dark background -> force white text
+        el.style.setProperty('color', '#ffffff', 'important');
       }
     }
   });
@@ -159,7 +137,7 @@ export function initAutoContrastEngine() {
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
       runAutoContrastAudit();
-    }, 1000); // improved
+    }, 80);
   };
 
   // Set up MutationObserver to automatically check for poor contrast when DOM changes
@@ -176,18 +154,26 @@ export function initAutoContrastEngine() {
     }
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class', 'style'],
+  });
 
   // Run audit on window events too
   window.addEventListener('resize', debouncedAudit);
-  
-  
+  window.addEventListener('scroll', debouncedAudit, { passive: true });
+
+  // Monitor document interactions/focus
+  document.addEventListener('focusin', debouncedAudit);
+  document.addEventListener('click', debouncedAudit);
 
   return () => {
     observer.disconnect();
     window.removeEventListener('resize', debouncedAudit);
-    
-    
-    
+    window.removeEventListener('scroll', debouncedAudit);
+    document.removeEventListener('focusin', debouncedAudit);
+    document.removeEventListener('click', debouncedAudit);
   };
 }

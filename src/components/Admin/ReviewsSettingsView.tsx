@@ -28,8 +28,6 @@ export const ReviewsSettingsView: React.FC = () => {
   const [editDate, setEditDate] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [editProduct, setEditProduct] = useState('');
-  const [editInstagram, setEditInstagram] = useState('');
-  const [editAvatar, setEditAvatar] = useState('');
 
   // Reply state
   const [replyReviewId, setReplyReviewId] = useState<string | null>(null);
@@ -42,19 +40,16 @@ export const ReviewsSettingsView: React.FC = () => {
   const [newComment, setNewComment] = useState('');
   const [newRating, setNewRating] = useState(5);
   const [newProduct, setNewProduct] = useState('');
-  const [newInstagram, setNewInstagram] = useState('');
-  const [newAvatar, setNewAvatar] = useState('');
 
   // Master lists filter
   const filteredReviews = useMemo(() => {
     return reviews.filter((rev) => {
       // Search term
-      const safeSearch = (searchQuery || '').toLowerCase();
       const matchesSearch = 
-        (rev.author || '').toLowerCase().includes(safeSearch) || 
-        (rev.comment || '').toLowerCase().includes(safeSearch) ||
-        ((rev.location || '').toLowerCase().includes(safeSearch)) ||
-        ((rev.productBought || '').toLowerCase().includes(safeSearch));
+        rev.author.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        rev.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (rev.location && rev.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (rev.productBought && rev.productBought.toLowerCase().includes(searchQuery.toLowerCase()));
 
       if (!matchesSearch) return false;
 
@@ -97,8 +92,6 @@ export const ReviewsSettingsView: React.FC = () => {
     setEditDate(rev.date || 'Just now');
     setEditLocation(rev.location || '');
     setEditProduct(rev.productBought || '');
-    setEditInstagram(rev.instagramHandle || '');
-    setEditAvatar(rev.avatar || '');
   };
 
   const handleSaveEdit = async (id: string) => {
@@ -113,8 +106,6 @@ export const ReviewsSettingsView: React.FC = () => {
         date: editDate,
         location: editLocation,
         productBought: editProduct,
-        instagramHandle: editInstagram || undefined,
-        avatar: editAvatar || undefined,
       });
 
       setEditingReviewId(null);
@@ -463,7 +454,6 @@ export const ReviewsSettingsView: React.FC = () => {
                               placeholder="Location"
                               className="w-full bg-neutral-100 border p-1 rounded text-[10px]"
                             />
-                            
                             <input
                               type="text"
                               value={editProduct}
@@ -471,30 +461,11 @@ export const ReviewsSettingsView: React.FC = () => {
                               placeholder="Product Bought"
                               className="w-full bg-neutral-100 border p-1 rounded text-[10px]"
                             />
-                            <input
-                              type="text"
-                              value={editInstagram}
-                              onChange={(e) => setEditInstagram(e.target.value)}
-                              placeholder="Instagram (@username)"
-                              className="w-full bg-neutral-100 border p-1 rounded text-[10px]"
-                            />
-                            <input
-                              type="text"
-                              value={editAvatar}
-                              onChange={(e) => setEditAvatar(e.target.value)}
-                              placeholder="Avatar URL"
-                              className="w-full bg-neutral-100 border p-1 rounded text-[10px]"
-                            />
                           </div>
                         ) : (
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-extrabold text-neutral-900 text-xs">{rev.author}</span>
-                              {rev.instagramHandle && (
-                                <span className="text-pink-600 font-medium text-[9px] bg-pink-50 px-1 rounded-full">
-                                  {rev.instagramHandle}
-                                </span>
-                              )}
                               {rev.verified && (
                                 <span className="text-[9px] font-extrabold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
                                   <ShieldCheck className="w-2.5 h-2.5 text-[#0B8F63]" />

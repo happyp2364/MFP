@@ -9,6 +9,7 @@ import {
   PaymentSettings,
   CustomerOrder,
   OrderStatus,
+  HangingSneakerConfig,
   PetShoeConfig,
   InstagramConfig,
   SoundConfig,
@@ -35,10 +36,13 @@ import {
   SocialAnalyticsLog,
   PromoCoupon,
   CouponType,
+  LuckyBoxReward,
+  LuckyBoxConfig,
   ScratchReward,
   ScratchWinConfig,
   SpinWheelConfig,
   WheelSection,
+  FlashDeal,
   EngagementAnalytics,
   OrderCelebrationConfig,
 } from '../types';
@@ -50,6 +54,7 @@ import {
   ANNOUNCEMENT_ITEMS,
   CATEGORY_HIGHLIGHTS,
   TRENDING_COLLECTIONS,
+  DEFAULT_HANGING_SNEAKER_CONFIG,
   DEFAULT_PET_SHOE_CONFIG,
   DEFAULT_INSTAGRAM_CONFIG,
   DEFAULT_SOUND_CONFIG,
@@ -100,19 +105,6 @@ import { splitProduct, stitchProduct, estimateObjectSizeKb } from '../utils/prod
 import { playSound, applyAudioCustomerSettings } from '../utils/audio';
 import { securityRateLimiter, sanitizeString, sanitizeEmail, sanitizePhone, sanitizePrice } from '../lib/security';
 
-const safeFirestoreWrite = async (writeOperation: () => Promise<any>, timeoutMs: number = 6000): Promise<boolean> => {
-  try {
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Firestore write timeout')), timeoutMs)
-    );
-    await Promise.race([writeOperation(), timeoutPromise]);
-    return true;
-  } catch (err) {
-    console.warn('Firestore write notice (saved locally):', err);
-    return true;
-  }
-};
-
 const STORAGE_KEYS = {
   PRODUCTS: 'mfp_products_catalog_live',
   REVIEWS: 'mfp_reviews_live',
@@ -152,6 +144,8 @@ interface StoreContextType {
   activeOrderNotification: AdminNotification | null;
   setActiveOrderNotification: (notif: AdminNotification | null) => void;
 
+  hangingSneakerConfig: HangingSneakerConfig;
+  updateHangingSneakerConfig: (updated: Partial<HangingSneakerConfig>) => Promise<void>;
   petShoeConfig: PetShoeConfig;
   updatePetShoeConfig: (updated: Partial<PetShoeConfig>) => Promise<void>;
   instagramConfig: InstagramConfig;
@@ -260,8 +254,14 @@ interface StoreContextType {
   trackCouponUse: (code: string, success: boolean, revenue?: number, discount?: number) => Promise<void>;
 
   // Customer Engagement Reward Center
+  luckyBoxConfig: LuckyBoxConfig;
+  updateLuckyBoxConfig: (updated: Partial<LuckyBoxConfig>) => Promise<boolean>;
   spinWheelConfig: SpinWheelConfig;
   updateSpinWheelConfig: (updated: Partial<SpinWheelConfig>) => Promise<boolean>;
+  flashDeals: FlashDeal[];
+  addFlashDeal: (deal: Omit<FlashDeal, 'id' | 'analytics'>) => Promise<boolean>;
+  updateFlashDeal: (id: string, updated: Partial<FlashDeal>) => Promise<boolean>;
+  deleteFlashDeal: (id: string) => Promise<boolean>;
   engagementAnalytics: EngagementAnalytics;
   recordEngagementMetric: (metric: keyof EngagementAnalytics, value?: number) => Promise<void>;
 
@@ -301,13 +301,85 @@ const DEFAULT_SCRATCH_WIN_CONFIG: ScratchWinConfig = {
       usageLimit: 1000,
       usageCount: 0,
       perCustomerLimit: 1,
-      enabled: true,
       couponCode: 'SCRATCH10'
     }
   ]
 };
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
+
+const DEFAULT_LUCKY_BOX_CONFIG: LuckyBoxConfig = {
+  enabled: true,
+  permanentlyDisabled: false,
+  showOnHomepage: true,
+  showOnProductPage: true,
+  showOnCheckout: true,
+  showOnOrderSuccess: true,
+  firstVisitOnly: false,
+  firstOrderOnly: false,
+  returningCustomerOnly: false,
+  newCustomerOnly: false,
+  festivalOnly: false,
+  dailyLimit: 50,
+  perCustomerLimit: 1,
+  globalUsageLimit: 1000,
+  minCartValue: 0,
+  rewards: [
+    {
+      id: 'lb-100-off',
+      title: '₹100 OFF',
+      type: 'FLAT',
+      value: 100,
+      probability: 30,
+      usageLimit: 500,
+      usageCount: 0,
+      perCustomerLimit: 1,
+      couponCode: 'LUCKY100'
+    },
+    {
+      id: 'lb-5-percent',
+      title: '5% OFF',
+      type: 'PERCENTAGE',
+      value: 5,
+      probability: 25,
+      usageLimit: 1000,
+      usageCount: 0,
+      perCustomerLimit: 1,
+      couponCode: 'LUCKY5'
+    },
+    {
+      id: 'lb-free-shipping',
+      title: 'Free Delivery',
+      type: 'FREE_SHIPPING',
+      value: 0,
+      probability: 15,
+      usageLimit: 500,
+      usageCount: 0,
+      perCustomerLimit: 1,
+      couponCode: 'FREESHIP'
+    },
+    {
+      id: 'lb-mystery',
+      title: 'Mystery Gift',
+      type: 'GIFT',
+      value: 0,
+      probability: 5,
+      usageLimit: 50,
+      usageCount: 0,
+      perCustomerLimit: 1
+    },
+    {
+      id: 'lb-better-luck',
+      title: 'Better Luck Next Time',
+      type: 'BETTER_LUCK',
+      value: 0,
+      probability: 25,
+      usageLimit: 0,
+      usageCount: 0,
+      perCustomerLimit: 0
+    }
+  ]
+};
 
 const DEFAULT_SPIN_WHEEL_CONFIG: SpinWheelConfig = {
   enabled: true,
@@ -329,9 +401,12 @@ const DEFAULT_SPIN_WHEEL_CONFIG: SpinWheelConfig = {
 };
 
 const DEFAULT_ENGAGEMENT_ANALYTICS: EngagementAnalytics = {
+  luckyBoxOpens: 0,
   wheelSpins: 0,
   couponsWon: 0,
   couponsUsed: 0,
+  flashDealClicks: 0,
+  flashDealConversions: 0,
   revenueGenerated: 0
 };
 
@@ -348,98 +423,82 @@ const DEFAULT_ORDER_CELEBRATION_CONFIG: OrderCelebrationConfig = {
   desktopOnly: false
 };
 
-// Safe JSON parsing helper to prevent initialization crashes
-const safeJSONParse = (key: string, fallback: any) => {
-  try {
-    const item = localStorage.getItem(key);
-    if (!item) return fallback;
-    return JSON.parse(item);
-  } catch (e) {
-    console.warn(`LocalStorage parse error for key "${key}":`, e);
-    return fallback;
-  }
-};
-
-// Safe LocalStorage set helper - strictly for lightweight UI preferences only
-const safeLocalStorageSet = (key: string, value: any) => {
-  // Never store large domain objects (products, reviews, orders, store info, etc.) in localStorage
-  const ALLOWED_LIGHTWEIGHT_KEYS = [
-    'mfp_theme',
-    'mfp_sidebar_collapsed',
-    'mfp_admin_active_tab',
-    'mfp_customer_sound_settings',
-    'mfp_wheel_last_spun',
-    'mfp_active_coupon',
-    'mfp_scratch_visited',
-    'mfp_scratch_permanently_disabled',
-    'mfp_luckybox_last_opened',
-    'mfp_google_access_token'
-  ];
-
-  if (!ALLOWED_LIGHTWEIGHT_KEYS.includes(key)) {
-    return;
-  }
-
-  try {
-    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-  } catch (e) {
-    console.warn(`LocalStorage write skipped or failed for key "${key}":`, e);
-  }
-};
-
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Purge heavy legacy keys from localStorage on mount
-  useEffect(() => {
-    const HEAVY_KEYS = [
-      'mfp_products_catalog_live',
-      'mfp_reviews_live',
-      'mfp_store_info_live',
-      'mfp_hero_content_live',
-      'mfp_announcements_live',
-      'mfp_category_highlights_live',
-      'mfp_trending_collections_live',
-      'mfp_audit_logs_live',
-      'mfp_payment_settings_live',
-      'mfp_hanging_sneaker_config_live',
-      'mfp_pet_shoe_config_live',
-      'mfp_instagram_config_live',
-      'mfp_sound_config_live',
-      'mfp_top_announcement_bar_config_live',
-      'mfp_social_media_config_live_v2',
-      'mfp_social_analytics_live_v2',
-      'mfp_lucky_box_config',
-      'mfp_spin_wheel_config',
-      'mfp_scratch_win_config',
-      'mfp_flash_deal_config',
-      'mfp_engagement_analytics',
-      'mfp_order_celebration_config',
-      'mfp_audit_logs',
-      'smart_product_form_draft',
-      'mfp_admin_state',
-      'mfp_admin',
-    ];
-    HEAVY_KEYS.forEach((key) => {
-      try {
-        localStorage.removeItem(key);
-      } catch (e) {}
-    });
-  }, []);
-
   // Real-time Live State
-  const [publishedProducts, setPublishedProducts] = useState<Product[]>(PRODUCTS_DATA);
-  const [publishedReviews, setPublishedReviews] = useState<Review[]>(REVIEWS_DATA);
-  const [publishedStoreInfo, setPublishedStoreInfo] = useState<StoreInfo>(STORE_INFO);
-  const [publishedHeroContent, setPublishedHeroContent] = useState<HeroContent>(DEFAULT_HERO_CONTENT);
-  const [publishedAnnouncements, setPublishedAnnouncements] = useState<string[]>(ANNOUNCEMENT_ITEMS);
-  const [publishedCategoryHighlights, setPublishedCategoryHighlights] = useState<CategoryHighlight[]>(CATEGORY_HIGHLIGHTS);
-  const [publishedTrendingCollections, setPublishedTrendingCollections] = useState<TrendingCollectionItem[]>(TRENDING_COLLECTIONS);
-  const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(DEFAULT_PAYMENT_SETTINGS);
-  const [publishedPetShoeConfig, setPublishedPetShoeConfig] = useState<PetShoeConfig>((DEFAULT_PET_SHOE_CONFIG as unknown) as PetShoeConfig);
-  const [publishedInstagramConfig, setPublishedInstagramConfig] = useState<InstagramConfig>((DEFAULT_INSTAGRAM_CONFIG as unknown) as InstagramConfig);
-  const [publishedSoundConfig, setPublishedSoundConfig] = useState<SoundConfig>(DEFAULT_SOUND_CONFIG);
-  const [publishedTopAnnouncementBarConfig, setPublishedTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG);
-  const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaCenterConfig>(DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG);
-  const [socialAnalytics, setSocialAnalytics] = useState<SocialAnalyticsLog>(DEFAULT_SOCIAL_ANALYTICS);
+  const [publishedProducts, setPublishedProducts] = useState<Product[]>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+    return local ? JSON.parse(local) : PRODUCTS_DATA;
+  });
+
+  const [publishedReviews, setPublishedReviews] = useState<Review[]>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.REVIEWS);
+    return local ? JSON.parse(local) : REVIEWS_DATA;
+  });
+
+  const [publishedStoreInfo, setPublishedStoreInfo] = useState<StoreInfo>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.STORE_INFO);
+    return local ? JSON.parse(local) : STORE_INFO;
+  });
+
+  const [publishedHeroContent, setPublishedHeroContent] = useState<HeroContent>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.HERO_CONTENT);
+    return local ? JSON.parse(local) : DEFAULT_HERO_CONTENT;
+  });
+
+  const [publishedAnnouncements, setPublishedAnnouncements] = useState<string[]>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS);
+    return local ? JSON.parse(local) : ANNOUNCEMENT_ITEMS;
+  });
+
+  const [publishedCategoryHighlights, setPublishedCategoryHighlights] = useState<CategoryHighlight[]>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS);
+    return local ? JSON.parse(local) : (CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
+  });
+
+  const [publishedTrendingCollections, setPublishedTrendingCollections] = useState<TrendingCollectionItem[]>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.TRENDING_COLLECTIONS);
+    return local ? JSON.parse(local) : TRENDING_COLLECTIONS;
+  });
+
+  const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.PAYMENT_SETTINGS);
+    return local ? JSON.parse(local) : DEFAULT_PAYMENT_SETTINGS;
+  });
+
+  const [publishedHangingSneakerConfig, setPublishedHangingSneakerConfig] = useState<HangingSneakerConfig>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.HANGING_SNEAKER_CONFIG);
+    return local ? JSON.parse(local) : DEFAULT_HANGING_SNEAKER_CONFIG;
+  });
+
+  const [publishedPetShoeConfig, setPublishedPetShoeConfig] = useState<PetShoeConfig>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.PET_SHOE_CONFIG);
+    return local ? JSON.parse(local) : DEFAULT_PET_SHOE_CONFIG;
+  });
+
+  const [publishedInstagramConfig, setPublishedInstagramConfig] = useState<InstagramConfig>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.INSTAGRAM_CONFIG);
+    return local ? JSON.parse(local) : DEFAULT_INSTAGRAM_CONFIG;
+  });
+
+  const [publishedSoundConfig, setPublishedSoundConfig] = useState<SoundConfig>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.SOUND_CONFIG);
+    return local ? JSON.parse(local) : DEFAULT_SOUND_CONFIG;
+  });
+
+  const [publishedTopAnnouncementBarConfig, setPublishedTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG);
+    return local ? JSON.parse(local) : DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG;
+  });
+
+  const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaCenterConfig>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG);
+    return local ? JSON.parse(local) : DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG;
+  });
+
+  const [socialAnalytics, setSocialAnalytics] = useState<SocialAnalyticsLog>(() => {
+    const local = localStorage.getItem(STORAGE_KEYS.SOCIAL_ANALYTICS);
+    return local ? JSON.parse(local) : DEFAULT_SOCIAL_ANALYTICS;
+  });
 
   // Coupons state
   const [coupons, setCoupons] = useState<PromoCoupon[]>([]);
@@ -474,8 +533,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isCustomerAuthLoading, setIsCustomerAuthLoading] = useState<boolean>(true);
   const [customerAuthError, setCustomerAuthError] = useState<string | null>(null);
 
-  // Customer Sound Settings
-  const [customerSoundSettings, setCustomerSoundSettingsState] = useState<CustomerSoundSettings>(() => safeJSONParse('mfp_customer_sound_settings', DEFAULT_CUSTOMER_SOUND_SETTINGS));
+  // Sound Engine
+  const [customerSoundSettings, setCustomerSoundSettingsState] = useState<CustomerSoundSettings>(() => {
+    const local = localStorage.getItem('mfp_customer_sound_settings');
+    return local ? JSON.parse(local) : DEFAULT_CUSTOMER_SOUND_SETTINGS;
+  });
 
   // Orders & Notifications
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
@@ -487,15 +549,37 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [subscribers, setSubscribers] = useState<MarketingSubscriber[]>([]);
 
   // Customer Engagement State
-  const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(DEFAULT_SPIN_WHEEL_CONFIG);
-  const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(DEFAULT_SCRATCH_WIN_CONFIG);
-  const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(DEFAULT_ENGAGEMENT_ANALYTICS);
-  const [orderCelebrationConfig, setOrderCelebrationConfig] = useState<OrderCelebrationConfig>(DEFAULT_ORDER_CELEBRATION_CONFIG);
+  const [luckyBoxConfig, setLuckyBoxConfig] = useState<LuckyBoxConfig>(() => {
+    const local = localStorage.getItem('mfp_lucky_box_config');
+    return local ? JSON.parse(local) : DEFAULT_LUCKY_BOX_CONFIG;
+  });
+
+  const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(() => {
+    const local = localStorage.getItem('mfp_spin_wheel_config');
+    return local ? JSON.parse(local) : DEFAULT_SPIN_WHEEL_CONFIG;
+  });
+
+  const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(() => {
+    const local = localStorage.getItem('mfp_scratch_win_config');
+    return local ? JSON.parse(local) : DEFAULT_SCRATCH_WIN_CONFIG;
+  });
+
+  const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
+
+  const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(() => {
+    const local = localStorage.getItem('mfp_engagement_analytics');
+    return local ? JSON.parse(local) : DEFAULT_ENGAGEMENT_ANALYTICS;
+  });
+
+  const [orderCelebrationConfig, setOrderCelebrationConfig] = useState<OrderCelebrationConfig>(() => {
+    const local = localStorage.getItem('mfp_order_celebration_config');
+    return local ? JSON.parse(local) : DEFAULT_ORDER_CELEBRATION_CONFIG;
+  });
 
   const [isCelebrating, setIsCelebrating] = useState<boolean>(false);
 
   // Audit Logger Helper
-  const recordAuditLog = useCallback((
+  const recordAuditLog = (
     action: string,
     category: 'AUTH' | 'PRODUCT' | 'SETTINGS' | 'SECURITY' | 'BACKUP' | 'MEDIA',
     details: string,
@@ -513,7 +597,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     setAuditLogs((prev) => [newLog, ...prev]);
-  }, []);
+  };
 
   // 1. Real-Time Firestore Listeners for Live Products (Split-Aware & Stitched)
   useEffect(() => {
@@ -530,10 +614,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           snapshot.forEach((docSnap) => {
             remote.push({ ...docSnap.data(), id: docSnap.id });
           });
-          setRawLiveProducts(prev => {
-            if (JSON.stringify(prev) === JSON.stringify(remote)) return prev;
-            return remote;
-          });
+          setRawLiveProducts(remote);
           setProductsFetched(true);
         } else {
           setProductsFetched(true);
@@ -562,10 +643,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubGallery = onSnapshot(collection(db, 'product_gallery'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
-        setLiveGalleries(prev => {
-          if (JSON.stringify(prev) === JSON.stringify(map)) return prev;
-          return map;
-        });
+        setLiveGalleries(map);
       }, (err) => {
         handleFirestoreError(err, OperationType.GET, 'product_gallery');
       });
@@ -573,10 +651,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubVariants = onSnapshot(collection(db, 'product_variants'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
-        setLiveVariants(prev => {
-          if (JSON.stringify(prev) === JSON.stringify(map)) return prev;
-          return map;
-        });
+        setLiveVariants(map);
       }, (err) => {
         handleFirestoreError(err, OperationType.GET, 'product_variants');
       });
@@ -584,10 +659,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubAiMetadata = onSnapshot(collection(db, 'product_ai_metadata'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
-        setLiveAiMetadata(prev => {
-          if (JSON.stringify(prev) === JSON.stringify(map)) return prev;
-          return map;
-        });
+        setLiveAiMetadata(map);
       }, (err) => {
         handleFirestoreError(err, OperationType.GET, 'product_ai_metadata');
       });
@@ -595,10 +667,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubGalleryParts = onSnapshot(collection(db, 'product_gallery_parts'), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
-        setLiveGalleryParts(prev => {
-          if (JSON.stringify(prev) === JSON.stringify(map)) return prev;
-          return map;
-        });
+        setLiveGalleryParts(map);
       }, (err) => {
         handleFirestoreError(err, OperationType.GET, 'product_gallery_parts');
       });
@@ -632,7 +701,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Deep compare or check length to avoid unnecessary state updates if nothing changed
       setPublishedProducts(prev => {
         if (JSON.stringify(prev) === JSON.stringify(stitched)) return prev;
-        safeLocalStorageSet(STORAGE_KEYS.PRODUCTS, stitched);
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(stitched));
         return stitched;
       });
     }
@@ -647,24 +716,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'settings', 'store'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as StoreInfo;
-            setPublishedStoreInfo(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.STORE_INFO, data);
-              return data;
-            });
+            setPublishedStoreInfo(data);
+            localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(data));
           }
         }, (err) => console.warn('Live store settings listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'luckyBox'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as LuckyBoxConfig;
+            setLuckyBoxConfig(data);
+            localStorage.setItem('mfp_lucky_box_config', JSON.stringify(data));
+          }
+        }, (err) => console.warn('Live lucky box listener notice:', err))
       );
 
       unsubscribers.push(
         onSnapshot(doc(db, 'settings', 'spinWheel'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as SpinWheelConfig;
-            setSpinWheelConfig(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet('mfp_spin_wheel_config', data);
-              return data;
-            });
+            setSpinWheelConfig(data);
+            localStorage.setItem('mfp_spin_wheel_config', JSON.stringify(data));
           }
         }, (err) => console.warn('Live spin wheel listener notice:', err))
       );
@@ -673,11 +746,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'settings', 'scratchWin'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as ScratchWinConfig;
-            setScratchWinConfig(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet('mfp_scratch_win_config', data);
-              return data;
-            });
+            setScratchWinConfig(data);
+            localStorage.setItem('mfp_scratch_win_config', JSON.stringify(data));
           }
         }, (err) => console.warn('Live scratch win listener notice:', err))
       );
@@ -686,24 +756,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'analytics', 'engagement'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as EngagementAnalytics;
-            setEngagementAnalytics(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet('mfp_engagement_analytics', data);
-              return data;
-            });
+            setEngagementAnalytics(data);
+            localStorage.setItem('mfp_engagement_analytics', JSON.stringify(data));
           }
         }, (err) => console.warn('Live engagement analytics listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(collection(db, 'flashDeals'), (snap) => {
+          const list: FlashDeal[] = [];
+          snap.forEach((d) => list.push({ ...d.data(), id: d.id } as FlashDeal));
+          setFlashDeals(list);
+        }, (err) => console.warn('Live flash deals listener notice:', err))
       );
 
       unsubscribers.push(
         onSnapshot(doc(db, 'settings', 'orderCelebration'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as OrderCelebrationConfig;
-            setOrderCelebrationConfig(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet('mfp_order_celebration_config', data);
-              return data;
-            });
+            setOrderCelebrationConfig(data);
+            localStorage.setItem('mfp_order_celebration_config', JSON.stringify(data));
           }
         }, (err) => console.warn('Live order celebration listener notice:', err))
       );
@@ -712,11 +784,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'hero', 'current'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as HeroContent;
-            setPublishedHeroContent(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.HERO_CONTENT, data);
-              return data;
-            });
+            setPublishedHeroContent(data);
+            localStorage.setItem(STORAGE_KEYS.HERO_CONTENT, JSON.stringify(data));
           }
         }, (err) => console.warn('Live hero listener notice:', err))
       );
@@ -725,11 +794,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'homepage', 'announcements'), (snap) => {
           if (snap.exists() && snap.data()?.items) {
             const data = snap.data().items as string[];
-            setPublishedAnnouncements(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.ANNOUNCEMENTS, data);
-              return data;
-            });
+            setPublishedAnnouncements(data);
+            localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(data));
           }
         }, (err) => console.warn('Live announcements listener notice:', err))
       );
@@ -738,11 +804,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'categories', 'highlights'), (snap) => {
           if (snap.exists() && snap.data()?.items) {
             const data = snap.data().items as CategoryHighlight[];
-            setPublishedCategoryHighlights(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, data);
-              return data;
-            });
+            setPublishedCategoryHighlights(data);
+            localStorage.setItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, JSON.stringify(data));
           }
         }, (err) => console.warn('Live categories listener notice:', err))
       );
@@ -751,11 +814,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'homepage', 'trendingCollections'), (snap) => {
           if (snap.exists() && snap.data()?.items) {
             const data = snap.data().items as TrendingCollectionItem[];
-            setPublishedTrendingCollections(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.TRENDING_COLLECTIONS, data);
-              return data;
-            });
+            setPublishedTrendingCollections(data);
+            localStorage.setItem(STORAGE_KEYS.TRENDING_COLLECTIONS, JSON.stringify(data));
           }
         }, (err) => console.warn('Live trending collections listener notice:', err))
       );
@@ -764,24 +824,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'payment', 'config'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as PaymentSettings;
-            setPublishedPaymentSettings(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.PAYMENT_SETTINGS, data);
-              return data;
-            });
+            setPublishedPaymentSettings(data);
+            localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(data));
           }
         }, (err) => console.warn('Live payment listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'animations', 'hangingSneakerConfig'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as HangingSneakerConfig;
+            setPublishedHangingSneakerConfig(data);
+            localStorage.setItem(STORAGE_KEYS.HANGING_SNEAKER_CONFIG, JSON.stringify(data));
+          }
+        }, (err) => console.warn('Live sneaker animation listener notice:', err))
       );
 
       unsubscribers.push(
         onSnapshot(doc(db, 'mascot', 'petShoeConfig'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as PetShoeConfig;
-            setPublishedPetShoeConfig(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.PET_SHOE_CONFIG, data);
-              return data;
-            });
+            setPublishedPetShoeConfig(data);
+            localStorage.setItem(STORAGE_KEYS.PET_SHOE_CONFIG, JSON.stringify(data));
           }
         }, (err) => console.warn('Live pet shoe listener notice:', err))
       );
@@ -790,11 +854,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'social', 'instagramConfig'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as InstagramConfig;
-            setPublishedInstagramConfig(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.INSTAGRAM_CONFIG, data);
-              return data;
-            });
+            setPublishedInstagramConfig(data);
+            localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(data));
           }
         }, (err) => console.warn('Live instagram listener notice:', err))
       );
@@ -803,11 +864,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'theme', 'current'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as SoundConfig;
-            setPublishedSoundConfig(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.SOUND_CONFIG, data);
-              return data;
-            });
+            setPublishedSoundConfig(data);
+            localStorage.setItem(STORAGE_KEYS.SOUND_CONFIG, JSON.stringify(data));
           }
         }, (err) => console.warn('Live sound listener notice:', err))
       );
@@ -816,11 +874,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'homepage', 'topAnnouncementBarConfig'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as TopAnnouncementBarConfig;
-            setPublishedTopAnnouncementBarConfig(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, data);
-              return data;
-            });
+            setPublishedTopAnnouncementBarConfig(data);
+            localStorage.setItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, JSON.stringify(data));
           }
         }, (err) => console.warn('Live top announcement bar listener notice:', err))
       );
@@ -829,11 +884,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'social', 'socialMediaConfig'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as SocialMediaCenterConfig;
-            setSocialMediaConfig(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, data);
-              return data;
-            });
+            setSocialMediaConfig(data);
+            localStorage.setItem(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, JSON.stringify(data));
           }
         }, (err) => console.warn('Live social media config listener error:', err))
       );
@@ -842,11 +894,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         onSnapshot(doc(db, 'analytics', 'social_clicks'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as SocialAnalyticsLog;
-            setSocialAnalytics(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.SOCIAL_ANALYTICS, data);
-              return data;
-            });
+            setSocialAnalytics(data);
+            localStorage.setItem(STORAGE_KEYS.SOCIAL_ANALYTICS, JSON.stringify(data));
           }
         }, (err) => console.warn('Live social analytics listener error:', err))
       );
@@ -856,11 +905,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (!snap.empty) {
             const list: Review[] = [];
             snap.forEach((d) => list.push({ ...d.data(), id: d.id } as Review));
-            setPublishedReviews(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(list)) return prev;
-              safeLocalStorageSet(STORAGE_KEYS.REVIEWS, list);
-              return list;
-            });
+            setPublishedReviews(list);
+            localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(list));
           }
         }, (err) => console.warn('Live reviews listener notice:', err))
       );
@@ -874,10 +920,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             snap.forEach((d) => {
               list.push({ ...d.data(), id: d.id } as AdminNotification);
             });
-            setNotifications(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(list)) return prev;
-              return list;
-            });
+            setNotifications(list);
 
             if (isFirstNotificationsLoad) {
               isFirstNotificationsLoad = false;
@@ -903,10 +946,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             snap.forEach((d) => {
               list.push({ ...d.data(), id: d.id } as CustomerOrder);
             });
-            setOrders(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(list)) return prev;
-              return list;
-            });
+            setOrders(list);
           },
           (err) => console.warn('Live orders listener notice:', err)
         )
@@ -922,10 +962,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             });
             // sort coupons by priority (highest first), then by code
             list.sort((a, b) => (b.priority || 0) - (a.priority || 0));
-            setCoupons(prev => {
-              if (JSON.stringify(prev) === JSON.stringify(list)) return prev;
-              return list;
-            });
+            setCoupons(list);
           },
           (err) => console.warn('Live coupons listener notice:', err)
         )
@@ -1009,19 +1046,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, [isAdmin, lastActivityTime, handleUserActivity]);
 
-  const refreshAuditLogs = useCallback(async () => {
+  useEffect(() => {
+    refreshAuditLogs();
+  }, []);
+
+  const refreshAuditLogs = async () => {
     try {
       const logs = await fetchRemoteAuditLogs();
       setAuditLogs(logs);
-      safeLocalStorageSet(STORAGE_KEYS.AUDIT_LOGS, logs);
+      localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(logs));
     } catch (e) {
       console.warn('Audit logs fetch notice:', e);
     }
-  }, []);
-
-  useEffect(() => {
-    refreshAuditLogs();
-  }, [refreshAuditLogs]);
+  };
 
   // Auth Methods
   const loginAdmin = async (password: string, twoFactorCode?: string) => {
@@ -1276,9 +1313,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (cleanInfo.phone) cleanInfo.phone = sanitizePhone(cleanInfo.phone);
 
       const updatedStoreInfo = { ...publishedStoreInfo, ...cleanInfo };
-      setPublishedStoreInfo(updatedStoreInfo);
-      safeLocalStorageSet(STORAGE_KEYS.STORE_INFO, updatedStoreInfo);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'settings', 'store'), updatedStoreInfo, { merge: true }));
+      await setDoc(doc(db, 'settings', 'store'), updatedStoreInfo, { merge: true });
 
       showToast('💾 Changes Saved Live Successfully', 'success');
       recordAuditLog('Store Info Updated', 'SETTINGS', 'Store location and contact info updated live', 'SUCCESS');
@@ -1295,9 +1330,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (cleanHero.subtitle) cleanHero.subtitle = sanitizeString(cleanHero.subtitle, 500);
 
       const updatedHero = { ...publishedHeroContent, ...cleanHero };
-      setPublishedHeroContent(updatedHero);
-      safeLocalStorageSet(STORAGE_KEYS.HERO_CONTENT, updatedHero);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'hero', 'current'), updatedHero, { merge: true }));
+      await setDoc(doc(db, 'hero', 'current'), updatedHero, { merge: true });
 
       showToast('💾 Hero Banner Saved Live Successfully', 'success');
       recordAuditLog('Hero Banner Updated', 'MEDIA', 'Hero banner content updated live', 'SUCCESS');
@@ -1310,9 +1343,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setAnnouncementsList = async (items: string[]) => {
     try {
       const cleanItems = items.map((i) => sanitizeString(i, 200));
-      setPublishedAnnouncements(cleanItems);
-      safeLocalStorageSet(STORAGE_KEYS.ANNOUNCEMENTS, cleanItems);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'homepage', 'announcements'), { items: cleanItems }, { merge: true }));
+      await setDoc(doc(db, 'homepage', 'announcements'), { items: cleanItems }, { merge: true });
 
       showToast('💾 Announcements Saved Live Successfully', 'success');
       recordAuditLog('Announcements Updated', 'SETTINGS', 'Announcements list updated live', 'SUCCESS');
@@ -1325,9 +1356,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateCategoryHighlight = async (id: string, updated: Partial<CategoryHighlight>) => {
     try {
       const updatedCategories = publishedCategoryHighlights.map((cat) => (cat.id === id ? { ...cat, ...updated } : cat));
-      setPublishedCategoryHighlights(updatedCategories);
-      safeLocalStorageSet(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, updatedCategories);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'categories', 'highlights'), { items: updatedCategories }, { merge: true }));
+      await setDoc(doc(db, 'categories', 'highlights'), { items: updatedCategories }, { merge: true });
       showToast('💾 Categories Saved Live Successfully', 'success');
     } catch (err: any) {
       console.error('Error updating category highlight:', err);
@@ -1337,9 +1366,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const saveCategoryHighlights = async (items: CategoryHighlight[]) => {
     try {
-      setPublishedCategoryHighlights(items);
-      safeLocalStorageSet(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, items);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'categories', 'highlights'), { items }, { merge: true }));
+      await setDoc(doc(db, 'categories', 'highlights'), { items }, { merge: true });
       showToast('💾 Categories Saved Live Successfully', 'success');
       recordAuditLog('Categories Saved', 'SETTINGS', 'Category highlights saved live', 'SUCCESS');
     } catch (err: any) {
@@ -1351,9 +1378,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateTrendingCollection = async (id: string, updated: Partial<TrendingCollectionItem>) => {
     try {
       const updatedTrending = publishedTrendingCollections.map((col) => (col.id === id ? { ...col, ...updated } : col));
-      setPublishedTrendingCollections(updatedTrending);
-      safeLocalStorageSet(STORAGE_KEYS.TRENDING_COLLECTIONS, updatedTrending);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'homepage', 'trendingCollections'), { items: updatedTrending }, { merge: true }));
+      await setDoc(doc(db, 'homepage', 'trendingCollections'), { items: updatedTrending }, { merge: true });
       showToast('💾 Collections Saved Live Successfully', 'success');
     } catch (err: any) {
       console.error('Error updating trending collection:', err);
@@ -1361,12 +1386,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const updateHangingSneakerConfig = async (updated: Partial<HangingSneakerConfig>) => {
+    try {
+      const newCfg = { ...publishedHangingSneakerConfig, ...updated };
+      await setDoc(doc(db, 'animations', 'hangingSneakerConfig'), newCfg, { merge: true });
+      showToast('💾 Sneaker Config Saved Live', 'success');
+    } catch (err: any) {
+      console.error('Error updating hanging sneaker config:', err);
+      showToast('Failed to save sneaker config', 'error');
+    }
+  };
+
   const updatePetShoeConfig = async (updated: Partial<PetShoeConfig>) => {
     try {
       const newCfg = { ...publishedPetShoeConfig, ...updated };
-      setPublishedPetShoeConfig(newCfg);
-      safeLocalStorageSet(STORAGE_KEYS.PET_SHOE_CONFIG, newCfg);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'mascot', 'petShoeConfig'), newCfg, { merge: true }));
+      await setDoc(doc(db, 'mascot', 'petShoeConfig'), newCfg, { merge: true });
       showToast('💾 Mascot Config Saved Live', 'success');
     } catch (err: any) {
       console.error('Error updating pet shoe config:', err);
@@ -1377,9 +1411,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateInstagramConfig = async (updated: Partial<InstagramConfig>) => {
     try {
       const newCfg = { ...publishedInstagramConfig, ...updated };
-      setPublishedInstagramConfig(newCfg);
-      safeLocalStorageSet(STORAGE_KEYS.INSTAGRAM_CONFIG, newCfg);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'social', 'instagramConfig'), newCfg, { merge: true }));
+      await setDoc(doc(db, 'social', 'instagramConfig'), newCfg, { merge: true });
       showToast('💾 Instagram Config Saved Live', 'success');
     } catch (err: any) {
       console.error('Error updating instagram config:', err);
@@ -1390,9 +1422,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateSocialMediaConfig = async (updated: Partial<SocialMediaCenterConfig>) => {
     try {
       const newCfg = { ...socialMediaConfig, ...updated };
-      setSocialMediaConfig(newCfg);
-      safeLocalStorageSet(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, newCfg);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'social', 'socialMediaConfig'), newCfg, { merge: true }));
+      await setDoc(doc(db, 'social', 'socialMediaConfig'), newCfg, { merge: true });
       showToast('💾 Social Media Config Saved Live', 'success');
     } catch (err: any) {
       console.error('Error updating social media config:', err);
@@ -1433,7 +1463,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         monthlyClicks: updatedMonthly
       };
 
-      await safeFirestoreWrite(() => setDoc(doc(db, 'analytics', 'social_clicks'), nextAnalytics, { merge: true }));
+      await setDoc(doc(db, 'analytics', 'social_clicks'), nextAnalytics, { merge: true });
     } catch (err: any) {
       console.warn('Error recording social click:', err);
     }
@@ -1442,9 +1472,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateSoundConfig = async (updated: Partial<SoundConfig>) => {
     try {
       const newCfg = { ...publishedSoundConfig, ...updated };
-      setPublishedSoundConfig(newCfg);
-      safeLocalStorageSet(STORAGE_KEYS.SOUND_CONFIG, newCfg);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'theme', 'current'), newCfg, { merge: true }));
+      await setDoc(doc(db, 'theme', 'current'), newCfg, { merge: true });
       showToast('💾 Sound Config Saved Live', 'success');
       recordAuditLog('Sound Settings Updated', 'SETTINGS', 'Updated audio configuration live', 'SUCCESS');
     } catch (err: any) {
@@ -1456,17 +1484,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateTopAnnouncementBarConfig = async (updated: Partial<TopAnnouncementBarConfig>) => {
     try {
       const newCfg = { ...publishedTopAnnouncementBarConfig, ...updated };
-      setPublishedTopAnnouncementBarConfig(newCfg);
-      safeLocalStorageSet(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, newCfg);
-
       const docRef = doc(db, 'homepage', 'topAnnouncementBarConfig');
-      await safeFirestoreWrite(() => setDoc(docRef, newCfg, { merge: true }));
+      await setDoc(docRef, newCfg, { merge: true });
       
-      showToast('✅ Announcement Bar Saved Successfully', 'success');
-      recordAuditLog('Top Announcement Bar Updated', 'SETTINGS', 'Updated top announcement bar configuration live', 'SUCCESS');
+      // Read the document again to verify it was written correctly
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const verifiedData = snap.data() as TopAnnouncementBarConfig;
+        if (verifiedData) {
+          setPublishedTopAnnouncementBarConfig(verifiedData);
+          localStorage.setItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, JSON.stringify(verifiedData));
+          showToast('✅ Announcement Bar Saved Successfully', 'success');
+          recordAuditLog('Top Announcement Bar Updated', 'SETTINGS', 'Updated top announcement bar configuration live', 'SUCCESS');
+          return;
+        }
+      }
+      throw new Error('Save verification failed: Document was not found or empty after writing.');
     } catch (err: any) {
       console.error('Error updating top announcement bar config:', err);
       showToast('Failed to save top announcement bar config', 'error');
+      throw err;
     }
   };
 
@@ -1474,7 +1511,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCustomerSoundSettingsState((prev) => {
       const next = { ...prev, ...updated };
       applyAudioCustomerSettings(next);
-      safeLocalStorageSet('mfp_customer_sound_settings', next);
+      localStorage.setItem('mfp_customer_sound_settings', JSON.stringify(next));
       return next;
     });
   };
@@ -1486,9 +1523,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updatePaymentSettings = async (settings: Partial<PaymentSettings>): Promise<boolean> => {
     try {
       const newCfg = { ...publishedPaymentSettings, ...settings };
-      setPublishedPaymentSettings(newCfg);
-      safeLocalStorageSet(STORAGE_KEYS.PAYMENT_SETTINGS, newCfg);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'payment', 'config'), newCfg, { merge: true }));
+      await setDoc(doc(db, 'payment', 'config'), newCfg, { merge: true });
       showToast('💾 Payment Gateway Config Saved Live', 'success');
       return true;
     } catch (err: any) {
@@ -1509,24 +1544,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   ) => {
     try {
       const orderId = `MFP-ORD-${Date.now()}`;
-      
-      // SERVER-SIDE/SOURCE-OF-TRUTH VALIDATION
-      const subtotalAmt = cartItems.reduce((acc, item) => {
-        const realProduct = publishedProducts.find(p => p.id === item.product.id);
-        const realPrice = realProduct ? realProduct.price : item.product.price;
-        return acc + (realPrice * item.quantity);
-      }, 0);
-      
-      let realDiscount = 0;
-      if (couponCode) {
-         const validation = validateCoupon(couponCode, cartItems);
-         if (validation.valid && validation.discountAmount) {
-            realDiscount = validation.discountAmount;
-         }
-      }
-      
-      const totalAmt = Math.max(0, subtotalAmt - realDiscount);
-
+      const subtotalAmt = cartItems.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+      const totalAmt = Math.max(0, subtotalAmt - discountAmount);
       const mappedPaymentMethod: PaymentMethodType =
         paymentMethod === 'ONLINE'
           ? 'UPI'
@@ -1770,7 +1789,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Gender/Collection restriction
       if (coupon.restrictType === 'COLLECTIONS' && coupon.restrictCollections && coupon.restrictCollections.length > 0) {
         const cat = (p.category || '').toLowerCase();
-        const allowedCats = coupon.restrictCollections.map((c) => (c || '').toLowerCase());
+        const allowedCats = coupon.restrictCollections.map((c) => c.toLowerCase());
         const isAllowed = allowedCats.some((ac) => ac.includes(cat) || cat.includes(ac));
         if (!isAllowed) {
           const collName = coupon.restrictCollections.includes('men') ? "Men's Collection" : coupon.restrictCollections.includes('women') ? "Women's Collection" : "Kids Collection";
@@ -1791,7 +1810,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (coupon.restrictType === 'CATEGORIES' && coupon.restrictCategories && coupon.restrictCategories.length > 0) {
         const subLower = (p.subcategory || '').toLowerCase();
         const catLower = (p.category || '').toLowerCase();
-        const allowedCats = coupon.restrictCategories.map((c) => (c || '').toLowerCase());
+        const allowedCats = coupon.restrictCategories.map((c) => c.toLowerCase());
         const isAllowed = allowedCats.some((ac) => subLower.includes(ac) || ac.includes(subLower) || catLower.includes(ac) || ac.includes(catLower));
         if (!isAllowed) {
           const catName = coupon.restrictCategories[0] || 'Sports Shoes';
@@ -1803,7 +1822,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Brand restriction
       if (coupon.restrictType === 'BRANDS' && coupon.restrictBrands && coupon.restrictBrands.length > 0) {
         const brandLower = (p.brand || '').toLowerCase();
-        const allowedBrands = coupon.restrictBrands.map((b) => (b || '').toLowerCase());
+        const allowedBrands = coupon.restrictBrands.map((b) => b.toLowerCase());
         if (!allowedBrands.includes(brandLower)) {
           itemReasons.push(`❌ Coupon Works Only On Brand: ${coupon.restrictBrands.join(', ')}`);
           return false;
@@ -1826,7 +1845,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Size restriction
       if (coupon.restrictSizes && coupon.restrictSizes.length > 0) {
-        const allowedSizes = coupon.restrictSizes.map((s) => (s || '').trim().toLowerCase());
+        const allowedSizes = coupon.restrictSizes.map((s) => s.trim().toLowerCase());
         const selSize = (item.selectedSize || '').trim().toLowerCase();
         if (!allowedSizes.includes(selSize)) {
           const firstAllowed = coupon.restrictSizes[0] || '7';
@@ -2058,72 +2077,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return snapshot;
   };
 
-  const restoreStoreBackup = async (backupData: StoreBackupSnapshot | string | any): Promise<boolean> => {
+  const restoreStoreBackup = async (backupData: StoreBackupSnapshot | string): Promise<boolean> => {
     try {
       const parsed: any = typeof backupData === 'string' ? JSON.parse(backupData) : backupData;
       const data = parsed.data || parsed;
-      
-      const batch = writeBatch(db);
-      
-      // Helper to add to batch
-      const addToBatch = (collectionName: string, items: any[]) => {
-        if (!items || !Array.isArray(items)) return;
-        items.forEach(item => {
-          if (!item.id) return;
-          const ref = doc(db, collectionName, item.id);
-          batch.set(ref, item, { merge: true });
-        });
-      };
-
-      // Restore major collections
-      if (data.products && Array.isArray(data.products)) {
-        data.products.forEach((p: Product) => {
-          if (!p.id) return;
-          const split = splitProduct(p);
-          batch.set(doc(db, 'products', p.id), split.metadata, { merge: true });
-          batch.set(doc(db, 'product_gallery', p.id), split.gallery, { merge: true });
-          batch.set(doc(db, 'product_variants', p.id), split.variants, { merge: true });
-          batch.set(doc(db, 'product_ai_metadata', p.id), split.aiMetadata, { merge: true });
-          for (const part of split.galleryParts) {
-            batch.set(doc(db, 'product_gallery_parts', part.id), part, { merge: true });
-          }
-        });
-      }
-      addToBatch('reviews', data.reviews);
-      addToBatch('orders', data.orders);
-      addToBatch('coupons', data.coupons);
-      addToBatch('users', data.subscribers); // marketing subscribers
-      addToBatch('campaigns', data.campaigns);
-
-      // Restore settings documents
-      const settingsDocs = [
-        { key: 'storeInfo', docId: 'storeInfo' },
-        { key: 'heroContent', docId: 'hero' },
-        { key: 'paymentSettings', docId: 'payment' },
-        { key: 'topAnnouncementBarConfig', docId: 'announcementBar' },
-        { key: 'socialMediaConfig', docId: 'social' },
-        { key: 'petShoeConfig', docId: 'petShoe' },
-        { key: 'instagramConfig', docId: 'instagram' },
-        { key: 'soundConfig', docId: 'sounds' },
-        { key: 'spinWheelConfig', docId: 'spinWheel' },
-        { key: 'scratchWinConfig', docId: 'scratchWin' },
-        { key: 'orderCelebrationConfig', docId: 'orderCelebration' }
-      ];
-
-      settingsDocs.forEach(s => {
-        if (data[s.key]) {
-          const ref = doc(db, 'settings', s.docId);
-          batch.set(ref, data[s.key], { merge: true });
+      if (data.products) {
+        for (const p of data.products) {
+          await updateProduct(p.id, p);
         }
-      });
-
-      await batch.commit();
-
-      // Update local state if necessary (or rely on listeners if they are set up)
-      // Most of these are handled by onSnapshot listeners in StoreContext
-      
-      showToast('💾 System restored successfully from backup', 'success');
-      recordAuditLog('System Restore Performed', 'BACKUP', `Restored system from backup snapshot: ${parsed.timestamp || 'Unknown'}`, 'WARNING');
+      }
+      if (data.storeInfo) await updateStoreInfo(data.storeInfo);
+      if (data.heroContent) await updateHeroContent(data.heroContent);
+      showToast('💾 Backup Restored Live Successfully', 'success');
       return true;
     } catch (e) {
       console.error('Error restoring backup:', e);
@@ -2132,59 +2097,40 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const resetToDefaults = async () => {
-    try {
-      const batch = writeBatch(db);
-      
-      // Reset Products
-      PRODUCTS_DATA.forEach(p => {
-        const split = splitProduct(p);
-        batch.set(doc(db, 'products', p.id), split.metadata);
-        batch.set(doc(db, 'product_gallery', p.id), split.gallery);
-        batch.set(doc(db, 'product_variants', p.id), split.variants);
-        batch.set(doc(db, 'product_ai_metadata', p.id), split.aiMetadata);
-        for (const part of split.galleryParts) {
-          batch.set(doc(db, 'product_gallery_parts', part.id), part);
-        }
-      });
-      
-      // Reset Reviews
-      REVIEWS_DATA.forEach(r => {
-        batch.set(doc(db, 'reviews', r.id), r);
-      });
-      
-      // Reset Settings
-      batch.set(doc(db, 'settings', 'storeInfo'), STORE_INFO);
-      batch.set(doc(db, 'settings', 'hero'), DEFAULT_HERO_CONTENT);
-      batch.set(doc(db, 'settings', 'announcementBar'), { items: ANNOUNCEMENT_ITEMS });
-      
-      // Reset others if needed...
-      
-      await batch.commit();
+  const resetToDefaults = () => {
+    setPublishedProducts(PRODUCTS_DATA);
+    setPublishedReviews(REVIEWS_DATA);
+    setPublishedStoreInfo(STORE_INFO);
+    setPublishedHeroContent(DEFAULT_HERO_CONTENT);
+    setPublishedAnnouncements(ANNOUNCEMENT_ITEMS);
+    setPublishedCategoryHighlights(CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
+    setPublishedTrendingCollections(TRENDING_COLLECTIONS);
+    localStorage.clear();
+    recordAuditLog('Factory Reset Performed', 'SECURITY', 'Restored store defaults', 'DANGER');
+  };
 
-      setPublishedProducts(PRODUCTS_DATA);
-      setPublishedReviews(REVIEWS_DATA);
-      setPublishedStoreInfo(STORE_INFO);
-      setPublishedHeroContent(DEFAULT_HERO_CONTENT);
-      setPublishedAnnouncements(ANNOUNCEMENT_ITEMS);
-      setPublishedCategoryHighlights(CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
-      setPublishedTrendingCollections(TRENDING_COLLECTIONS);
-      
-      localStorage.clear();
-      recordAuditLog('Factory Reset Performed', 'SECURITY', 'Restored store defaults in Firestore and local state', 'DANGER');
-      showToast('System reset to factory defaults', 'success');
+  const updateLuckyBoxConfig = async (updated: Partial<LuckyBoxConfig>): Promise<boolean> => {
+    try {
+      const next = { ...luckyBoxConfig, ...updated };
+      setLuckyBoxConfig(next);
+      localStorage.setItem('mfp_lucky_box_config', JSON.stringify(next));
+      await setDoc(doc(db, 'settings', 'luckyBox'), next);
+      recordAuditLog('Updated Lucky Box Config', 'SETTINGS', 'Successfully updated Lucky Box reward settings', 'SUCCESS');
+      showToast('Lucky Box settings saved successfully', 'success');
+      return true;
     } catch (e) {
-      console.error('Reset error:', e);
-      showToast('Failed to reset to defaults', 'error');
+      console.error(e);
+      showToast('Failed to save Lucky Box settings', 'error');
+      return false;
     }
   };
 
-  const updateSpinWheelConfig = useCallback(async (updated: Partial<SpinWheelConfig>): Promise<boolean> => {
+  const updateSpinWheelConfig = async (updated: Partial<SpinWheelConfig>): Promise<boolean> => {
     try {
       const next = { ...spinWheelConfig, ...updated };
       setSpinWheelConfig(next);
-      safeLocalStorageSet('mfp_spin_wheel_config', next);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'settings', 'spinWheel'), next));
+      localStorage.setItem('mfp_spin_wheel_config', JSON.stringify(next));
+      await setDoc(doc(db, 'settings', 'spinWheel'), next);
       recordAuditLog('Updated Spin Wheel Config', 'SETTINGS', 'Successfully updated Spin Wheel reward settings', 'SUCCESS');
       showToast('Spin Wheel settings saved successfully', 'success');
       return true;
@@ -2193,14 +2139,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       showToast('Failed to save Spin Wheel settings', 'error');
       return false;
     }
-  }, [spinWheelConfig, recordAuditLog, showToast]);
+  };
 
-  const updateScratchWinConfig = useCallback(async (updated: Partial<ScratchWinConfig>): Promise<boolean> => {
+  const updateScratchWinConfig = async (updated: Partial<ScratchWinConfig>): Promise<boolean> => {
     try {
       const next = { ...scratchWinConfig, ...updated };
       setScratchWinConfig(next);
-      safeLocalStorageSet('mfp_scratch_win_config', next);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'settings', 'scratchWin'), next));
+      localStorage.setItem('mfp_scratch_win_config', JSON.stringify(next));
+      await setDoc(doc(db, 'settings', 'scratchWin'), next);
       recordAuditLog('Updated Scratch & Win Config', 'SETTINGS', 'Successfully updated Scratch & Win reward settings', 'SUCCESS');
       showToast('Scratch & Win settings saved successfully', 'success');
       return true;
@@ -2209,28 +2155,62 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       showToast('Failed to save Scratch & Win settings', 'error');
       return false;
     }
-  }, [scratchWinConfig, recordAuditLog, showToast]);
+  };
 
-  const recordEngagementMetric = useCallback(async (metric: keyof EngagementAnalytics, value: number = 1): Promise<void> => {
+  const addFlashDeal = async (deal: Omit<FlashDeal, 'id' | 'analytics'>): Promise<boolean> => {
     try {
-      const currentVal = engagementAnalytics[metric];
-      // Only increment if it's a number
-      if (typeof currentVal === 'number') {
-        const nextVal = (currentVal || 0) + value;
-        const next = { ...engagementAnalytics, [metric]: nextVal };
-        await safeFirestoreWrite(() => setDoc(doc(db, 'analytics', 'engagement'), next, { merge: true }));
-      }
+      const id = `fd-${Date.now()}`;
+      const newDeal: FlashDeal = { ...deal, id, analytics: { clicks: 0, conversions: 0, revenue: 0 } };
+      await setDoc(doc(db, 'flashDeals', id), newDeal);
+      showToast('Flash Deal created successfully', 'success');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to create Flash Deal', 'error');
+      return false;
+    }
+  };
+
+  const updateFlashDeal = async (id: string, updated: Partial<FlashDeal>): Promise<boolean> => {
+    try {
+      await updateDoc(doc(db, 'flashDeals', id), updated);
+      showToast('Flash Deal updated', 'success');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to update Flash Deal', 'error');
+      return false;
+    }
+  };
+
+  const deleteFlashDeal = async (id: string): Promise<boolean> => {
+    try {
+      await deleteDoc(doc(db, 'flashDeals', id));
+      showToast('Flash Deal deleted', 'info');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to delete Flash Deal', 'error');
+      return false;
+    }
+  };
+
+  const recordEngagementMetric = async (metric: keyof EngagementAnalytics, value: number = 1): Promise<void> => {
+    try {
+      const currentVal = typeof engagementAnalytics[metric] === 'number' ? (engagementAnalytics[metric] as number) : 0;
+      const next = { ...engagementAnalytics, [metric]: currentVal + value };
+      await setDoc(doc(db, 'analytics', 'engagement'), next, { merge: true });
     } catch (e) {
       console.warn('Engagement analytics update failed:', e);
     }
-  }, [engagementAnalytics]);
+  };
 
-  const updateOrderCelebrationConfig = useCallback(async (updated: Partial<OrderCelebrationConfig>): Promise<boolean> => {
+  const updateOrderCelebrationConfig = async (updated: Partial<OrderCelebrationConfig>): Promise<boolean> => {
     try {
       const next = { ...orderCelebrationConfig, ...updated };
       setOrderCelebrationConfig(next);
-      safeLocalStorageSet('mfp_order_celebration_config', next);
-      await safeFirestoreWrite(() => setDoc(doc(db, 'settings', 'orderCelebration'), next));
+      localStorage.setItem('mfp_order_celebration_config', JSON.stringify(next));
+      await setDoc(doc(db, 'settings', 'orderCelebration'), next);
       recordAuditLog('Updated Order Celebration Config', 'SETTINGS', 'Successfully updated Order Success Celebration settings', 'SUCCESS');
       showToast('Order Celebration settings saved successfully', 'success');
       return true;
@@ -2239,14 +2219,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       showToast('Failed to save Order Celebration settings', 'error');
       return false;
     }
-  }, [orderCelebrationConfig, recordAuditLog, showToast]);
+  };
 
-  const triggerGlobalCelebration = useCallback(() => {
+  const triggerGlobalCelebration = () => {
     if (orderCelebrationConfig.enabled) {
       setIsCelebrating(true);
       setTimeout(() => setIsCelebrating(false), (orderCelebrationConfig.duration || 5) * 1000);
     }
-  }, [orderCelebrationConfig]);
+  };
 
   const contextValue = React.useMemo(() => ({
     products: publishedProducts,
@@ -2265,6 +2245,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     notifications,
     activeOrderNotification,
     setActiveOrderNotification,
+    hangingSneakerConfig: publishedHangingSneakerConfig,
+    updateHangingSneakerConfig,
     petShoeConfig: publishedPetShoeConfig,
     updatePetShoeConfig,
     instagramConfig: publishedInstagramConfig,
@@ -2284,10 +2266,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     recordSocialClick,
 
     // Customer Engagement
+    luckyBoxConfig,
+    updateLuckyBoxConfig,
     spinWheelConfig,
     updateSpinWheelConfig,
     scratchWinConfig,
     updateScratchWinConfig,
+    flashDeals,
+    addFlashDeal,
+    updateFlashDeal,
+    deleteFlashDeal,
     engagementAnalytics,
     recordEngagementMetric,
     orderCelebrationConfig,
@@ -2379,20 +2367,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     publishedProducts, publishedReviews, publishedStoreInfo, publishedHeroContent,
     publishedAnnouncements, publishedCategoryHighlights, publishedTrendingCollections,
     isAdmin, isTwoFactorEnabled, auditLogs, lastActivityTime, publishedPaymentSettings,
-    orders, notifications, activeOrderNotification,
+    orders, notifications, activeOrderNotification, publishedHangingSneakerConfig,
     publishedPetShoeConfig, publishedInstagramConfig, publishedSoundConfig,
     publishedTopAnnouncementBarConfig, customerSoundSettings, socialMediaConfig,
-    socialAnalytics, spinWheelConfig, engagementAnalytics,
+    socialAnalytics, luckyBoxConfig, spinWheelConfig, flashDeals, engagementAnalytics,
     orderCelebrationConfig, isCelebrating, customerUser, customerProfile,
     isCustomerAuthLoading, customerAuthError, toastMessage, campaigns, subscribers,
     coupons,
-    scratchWinConfig,
     // callbacks and functions
-    updatePetShoeConfig, updateInstagramConfig,
+    updateHangingSneakerConfig, updatePetShoeConfig, updateInstagramConfig,
     updatePaymentSettings, updateSoundConfig, updateTopAnnouncementBarConfig,
     updateCustomerSoundSettings, playSiteSound, updateSocialMediaConfig,
-    recordSocialClick, updateSpinWheelConfig, updateScratchWinConfig,
-    recordEngagementMetric, updateOrderCelebrationConfig,
+    recordSocialClick, updateLuckyBoxConfig, updateSpinWheelConfig, addFlashDeal,
+    updateFlashDeal, deleteFlashDeal, recordEngagementMetric, updateOrderCelebrationConfig,
     setIsCelebrating, triggerGlobalCelebration, placeOrderAndPay, updateOrderStatus,
     cancelCustomerOrder, markNotificationRead, clearAllNotifications, showToast,
     customerSignInWithGoogle, customerSignOut, updateCustomerProfileInFirestore,

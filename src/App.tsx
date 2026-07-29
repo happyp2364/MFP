@@ -39,11 +39,18 @@ import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebrat
 
 import { useStore } from './context/StoreContext';
 import { Product, FilterState, GenderCategory, CartItem } from './types';
-import { findProductBySlugOrId, getProductSlug } from './utils/productUtils';
+import { getProductSlug, findProductBySlugOrId } from './utils/productUtils';
+import { initAutoContrastEngine } from './utils/autoContrastEngine';
 
 function AppContent() {
   const { products, isAdmin, toastMessage } = useStore();
   const { backgroundGradientClass } = useTheme();
+
+  // --- INITIALIZE AUTO CONTRAST ENGINE ---
+  React.useEffect(() => {
+    const cleanup = initAutoContrastEngine();
+    return cleanup;
+  }, []);
 
   // --- STATE ---
   const [activeCategory, setActiveCategory] = useState<GenderCategory>('all');

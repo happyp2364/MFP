@@ -227,3 +227,102 @@ export async function uploadFileToGoogleDrive(file: File): Promise<DriveFileItem
 
   return await response.json();
 }
+
+/**
+ * Ensures the Marudhar Backup folder exists and returns its ID
+ */
+export async function ensureMarudharBackupFolder(): Promise<string> {
+  const token = getCachedAccessToken();
+  if (!token) throw new Error('Google OAuth Access Token missing. Please sign in with Google first.');
+
+  const folderName = 'Marudhar Fashion Point Backup';
+  
+  // Search for the folder
+  const searchUrl = `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(folderName)}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id)`;
+  const searchRes = await fetch(searchUrl, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  const searchData = await searchRes.json();
+  if (searchData.files && searchData.files.length > 0) {
+    return searchData.files[0].id;
+  }
+
+  // Create it
+  const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder'
+    })
+  });
+
+  const createData = await createRes.json();
+  if (!createRes.ok) throw new Error(createData.error?.message || 'Failed to create folder');
+  return createData.id;
+}
+
+/**
+ * Uploads backup data to a specific folder
+ */
+export async function uploadBackupToDrive(jsonData: any, fileName: string, folderId: string): Promise<any> {
+  const token = getCachedAccessToken();
+  if (!token) throw new Error('Token missing');
+
+  const metadata = {
+    name: fileName,
+    mimeType: 'application/json',
+    parents: [folderId]
+  };
+
+  const formData = new FormData();
+  formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  formData.append('file', new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' }));
+
+  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size,createdTime', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error?.message || 'Upload failed');
+  }
+
+  return await response.json();
+}
+
+/**
+ * Downloads file content from Drive
+ */
+export async function downloadBackupFromDrive(fileId: string): Promise<any> {
+  const token = getCachedAccessToken();
+  if (!token) throw new Error('Token missing');
+
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+
+  if (!response.ok) throw new Error('Download failed');
+  return await response.json();
+}
+
+/**
+ * Deletes a file from Drive
+ */
+export async function deleteDriveFile(fileId: string): Promise<void> {
+  const token = getCachedAccessToken();
+  if (!token) throw new Error('Token missing');
+
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+
+  if (!response.ok && response.status !== 404) throw new Error('Delete failed');
+}

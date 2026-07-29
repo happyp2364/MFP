@@ -301,6 +301,7 @@ const DEFAULT_SCRATCH_WIN_CONFIG: ScratchWinConfig = {
       usageLimit: 1000,
       usageCount: 0,
       perCustomerLimit: 1,
+      enabled: true,
       couponCode: 'SCRATCH10'
     }
   ]
@@ -2100,18 +2101,63 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return snapshot;
   };
 
-  const restoreStoreBackup = async (backupData: StoreBackupSnapshot | string): Promise<boolean> => {
+  const restoreStoreBackup = async (backupData: StoreBackupSnapshot | string | any): Promise<boolean> => {
     try {
       const parsed: any = typeof backupData === 'string' ? JSON.parse(backupData) : backupData;
       const data = parsed.data || parsed;
-      if (data.products) {
-        for (const p of data.products) {
-          await updateProduct(p.id, p);
+      
+      const batch = writeBatch(db);
+      
+      // Helper to add to batch
+      const addToBatch = (collectionName: string, items: any[]) => {
+        if (!items || !Array.isArray(items)) return;
+        items.forEach(item => {
+          if (!item.id) return;
+          const ref = doc(db, collectionName, item.id);
+          batch.set(ref, item, { merge: true });
+        });
+      };
+
+      // Restore major collections
+      addToBatch('products', data.products);
+      addToBatch('reviews', data.reviews);
+      addToBatch('orders', data.orders);
+      addToBatch('coupons', data.coupons);
+      addToBatch('users', data.subscribers); // marketing subscribers
+      addToBatch('campaigns', data.campaigns);
+      addToBatch('flashDeals', data.flashDeals);
+
+      // Restore settings documents
+      const settingsDocs = [
+        { key: 'storeInfo', docId: 'storeInfo' },
+        { key: 'heroContent', docId: 'hero' },
+        { key: 'paymentSettings', docId: 'payment' },
+        { key: 'topAnnouncementBarConfig', docId: 'announcementBar' },
+        { key: 'socialMediaConfig', docId: 'social' },
+        { key: 'hangingSneakerConfig', docId: 'hangingSneaker' },
+        { key: 'petShoeConfig', docId: 'petShoe' },
+        { key: 'instagramConfig', docId: 'instagram' },
+        { key: 'soundConfig', docId: 'sounds' },
+        { key: 'luckyBoxConfig', docId: 'luckyBox' },
+        { key: 'spinWheelConfig', docId: 'spinWheel' },
+        { key: 'scratchWinConfig', docId: 'scratchWin' },
+        { key: 'orderCelebrationConfig', docId: 'orderCelebration' }
+      ];
+
+      settingsDocs.forEach(s => {
+        if (data[s.key]) {
+          const ref = doc(db, 'settings', s.docId);
+          batch.set(ref, data[s.key], { merge: true });
         }
-      }
-      if (data.storeInfo) await updateStoreInfo(data.storeInfo);
-      if (data.heroContent) await updateHeroContent(data.heroContent);
-      showToast('💾 Backup Restored Live Successfully', 'success');
+      });
+
+      await batch.commit();
+
+      // Update local state if necessary (or rely on listeners if they are set up)
+      // Most of these are handled by onSnapshot listeners in StoreContext
+      
+      showToast('💾 System restored successfully from backup', 'success');
+      recordAuditLog('System Restore Performed', 'BACKUP', `Restored system from backup snapshot: ${parsed.timestamp || 'Unknown'}`, 'WARNING');
       return true;
     } catch (e) {
       console.error('Error restoring backup:', e);
@@ -2120,16 +2166,44 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const resetToDefaults = () => {
-    setPublishedProducts(PRODUCTS_DATA);
-    setPublishedReviews(REVIEWS_DATA);
-    setPublishedStoreInfo(STORE_INFO);
-    setPublishedHeroContent(DEFAULT_HERO_CONTENT);
-    setPublishedAnnouncements(ANNOUNCEMENT_ITEMS);
-    setPublishedCategoryHighlights(CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
-    setPublishedTrendingCollections(TRENDING_COLLECTIONS);
-    localStorage.clear();
-    recordAuditLog('Factory Reset Performed', 'SECURITY', 'Restored store defaults', 'DANGER');
+  const resetToDefaults = async () => {
+    try {
+      const batch = writeBatch(db);
+      
+      // Reset Products
+      PRODUCTS_DATA.forEach(p => {
+        batch.set(doc(db, 'products', p.id), p);
+      });
+      
+      // Reset Reviews
+      REVIEWS_DATA.forEach(r => {
+        batch.set(doc(db, 'reviews', r.id), r);
+      });
+      
+      // Reset Settings
+      batch.set(doc(db, 'settings', 'storeInfo'), STORE_INFO);
+      batch.set(doc(db, 'settings', 'hero'), DEFAULT_HERO_CONTENT);
+      batch.set(doc(db, 'settings', 'announcementBar'), { items: ANNOUNCEMENT_ITEMS });
+      
+      // Reset others if needed...
+      
+      await batch.commit();
+
+      setPublishedProducts(PRODUCTS_DATA);
+      setPublishedReviews(REVIEWS_DATA);
+      setPublishedStoreInfo(STORE_INFO);
+      setPublishedHeroContent(DEFAULT_HERO_CONTENT);
+      setPublishedAnnouncements(ANNOUNCEMENT_ITEMS);
+      setPublishedCategoryHighlights(CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
+      setPublishedTrendingCollections(TRENDING_COLLECTIONS);
+      
+      localStorage.clear();
+      recordAuditLog('Factory Reset Performed', 'SECURITY', 'Restored store defaults in Firestore and local state', 'DANGER');
+      showToast('System reset to factory defaults', 'success');
+    } catch (e) {
+      console.error('Reset error:', e);
+      showToast('Failed to reset to defaults', 'error');
+    }
   };
 
   const updateLuckyBoxConfig = useCallback(async (updated: Partial<LuckyBoxConfig>): Promise<boolean> => {
@@ -2221,9 +2295,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const recordEngagementMetric = useCallback(async (metric: keyof EngagementAnalytics, value: number = 1): Promise<void> => {
     try {
       const currentVal = engagementAnalytics[metric];
-      const nextVal = typeof currentVal === 'number' ? (currentVal || 0) + value : value;
-      const next = { ...engagementAnalytics, [metric]: nextVal };
-      await setDoc(doc(db, 'analytics', 'engagement'), next, { merge: true });
+      // Only increment if it's a number
+      if (typeof currentVal === 'number') {
+        const nextVal = (currentVal || 0) + value;
+        const next = { ...engagementAnalytics, [metric]: nextVal };
+        await setDoc(doc(db, 'analytics', 'engagement'), next, { merge: true });
+      }
     } catch (e) {
       console.warn('Engagement analytics update failed:', e);
     }

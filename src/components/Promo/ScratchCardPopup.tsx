@@ -27,13 +27,10 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
     if (localStorage.getItem('mfp_scratch_permanently_disabled') === 'true') return;
 
     // Daily Hour Check (Daily Active Hours)
-    if (scratchWinConfig.dailyActiveHours) {
+    if (scratchWinConfig.dailyActiveHoursStart && scratchWinConfig.dailyActiveHoursEnd) {
       const now = new Date();
       const currentHourStr = now.toTimeString().slice(0, 5); // "HH:MM"
-      const { start, end } = scratchWinConfig.dailyActiveHours;
-      if (start && end) {
-        if (currentHourStr < start || currentHourStr > end) return;
-      }
+      if (currentHourStr < scratchWinConfig.dailyActiveHoursStart || currentHourStr > scratchWinConfig.dailyActiveHoursEnd) return;
     }
 
     // Schedule Start & End Date Check
@@ -346,7 +343,7 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
                 Congratulations! You Won
               </div>
               <div className="font-extrabold text-[#0B8F63] text-sm leading-tight">
-                {selectedReward.title}
+                {selectedReward.name}
               </div>
               {selectedReward.couponCode ? (
                 <div className="mt-2 inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono font-bold text-xs px-2.5 py-1 rounded">

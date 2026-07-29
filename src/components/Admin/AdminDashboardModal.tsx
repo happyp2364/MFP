@@ -77,12 +77,15 @@ import { EngagementAnalyticsView } from './EngagementAnalyticsView';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
+import { DeveloperDiagnosticCenter } from './DeveloperDiagnosticCenter';
+import { DriveBackupView } from './DriveBackupView';
+
 interface AdminDashboardModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'top_announcement_bar' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'lucky_box' | 'spin_wheel' | 'flash_deals' | 'engagement_analytics';
+type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'top_announcement_bar' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'lucky_box' | 'spin_wheel' | 'flash_deals' | 'engagement_analytics' | 'developer_diagnostic';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -684,6 +687,21 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             <div className="my-1 border-t border-neutral-200 hidden md:block" />
 
             {/* SECURITY & BACKUP TABS */}
+            <div className="my-1 border-t border-neutral-200 hidden md:block" />
+            <div className="px-3.5 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-widest hidden md:block">Developer Tools</div>
+
+            <button
+              onClick={() => setActiveTab('developer_diagnostic')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap text-left ${
+                activeTab === 'developer_diagnostic'
+                  ? 'bg-neutral-900 text-emerald-400 shadow-md shadow-neutral-900/20 border border-emerald-500/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Terminal className="w-4 h-4 text-emerald-500" />
+              <span>🛠 Dev Diagnostic Center</span>
+            </button>
+
             <button
               onClick={() => setActiveTab('audit')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
@@ -764,6 +782,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: SALES & REPORTS ----------------- */}
             {activeTab === 'reports' && <ReportsAnalyticsView />}
+
+            {/* ----------------- TAB: DEVELOPER DIAGNOSTIC CENTER ----------------- */}
+            {activeTab === 'developer_diagnostic' && <DeveloperDiagnosticCenter />}
 
             {/* ----------------- TAB: VERSION HISTORY & ROLLBACKS ----------------- */}
             {activeTab === 'versions' && <VersionHistoryView />}
@@ -1058,85 +1079,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             )}
 
             {/* ----------------- TAB: BACKUPS ----------------- */}
-            {activeTab === 'backups' && (
-              <div className="space-y-6 max-w-4xl">
-                {/* Instant Snapshot Card */}
-                <div className="bg-white p-6 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-                        <Database className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-serif-heading font-bold text-base text-neutral-900">
-                          Create Database Backup Snapshot
-                        </h3>
-                        <p className="text-xs text-neutral-500">
-                          Generates a full JSON snapshot of catalog, reviews, hero content, and settings.
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleDownloadBackup}
-                      className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-5 py-3 rounded-2xl shadow-lg flex items-center gap-2 transition-all shrink-0"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>CREATE & DOWNLOAD BACKUP</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Restore Snapshot Card */}
-                <div className="bg-white p-6 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
-                  <h3 className="font-serif-heading font-bold text-base text-neutral-900 border-b border-neutral-100 pb-2">
-                    Disaster Recovery & Restore Snapshot
-                  </h3>
-
-                  {backupRestoreError && (
-                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 shrink-0" />
-                      <span>{backupRestoreError}</span>
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    <label className="font-bold text-xs text-neutral-700 block">
-                      Select Backup JSON File to Restore:
-                    </label>
-                    <input
-                      type="file"
-                      accept=".json"
-                      onChange={handleBackupFileUpload}
-                      className="w-full text-xs text-neutral-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-neutral-100 file:text-neutral-700 hover:file:bg-neutral-200"
-                    />
-
-                    {backupRestoreJson && (
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 space-y-2">
-                        <div className="font-bold flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-[#0B8F63]" />
-                          <span>Valid Backup File Loaded ({(backupRestoreJson.length / 1024).toFixed(1)} KB)</span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            triggerReAuthGuard('Restore Store Data from Snapshot', async () => {
-                              const success = await restoreStoreBackup(backupRestoreJson);
-                              if (success) {
-                                showNotification('Database restored successfully from snapshot!');
-                                setBackupRestoreJson('');
-                              }
-                            });
-                          }}
-                          className="bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow"
-                        >
-                          RESTORE DATABASE NOW
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            {activeTab === 'backups' && <DriveBackupView />}
 
             {/* ----------------- TAB: SETTINGS & 2FA ----------------- */}
             {activeTab === 'settings' && (

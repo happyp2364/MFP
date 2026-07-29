@@ -50,12 +50,13 @@ export const CouponManagementView: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   
   // New coupon initial state
-  const initialFormState = {
+  const initialFormState: PromoCoupon = {
+    id: '',
     code: '',
     name: '',
     description: '',
     bannerUrl: '',
-    type: 'PERCENTAGE' as CouponType,
+    type: 'PERCENTAGE',
     discountValue: 10,
     maxDiscount: 0,
     minOrderAmount: 0,
@@ -67,22 +68,29 @@ export const CouponManagementView: React.FC = () => {
     startDate: '',
     endDate: '',
     priority: 1,
-    status: 'active' as const,
-    restrictType: 'ALL' as const,
-    restrictCollections: [] as string[],
-    restrictCategories: [] as string[],
-    restrictBrands: [] as string[],
-    restrictProductIds: [] as string[],
-    restrictSizes: [] as string[],
-    restrictColors: [] as string[],
-    restrictStock: 'ALL' as const,
+    status: 'active',
+    restrictType: 'ALL',
+    restrictCollections: [],
+    restrictCategories: [],
+    restrictBrands: [],
+    restrictProductIds: [],
+    restrictSizes: [],
+    restrictColors: [],
+    restrictStock: 'ALL',
     stackable: false,
     autoApply: false,
-    visibility: 'public' as const,
+    visibility: 'public',
+    visible: true,
     featured: false,
+    usageCount: 0,
+    successCount: 0,
+    failedCount: 0,
+    revenueGenerated: 0,
+    discountGiven: 0,
+    createdAt: new Date().toISOString(),
   };
 
-  const [formData, setFormData] = useState(typeof initialFormState);
+  const [formData, setFormData] = useState<PromoCoupon>(initialFormState);
 
   // Preview Modal
   const [previewCoupon, setPreviewCoupon] = useState<PromoCoupon | null>(null);
@@ -127,35 +135,9 @@ export const CouponManagementView: React.FC = () => {
   const handleOpenEdit = (coupon: PromoCoupon) => {
     setEditingId(coupon.id);
     setFormData({
-      code: coupon.code,
-      name: coupon.name,
-      description: coupon.description || '',
-      bannerUrl: coupon.bannerUrl || '',
-      type: coupon.type,
-      discountValue: coupon.discountValue,
-      maxDiscount: coupon.maxDiscount || 0,
-      minOrderAmount: coupon.minOrderAmount || 0,
-      maxOrderAmount: coupon.maxOrderAmount || 0,
-      minProductPrice: coupon.minProductPrice || 0,
-      maxProductPrice: coupon.maxProductPrice || 0,
-      usageLimit: coupon.usageLimit || 0,
-      perCustomerLimit: coupon.perCustomerLimit || 1,
+      ...coupon,
       startDate: coupon.startDate ? coupon.startDate.split('T')[0] : '',
       endDate: coupon.endDate ? coupon.endDate.split('T')[0] : '',
-      priority: coupon.priority || 1,
-      status: coupon.status,
-      restrictType: coupon.restrictType || 'ALL',
-      restrictCollections: coupon.restrictCollections || [],
-      restrictCategories: coupon.restrictCategories || [],
-      restrictBrands: coupon.restrictBrands || [],
-      restrictProductIds: coupon.restrictProductIds || [],
-      restrictSizes: coupon.restrictSizes || [],
-      restrictColors: coupon.restrictColors || [],
-      restrictStock: coupon.restrictStock || 'ALL',
-      stackable: coupon.stackable || false,
-      autoApply: coupon.autoApply || false,
-      visibility: coupon.visibility || 'public',
-      featured: coupon.featured || false,
     });
     setIsFormOpen(true);
   };
@@ -205,6 +187,7 @@ export const CouponManagementView: React.FC = () => {
       stackable: formData.stackable,
       autoApply: formData.autoApply,
       visibility: formData.visibility,
+      visible: formData.visible,
       featured: formData.featured,
     };
 

@@ -822,6 +822,7 @@ export interface ScratchReward {
   usageLimit: number;
   usageCount: number;
   perCustomerLimit: number;
+  enabled: boolean;
   expiryDate?: string;
   couponCode?: string;
   image?: string;
@@ -970,6 +971,73 @@ export interface OrderCelebrationConfig {
   mobileOnly: boolean;
   desktopOnly: boolean;
 }
+
+export interface BackupHistoryItem {
+  id: string;
+  timestamp: string;
+  fileName: string;
+  fileId: string;
+  size: number;
+  status: 'SUCCESS' | 'FAILED';
+  type: 'MANUAL' | 'AUTO_DAILY' | 'AUTO_WEEKLY' | 'AUTO_MONTHLY';
+  entitiesIncluded: string[];
+}
+
+export interface DriveBackupConfig {
+  isConnected: boolean;
+  connectedEmail?: string;
+  driveFolderId?: string;
+  autoBackupEnabled: boolean;
+  dailyEnabled: boolean;
+  weeklyEnabled: boolean;
+  monthlyEnabled: boolean;
+  lastBackupAt?: string;
+  history: BackupHistoryItem[];
+}
+
+
+export interface DiagnosticIssue {
+  id: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  category: 'runtime' | 'performance' | 'security' | 'accessibility' | 'ui' | 'firestore' | 'logic';
+  location: {
+    file?: string;
+    component?: string;
+    function?: string;
+  };
+  description: string;
+  suggestedFix: string;
+  isSafeToFix: boolean;
+  status: 'detected' | 'fixing' | 'fixed' | 'failed' | 'ignored';
+  detectedAt: string;
+}
+
+export interface DiagnosticScanResult {
+  scanId: string;
+  timestamp: string;
+  issues: DiagnosticIssue[];
+  healthScores: {
+    performance: number;
+    security: number;
+    accessibility: number;
+    ui: number;
+    firestore: number;
+    overall: number;
+  };
+}
+
+export interface DiagnosticCenterState {
+  lastScan?: DiagnosticScanResult;
+  isScanning: boolean;
+  activeFixes: string[]; // Issue IDs
+  restorePoints: {
+    id: string;
+    timestamp: string;
+    description: string;
+    data: any; // Snapshot of state or code
+  }[];
+}
+
 
 
 

@@ -33,6 +33,7 @@ export const ScratchAndWinSettingsView: React.FC = () => {
     usageLimit: 100,
     usageCount: 0,
     perCustomerLimit: 1,
+    enabled: true,
     expiryDate: '',
     couponCode: '',
   });
@@ -117,6 +118,7 @@ export const ScratchAndWinSettingsView: React.FC = () => {
       usageLimit: 100,
       usageCount: 0,
       perCustomerLimit: 1,
+      enabled: true,
       expiryDate: '',
       couponCode: '',
     });

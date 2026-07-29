@@ -64,7 +64,7 @@ export const SpinWheelSettingsView: React.FC = () => {
     setConfig((prev) => ({
       ...prev,
       sections: updatedSections,
-      sectionsCount: updatedSections.length,
+      sectionsCount: updatedSections.length as any,
     }));
 
     setShowSectionForm(false);
@@ -78,7 +78,7 @@ export const SpinWheelSettingsView: React.FC = () => {
         return {
           ...prev,
           sections: next,
-          sectionsCount: next.length,
+          sectionsCount: next.length as any,
         };
       });
     }

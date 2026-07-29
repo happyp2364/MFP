@@ -235,7 +235,7 @@ export async function ensureMarudharBackupFolder(): Promise<string> {
   const token = getCachedAccessToken();
   if (!token) throw new Error('Google OAuth Access Token missing. Please sign in with Google first.');
 
-  const folderName = 'Marudhar Fashion Point Backup';
+  const folderName = 'Marudhar Fashion Point Backups';
   
   // Search for the folder
   const searchUrl = `https://www.googleapis.com/drive/v3/files?q=name='${encodeURIComponent(folderName)}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id)`;
@@ -262,7 +262,10 @@ export async function ensureMarudharBackupFolder(): Promise<string> {
   });
 
   const createData = await createRes.json();
-  if (!createRes.ok) throw new Error(createData.error?.message || 'Failed to create folder');
+  if (!createRes.ok) {
+    if (createRes.status === 401) throw new Error('Google Drive session expired. Please reconnect Drive.');
+    throw new Error(createData.error?.message || 'Failed to create folder');
+  }
   return createData.id;
 }
 
@@ -290,6 +293,7 @@ export async function uploadBackupToDrive(jsonData: any, fileName: string, folde
   });
 
   if (!response.ok) {
+    if (response.status === 401) throw new Error('Google Drive session expired. Please reconnect Drive.');
     const err = await response.json();
     throw new Error(err.error?.message || 'Upload failed');
   }
@@ -308,7 +312,10 @@ export async function downloadBackupFromDrive(fileId: string): Promise<any> {
     headers: { 'Authorization': `Bearer ${token}` }
   });
 
-  if (!response.ok) throw new Error('Download failed');
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('Google Drive session expired. Please reconnect Drive.');
+    throw new Error('Download failed');
+  }
   return await response.json();
 }
 
@@ -324,5 +331,8 @@ export async function deleteDriveFile(fileId: string): Promise<void> {
     headers: { 'Authorization': `Bearer ${token}` }
   });
 
-  if (!response.ok && response.status !== 404) throw new Error('Delete failed');
+  if (!response.ok && response.status !== 404) {
+    if (response.status === 401) throw new Error('Google Drive session expired. Please reconnect Drive.');
+    throw new Error('Delete failed');
+  }
 }

@@ -31,6 +31,7 @@ import {
 } from '../../utils/sizeStockUtils';
 import { ProductCard } from './ProductCard';
 import { useStore } from '../../context/StoreContext';
+import { FlashDealRenderer } from '../Promo/FlashDealSection';
 
 interface ProductDetailPageProps {
   product: Product | null;
@@ -439,6 +440,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               Inclusive of all taxes • Free Shipping on orders over ₹999
             </p>
           </div>
+          
+          <FlashDealRenderer location="product_page" productId={product.id} className="mt-4 mb-2" />
 
           {/* Description */}
           {product.description && (

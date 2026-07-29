@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Trash2, MessageCircle, ShoppingBag, ArrowRight, ShieldCheck, Truck } from 'lucide-react';
 import { CartItem } from '../../types';
 import { useStore } from '../../context/StoreContext';
+import { FlashDealRenderer } from '../Promo/FlashDealSection';
 import { generateCartWhatsAppLink } from '../../utils/whatsapp';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 
@@ -70,6 +71,8 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
 
         {/* Drawer Body Items */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <FlashDealRenderer location="cart" className="mb-2" />
+          
           {cartItems.length === 0 ? (
             <div className="text-center py-16 space-y-3">
               <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400 mx-auto">

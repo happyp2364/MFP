@@ -34,7 +34,7 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ScratchCardPopup } from './components/Promo/ScratchCardPopup';
 import { LuckyBoxPopup } from './components/Promo/LuckyBoxPopup';
 import { SpinWheelPopup } from './components/Promo/SpinWheelPopup';
-import { FlashDealSection } from './components/Promo/FlashDealSection';
+import { FlashDealSection, FlashDealRenderer } from './components/Promo/FlashDealSection';
 import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebration';
 
 import { useStore } from './context/StoreContext';
@@ -364,6 +364,9 @@ function AppContent() {
     <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
       {/* 1. Announcement Bar */}
       <AnnouncementBar />
+      <div className="z-50 relative">
+        <FlashDealRenderer location="announcement_bar" className="bg-neutral-900 border-none !gap-0 !m-0 !rounded-none" />
+      </div>
 
       {/* 2. Navigation Header */}
       <Navbar
@@ -415,6 +418,7 @@ function AppContent() {
         <>
           {/* 3. Hero Section */}
           <HeroSection onExploreClick={() => handleNavigateToSection('products')} />
+          <FlashDealRenderer location="homepage_hero" className="max-w-7xl mx-auto px-4 mt-6" />
 
           {/* 4. Family Category Cards */}
           <CategorySection
@@ -653,6 +657,19 @@ function AppContent() {
       {/* Spin the Wheel Popup Overlay */}
       <SpinWheelPopup currentPath={scratchCurrentPath} />
 
+      {/* Global Flash Deals (Popup/Floating) */}
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 w-full max-w-[90vw] md:max-w-md pointer-events-none">
+        <div className="pointer-events-auto">
+          <FlashDealRenderer location="floating_banner" className="shadow-2xl" />
+        </div>
+      </div>
+
+      <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center p-4">
+        <div className="pointer-events-auto max-w-lg w-full">
+          <FlashDealRenderer location="popup" className="shadow-2xl" />
+        </div>
+      </div>
+      
       {/* Order Success Celebration Visual Effects Canvas Overlay */}
       <OrderSuccessCelebration />
     </div>

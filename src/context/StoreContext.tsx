@@ -43,6 +43,7 @@ import {
   SpinWheelConfig,
   WheelSection,
   FlashDeal,
+  FlashDealConfig,
   EngagementAnalytics,
   OrderCelebrationConfig,
 } from '../types';
@@ -258,6 +259,8 @@ interface StoreContextType {
   updateLuckyBoxConfig: (updated: Partial<LuckyBoxConfig>) => Promise<boolean>;
   spinWheelConfig: SpinWheelConfig;
   updateSpinWheelConfig: (updated: Partial<SpinWheelConfig>) => Promise<boolean>;
+  flashDealConfig: FlashDealConfig;
+  updateFlashDealConfig: (updated: Partial<FlashDealConfig>) => Promise<boolean>;
   flashDeals: FlashDeal[];
   addFlashDeal: (deal: Omit<FlashDeal, 'id' | 'analytics'>) => Promise<boolean>;
   updateFlashDeal: (id: string, updated: Partial<FlashDeal>) => Promise<boolean>;
@@ -380,6 +383,10 @@ const DEFAULT_LUCKY_BOX_CONFIG: LuckyBoxConfig = {
       perCustomerLimit: 0
     }
   ]
+};
+
+const DEFAULT_FLASH_DEAL_CONFIG: FlashDealConfig = {
+  masterEnabled: true
 };
 
 const DEFAULT_SPIN_WHEEL_CONFIG: SpinWheelConfig = {
@@ -511,6 +518,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Customer Engagement State
   const [luckyBoxConfig, setLuckyBoxConfig] = useState<LuckyBoxConfig>(() => safeJSONParse('mfp_lucky_box_config', DEFAULT_LUCKY_BOX_CONFIG));
   const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(() => safeJSONParse('mfp_spin_wheel_config', DEFAULT_SPIN_WHEEL_CONFIG));
+  const [flashDealConfig, setFlashDealConfig] = useState<FlashDealConfig>(() => safeJSONParse('mfp_flash_deal_config', DEFAULT_FLASH_DEAL_CONFIG));
   const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(() => safeJSONParse('mfp_scratch_win_config', DEFAULT_SCRATCH_WIN_CONFIG));
   const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
   const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(() => safeJSONParse('mfp_engagement_analytics', DEFAULT_ENGAGEMENT_ANALYTICS));
@@ -717,6 +725,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             });
           }
         }, (err) => console.warn('Live scratch win listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'flashDealConfig'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as FlashDealConfig;
+            setFlashDealConfig(prev => {
+              if (JSON.stringify(prev) === JSON.stringify(data)) return prev;
+              safeLocalStorageSet('mfp_flash_deal_config', data);
+              return data;
+            });
+          }
+        }, (err) => console.warn('Live flash deal config listener notice:', err))
       );
 
       unsubscribers.push(
@@ -2238,6 +2259,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [spinWheelConfig, recordAuditLog, showToast]);
 
+  const updateFlashDealConfig = useCallback(async (updated: Partial<FlashDealConfig>): Promise<boolean> => {
+    try {
+      const next = { ...flashDealConfig, ...updated };
+      setFlashDealConfig(next);
+      safeLocalStorageSet('mfp_flash_deal_config', next);
+      await setDoc(doc(db, 'settings', 'flashDealConfig'), next);
+      recordAuditLog('Updated Flash Deal Config', 'SETTINGS', 'Successfully updated Flash Deal config', 'SUCCESS');
+      showToast('Flash Deal settings saved successfully', 'success');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to save Flash Deal settings', 'error');
+      return false;
+    }
+  }, [flashDealConfig, recordAuditLog, showToast]);
+
   const updateScratchWinConfig = useCallback(async (updated: Partial<ScratchWinConfig>): Promise<boolean> => {
     try {
       const next = { ...scratchWinConfig, ...updated };
@@ -2371,6 +2408,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateLuckyBoxConfig,
     spinWheelConfig,
     updateSpinWheelConfig,
+    flashDealConfig,
+    updateFlashDealConfig,
     scratchWinConfig,
     updateScratchWinConfig,
     flashDeals,
@@ -2471,15 +2510,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     orders, notifications, activeOrderNotification, publishedHangingSneakerConfig,
     publishedPetShoeConfig, publishedInstagramConfig, publishedSoundConfig,
     publishedTopAnnouncementBarConfig, customerSoundSettings, socialMediaConfig,
-    socialAnalytics, luckyBoxConfig, spinWheelConfig, flashDeals, engagementAnalytics,
+    socialAnalytics, luckyBoxConfig, spinWheelConfig, flashDealConfig, flashDeals, engagementAnalytics,
     orderCelebrationConfig, isCelebrating, customerUser, customerProfile,
     isCustomerAuthLoading, customerAuthError, toastMessage, campaigns, subscribers,
     coupons,
+    scratchWinConfig,
     // callbacks and functions
     updateHangingSneakerConfig, updatePetShoeConfig, updateInstagramConfig,
     updatePaymentSettings, updateSoundConfig, updateTopAnnouncementBarConfig,
     updateCustomerSoundSettings, playSiteSound, updateSocialMediaConfig,
-    recordSocialClick, updateLuckyBoxConfig, updateSpinWheelConfig, addFlashDeal,
+    recordSocialClick, updateLuckyBoxConfig, updateSpinWheelConfig, updateFlashDealConfig, updateScratchWinConfig, addFlashDeal,
     updateFlashDeal, deleteFlashDeal, recordEngagementMetric, updateOrderCelebrationConfig,
     setIsCelebrating, triggerGlobalCelebration, placeOrderAndPay, updateOrderStatus,
     cancelCustomerOrder, markNotificationRead, clearAllNotifications, showToast,

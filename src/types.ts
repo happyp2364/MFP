@@ -901,10 +901,14 @@ export interface SpinWheelConfig {
   minCartValue?: number;
 }
 
+export interface FlashDealConfig {
+  masterEnabled: boolean;
+}
+
 export interface FlashDeal {
   id: string;
   title: string;
-  status: 'active' | 'paused' | 'scheduled' | 'expired';
+  status: 'active' | 'paused' | 'scheduled' | 'expired' | 'disabled';
   targetType: 'ALL' | 'PRODUCTS' | 'CATEGORIES' | 'COLLECTIONS' | 'BRANDS' | 'SIZES' | 'COLORS' | 'PRICE_RANGE' | 'STOCK_STATUS' | 'FEATURED' | 'NEW_ARRIVALS' | 'BEST_SELLERS';
   targetIds?: string[]; // e.g. Product IDs, Category names
   targetPriceRange?: [number, number];
@@ -918,16 +922,28 @@ export interface FlashDeal {
   endDate: string;
   timezone: string;
   
+  isFeatured?: boolean;
+  isPinned?: boolean;
+  
   showCountdown: boolean;
   countdownFormat: { days: boolean; hours: boolean; minutes: boolean; seconds: boolean };
   hideAfterExpiry: boolean;
+  autoStart?: boolean;
+  autoStop?: boolean;
   replaceWithNextId?: string;
   
   lowStockMessageEnabled: boolean;
   lowStockThreshold: number;
   lowStockCustomMessage?: string;
+  scarcityMessageTemplate?: string;
+  scarcityStyling?: {
+    textColor: string;
+    bgColor: string;
+    icon: string;
+    animation: 'none' | 'pulse' | 'glow' | 'bounce';
+  };
   
-  displayLocations: ('homepage_hero' | 'product_page' | 'checkout' | 'cart' | 'category_page' | 'floating_banner' | 'announcement_bar' | 'popup')[];
+  displayLocations: ('homepage' | 'homepage_hero' | 'product_page' | 'checkout' | 'cart' | 'category_page' | 'search_results' | 'floating_banner' | 'announcement_bar' | 'popup')[];
   
   styling: {
     bgColor: string;

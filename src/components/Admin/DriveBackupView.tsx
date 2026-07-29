@@ -28,7 +28,7 @@ import {
   deleteDriveFile 
 } from '../../lib/googleWorkspace';
 import { DriveBackupConfig, BackupHistoryItem } from '../../types';
-import { db } from '../../lib/firebase';
+import { db, auth, googleWorkspaceProvider } from '../../lib/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 export const DriveBackupView: React.FC = () => {
@@ -78,19 +78,31 @@ export const DriveBackupView: React.FC = () => {
 
   const handleConnect = async () => {
     try {
-      // Trigger OAuth setup flow if not already connected
-      // In this environment, we rely on the user having accepted the scopes
+      // Trigger OAuth setup flow to get the access token with Drive scopes
+      const result = await import('firebase/auth').then(({ signInWithPopup }) => 
+        signInWithPopup(auth, googleWorkspaceProvider)
+      );
+      
+      const credential = (await import('firebase/auth')).GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        const { setCachedAccessToken } = await import('../../lib/firebase');
+        setCachedAccessToken(credential.accessToken);
+      } else {
+        throw new Error('No access token returned');
+      }
+
       const folderId = await ensureMarudharBackupFolder();
       const newConfig: DriveBackupConfig = {
         ...config,
         isConnected: true,
         driveFolderId: folderId,
-        connectedEmail: 'Super Admin Connected'
+        connectedEmail: result.user.email || 'Super Admin Connected'
       };
       await saveConfig(newConfig);
       store.showToast('Google Drive connected successfully', 'success');
-    } catch (error) {
-      store.showToast('Failed to connect Google Drive. Ensure you are signed in with Google.', 'error');
+    } catch (error: any) {
+      console.error('Drive Connection Error:', error);
+      store.showToast('Failed to connect Google Drive: ' + error.message, 'error');
     }
   };
 

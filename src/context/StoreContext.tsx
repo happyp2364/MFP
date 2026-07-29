@@ -9,7 +9,6 @@ import {
   PaymentSettings,
   CustomerOrder,
   OrderStatus,
-  HangingSneakerConfig,
   PetShoeConfig,
   InstagramConfig,
   SoundConfig,
@@ -36,13 +35,10 @@ import {
   SocialAnalyticsLog,
   PromoCoupon,
   CouponType,
-  LuckyBoxReward,
-  LuckyBoxConfig,
   ScratchReward,
   ScratchWinConfig,
   SpinWheelConfig,
   WheelSection,
-  FlashDeal,
   EngagementAnalytics,
   OrderCelebrationConfig,
 } from '../types';
@@ -54,7 +50,6 @@ import {
   ANNOUNCEMENT_ITEMS,
   CATEGORY_HIGHLIGHTS,
   TRENDING_COLLECTIONS,
-  DEFAULT_HANGING_SNEAKER_CONFIG,
   DEFAULT_PET_SHOE_CONFIG,
   DEFAULT_INSTAGRAM_CONFIG,
   DEFAULT_SOUND_CONFIG,
@@ -115,7 +110,6 @@ const STORAGE_KEYS = {
   TRENDING_COLLECTIONS: 'mfp_trending_collections_live',
   AUDIT_LOGS: 'mfp_audit_logs_live',
   PAYMENT_SETTINGS: 'mfp_payment_settings_live',
-  HANGING_SNEAKER_CONFIG: 'mfp_hanging_sneaker_config_live',
   PET_SHOE_CONFIG: 'mfp_pet_shoe_config_live',
   INSTAGRAM_CONFIG: 'mfp_instagram_config_live',
   SOUND_CONFIG: 'mfp_sound_config_live',
@@ -130,7 +124,6 @@ interface StoreContextType {
   products: Product[];
   reviews: Review[];
   storeInfo: StoreInfo;
-  heroContent: HeroContent;
   announcements: string[];
   categoryHighlights: CategoryHighlight[];
   trendingCollections: TrendingCollectionItem[];
@@ -144,8 +137,6 @@ interface StoreContextType {
   activeOrderNotification: AdminNotification | null;
   setActiveOrderNotification: (notif: AdminNotification | null) => void;
 
-  hangingSneakerConfig: HangingSneakerConfig;
-  updateHangingSneakerConfig: (updated: Partial<HangingSneakerConfig>) => Promise<void>;
   petShoeConfig: PetShoeConfig;
   updatePetShoeConfig: (updated: Partial<PetShoeConfig>) => Promise<void>;
   instagramConfig: InstagramConfig;
@@ -254,14 +245,8 @@ interface StoreContextType {
   trackCouponUse: (code: string, success: boolean, revenue?: number, discount?: number) => Promise<void>;
 
   // Customer Engagement Reward Center
-  luckyBoxConfig: LuckyBoxConfig;
-  updateLuckyBoxConfig: (updated: Partial<LuckyBoxConfig>) => Promise<boolean>;
   spinWheelConfig: SpinWheelConfig;
   updateSpinWheelConfig: (updated: Partial<SpinWheelConfig>) => Promise<boolean>;
-  flashDeals: FlashDeal[];
-  addFlashDeal: (deal: Omit<FlashDeal, 'id' | 'analytics'>) => Promise<boolean>;
-  updateFlashDeal: (id: string, updated: Partial<FlashDeal>) => Promise<boolean>;
-  deleteFlashDeal: (id: string) => Promise<boolean>;
   engagementAnalytics: EngagementAnalytics;
   recordEngagementMetric: (metric: keyof EngagementAnalytics, value?: number) => Promise<void>;
 
@@ -307,79 +292,6 @@ const DEFAULT_SCRATCH_WIN_CONFIG: ScratchWinConfig = {
 };
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
-
-const DEFAULT_LUCKY_BOX_CONFIG: LuckyBoxConfig = {
-  enabled: true,
-  permanentlyDisabled: false,
-  showOnHomepage: true,
-  showOnProductPage: true,
-  showOnCheckout: true,
-  showOnOrderSuccess: true,
-  firstVisitOnly: false,
-  firstOrderOnly: false,
-  returningCustomerOnly: false,
-  newCustomerOnly: false,
-  festivalOnly: false,
-  dailyLimit: 50,
-  perCustomerLimit: 1,
-  globalUsageLimit: 1000,
-  minCartValue: 0,
-  rewards: [
-    {
-      id: 'lb-100-off',
-      title: '₹100 OFF',
-      type: 'FLAT',
-      value: 100,
-      probability: 30,
-      usageLimit: 500,
-      usageCount: 0,
-      perCustomerLimit: 1,
-      couponCode: 'LUCKY100'
-    },
-    {
-      id: 'lb-5-percent',
-      title: '5% OFF',
-      type: 'PERCENTAGE',
-      value: 5,
-      probability: 25,
-      usageLimit: 1000,
-      usageCount: 0,
-      perCustomerLimit: 1,
-      couponCode: 'LUCKY5'
-    },
-    {
-      id: 'lb-free-shipping',
-      title: 'Free Delivery',
-      type: 'FREE_SHIPPING',
-      value: 0,
-      probability: 15,
-      usageLimit: 500,
-      usageCount: 0,
-      perCustomerLimit: 1,
-      couponCode: 'FREESHIP'
-    },
-    {
-      id: 'lb-mystery',
-      title: 'Mystery Gift',
-      type: 'GIFT',
-      value: 0,
-      probability: 5,
-      usageLimit: 50,
-      usageCount: 0,
-      perCustomerLimit: 1
-    },
-    {
-      id: 'lb-better-luck',
-      title: 'Better Luck Next Time',
-      type: 'BETTER_LUCK',
-      value: 0,
-      probability: 25,
-      usageLimit: 0,
-      usageCount: 0,
-      perCustomerLimit: 0
-    }
-  ]
-};
 
 const DEFAULT_SPIN_WHEEL_CONFIG: SpinWheelConfig = {
   enabled: true,
@@ -465,11 +377,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return local ? JSON.parse(local) : DEFAULT_PAYMENT_SETTINGS;
   });
 
-  const [publishedHangingSneakerConfig, setPublishedHangingSneakerConfig] = useState<HangingSneakerConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.HANGING_SNEAKER_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_HANGING_SNEAKER_CONFIG;
-  });
-
   const [publishedPetShoeConfig, setPublishedPetShoeConfig] = useState<PetShoeConfig>(() => {
     const local = localStorage.getItem(STORAGE_KEYS.PET_SHOE_CONFIG);
     return local ? JSON.parse(local) : DEFAULT_PET_SHOE_CONFIG;
@@ -549,11 +456,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [subscribers, setSubscribers] = useState<MarketingSubscriber[]>([]);
 
   // Customer Engagement State
-  const [luckyBoxConfig, setLuckyBoxConfig] = useState<LuckyBoxConfig>(() => {
-    const local = localStorage.getItem('mfp_lucky_box_config');
-    return local ? JSON.parse(local) : DEFAULT_LUCKY_BOX_CONFIG;
-  });
-
   const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(() => {
     const local = localStorage.getItem('mfp_spin_wheel_config');
     return local ? JSON.parse(local) : DEFAULT_SPIN_WHEEL_CONFIG;
@@ -563,8 +465,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const local = localStorage.getItem('mfp_scratch_win_config');
     return local ? JSON.parse(local) : DEFAULT_SCRATCH_WIN_CONFIG;
   });
-
-  const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
 
   const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(() => {
     const local = localStorage.getItem('mfp_engagement_analytics');
@@ -723,16 +623,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
 
       unsubscribers.push(
-        onSnapshot(doc(db, 'settings', 'luckyBox'), (snap) => {
-          if (snap.exists()) {
-            const data = snap.data() as LuckyBoxConfig;
-            setLuckyBoxConfig(data);
-            localStorage.setItem('mfp_lucky_box_config', JSON.stringify(data));
-          }
-        }, (err) => console.warn('Live lucky box listener notice:', err))
-      );
-
-      unsubscribers.push(
         onSnapshot(doc(db, 'settings', 'spinWheel'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as SpinWheelConfig;
@@ -760,14 +650,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem('mfp_engagement_analytics', JSON.stringify(data));
           }
         }, (err) => console.warn('Live engagement analytics listener notice:', err))
-      );
-
-      unsubscribers.push(
-        onSnapshot(collection(db, 'flashDeals'), (snap) => {
-          const list: FlashDeal[] = [];
-          snap.forEach((d) => list.push({ ...d.data(), id: d.id } as FlashDeal));
-          setFlashDeals(list);
-        }, (err) => console.warn('Live flash deals listener notice:', err))
       );
 
       unsubscribers.push(
@@ -828,16 +710,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(data));
           }
         }, (err) => console.warn('Live payment listener notice:', err))
-      );
-
-      unsubscribers.push(
-        onSnapshot(doc(db, 'animations', 'hangingSneakerConfig'), (snap) => {
-          if (snap.exists()) {
-            const data = snap.data() as HangingSneakerConfig;
-            setPublishedHangingSneakerConfig(data);
-            localStorage.setItem(STORAGE_KEYS.HANGING_SNEAKER_CONFIG, JSON.stringify(data));
-          }
-        }, (err) => console.warn('Live sneaker animation listener notice:', err))
       );
 
       unsubscribers.push(
@@ -1383,17 +1255,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (err: any) {
       console.error('Error updating trending collection:', err);
       showToast('Failed to save trending collections to Firestore', 'error');
-    }
-  };
-
-  const updateHangingSneakerConfig = async (updated: Partial<HangingSneakerConfig>) => {
-    try {
-      const newCfg = { ...publishedHangingSneakerConfig, ...updated };
-      await setDoc(doc(db, 'animations', 'hangingSneakerConfig'), newCfg, { merge: true });
-      showToast('💾 Sneaker Config Saved Live', 'success');
-    } catch (err: any) {
-      console.error('Error updating hanging sneaker config:', err);
-      showToast('Failed to save sneaker config', 'error');
     }
   };
 
@@ -2109,22 +1970,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     recordAuditLog('Factory Reset Performed', 'SECURITY', 'Restored store defaults', 'DANGER');
   };
 
-  const updateLuckyBoxConfig = async (updated: Partial<LuckyBoxConfig>): Promise<boolean> => {
-    try {
-      const next = { ...luckyBoxConfig, ...updated };
-      setLuckyBoxConfig(next);
-      localStorage.setItem('mfp_lucky_box_config', JSON.stringify(next));
-      await setDoc(doc(db, 'settings', 'luckyBox'), next);
-      recordAuditLog('Updated Lucky Box Config', 'SETTINGS', 'Successfully updated Lucky Box reward settings', 'SUCCESS');
-      showToast('Lucky Box settings saved successfully', 'success');
-      return true;
-    } catch (e) {
-      console.error(e);
-      showToast('Failed to save Lucky Box settings', 'error');
-      return false;
-    }
-  };
-
   const updateSpinWheelConfig = async (updated: Partial<SpinWheelConfig>): Promise<boolean> => {
     try {
       const next = { ...spinWheelConfig, ...updated };
@@ -2153,44 +1998,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {
       console.error(e);
       showToast('Failed to save Scratch & Win settings', 'error');
-      return false;
-    }
-  };
-
-  const addFlashDeal = async (deal: Omit<FlashDeal, 'id' | 'analytics'>): Promise<boolean> => {
-    try {
-      const id = `fd-${Date.now()}`;
-      const newDeal: FlashDeal = { ...deal, id, analytics: { clicks: 0, conversions: 0, revenue: 0 } };
-      await setDoc(doc(db, 'flashDeals', id), newDeal);
-      showToast('Flash Deal created successfully', 'success');
-      return true;
-    } catch (e) {
-      console.error(e);
-      showToast('Failed to create Flash Deal', 'error');
-      return false;
-    }
-  };
-
-  const updateFlashDeal = async (id: string, updated: Partial<FlashDeal>): Promise<boolean> => {
-    try {
-      await updateDoc(doc(db, 'flashDeals', id), updated);
-      showToast('Flash Deal updated', 'success');
-      return true;
-    } catch (e) {
-      console.error(e);
-      showToast('Failed to update Flash Deal', 'error');
-      return false;
-    }
-  };
-
-  const deleteFlashDeal = async (id: string): Promise<boolean> => {
-    try {
-      await deleteDoc(doc(db, 'flashDeals', id));
-      showToast('Flash Deal deleted', 'info');
-      return true;
-    } catch (e) {
-      console.error(e);
-      showToast('Failed to delete Flash Deal', 'error');
       return false;
     }
   };
@@ -2245,8 +2052,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     notifications,
     activeOrderNotification,
     setActiveOrderNotification,
-    hangingSneakerConfig: publishedHangingSneakerConfig,
-    updateHangingSneakerConfig,
     petShoeConfig: publishedPetShoeConfig,
     updatePetShoeConfig,
     instagramConfig: publishedInstagramConfig,
@@ -2266,16 +2071,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     recordSocialClick,
 
     // Customer Engagement
-    luckyBoxConfig,
-    updateLuckyBoxConfig,
     spinWheelConfig,
     updateSpinWheelConfig,
     scratchWinConfig,
     updateScratchWinConfig,
-    flashDeals,
-    addFlashDeal,
-    updateFlashDeal,
-    deleteFlashDeal,
     engagementAnalytics,
     recordEngagementMetric,
     orderCelebrationConfig,
@@ -2367,19 +2166,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     publishedProducts, publishedReviews, publishedStoreInfo, publishedHeroContent,
     publishedAnnouncements, publishedCategoryHighlights, publishedTrendingCollections,
     isAdmin, isTwoFactorEnabled, auditLogs, lastActivityTime, publishedPaymentSettings,
-    orders, notifications, activeOrderNotification, publishedHangingSneakerConfig,
+    orders, notifications, activeOrderNotification,
     publishedPetShoeConfig, publishedInstagramConfig, publishedSoundConfig,
     publishedTopAnnouncementBarConfig, customerSoundSettings, socialMediaConfig,
-    socialAnalytics, luckyBoxConfig, spinWheelConfig, flashDeals, engagementAnalytics,
+    socialAnalytics, spinWheelConfig, engagementAnalytics,
     orderCelebrationConfig, isCelebrating, customerUser, customerProfile,
     isCustomerAuthLoading, customerAuthError, toastMessage, campaigns, subscribers,
     coupons,
     // callbacks and functions
-    updateHangingSneakerConfig, updatePetShoeConfig, updateInstagramConfig,
+    updatePetShoeConfig, updateInstagramConfig,
     updatePaymentSettings, updateSoundConfig, updateTopAnnouncementBarConfig,
     updateCustomerSoundSettings, playSiteSound, updateSocialMediaConfig,
-    recordSocialClick, updateLuckyBoxConfig, updateSpinWheelConfig, addFlashDeal,
-    updateFlashDeal, deleteFlashDeal, recordEngagementMetric, updateOrderCelebrationConfig,
+    recordSocialClick, updateSpinWheelConfig,
+    recordEngagementMetric, updateOrderCelebrationConfig,
     setIsCelebrating, triggerGlobalCelebration, placeOrderAndPay, updateOrderStatus,
     cancelCustomerOrder, markNotificationRead, clearAllNotifications, showToast,
     customerSignInWithGoogle, customerSignOut, updateCustomerProfileInFirestore,

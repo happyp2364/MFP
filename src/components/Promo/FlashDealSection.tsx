@@ -8,10 +8,8 @@ import { useNavigate } from 'react-router-dom';
 export const FlashDealRenderer: React.FC<{ location: FlashDeal['displayLocations'][0], productId?: string, className?: string }> = ({ location, productId, className = '' }) => {
   const { flashDeals, products, flashDealConfig, recordEngagementMetric } = useStore();
   const [timers, setTimers] = useState<Record<string, string>>({});
-  
-  if (!flashDealConfig?.masterEnabled) return null;
 
-  const activeDeals = flashDeals.filter(d => {
+  const activeDeals = !flashDealConfig?.masterEnabled ? [] : flashDeals.filter(d => {
     const now = new Date();
     const start = new Date(d.startDate);
     const end = new Date(d.endDate);
@@ -57,7 +55,7 @@ export const FlashDealRenderer: React.FC<{ location: FlashDeal['displayLocations
     return () => clearInterval(interval);
   }, []);
 
-  if (activeDeals.length === 0) return null;
+  if (!flashDealConfig?.masterEnabled || activeDeals.length === 0) return null;
 
   return (
     <div className={`flex flex-col gap-3 ${className}`}>

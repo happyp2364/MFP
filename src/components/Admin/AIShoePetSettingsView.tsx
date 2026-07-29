@@ -250,7 +250,7 @@ export const AIShoePetSettingsView: React.FC = () => {
   };
 
   // Save Config
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
@@ -276,11 +276,17 @@ export const AIShoePetSettingsView: React.FC = () => {
       scheduleMode,
     };
 
-    updatePetShoeConfig(updated);
-    setIsSaving(false);
-    setSaveSuccess(true);
-    showToast('AI Pet Shoe Mascot settings saved successfully!', 'success');
-    setTimeout(() => setSaveSuccess(false), 3000);
+    try {
+      await updatePetShoeConfig(updated);
+      setSaveSuccess(true);
+      showToast('AI Pet Shoe Mascot settings saved successfully!', 'success');
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      console.error('Error saving AI Pet Shoe mascot settings:', err);
+      showToast('Failed to save AI Pet Shoe settings', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

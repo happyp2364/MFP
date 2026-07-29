@@ -29,7 +29,7 @@ import { DiagnosticIssue, DiagnosticScanResult, DiagnosticCenterState } from '..
 import { motion, AnimatePresence } from 'motion/react';
 
 export const DeveloperDiagnosticCenter: React.FC = () => {
-  const { products, orders, flashDeals, reviews, storeInfo } = useStore();
+  const { products, orders, reviews, storeInfo } = useStore();
   const [state, setState] = useState<DiagnosticCenterState>({
     isScanning: false,
     activeFixes: [],
@@ -71,25 +71,7 @@ export const DeveloperDiagnosticCenter: React.FC = () => {
       }
     });
 
-    // 2. Data Integrity Audit (Firestore)
-    flashDeals.forEach(d => {
-      const product = products.find(p => p.id === (d.targetIds?.[0] || ''));
-      if (!product) {
-        detectedIssues.push({
-          id: `fd-orphan-${d.id}`,
-          severity: 'critical',
-          category: 'firestore',
-          location: { component: 'FlashDealSection' },
-          description: `Flash Deal "${d.title}" references a non-existent product.`,
-          suggestedFix: 'Delete orphaned flash deal or link to valid product.',
-          isSafeToFix: true,
-          status: 'detected',
-          detectedAt: new Date().toISOString()
-        });
-      }
-    });
-
-    // 3. UI / Contrast (Simulated)
+    // 2. UI / Contrast (Simulated)
     if (storeInfo.name.length < 3) {
       detectedIssues.push({
         id: 'ui-short-name',

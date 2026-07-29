@@ -193,15 +193,23 @@ export function stitchProduct(
   aiMetadata?: any,
   galleryPartsMap: Record<string, any> = {}
 ): Product {
-  let images = gallery?.images && gallery.images.length > 0 
-    ? [...gallery.images] 
-    : (metadata.images && metadata.images.length > 0 ? [...metadata.images] : []);
+  if (!metadata) {
+    return {} as Product;
+  }
+
+  // 1. IMAGES
+  let images: string[] = [];
+  if (gallery && Array.isArray(gallery.images)) {
+    images = [...gallery.images];
+  } else if (metadata && Array.isArray(metadata.images)) {
+    images = [...metadata.images];
+  }
 
   if (gallery?.hasParts && gallery.partCount > 0) {
     for (let i = 1; i <= gallery.partCount; i++) {
       const partId = `${metadata.id}_gallery_part${i}`;
       const partDoc = galleryPartsMap[partId];
-      if (partDoc && partDoc.images) {
+      if (partDoc && Array.isArray(partDoc.images)) {
         images.push(...partDoc.images);
       }
     }
@@ -211,12 +219,15 @@ export function stitchProduct(
     images = [metadata.thumbnailURL];
   }
 
-  const sizes = (variants?.sizes && variants.sizes.length > 0) ? variants.sizes : (metadata.sizes || []);
-  const sizeStocks = (variants?.sizeStocks && variants.sizeStocks.length > 0) ? variants.sizeStocks : (metadata.sizeStocks || []);
-  const colors = (variants?.colors && variants.colors.length > 0) ? variants.colors : (metadata.colors || []);
-  const description = (aiMetadata?.description !== undefined && aiMetadata.description !== '') ? aiMetadata.description : (metadata.description || '');
-  const material = (aiMetadata?.material !== undefined && aiMetadata.material !== '') ? aiMetadata.material : (metadata.material || '');
-  const collectionTags = (aiMetadata?.collectionTags && aiMetadata.collectionTags.length > 0) ? aiMetadata.collectionTags : (metadata.collectionTags || []);
+  // 2. VARIANTS (sizes, sizeStocks, colors)
+  const sizes = (variants && Array.isArray(variants.sizes)) ? variants.sizes : (metadata.sizes || []);
+  const sizeStocks = (variants && Array.isArray(variants.sizeStocks)) ? variants.sizeStocks : (metadata.sizeStocks || []);
+  const colors = (variants && Array.isArray(variants.colors)) ? variants.colors : (metadata.colors || []);
+
+  // 3. AI METADATA (description, material, collectionTags)
+  const description = (aiMetadata && typeof aiMetadata.description === 'string') ? aiMetadata.description : (metadata.description || '');
+  const material = (aiMetadata && typeof aiMetadata.material === 'string') ? aiMetadata.material : (metadata.material || '');
+  const collectionTags = (aiMetadata && Array.isArray(aiMetadata.collectionTags)) ? aiMetadata.collectionTags : (metadata.collectionTags || []);
 
   return {
     ...metadata,

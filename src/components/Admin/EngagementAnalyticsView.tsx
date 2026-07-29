@@ -16,12 +16,6 @@ export const EngagementAnalyticsView: React.FC = () => {
 
   const stats = [
     {
-      label: 'Lucky Box Opens',
-      value: engagementAnalytics.luckyBoxOpens,
-      icon: Gift,
-      color: 'bg-indigo-100 text-indigo-600',
-    },
-    {
       label: 'Spin Wheel Spins',
       value: engagementAnalytics.wheelSpins,
       icon: Dices,
@@ -32,12 +26,6 @@ export const EngagementAnalyticsView: React.FC = () => {
       value: engagementAnalytics.couponsWon,
       icon: Ticket,
       color: 'bg-emerald-100 text-emerald-600',
-    },
-    {
-      label: 'Flash Deal Clicks',
-      value: engagementAnalytics.flashDealClicks,
-      icon: Zap,
-      color: 'bg-orange-100 text-orange-600',
     },
     {
       label: 'Engagement Revenue',

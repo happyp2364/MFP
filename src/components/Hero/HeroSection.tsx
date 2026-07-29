@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
-import { One8BurgundyShoeGraphic } from '../Decorative/One8BurgundyShoeGraphic';
 
 interface HeroSectionProps {
   onExploreClick: () => void;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
-  const { heroContent, storeInfo, hangingSneakerConfig } = useStore();
+  const { heroContent, storeInfo } = useStore();
 
   const shopName = storeInfo?.name || 'Marudhar Fashion Point';
   const tagline = heroContent?.headlineHighlight || storeInfo?.tagline || 'Style for Every Step';
@@ -53,27 +52,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
     }
   };
 
-  // Hanging Sneaker parameters from Firestore Live Config
-  const hsEnabled = hangingSneakerConfig?.enabled ?? true;
-  const hsImageUri = hangingSneakerConfig?.imageUri || '';
-  const hsLaceLength = hangingSneakerConfig?.laceLength ?? 220;
-  const hsSizePx = hangingSneakerConfig?.sizePx ?? 260;
-  const hsPositionRight = hangingSneakerConfig?.positionRight ?? 10;
-  const hsPositionTop = hangingSneakerConfig?.positionTop ?? 160;
-  const hsSwingSpeedSec = hangingSneakerConfig?.swingSpeedSec ?? 7.0;
-  const hsSwingAngleDeg = hangingSneakerConfig?.swingAngleDeg ?? 4.0;
-  const hsBaseRotationDeg = hangingSneakerConfig?.baseRotationDeg ?? -18;
-  const hsEnablePhysicsAnimation = hangingSneakerConfig?.enablePhysicsAnimation ?? true;
-  const hsEnableShineEffect = hangingSneakerConfig?.enableShineEffect ?? true;
-
-  // Track if custom hanging shoe image has failure to load
-  const [customHangingShoeError, setCustomHangingShoeError] = useState(false);
-  useEffect(() => {
-    setCustomHangingShoeError(false);
-  }, [hsImageUri]);
-
-  const showCustomHangingImage = hsImageUri && !customHangingShoeError;
-
   return (
     <section
       id="hero"
@@ -81,66 +59,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
     >
       {/* Background radial gradient decoration for luxury feel */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(11,143,99,0.15),transparent_60%)] pointer-events-none" />
-
-      {/* Dynamic swing-shoe style injection */}
-      {hsEnabled && (
-        <style dangerouslySetInnerHTML={{__html: `
-          @keyframes swing-shoe {
-            0% { transform: rotate(${-hsSwingAngleDeg}deg); }
-            50% { transform: rotate(${hsSwingAngleDeg}deg); }
-            100% { transform: rotate(${-hsSwingAngleDeg}deg); }
-          }
-        `}} />
-      )}
-
-      {/* Live Swinging Hanging Sneaker */}
-      {hsEnabled && (
-        <div
-          className="absolute hidden xl:flex flex-col items-center select-none pointer-events-none transition-all duration-500"
-          style={{
-            right: `${hsPositionRight}px`,
-            top: `0px`,
-            width: `${hsSizePx}px`,
-            zIndex: 25,
-          }}
-        >
-          {/* Hanging Rope/Lace */}
-          <div
-            className="w-[1.5px] bg-gradient-to-b from-neutral-500/80 to-amber-300/60 shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
-            style={{ height: `${hsLaceLength}px` }}
-          />
-
-          {/* Swinging Assembly container */}
-          <div
-            style={{
-              animation: hsEnablePhysicsAnimation ? `swing-shoe ${hsSwingSpeedSec}s ease-in-out infinite` : 'none',
-              transformOrigin: 'top center',
-            }}
-            className="flex flex-col items-center"
-          >
-            {/* Knot connector decoration */}
-            <div className="w-3 h-3 rounded-full bg-amber-400 border border-neutral-900 shadow-sm -mt-1.5 z-30" />
-
-            {/* Shoe Model Layer */}
-            {showCustomHangingImage ? (
-              <img                 src={hsImageUri}
-                alt="Hanging Sneaker"
-                onError={() => setCustomHangingShoeError(true)}
-                style={{
-                  width: `${hsSizePx}px`,
-                  transform: `rotate(${hsBaseRotationDeg}deg)`,
-                }}
-                className="h-auto object-contain filter drop-shadow-[0_25px_30px_rgba(0,0,0,0.6)]"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div style={{ transform: `rotate(${hsBaseRotationDeg}deg)` }}>
-                <One8BurgundyShoeGraphic width={hsSizePx} enableShine={hsEnableShineEffect} />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-20">
         
@@ -182,7 +100,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
                 <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
               </div>
             )}
-            <img               src={imgSrc}
+            <img
+              src={imgSrc}
               alt={shopName}
               loading="eager"
               fetchPriority="high"

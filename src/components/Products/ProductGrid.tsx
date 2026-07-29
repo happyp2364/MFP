@@ -3,7 +3,6 @@ import { Filter, ArrowUpDown, Grid, SearchX, Footprints, Sparkles, Tag } from 'l
 import { Product, FilterState, GenderCategory } from '../../types';
 import { ProductCard } from './ProductCard';
 import { ProductFilterSidebar } from './ProductFilterSidebar';
-import { FlashDealRenderer } from '../Promo/FlashDealSection';
 
 interface ProductGridProps {
   products: Product[];
@@ -38,7 +37,6 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         
         {/* Top Header & Gender Category Tabs */}
         <div className="space-y-6 mb-10">
-          <FlashDealRenderer location="category_page" className="mb-6" />
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-neutral-200 pb-6">
             <div>
               <span className="text-xs font-bold uppercase tracking-widest text-[#0B8F63] px-3 py-1 rounded-full bg-[#0B8F63]/10 inline-block mb-2">

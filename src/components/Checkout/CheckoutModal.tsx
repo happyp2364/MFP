@@ -27,7 +27,6 @@ import {
   Ticket,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
-import { FlashDealRenderer } from '../Promo/FlashDealSection';
 import { CartItem, ShippingAddressInfo, PaymentMethodType, CustomerOrder, MarketingConsent } from '../../types';
 import { generateUPILink, getQRCodeImageUrl, cleanAndSanitizeUPIId, isValidUPIIdFormat } from '../../utils/qrCode';
 import { generateOrderWhatsAppLink } from '../../utils/whatsapp';
@@ -884,8 +883,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <span>{errorMessage}</span>
           </div>
         )}
-
-        <FlashDealRenderer location="checkout" className="mx-6 mt-4" />
 
         {/* STEP 1: SHIPPING ADDRESS */}
         {step === 'SHIPPING' && (

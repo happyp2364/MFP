@@ -32,9 +32,7 @@ const WorkspaceHubDrawer = React.lazy(() => import('./components/GoogleWorkspace
 const ProductDetailPage = React.lazy(() => import('./components/Products/ProductDetailPage').then(module => ({ default: module.ProductDetailPage })));
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 const ScratchCardPopup = React.lazy(() => import('./components/Promo/ScratchCardPopup').then(module => ({ default: module.ScratchCardPopup })));
-const LuckyBoxPopup = React.lazy(() => import('./components/Promo/LuckyBoxPopup').then(module => ({ default: module.LuckyBoxPopup })));
 const SpinWheelPopup = React.lazy(() => import('./components/Promo/SpinWheelPopup').then(module => ({ default: module.SpinWheelPopup })));
-import { FlashDealSection, FlashDealRenderer } from './components/Promo/FlashDealSection';
 const OrderSuccessCelebration = React.lazy(() => import('./components/Promo/OrderSuccessCelebration').then(module => ({ default: module.OrderSuccessCelebration })));
 
 import { useStore } from './context/StoreContext';
@@ -364,9 +362,6 @@ function AppContent() {
     <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
       {/* 1. Announcement Bar */}
       <AnnouncementBar />
-      <div className="z-50 relative">
-        <FlashDealRenderer location="announcement_bar" className="bg-neutral-900 border-none !gap-0 !m-0 !rounded-none" />
-      </div>
 
       {/* 2. Navigation Header */}
       <Navbar
@@ -418,16 +413,12 @@ function AppContent() {
         <>
           {/* 3. Hero Section */}
           <HeroSection onExploreClick={() => handleNavigateToSection('products')} />
-          <FlashDealRenderer location="homepage_hero" className="max-w-7xl mx-auto px-4 mt-6" />
 
           {/* 4. Family Category Cards */}
           <CategorySection
             activeCategory={activeCategory}
             onSelectCategory={handleSelectCategory}
           />
-
-          {/* Flash Deals Section */}
-          <FlashDealSection />
 
           {/* 5. Best Sellers Auto Carousel */}
           <ProductCarousel
@@ -505,7 +496,7 @@ function AppContent() {
       {/* --- MODALS & DRAWERS --- */}
       {/* Quick View Modal */}
       {quickViewProduct && <React.Suspense fallback={null}><QuickViewModal
-        product={quickViewProduct}
+        product={products.find((p) => p.id === quickViewProduct.id) || quickViewProduct}
         onClose={() => setQuickViewProduct(null)}
         onToggleWishlist={handleToggleWishlist}
         isWishlisted={quickViewProduct ? wishlistIds.includes(quickViewProduct.id) : false}
@@ -651,25 +642,9 @@ function AppContent() {
       {/* Scratch & Win Popup Overlay */}
       <ScratchCardPopup currentPath={scratchCurrentPath} cartSubtotal={scratchCartSubtotal} />
 
-      {/* Lucky Box Rewards Popup Overlay */}
-      <LuckyBoxPopup currentPath={scratchCurrentPath} cartSubtotal={scratchCartSubtotal} />
-
       {/* Spin the Wheel Popup Overlay */}
       <SpinWheelPopup currentPath={scratchCurrentPath} />
 
-      {/* Global Flash Deals (Popup/Floating) */}
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 w-full max-w-[90vw] md:max-w-md pointer-events-none">
-        <div className="pointer-events-auto">
-          <FlashDealRenderer location="floating_banner" className="shadow-2xl" />
-        </div>
-      </div>
-
-      <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center p-4">
-        <div className="pointer-events-auto max-w-lg w-full">
-          <FlashDealRenderer location="popup" className="shadow-2xl" />
-        </div>
-      </div>
-      
       {/* Order Success Celebration Visual Effects Canvas Overlay */}
       <OrderSuccessCelebration />
     </div>

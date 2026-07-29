@@ -614,16 +614,6 @@ export const TRENDING_COLLECTIONS = [
   },
 ];
 
-export const DEFAULT_HANGING_SNEAKER_CONFIG = {
-  enabled: true,
-  shoeImageUri: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
-  shoeName: 'AirGlide Royal Pro',
-  shoePrice: 1499,
-  badgeText: 'HOT ARRIVAL',
-  swingSpeedSec: 3.5,
-  ropeColor: '#C5A059',
-};
-
 export const DEFAULT_PET_SHOE_CONFIG = {
   enabled: true,
   mascotName: 'Sneaker Pet',

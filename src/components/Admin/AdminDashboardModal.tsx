@@ -57,7 +57,6 @@ import { ChangePasswordView } from './ChangePasswordView';
 import { OrderManagementView } from './OrderManagementView';
 import { PaymentSettingsView } from './PaymentSettingsView';
 import { ReportsAnalyticsView } from './ReportsAnalyticsView';
-import { HangingSneakerSettingsView } from './HangingSneakerSettingsView';
 import { AIShoePetSettingsView } from './AIShoePetSettingsView';
 import { InstagramSettingsView } from './InstagramSettingsView';
 import { MarketingCenterView } from './MarketingCenterView';
@@ -65,14 +64,11 @@ import { CategoriesSettingsView } from './CategoriesSettingsView';
 import { ReviewsSettingsView } from './ReviewsSettingsView';
 import { SocialMediaSettingsView } from './SocialMediaSettingsView';
 import { VersionHistoryView } from './VersionHistoryView';
-import { HeroSectionManagerView } from './HeroSectionManagerView';
 import { TopAnnouncementBarSettingsView } from './TopAnnouncementBarSettingsView';
 import { SmartProductFormModal } from './SmartProductFormModal';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { CouponManagementView } from './CouponManagementView';
-import { LuckyBoxSettingsView } from './LuckyBoxSettingsView';
 import { SpinWheelSettingsView } from './SpinWheelSettingsView';
-import { FlashDealSettingsView } from './FlashDealSettingsView';
 import { EngagementAnalyticsView } from './EngagementAnalyticsView';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
@@ -85,7 +81,7 @@ interface AdminDashboardModalProps {
   onClose: () => void;
 }
 
-type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'hero_v2' | 'top_announcement_bar' | 'hanging_shoe' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'lucky_box' | 'spin_wheel' | 'flash_deals' | 'engagement_analytics' | 'developer_diagnostic';
+type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'developer_diagnostic';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -472,18 +468,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             <div className="px-3.5 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-widest hidden md:block">Reward Center</div>
 
             <button
-              onClick={() => setActiveTab('lucky_box')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'lucky_box'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <Gift className="w-4 h-4 text-indigo-500" />
-              <span>Lucky Box Rewards</span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('spin_wheel')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'spin_wheel'
@@ -493,18 +477,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             >
               <Sparkles className="w-4 h-4 text-pink-500" />
               <span>Spin the Wheel</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('flash_deals')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'flash_deals'
-                  ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <Zap className="w-4 h-4 text-orange-500" />
-              <span>Flash Deals Live</span>
             </button>
 
             <button
@@ -572,18 +544,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
 
             <button
-              onClick={() => setActiveTab('hero_v2')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'hero_v2'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Hero Experience V2.0</span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('top_announcement_bar')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'top_announcement_bar'
@@ -593,18 +553,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             >
               <Layers className="w-4 h-4 text-emerald-500" />
               <span>Top Announcement Bar</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('hanging_shoe')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'hanging_shoe'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Hanging Shoe Manager</span>
             </button>
 
             <button
@@ -765,14 +713,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* ----------------- TAB: COUPON & PROMOTIONS ----------------- */}
             {activeTab === 'coupons' && <CouponManagementView />}
 
-            {/* ----------------- TAB: LUCKY BOX REWARDS ----------------- */}
-            {activeTab === 'lucky_box' && <LuckyBoxSettingsView />}
-
             {/* ----------------- TAB: SPIN THE WHEEL ----------------- */}
             {activeTab === 'spin_wheel' && <SpinWheelSettingsView />}
-
-            {/* ----------------- TAB: FLASH DEALS LIVE ----------------- */}
-            {activeTab === 'flash_deals' && <FlashDealSettingsView />}
 
             {/* ----------------- TAB: ENGAGEMENT ANALYTICS ----------------- */}
             {activeTab === 'engagement_analytics' && <EngagementAnalyticsView />}
@@ -789,14 +731,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* ----------------- TAB: VERSION HISTORY & ROLLBACKS ----------------- */}
             {activeTab === 'versions' && <VersionHistoryView />}
 
-            {/* ----------------- TAB: HERO EXPERIENCE V2.0 ----------------- */}
-            {activeTab === 'hero_v2' && <HeroSectionManagerView />}
-
             {/* ----------------- TAB: TOP ANNOUNCEMENT BAR CUSTOMIZER ----------------- */}
             {activeTab === 'top_announcement_bar' && <TopAnnouncementBarSettingsView />}
-
-            {/* ----------------- TAB: HANGING SHOE AI MANAGER ----------------- */}
-            {activeTab === 'hanging_shoe' && <HangingSneakerSettingsView />}
 
             {/* ----------------- TAB: AI PET SHOE MASCOT ----------------- */}
             {activeTab === 'ai_pet_shoe' && <AIShoePetSettingsView />}

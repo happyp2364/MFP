@@ -81,9 +81,11 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
     if (scratchWinConfig.firstOrderOnly && userOrdersCount > 0) return;
 
     // Track page views counter
-    let pageViews = parseInt(sessionStorage.getItem('mfp_scratch_pageviews') || '0', 10);
-    pageViews += 1;
-    sessionStorage.setItem('mfp_scratch_pageviews', pageViews.toString());
+    let pageViews = 0;
+    try {
+      pageViews = parseInt(sessionStorage.getItem('mfp_scratch_pageviews') || '0', 10) + 1;
+      sessionStorage.setItem('mfp_scratch_pageviews', pageViews.toString());
+    } catch (e) {}
 
     if (scratchWinConfig.showAfterPageViews && pageViews < scratchWinConfig.showAfterPageViews) {
       return;
@@ -114,13 +116,19 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
     let timerId: NodeJS.Timeout | null = null;
     const showPopup = () => {
       // Avoid duplicate triggers in same session
-      const alreadyShownThisSession = sessionStorage.getItem('mfp_scratch_shown_session') === 'true';
+      let alreadyShownThisSession = false;
+      try {
+        alreadyShownThisSession = sessionStorage.getItem('mfp_scratch_shown_session') === 'true';
+      } catch (e) {}
+
       if (!alreadyShownThisSession) {
         setIsVisible(true);
-        sessionStorage.setItem('mfp_scratch_shown_session', 'true');
-        if (scratchWinConfig.firstVisitOnly) {
-          localStorage.setItem('mfp_scratch_visited', 'true');
-        }
+        try {
+          sessionStorage.setItem('mfp_scratch_shown_session', 'true');
+          if (scratchWinConfig.firstVisitOnly) {
+            localStorage.setItem('mfp_scratch_visited', 'true');
+          }
+        } catch (e) {}
       }
     };
 
@@ -217,7 +225,9 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
 
   const triggerSuccessReveal = () => {
     if (selectedReward && selectedReward.couponCode) {
-      localStorage.setItem('mfp_scratched_coupon', selectedReward.couponCode.toUpperCase());
+      try {
+        localStorage.setItem('mfp_scratched_coupon', selectedReward.couponCode.toUpperCase());
+      } catch (e) {}
     }
     triggerGlobalCelebration();
   };
@@ -297,7 +307,9 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
   };
 
   const handlePermanentlyDisable = () => {
-    localStorage.setItem('mfp_scratch_permanently_disabled', 'true');
+    try {
+      localStorage.setItem('mfp_scratch_permanently_disabled', 'true');
+    } catch (e) {}
     setIsVisible(false);
   };
 

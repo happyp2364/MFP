@@ -65,11 +65,13 @@ export const SpinWheelPopup: React.FC<SpinWheelPopupProps> = ({ currentPath }) =
       setResult(winner);
       setIsSpinning(false);
       setHasSpun(true);
-      localStorage.setItem('mfp_wheel_last_spun', Date.now().toString());
-      if (winner.couponCode) {
-        localStorage.setItem('mfp_active_coupon', winner.couponCode);
-        recordEngagementMetric('couponsWon');
-      }
+      try {
+        localStorage.setItem('mfp_wheel_last_spun', Date.now().toString());
+        if (winner.couponCode) {
+          localStorage.setItem('mfp_active_coupon', winner.couponCode);
+          recordEngagementMetric('couponsWon');
+        }
+      } catch (e) {}
       if (spinWheelConfig.celebrationEnabled) {
         triggerGlobalCelebration();
       }

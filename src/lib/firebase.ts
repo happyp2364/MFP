@@ -127,7 +127,10 @@ googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.file');
 googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.metadata.readonly');
 
 // In-memory token store for Google Workspace API calls
-let cachedAccessToken: string | null = localStorage.getItem('mfp_google_access_token');
+let cachedAccessToken: string | null = null;
+try {
+  cachedAccessToken = localStorage.getItem('mfp_google_access_token');
+} catch (e) {}
 
 export function getCachedAccessToken(): string | null {
   return cachedAccessToken;
@@ -135,10 +138,14 @@ export function getCachedAccessToken(): string | null {
 
 export function setCachedAccessToken(token: string | null) {
   cachedAccessToken = token;
-  if (token) {
-    localStorage.setItem('mfp_google_access_token', token);
-  } else {
-    localStorage.removeItem('mfp_google_access_token');
+  try {
+    if (token) {
+      localStorage.setItem('mfp_google_access_token', token);
+    } else {
+      localStorage.removeItem('mfp_google_access_token');
+    }
+  } catch (e) {
+    console.warn('Could not store google access token in localStorage:', e);
   }
 }
 
@@ -349,17 +356,7 @@ export async function recordAuditLog(
     ipAddress: '127.0.0.1 (Client Applet)',
   };
 
-  // 1. Save to local storage cache for instant UI rendering
-  try {
-    const cached = localStorage.getItem('mfp_audit_logs');
-    const logs: AuditLogItem[] = cached ? JSON.parse(cached) : [];
-    logs.unshift(logItem);
-    localStorage.setItem('mfp_audit_logs', JSON.stringify(logs.slice(0, 100)));
-  } catch (e) {
-    console.warn('Could not cache audit log in localStorage:', e);
-  }
-
-  // 2. Persist to Firestore auditLogs collection
+  // 1. Persist directly to Firestore auditLogs collection (single source of truth)
   try {
     await addDoc(collection(db, 'auditLogs'), logItem);
   } catch (err) {
@@ -380,9 +377,7 @@ export async function fetchRemoteAuditLogs(): Promise<AuditLogItem[]> {
     return logs;
   } catch (err) {
     handleFirestoreError(err, OperationType.LIST, 'auditLogs');
-    // Fallback to local storage
-    const cached = localStorage.getItem('mfp_audit_logs');
-    return cached ? JSON.parse(cached) : [];
+    return [];
   }
 }
 

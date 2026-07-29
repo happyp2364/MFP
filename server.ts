@@ -878,7 +878,7 @@ Respond ONLY with valid JSON:
           const paymentDoc = await razorpay.payments.fetch(razorpay_payment_id);
           if (paymentDoc && (paymentDoc.status === "captured" || paymentDoc.status === "authorized")) {
             isSignatureValid = true;
-            actualAmountPaid = paymentDoc.amount / 100; // Convert from paisa to INR
+            actualAmountPaid = Number(paymentDoc.amount) / 100; // Convert from paisa to INR
           }
 
         } catch (rzpVerifyErr) {

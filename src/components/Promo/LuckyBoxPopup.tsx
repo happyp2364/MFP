@@ -67,11 +67,13 @@ export const LuckyBoxPopup: React.FC<LuckyBoxPopupProps> = ({ currentPath, cartS
       setReward(selected || rewards[0]);
       setIsOpening(false);
       setHasOpened(true);
-      localStorage.setItem('mfp_luckybox_last_opened', Date.now().toString());
-      if (selected?.couponCode) {
-        localStorage.setItem('mfp_active_coupon', selected.couponCode);
-        recordEngagementMetric('couponsWon');
-      }
+      try {
+        localStorage.setItem('mfp_luckybox_last_opened', Date.now().toString());
+        if (selected?.couponCode) {
+          localStorage.setItem('mfp_active_coupon', selected.couponCode);
+          recordEngagementMetric('couponsWon');
+        }
+      } catch (e) {}
       triggerGlobalCelebration();
     }, 2000);
   };

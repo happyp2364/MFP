@@ -443,32 +443,87 @@ const safeJSONParse = (key: string, fallback: any) => {
   }
 };
 
-// Safe LocalStorage set helper
+// Safe LocalStorage set helper - strictly for lightweight UI preferences only
 const safeLocalStorageSet = (key: string, value: any) => {
+  // Never store large domain objects (products, reviews, orders, store info, etc.) in localStorage
+  const ALLOWED_LIGHTWEIGHT_KEYS = [
+    'mfp_theme',
+    'mfp_sidebar_collapsed',
+    'mfp_admin_active_tab',
+    'mfp_customer_sound_settings',
+    'mfp_wheel_last_spun',
+    'mfp_active_coupon',
+    'mfp_scratch_visited',
+    'mfp_scratch_permanently_disabled',
+    'mfp_luckybox_last_opened',
+    'mfp_google_access_token'
+  ];
+
+  if (!ALLOWED_LIGHTWEIGHT_KEYS.includes(key)) {
+    return;
+  }
+
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
   } catch (e) {
-    console.warn(`LocalStorage write error for key "${key}":`, e);
+    console.warn(`LocalStorage write skipped or failed for key "${key}":`, e);
   }
 };
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Purge heavy legacy keys from localStorage on mount
+  useEffect(() => {
+    const HEAVY_KEYS = [
+      'mfp_products_catalog_live',
+      'mfp_reviews_live',
+      'mfp_store_info_live',
+      'mfp_hero_content_live',
+      'mfp_announcements_live',
+      'mfp_category_highlights_live',
+      'mfp_trending_collections_live',
+      'mfp_audit_logs_live',
+      'mfp_payment_settings_live',
+      'mfp_hanging_sneaker_config_live',
+      'mfp_pet_shoe_config_live',
+      'mfp_instagram_config_live',
+      'mfp_sound_config_live',
+      'mfp_top_announcement_bar_config_live',
+      'mfp_social_media_config_live_v2',
+      'mfp_social_analytics_live_v2',
+      'mfp_lucky_box_config',
+      'mfp_spin_wheel_config',
+      'mfp_scratch_win_config',
+      'mfp_flash_deal_config',
+      'mfp_engagement_analytics',
+      'mfp_order_celebration_config',
+      'mfp_audit_logs',
+      'smart_product_form_draft',
+      'mfp_admin_state',
+      'mfp_admin',
+    ];
+    HEAVY_KEYS.forEach((key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {}
+    });
+  }, []);
+
   // Real-time Live State
-  const [publishedProducts, setPublishedProducts] = useState<Product[]>(() => safeJSONParse(STORAGE_KEYS.PRODUCTS, PRODUCTS_DATA));
-  const [publishedReviews, setPublishedReviews] = useState<Review[]>(() => safeJSONParse(STORAGE_KEYS.REVIEWS, REVIEWS_DATA));
-  const [publishedStoreInfo, setPublishedStoreInfo] = useState<StoreInfo>(() => safeJSONParse(STORAGE_KEYS.STORE_INFO, STORE_INFO));
-  const [publishedHeroContent, setPublishedHeroContent] = useState<HeroContent>(() => safeJSONParse(STORAGE_KEYS.HERO_CONTENT, DEFAULT_HERO_CONTENT));
-  const [publishedAnnouncements, setPublishedAnnouncements] = useState<string[]>(() => safeJSONParse(STORAGE_KEYS.ANNOUNCEMENTS, ANNOUNCEMENT_ITEMS));
-  const [publishedCategoryHighlights, setPublishedCategoryHighlights] = useState<CategoryHighlight[]>(() => safeJSONParse(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, CATEGORY_HIGHLIGHTS));
-  const [publishedTrendingCollections, setPublishedTrendingCollections] = useState<TrendingCollectionItem[]>(() => safeJSONParse(STORAGE_KEYS.TRENDING_COLLECTIONS, TRENDING_COLLECTIONS));
-  const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(() => safeJSONParse(STORAGE_KEYS.PAYMENT_SETTINGS, DEFAULT_PAYMENT_SETTINGS));
-  const [publishedHangingSneakerConfig, setPublishedHangingSneakerConfig] = useState<HangingSneakerConfig>(() => safeJSONParse(STORAGE_KEYS.HANGING_SNEAKER_CONFIG, DEFAULT_HANGING_SNEAKER_CONFIG));
-  const [publishedPetShoeConfig, setPublishedPetShoeConfig] = useState<PetShoeConfig>(() => safeJSONParse(STORAGE_KEYS.PET_SHOE_CONFIG, DEFAULT_PET_SHOE_CONFIG));
-  const [publishedInstagramConfig, setPublishedInstagramConfig] = useState<InstagramConfig>(() => safeJSONParse(STORAGE_KEYS.INSTAGRAM_CONFIG, DEFAULT_INSTAGRAM_CONFIG));
-  const [publishedSoundConfig, setPublishedSoundConfig] = useState<SoundConfig>(() => safeJSONParse(STORAGE_KEYS.SOUND_CONFIG, DEFAULT_SOUND_CONFIG));
-  const [publishedTopAnnouncementBarConfig, setPublishedTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(() => safeJSONParse(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG));
-  const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaCenterConfig>(() => safeJSONParse(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG));
-  const [socialAnalytics, setSocialAnalytics] = useState<SocialAnalyticsLog>(() => safeJSONParse(STORAGE_KEYS.SOCIAL_ANALYTICS, DEFAULT_SOCIAL_ANALYTICS));
+  const [publishedProducts, setPublishedProducts] = useState<Product[]>(PRODUCTS_DATA);
+  const [publishedReviews, setPublishedReviews] = useState<Review[]>(REVIEWS_DATA);
+  const [publishedStoreInfo, setPublishedStoreInfo] = useState<StoreInfo>(STORE_INFO);
+  const [publishedHeroContent, setPublishedHeroContent] = useState<HeroContent>(DEFAULT_HERO_CONTENT);
+  const [publishedAnnouncements, setPublishedAnnouncements] = useState<string[]>(ANNOUNCEMENT_ITEMS);
+  const [publishedCategoryHighlights, setPublishedCategoryHighlights] = useState<CategoryHighlight[]>(CATEGORY_HIGHLIGHTS);
+  const [publishedTrendingCollections, setPublishedTrendingCollections] = useState<TrendingCollectionItem[]>(TRENDING_COLLECTIONS);
+  const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(DEFAULT_PAYMENT_SETTINGS);
+  const [publishedHangingSneakerConfig, setPublishedHangingSneakerConfig] = useState<HangingSneakerConfig>((DEFAULT_HANGING_SNEAKER_CONFIG as unknown) as HangingSneakerConfig);
+  const [publishedPetShoeConfig, setPublishedPetShoeConfig] = useState<PetShoeConfig>((DEFAULT_PET_SHOE_CONFIG as unknown) as PetShoeConfig);
+  const [publishedInstagramConfig, setPublishedInstagramConfig] = useState<InstagramConfig>((DEFAULT_INSTAGRAM_CONFIG as unknown) as InstagramConfig);
+  const [publishedSoundConfig, setPublishedSoundConfig] = useState<SoundConfig>(DEFAULT_SOUND_CONFIG);
+  const [publishedTopAnnouncementBarConfig, setPublishedTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG);
+  const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaCenterConfig>(DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG);
+  const [socialAnalytics, setSocialAnalytics] = useState<SocialAnalyticsLog>(DEFAULT_SOCIAL_ANALYTICS);
 
   // Coupons state
   const [coupons, setCoupons] = useState<PromoCoupon[]>([]);
@@ -516,13 +571,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [subscribers, setSubscribers] = useState<MarketingSubscriber[]>([]);
 
   // Customer Engagement State
-  const [luckyBoxConfig, setLuckyBoxConfig] = useState<LuckyBoxConfig>(() => safeJSONParse('mfp_lucky_box_config', DEFAULT_LUCKY_BOX_CONFIG));
-  const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(() => safeJSONParse('mfp_spin_wheel_config', DEFAULT_SPIN_WHEEL_CONFIG));
-  const [flashDealConfig, setFlashDealConfig] = useState<FlashDealConfig>(() => safeJSONParse('mfp_flash_deal_config', DEFAULT_FLASH_DEAL_CONFIG));
-  const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(() => safeJSONParse('mfp_scratch_win_config', DEFAULT_SCRATCH_WIN_CONFIG));
+  const [luckyBoxConfig, setLuckyBoxConfig] = useState<LuckyBoxConfig>(DEFAULT_LUCKY_BOX_CONFIG);
+  const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(DEFAULT_SPIN_WHEEL_CONFIG);
+  const [flashDealConfig, setFlashDealConfig] = useState<FlashDealConfig>(DEFAULT_FLASH_DEAL_CONFIG);
+  const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(DEFAULT_SCRATCH_WIN_CONFIG);
   const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
-  const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(() => safeJSONParse('mfp_engagement_analytics', DEFAULT_ENGAGEMENT_ANALYTICS));
-  const [orderCelebrationConfig, setOrderCelebrationConfig] = useState<OrderCelebrationConfig>(() => safeJSONParse('mfp_order_celebration_config', DEFAULT_ORDER_CELEBRATION_CONFIG));
+  const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(DEFAULT_ENGAGEMENT_ANALYTICS);
+  const [orderCelebrationConfig, setOrderCelebrationConfig] = useState<OrderCelebrationConfig>(DEFAULT_ORDER_CELEBRATION_CONFIG);
 
   const [isCelebrating, setIsCelebrating] = useState<boolean>(false);
 
@@ -1538,7 +1593,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const verifiedData = snap.data() as TopAnnouncementBarConfig;
         if (verifiedData) {
           setPublishedTopAnnouncementBarConfig(verifiedData);
-          localStorage.setItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, JSON.stringify(verifiedData));
+          safeLocalStorageSet(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, verifiedData);
           showToast('✅ Announcement Bar Saved Successfully', 'success');
           recordAuditLog('Top Announcement Bar Updated', 'SETTINGS', 'Updated top announcement bar configuration live', 'SUCCESS');
           return;
@@ -1556,7 +1611,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCustomerSoundSettingsState((prev) => {
       const next = { ...prev, ...updated };
       applyAudioCustomerSettings(next);
-      localStorage.setItem('mfp_customer_sound_settings', JSON.stringify(next));
+      safeLocalStorageSet('mfp_customer_sound_settings', next);
       return next;
     });
   };
@@ -1599,9 +1654,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       let realDiscount = 0;
       if (couponCode) {
-         const validation = validateCoupon(couponCode, subtotalAmt);
-         if (validation.isValid && validation.discountValue) {
-            realDiscount = validation.discountValue;
+         const validation = validateCoupon(couponCode, cartItems);
+         if (validation.valid && validation.discountAmount) {
+            realDiscount = validation.discountAmount;
          }
       }
       

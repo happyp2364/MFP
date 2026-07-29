@@ -81,17 +81,30 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // Auto-Save Draft logic for NEW products
   useEffect(() => {
     if (isCreating) {
-      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (savedDraft) {
-        setHasDraft(true);
+      try {
+        const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (savedDraft) {
+          setHasDraft(true);
+        }
+      } catch (e) {
+        console.warn('Could not read product form draft:', e);
       }
     }
   }, [isCreating]);
 
-  // Persist draft on change
+  // Persist draft on change (omit large image base64 data to avoid localStorage quota errors)
   useEffect(() => {
     if (isCreating && productState.name) {
-      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(productState));
+      try {
+        const lightweightDraft = {
+          ...productState,
+          images: [],
+          gallery: [],
+        };
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(lightweightDraft));
+      } catch (e) {
+        console.warn('Could not save product form draft to localStorage:', e);
+      }
     }
   }, [productState, isCreating]);
 
@@ -99,7 +112,8 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     try {
       const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
       if (saved) {
-        setProductState(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setProductState((prev) => ({ ...prev, ...parsed }));
         setHasDraft(false);
       }
     } catch (e) {
@@ -108,7 +122,9 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   };
 
   const handleClearDraft = () => {
-    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch (e) {}
     setHasDraft(false);
   };
 

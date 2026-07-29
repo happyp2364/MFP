@@ -85,11 +85,9 @@ function getActualBackgroundColor(el: HTMLElement): { r: number; g: number; b: n
 export function runAutoContrastAudit() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
-  // We target ALL elements to be absolutely sure we don't miss a single one
   const elements = document.querySelectorAll<HTMLElement>('*');
-
+  
   elements.forEach((el) => {
-    // Skip SVG, icons, scripts, styles
     if (el.tagName === 'SVG' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE' || el.tagName === 'HTML' || el.tagName === 'BODY' || el.tagName === 'HEAD') {
       return;
     }
@@ -97,7 +95,6 @@ export function runAutoContrastAudit() {
       return;
     }
 
-    // Only inspect items with direct text nodes or interactive form fields
     let hasDirectText = false;
     for (let i = 0; i < el.childNodes.length; i++) {
       const node = el.childNodes[i];
@@ -107,7 +104,6 @@ export function runAutoContrastAudit() {
       }
     }
     
-    // Also include inputs, selects, textareas, buttons
     const isControl = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.tagName === 'BUTTON' || el.tagName === 'A';
 
     if (!hasDirectText && !isControl) {
@@ -126,22 +122,24 @@ export function runAutoContrastAudit() {
     
     const contrast = getContrastRatio(bgLuminance, textLuminance);
 
-    // WCAG AAA threshold is 7:1 for body, 4.5:1 for headings
     const isHeading = !!el.tagName.match(/^H[1-6]$/);
-    const threshold = isHeading ? 4.5 : 5.5; // We use slightly higher threshold to be extremely safe
+    const threshold = isHeading ? 4.5 : 5.5;
 
     if (contrast < threshold) {
-      // Contrast is too low! Override text color
       if (bgLuminance >= 0.5) {
-        // Light background -> force very dark text
-        el.style.setProperty('color', 'var(--auto-text-dark)', 'important');
-        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        if (el.style.getPropertyValue('color') !== 'var(--auto-text-dark)') {
+           el.style.setProperty('color', 'var(--auto-text-dark)', 'important');
+           el.setAttribute('data-contrast-audited', 'true');
+        }
+        if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !el.classList.contains('auto-contrast-light-bg')) {
            el.classList.add('auto-contrast-light-bg');
         }
       } else {
-        // Dark background -> force very light text
-        el.style.setProperty('color', 'var(--auto-text-light)', 'important');
-        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        if (el.style.getPropertyValue('color') !== 'var(--auto-text-light)') {
+           el.style.setProperty('color', 'var(--auto-text-light)', 'important');
+           el.setAttribute('data-contrast-audited', 'true');
+        }
+        if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && !el.classList.contains('auto-contrast-dark-bg')) {
            el.classList.add('auto-contrast-dark-bg');
         }
       }
@@ -161,7 +159,7 @@ export function initAutoContrastEngine() {
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
       runAutoContrastAudit();
-    }, 150); // increased debounce to improve performance across entire DOM
+    }, 1000); // improved
   };
 
   // Set up MutationObserver to automatically check for poor contrast when DOM changes
@@ -178,26 +176,18 @@ export function initAutoContrastEngine() {
     }
   });
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['class', 'style'],
-  });
+  observer.observe(document.body, { childList: true, subtree: true });
 
   // Run audit on window events too
   window.addEventListener('resize', debouncedAudit);
-  window.addEventListener('scroll', debouncedAudit, { passive: true });
   
-  // Monitor document interactions/focus
-  document.addEventListener('focusin', debouncedAudit);
-  document.addEventListener('click', debouncedAudit);
+  
 
   return () => {
     observer.disconnect();
     window.removeEventListener('resize', debouncedAudit);
-    window.removeEventListener('scroll', debouncedAudit);
-    document.removeEventListener('focusin', debouncedAudit);
-    document.removeEventListener('click', debouncedAudit);
+    
+    
+    
   };
 }

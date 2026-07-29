@@ -423,7 +423,7 @@ export const HangingSneakerSettingsView: React.FC = () => {
                       backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
                     }}
                   >
-                    <img src={imageUri} alt="Extracted transparent shoe" className="max-w-full max-h-full object-contain filter drop-shadow-md" />
+                    <img src={imageUri} alt="Extracted transparent shoe" className="max-w-full max-h-full object-contain filter drop-shadow-md"  referrerPolicy="no-referrer" />
                     <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-emerald-600 text-[9px] font-bold text-white uppercase tracking-wider">
                       PNG
                     </span>

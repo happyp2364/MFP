@@ -258,7 +258,6 @@ export async function verifyPaymentSecurely(
         customerPhone: shippingInfo.phone,
         paymentMethod,
         keyId: paymentSettings.keyId || paymentSettings.apiKey,
-        keySecret: paymentSettings.keySecret || paymentSettings.apiSecret,
         gatewayProvider: paymentSettings.gatewayProvider || 'RAZORPAY',
         isTestMode: paymentSettings.isTestMode !== false,
       }),

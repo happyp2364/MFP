@@ -182,7 +182,7 @@ export const MarketingCenterView: React.FC = () => {
             ${campaignCategory.replace('_', ' ')}
           </span>
           <h2 style="color: #18181b; font-size: 20px; margin-top: 12px;">${p.name}</h2>
-          <img src="${p.images?.[0] || ''}" alt="${p.name}" style="width: 100%; max-height: 280px; object-fit: cover; border-radius: 12px; margin: 16px 0;" />
+          <img src="${p.images?.[0] || ''}" alt="${p.name}" style="width: 100%; max-height: 280px; object-fit: cover; border-radius: 12px; margin: 16px 0;"  referrerPolicy="no-referrer" />
           
           <div style="font-size: 22px; font-weight: bold; color: #78350f; margin-bottom: 16px;">
             ₹${p.price.toLocaleString('en-IN')}

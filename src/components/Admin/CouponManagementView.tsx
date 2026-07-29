@@ -984,7 +984,7 @@ export const CouponManagementView: React.FC = () => {
                                 : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
                             }`}
                           >
-                            <img src={p.images[0]} className="w-6 h-6 rounded object-cover shrink-0" />
+                            <img src={p.images[0]} className="w-6 h-6 rounded object-cover shrink-0"  referrerPolicy="no-referrer" />
                             <div className="truncate text-[10px] font-bold">
                               <div>{p.name}</div>
                               <div className="text-[9px] text-neutral-400 font-normal">₹{p.price} • {p.category}</div>

@@ -92,7 +92,7 @@ export const WorkspaceHubDrawer: React.FC<WorkspaceHubDrawerProps> = ({
           {user ? (
             <div className="flex items-center gap-3 min-w-0">
               {user.photoURL ? (
-                <img src={user.photoURL} alt="User" className="w-10 h-10 rounded-full border-2 border-[#0B8F63]" />
+                <img src={user.photoURL} alt="User" className="w-10 h-10 rounded-full border-2 border-[#0B8F63]"  referrerPolicy="no-referrer" />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-[#0B8F63] text-white font-bold flex items-center justify-center">
                   {user.email?.[0].toUpperCase()}

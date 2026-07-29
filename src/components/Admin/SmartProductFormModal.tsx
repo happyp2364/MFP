@@ -524,7 +524,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                     key={idx}
                     className="relative aspect-square rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-100 group shadow-xs"
                   >
-                    <img src={imgUrl} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                    <img src={imgUrl} alt={`Product ${idx + 1}`} className="w-full h-full object-cover"  referrerPolicy="no-referrer" />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
                       <button
                         type="button"

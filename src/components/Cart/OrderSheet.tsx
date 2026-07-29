@@ -91,8 +91,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
                 key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}-${idx}`}
                 className="flex items-center gap-3 p-3 rounded-2xl bg-[#F7F7F7] border border-neutral-200/80"
               >
-                <img
-                  src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
+                <img                   src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
                   alt={item.product.name}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = CLEAN_IMAGE_COMING_SOON_SVG;

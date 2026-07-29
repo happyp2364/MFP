@@ -28,175 +28,201 @@ service cloud.firestore {
     }
 
     // Public Products Catalog (Read-Only for Public, Write for Admins)
-    match /products/{productId} {
+    match /products/{id} {
       allow read: if true;
-      allow create, update, delete: if true;
+      allow write: if isAdmin();
     }
 
     // Public Reviews & Feedback (Public Read & Create, Admin Manage)
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create, update, delete: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
     }
 
     // Store Info & Configuration Settings
-    match /storeInfo/{infoId} {
+    match /storeInfo/{id} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
 
     // Centralized Site Settings (Hero, Store Info, Categories, Announcements, Collections)
-    match /siteSettings/{settingId} {
+    match /siteSettings/{id} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
 
     // Hanging Sneaker Feature Config
-    match /hangingSneakerConfig/{configId} {
+    match /hangingSneakerConfig/{id} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
 
     // AI Pet Shoe Mascot Config
-    match /petShoeConfig/{configId} {
+    match /petShoeConfig/{id} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
 
     // Instagram Integration Config
-    match /instagramConfig/{configId} {
+    match /instagramConfig/{id} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
 
     // Payment Settings & Gateway Credentials
-    match /paymentSettings/{configId} {
+    match /paymentSettings/{id} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
 
     // Real Client Collections: Settings, Homepage, Categories, Payment, Animations, Mascot, Social, Theme
     match /settings/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
     match /homepage/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
     match /categories/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
     match /payment/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
     match /animations/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
     match /mascot/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
     match /social/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
     match /theme/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /product_gallery/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
     match /product_gallery_parts/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
     match /product_variants/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
     match /product_ai_metadata/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
     match /product_statistics/{id} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // Hero Banner Content
-    match /hero/{heroId} {
+    match /hero/{id} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
 
     // Customer Inquiries
     match /inquiries/{inquiryId} {
-      allow create: if true && request.resource.data.name is string;
-      allow read, update, delete: if isSignedIn();
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update, delete: if isAdmin();
     }
 
     // VIP Fitting Appointments
     match /appointments/{appointmentId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow create: if true;
-      allow read, update, delete: if isSignedIn();
+      allow update, delete: if isAdmin();
     }
 
     // Security Audit Logs Collection
-    match /auditLogs/{logId} {
-      allow read, write: if true;
+    match /auditLogs/{id} {
+      allow read, write: if isAdmin();
     }
 
     // Real-time Admin Notifications
     match /notifications/{notifId} {
       allow create: if true;
-      allow read, update, delete: if true;
+      allow read, update, delete: if isAdmin();
     }
 
     // Customer Profiles Collection (User can read and update their own document, admins can read/write all)
     match /users/{userId} {
-      allow read, create, update: if true;
-      allow delete: if isSignedIn();
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow delete: if isAdmin();
     }
 
     // Customer Orders Collection (Public create for guest/user checkout, read/update by owner/admin)
     match /orders/{orderId} {
-      allow read, create, update: if true;
-      allow delete: if isSignedIn();
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid) || (resource == null);
+      // We must allow create by anyone since guests can order, but we can't restrict reads based on resource.data if it doesn't exist yet... wait, create doesn't check 'resource' for existing data, it checks 'request.resource'. Read uses 'resource'.
+      // Wait, let's just do:
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if true;
+      allow update, delete: if isAdmin();
     }
 
     // Payment Transactions Log
     match /transactions/{txId} {
-      allow read, create: if true;
-      allow update, delete: if isSignedIn();
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if true;
+      allow update, delete: if isAdmin();
     }
 
     // Store Snapshots & Recovery Backups
     match /backups/{backupId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isAdmin();
     }
 
     // CMS Published Version History
-    match /publishedVersions/{versionId} {
-      allow read, write: if true;
+    match /publishedVersions/{id} {
+      allow read, write: if isAdmin();
     }
 
     // Admin Users Directory
-    match /admins/{adminId} {
-      allow read, write: if isSignedIn();
+    match /admins/{id} {
+      allow read, write: if isAdmin();
     }
 
     // Marketing Campaigns
-    match /marketingCampaigns/{campaignId} {
-      allow read, write: if true;
+    match /marketingCampaigns/{id} {
+      allow read, write: if isAdmin();
     }
 
     // Marketing Subscribers & Consent Preferences
     match /marketingSubscribers/{subscriberId} {
-      allow read, write: if true;
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update, delete: if isAdmin();
     }
 
     // Flash Deals & Customer Engagement Analytics
-    match /flashDeals/{dealId} {
+    match /flashDeals/{id} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
     match /analytics/{id} {
       allow read: if true;
-      allow write: if true;
+      allow create, update: if true;
+      allow delete: if isAdmin();
     }
   }
 }

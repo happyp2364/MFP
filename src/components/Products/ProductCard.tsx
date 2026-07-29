@@ -114,8 +114,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Marudhar Fashion Point</span>
           </div>
         ) : (
-          <img
-            src={displayImageSrc}
+          <img             src={displayImageSrc}
             alt={product.name}
             loading="lazy"
             decoding="async"

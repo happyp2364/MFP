@@ -123,8 +123,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
 
             {/* Shoe Model Layer */}
             {showCustomHangingImage ? (
-              <img
-                src={hsImageUri}
+              <img                 src={hsImageUri}
                 alt="Hanging Sneaker"
                 onError={() => setCustomHangingShoeError(true)}
                 style={{
@@ -183,8 +182,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
                 <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
               </div>
             )}
-            <img
-              src={imgSrc}
+            <img               src={imgSrc}
               alt={shopName}
               loading="eager"
               fetchPriority="high"

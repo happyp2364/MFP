@@ -137,7 +137,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-lg border border-amber-500/30">
                 {customerUser?.photoURL ? (
-                  <img src={customerUser.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                  <img src={customerUser.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover"  referrerPolicy="no-referrer" />
                 ) : (
                   <User className="w-5 h-5" />
                 )}
@@ -328,11 +328,10 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                             key={idx}
                             className="flex items-center space-x-2 p-1.5 bg-neutral-50 rounded-lg border border-neutral-100"
                           >
-                            <img
-                              src={item.product.images[0]}
+                            <img                               src={item.product.images[0]}
                               alt={item.product.name}
                               className="w-10 h-10 object-cover rounded-md"
-                            />
+                             referrerPolicy="no-referrer" />
                             <div>
                               <p className="font-semibold text-neutral-900 line-clamp-1">{item.product.name}</p>
                               <p className="text-[10px] text-neutral-500">
@@ -612,7 +611,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {wishlistProducts.map((p) => (
                     <div key={p.id} className="p-2.5 bg-white border border-neutral-200 rounded-xl space-y-2">
-                      <img src={p.images[0]} alt={p.name} className="w-full h-32 object-cover rounded-lg" />
+                      <img src={p.images[0]} alt={p.name} className="w-full h-32 object-cover rounded-lg"  referrerPolicy="no-referrer" />
                       <p className="font-bold text-xs text-neutral-900 line-clamp-1">{p.name}</p>
                       <p className="text-xs text-amber-900 font-bold">₹{p.price.toLocaleString()}</p>
                       {onQuickViewProduct && (

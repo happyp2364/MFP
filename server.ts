@@ -718,7 +718,6 @@ Respond ONLY with valid JSON:
         customerPhone,
         receipt,
         keyId,
-        keySecret,
         gatewayProvider = "RAZORPAY",
         isTestMode = true,
         notes = {},
@@ -729,7 +728,7 @@ Respond ONLY with valid JSON:
       }
 
       const effectiveKeyId = keyId?.trim() || process.env.RAZORPAY_KEY_ID || "rzp_test_marudhar123";
-      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "test_secret_marudhar123";
+      const effectiveKeySecret = process.env.RAZORPAY_KEY_SECRET || "test_secret_marudhar123";
       const amountInPaisa = Math.round(amount * 100);
       const orderReceipt = receipt || `order_rcpt_${Date.now()}`;
 
@@ -811,7 +810,6 @@ Respond ONLY with valid JSON:
         customerPhone,
         paymentMethod = "UPI",
         keyId,
-        keySecret,
         gatewayProvider = "RAZORPAY",
         isTestMode = true,
       } = req.body || {};
@@ -826,11 +824,14 @@ Respond ONLY with valid JSON:
       }
 
       const effectiveKeyId = keyId?.trim() || process.env.RAZORPAY_KEY_ID || "rzp_test_marudhar123";
-      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "test_secret_marudhar123";
+      const effectiveKeySecret = process.env.RAZORPAY_KEY_SECRET || "test_secret_marudhar123";
+
 
       let isSignatureValid = false;
+      let actualAmountPaid = amount;
 
       // 1) Verify HMAC SHA256 Signature
+
       if (razorpay_signature) {
         const generatedSignature = crypto
           .createHmac("sha256", effectiveKeySecret)
@@ -873,10 +874,13 @@ Respond ONLY with valid JSON:
             key_secret: effectiveKeySecret,
           });
 
+
           const paymentDoc = await razorpay.payments.fetch(razorpay_payment_id);
           if (paymentDoc && (paymentDoc.status === "captured" || paymentDoc.status === "authorized")) {
             isSignatureValid = true;
+            actualAmountPaid = paymentDoc.amount / 100; // Convert from paisa to INR
           }
+
         } catch (rzpVerifyErr) {
           console.warn("[Razorpay API Verify Note]:", rzpVerifyErr);
         }
@@ -943,7 +947,7 @@ Respond ONLY with valid JSON:
       }
 
       const effectiveKeyId = keyId?.trim() || process.env.RAZORPAY_KEY_ID || "rzp_test_marudhar123";
-      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "test_secret_marudhar123";
+      const effectiveKeySecret = process.env.RAZORPAY_KEY_SECRET || "test_secret_marudhar123";
 
       let refundId = `rfnd_${crypto.randomBytes(8).toString("hex")}`;
 

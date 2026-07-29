@@ -885,11 +885,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                           <tr key={p.id} className="hover:bg-neutral-50/80 transition-colors">
                             <td className="p-3.5">
                               <div className="flex items-center gap-3">
-                                <img
-                                  src={p.images[0]}
+                                <img                                   src={p.images[0]}
                                   alt={p.name}
                                   className="w-10 h-10 rounded-lg object-cover bg-neutral-100 border border-neutral-200 shrink-0"
-                                />
+                                 referrerPolicy="no-referrer" />
                                 <div>
                                   <div className="font-bold text-neutral-900">{p.name}</div>
                                   <div className="text-[10px] text-neutral-500 flex items-center gap-1.5 mt-0.5">

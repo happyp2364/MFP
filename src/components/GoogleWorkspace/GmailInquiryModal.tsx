@@ -197,7 +197,7 @@ export const GmailInquiryModal: React.FC<GmailInquiryModalProps> = ({
               <div className="p-3 bg-neutral-50 rounded-2xl border flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   {user?.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-7 h-7 rounded-full" />
+                    <img src={user.photoURL} alt="User" className="w-7 h-7 rounded-full"  referrerPolicy="no-referrer" />
                   ) : (
                     <div className="w-7 h-7 rounded-full bg-red-600 text-white font-bold flex items-center justify-center">
                       G

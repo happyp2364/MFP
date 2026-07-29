@@ -1589,8 +1589,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   ) => {
     try {
       const orderId = `MFP-ORD-${Date.now()}`;
-      const subtotalAmt = cartItems.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
-      const totalAmt = Math.max(0, subtotalAmt - discountAmount);
+      
+      // SERVER-SIDE/SOURCE-OF-TRUTH VALIDATION
+      const subtotalAmt = cartItems.reduce((acc, item) => {
+        const realProduct = publishedProducts.find(p => p.id === item.product.id);
+        const realPrice = realProduct ? realProduct.price : item.product.price;
+        return acc + (realPrice * item.quantity);
+      }, 0);
+      
+      let realDiscount = 0;
+      if (couponCode) {
+         const validation = validateCoupon(couponCode, subtotalAmt);
+         if (validation.isValid && validation.discountValue) {
+            realDiscount = validation.discountValue;
+         }
+      }
+      
+      const totalAmt = Math.max(0, subtotalAmt - realDiscount);
+
       const mappedPaymentMethod: PaymentMethodType =
         paymentMethod === 'ONLINE'
           ? 'UPI'

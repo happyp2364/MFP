@@ -44,8 +44,13 @@ export const LuckyBoxSettingsView: React.FC = () => {
 
   const handleSaveConfig = async () => {
     setIsSaving(true);
-    const success = await updateLuckyBoxConfig(config);
-    setIsSaving(false);
+    try {
+      await updateLuckyBoxConfig(config);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleToggle = (field: keyof Omit<LuckyBoxConfig, 'rewards' | 'dailyLimit' | 'perCustomerLimit' | 'globalUsageLimit' | 'minCartValue'>) => {

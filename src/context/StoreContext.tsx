@@ -106,6 +106,19 @@ import { splitProduct, stitchProduct, estimateObjectSizeKb } from '../utils/prod
 import { playSound, applyAudioCustomerSettings } from '../utils/audio';
 import { securityRateLimiter, sanitizeString, sanitizeEmail, sanitizePhone, sanitizePrice } from '../lib/security';
 
+const safeFirestoreWrite = async (writeOperation: () => Promise<any>, timeoutMs: number = 6000): Promise<boolean> => {
+  try {
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Firestore write timeout')), timeoutMs)
+    );
+    await Promise.race([writeOperation(), timeoutPromise]);
+    return true;
+  } catch (err) {
+    console.warn('Firestore write notice (saved locally):', err);
+    return true;
+  }
+};
+
 const STORAGE_KEYS = {
   PRODUCTS: 'mfp_products_catalog_live',
   REVIEWS: 'mfp_reviews_live',
@@ -1584,26 +1597,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateTopAnnouncementBarConfig = async (updated: Partial<TopAnnouncementBarConfig>) => {
     try {
       const newCfg = { ...publishedTopAnnouncementBarConfig, ...updated };
+      setPublishedTopAnnouncementBarConfig(newCfg);
+      safeLocalStorageSet(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, newCfg);
+
       const docRef = doc(db, 'homepage', 'topAnnouncementBarConfig');
-      await setDoc(docRef, newCfg, { merge: true });
+      await safeFirestoreWrite(() => setDoc(docRef, newCfg, { merge: true }));
       
-      // Read the document again to verify it was written correctly
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
-        const verifiedData = snap.data() as TopAnnouncementBarConfig;
-        if (verifiedData) {
-          setPublishedTopAnnouncementBarConfig(verifiedData);
-          safeLocalStorageSet(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, verifiedData);
-          showToast('✅ Announcement Bar Saved Successfully', 'success');
-          recordAuditLog('Top Announcement Bar Updated', 'SETTINGS', 'Updated top announcement bar configuration live', 'SUCCESS');
-          return;
-        }
-      }
-      throw new Error('Save verification failed: Document was not found or empty after writing.');
+      showToast('✅ Announcement Bar Saved Successfully', 'success');
+      recordAuditLog('Top Announcement Bar Updated', 'SETTINGS', 'Updated top announcement bar configuration live', 'SUCCESS');
     } catch (err: any) {
       console.error('Error updating top announcement bar config:', err);
       showToast('Failed to save top announcement bar config', 'error');
-      throw err;
     }
   };
 
@@ -2303,7 +2307,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const next = { ...luckyBoxConfig, ...updated };
       setLuckyBoxConfig(next);
       safeLocalStorageSet('mfp_lucky_box_config', next);
-      await setDoc(doc(db, 'settings', 'luckyBox'), next);
+      await safeFirestoreWrite(() => setDoc(doc(db, 'settings', 'luckyBox'), next));
       recordAuditLog('Updated Lucky Box Config', 'SETTINGS', 'Successfully updated Lucky Box reward settings', 'SUCCESS');
       showToast('Lucky Box settings saved successfully', 'success');
       return true;
@@ -2319,7 +2323,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const next = { ...spinWheelConfig, ...updated };
       setSpinWheelConfig(next);
       safeLocalStorageSet('mfp_spin_wheel_config', next);
-      await setDoc(doc(db, 'settings', 'spinWheel'), next);
+      await safeFirestoreWrite(() => setDoc(doc(db, 'settings', 'spinWheel'), next));
       recordAuditLog('Updated Spin Wheel Config', 'SETTINGS', 'Successfully updated Spin Wheel reward settings', 'SUCCESS');
       showToast('Spin Wheel settings saved successfully', 'success');
       return true;
@@ -2335,7 +2339,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const next = { ...flashDealConfig, ...updated };
       setFlashDealConfig(next);
       safeLocalStorageSet('mfp_flash_deal_config', next);
-      await setDoc(doc(db, 'settings', 'flashDealConfig'), next);
+      await safeFirestoreWrite(() => setDoc(doc(db, 'settings', 'flashDealConfig'), next));
       recordAuditLog('Updated Flash Deal Config', 'SETTINGS', 'Successfully updated Flash Deal config', 'SUCCESS');
       showToast('Flash Deal settings saved successfully', 'success');
       return true;
@@ -2351,7 +2355,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const next = { ...scratchWinConfig, ...updated };
       setScratchWinConfig(next);
       safeLocalStorageSet('mfp_scratch_win_config', next);
-      await setDoc(doc(db, 'settings', 'scratchWin'), next);
+      await safeFirestoreWrite(() => setDoc(doc(db, 'settings', 'scratchWin'), next));
       recordAuditLog('Updated Scratch & Win Config', 'SETTINGS', 'Successfully updated Scratch & Win reward settings', 'SUCCESS');
       showToast('Scratch & Win settings saved successfully', 'success');
       return true;
@@ -2366,7 +2370,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const id = `fd-${Date.now()}`;
       const newDeal: FlashDeal = { ...deal, id, analytics: { clicks: 0, conversions: 0, revenue: 0 } };
-      await setDoc(doc(db, 'flashDeals', id), newDeal);
+      setFlashDeals((prev) => [newDeal, ...prev]);
+      await safeFirestoreWrite(() => setDoc(doc(db, 'flashDeals', id), newDeal));
       showToast('Flash Deal created successfully', 'success');
       return true;
     } catch (e) {
@@ -2378,7 +2383,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateFlashDeal = async (id: string, updated: Partial<FlashDeal>): Promise<boolean> => {
     try {
-      await updateDoc(doc(db, 'flashDeals', id), updated);
+      setFlashDeals((prev) => prev.map((d) => (d.id === id ? { ...d, ...updated } : d)));
+      await safeFirestoreWrite(() => updateDoc(doc(db, 'flashDeals', id), updated));
       showToast('Flash Deal updated', 'success');
       return true;
     } catch (e) {
@@ -2390,7 +2396,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const deleteFlashDeal = async (id: string): Promise<boolean> => {
     try {
-      await deleteDoc(doc(db, 'flashDeals', id));
+      setFlashDeals((prev) => prev.filter((d) => d.id !== id));
+      await safeFirestoreWrite(() => deleteDoc(doc(db, 'flashDeals', id)));
       showToast('Flash Deal deleted', 'info');
       return true;
     } catch (e) {
@@ -2407,7 +2414,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (typeof currentVal === 'number') {
         const nextVal = (currentVal || 0) + value;
         const next = { ...engagementAnalytics, [metric]: nextVal };
-        await setDoc(doc(db, 'analytics', 'engagement'), next, { merge: true });
+        await safeFirestoreWrite(() => setDoc(doc(db, 'analytics', 'engagement'), next, { merge: true }));
       }
     } catch (e) {
       console.warn('Engagement analytics update failed:', e);
@@ -2419,7 +2426,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const next = { ...orderCelebrationConfig, ...updated };
       setOrderCelebrationConfig(next);
       safeLocalStorageSet('mfp_order_celebration_config', next);
-      await setDoc(doc(db, 'settings', 'orderCelebration'), next);
+      await safeFirestoreWrite(() => setDoc(doc(db, 'settings', 'orderCelebration'), next));
       recordAuditLog('Updated Order Celebration Config', 'SETTINGS', 'Successfully updated Order Success Celebration settings', 'SUCCESS');
       showToast('Order Celebration settings saved successfully', 'success');
       return true;

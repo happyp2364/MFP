@@ -37,8 +37,13 @@ export const SpinWheelSettingsView: React.FC = () => {
 
   const handleSaveConfig = async () => {
     setIsSaving(true);
-    await updateSpinWheelConfig(config);
-    setIsSaving(false);
+    try {
+      await updateSpinWheelConfig(config);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleToggle = (field: keyof Omit<SpinWheelConfig, 'sections' | 'sectionsCount' | 'canSpinAgainDays'>) => {

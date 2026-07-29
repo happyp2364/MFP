@@ -42,8 +42,13 @@ export const ScratchAndWinSettingsView: React.FC = () => {
 
   const handleSaveConfig = async () => {
     setIsSaving(true);
-    const success = await updateScratchWinConfig(config);
-    setIsSaving(false);
+    try {
+      await updateScratchWinConfig(config);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleToggle = (field: keyof Omit<ScratchWinConfig, 'rewards' | 'startDate' | 'endDate' | 'dailyActiveHoursStart' | 'dailyActiveHoursEnd' | 'minCartValue' | 'showAfterSeconds' | 'showAfterPageViews'>) => {

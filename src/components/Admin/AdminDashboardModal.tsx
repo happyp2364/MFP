@@ -72,6 +72,7 @@ import { CouponManagementView } from './CouponManagementView';
 import { SpinWheelSettingsView } from './SpinWheelSettingsView';
 import { EngagementAnalyticsView } from './EngagementAnalyticsView';
 import { WhatsAppTemplateManager } from './WhatsAppTemplateManager';
+import { AdminErrorBoundary } from './AdminErrorBoundary';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -148,6 +149,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [storeInfoForm, setStoreInfoForm] = useState<StoreInfo>({ ...storeInfo });
   const [announcementsText, setAnnouncementsText] = useState(announcements.join('\n'));
   const [newPassword, setNewPassword] = useState('');
+
+  React.useEffect(() => {
+    setStoreInfoForm({ ...storeInfo });
+  }, [storeInfo]);
+
+  React.useEffect(() => {
+    setAnnouncementsText(announcements.join('\n'));
+  }, [announcements]);
 
   // Audit Logs Search & Filter
   const [auditSearch, setAuditSearch] = useState('');
@@ -417,7 +426,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           
           {/* Sidebar Navigation */}
-          <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto">
+          <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-2.5 sm:p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto scrollbar-none touch-pan-x">
             
             <button
               onClick={() => setActiveTab('orders')}
@@ -696,6 +705,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
           {/* Main Content Body */}
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-[#F7F7F7]">
+            <AdminErrorBoundary key={activeTab} fallbackTitle="Admin Tab View Display Notice">
             
             {/* ----------------- TAB: ORDERS & TRACKING ----------------- */}
             {activeTab === 'orders' && <OrderManagementView />}
@@ -1411,6 +1421,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               </div>
             )}
 
+            </AdminErrorBoundary>
           </div>
         </div>
 

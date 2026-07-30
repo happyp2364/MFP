@@ -113,38 +113,64 @@ export function runAutoContrastAudit() {
     const threshold = isHeading ? 3.0 : 4.0;
 
     if (contrast < threshold) {
-      // Contrast is too low! Override text color
-      if (bgLuminance >= 0.5) {
-        // Light background -> force dark gray/black text
-        el.style.setProperty('color', '#111827', 'important');
-      } else {
-        // Dark background -> force white text
-        el.style.setProperty('color', '#ffffff', 'important');
+      // Contrast is too low! Override text color if not already applied
+      const targetColor = bgLuminance >= 0.5 ? '#111827' : '#ffffff';
+      if (el.getAttribute('data-contrast-fixed') !== targetColor) {
+        el.setAttribute('data-contrast-fixed', targetColor);
+        el.style.setProperty('color', targetColor, 'important');
       }
     }
   });
+}
+
+let activeObserver: MutationObserver | null = null;
+let isExecutingAudit = false;
+
+function safeAuditExecution() {
+  if (isExecutingAudit) return;
+  isExecutingAudit = true;
+
+  // Temporarily pause observer to prevent mutation loops
+  if (activeObserver) {
+    activeObserver.disconnect();
+  }
+
+  try {
+    runAutoContrastAudit();
+  } catch (err) {
+    console.warn('Auto contrast engine notice:', err);
+  } finally {
+    isExecutingAudit = false;
+    // Re-engage observer
+    if (activeObserver && typeof document !== 'undefined' && document.body) {
+      activeObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+    }
+  }
 }
 
 // Hook to continuously monitor the DOM
 export function initAutoContrastEngine() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
-  // Run initial audit
-  runAutoContrastAudit();
-
   let timeoutId: any = null;
   const debouncedAudit = () => {
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
-      runAutoContrastAudit();
-    }, 80);
+      safeAuditExecution();
+    }, 250);
   };
 
-  // Set up MutationObserver to automatically check for poor contrast when DOM changes
-  const observer = new MutationObserver((mutations) => {
+  // Set up MutationObserver to check for poor contrast when DOM tree changes
+  activeObserver = new MutationObserver((mutations) => {
+    if (isExecutingAudit) return;
     let shouldTrigger = false;
     for (const m of mutations) {
-      if (m.type === 'childList' || m.type === 'attributes') {
+      if (m.type === 'childList' || (m.type === 'attributes' && m.attributeName === 'class')) {
         shouldTrigger = true;
         break;
       }
@@ -154,26 +180,28 @@ export function initAutoContrastEngine() {
     }
   });
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['class', 'style'],
-  });
+  if (document.body) {
+    activeObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+  }
 
-  // Run audit on window events too
+  // Initial execution after load
+  debouncedAudit();
+
+  // Run audit on window resize and document interactions
   window.addEventListener('resize', debouncedAudit);
-  window.addEventListener('scroll', debouncedAudit, { passive: true });
-
-  // Monitor document interactions/focus
   document.addEventListener('focusin', debouncedAudit);
-  document.addEventListener('click', debouncedAudit);
 
   return () => {
-    observer.disconnect();
+    if (activeObserver) {
+      activeObserver.disconnect();
+      activeObserver = null;
+    }
     window.removeEventListener('resize', debouncedAudit);
-    window.removeEventListener('scroll', debouncedAudit);
     document.removeEventListener('focusin', debouncedAudit);
-    document.removeEventListener('click', debouncedAudit);
   };
 }

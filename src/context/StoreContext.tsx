@@ -913,24 +913,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [showToast]);
 
   // Inactivity Auto-Logout Monitor
-  const lastUpdateRef = useRef<number>(Date.now());
+  const lastActivityTimeRef = useRef<number>(Date.now());
   const handleUserActivity = useCallback(() => {
     const now = Date.now();
-    // Only update state if it's been more than 30 seconds to prevent excessive re-renders
-    if (now - lastUpdateRef.current > 30000) {
-      setLastActivityTime(now);
-      lastUpdateRef.current = now;
-    }
+    lastActivityTimeRef.current = now;
   }, []);
 
   useEffect(() => {
     if (!isAdmin) return;
 
+    lastActivityTimeRef.current = Date.now();
     const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
     events.forEach((evt) => window.addEventListener(evt, handleUserActivity, { passive: true }));
 
     const interval = setInterval(() => {
-      const inactiveDuration = Date.now() - lastActivityTime;
+      const inactiveDuration = Date.now() - lastActivityTimeRef.current;
       if (inactiveDuration >= INACTIVITY_TIMEOUT_MS) {
         logoutAdmin('30 Minutes Inactivity Timeout');
       }
@@ -940,7 +937,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       events.forEach((evt) => window.removeEventListener(evt, handleUserActivity));
       clearInterval(interval);
     };
-  }, [isAdmin, lastActivityTime, handleUserActivity]);
+  }, [isAdmin, handleUserActivity]);
 
   useEffect(() => {
     refreshAuditLogs();

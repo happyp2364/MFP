@@ -174,7 +174,7 @@ export const ReportsAnalyticsView: React.FC = () => {
         </div>
 
         <div className="h-64 w-full pt-2">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
             {chartType === 'area' ? (
               <AreaChart data={chartData}>
                 <defs>

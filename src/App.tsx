@@ -22,6 +22,7 @@ import { LiveSearchModal } from './components/Search/LiveSearchModal';
 import { WishlistModal } from './components/Wishlist/WishlistModal';
 import { AdminLoginModal } from './components/Admin/AdminLoginModal';
 import { AdminDashboardModal } from './components/Admin/AdminDashboardModal';
+import { AdminErrorBoundary } from './components/Admin/AdminErrorBoundary';
 import { CheckoutModal } from './components/Checkout/CheckoutModal';
 import { CustomerAccountModal } from './components/Customer/CustomerAccountModal';
 import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
@@ -570,10 +571,12 @@ function AppContent() {
       />
 
       {/* Admin Dashboard Modal */}
-      <AdminDashboardModal
-        isOpen={adminDashboardOpen}
-        onClose={() => setAdminDashboardOpen(false)}
-      />
+      <AdminErrorBoundary fallbackTitle="Admin Panel Shell Notice">
+        <AdminDashboardModal
+          isOpen={adminDashboardOpen}
+          onClose={() => setAdminDashboardOpen(false)}
+        />
+      </AdminErrorBoundary>
 
       {/* Google Calendar VIP Store Fitting Booking Modal */}
       <CalendarBookingModal

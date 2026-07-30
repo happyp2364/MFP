@@ -9,6 +9,7 @@ import {
   ACTION_CATEGORY_INFO,
   WHATSAPP_VARIABLES_LIST,
   DEFAULT_WHATSAPP_TEMPLATES,
+  DEFAULT_ACTIVE_CATEGORY_MAP,
 } from '../../data/defaultWhatsAppTemplates';
 import {
   renderWhatsAppMessageText,
@@ -53,7 +54,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const templates = whatsappTemplatesConfig?.templates || DEFAULT_WHATSAPP_TEMPLATES;
-  const activeCategoryMap = whatsappTemplatesConfig?.activeCategoryMap || {};
+  const activeCategoryMap: Record<WhatsAppTemplateActionCategory, string> = whatsappTemplatesConfig?.activeCategoryMap || DEFAULT_ACTIVE_CATEGORY_MAP;
 
   const filteredTemplates = templates.filter((tpl) => {
     if (selectedCategoryFilter === 'all') return true;
@@ -127,7 +128,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
       ...t,
       isActiveForAction: t.actionCategory === tpl.actionCategory ? t.id === tpl.id : t.isActiveForAction,
     }));
-    const newMap = {
+    const newMap: Record<WhatsAppTemplateActionCategory, string> = {
       ...activeCategoryMap,
       [tpl.actionCategory]: tpl.id,
     };
@@ -153,7 +154,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
       updatedList = [{ ...editingTemplate, updatedAt: new Date().toISOString() }, ...templates];
     }
 
-    let updatedMap = { ...activeCategoryMap };
+    let updatedMap: Record<WhatsAppTemplateActionCategory, string> = { ...activeCategoryMap };
     if (editingTemplate.isActiveForAction) {
       updatedList = updatedList.map((t) => ({
         ...t,

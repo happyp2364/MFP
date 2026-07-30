@@ -283,6 +283,13 @@
           "read": "true",
           "write": "true"
         }
+      },
+      "settings": {
+        "path": "settings/{id}",
+        "allow": {
+          "read": "true",
+          "write": "true"
+        }
       }
     }
   }

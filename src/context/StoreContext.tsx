@@ -41,7 +41,12 @@ import {
   WheelSection,
   EngagementAnalytics,
   OrderCelebrationConfig,
+  WhatsAppTemplatesConfig,
 } from '../types';
+import {
+  DEFAULT_WHATSAPP_TEMPLATES_CONFIG,
+} from '../data/defaultWhatsAppTemplates';
+import { getStoredWhatsAppConfig } from '../utils/whatsappTemplateParser';
 import {
   PRODUCTS_DATA,
   REVIEWS_DATA,
@@ -258,6 +263,11 @@ interface StoreContextType {
 
   scratchWinConfig: ScratchWinConfig;
   updateScratchWinConfig: (updated: Partial<ScratchWinConfig>) => Promise<boolean>;
+
+  // WhatsApp Message Templates
+  whatsappTemplatesConfig: WhatsAppTemplatesConfig;
+  updateWhatsAppTemplatesConfig: (cfg: WhatsAppTemplatesConfig) => Promise<boolean>;
+  resetWhatsAppTemplatesToDefault: () => Promise<boolean>;
 }
 
 const DEFAULT_SCRATCH_WIN_CONFIG: ScratchWinConfig = {
@@ -476,6 +486,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return local ? JSON.parse(local) : DEFAULT_ORDER_CELEBRATION_CONFIG;
   });
 
+  const [whatsappTemplatesConfig, setWhatsappTemplatesConfig] = useState<WhatsAppTemplatesConfig>(() => {
+    return getStoredWhatsAppConfig();
+  });
+
   const [isCelebrating, setIsCelebrating] = useState<boolean>(false);
 
   // Audit Logger Helper
@@ -660,6 +674,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             localStorage.setItem('mfp_order_celebration_config', JSON.stringify(data));
           }
         }, (err) => console.warn('Live order celebration listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'whatsappTemplates'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as WhatsAppTemplatesConfig;
+            setWhatsappTemplatesConfig(data);
+            localStorage.setItem('mfp_whatsapp_templates_config', JSON.stringify(data));
+          }
+        }, (err) => console.warn('Live WhatsApp templates listener notice:', err))
       );
 
       unsubscribers.push(
@@ -2035,6 +2059,36 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const updateWhatsAppTemplatesConfig = async (cfg: WhatsAppTemplatesConfig): Promise<boolean> => {
+    try {
+      setWhatsappTemplatesConfig(cfg);
+      localStorage.setItem('mfp_whatsapp_templates_config', JSON.stringify(cfg));
+      await setDoc(doc(db, 'settings', 'whatsappTemplates'), cfg);
+      recordAuditLog('Updated WhatsApp Templates Config', 'SETTINGS', 'Saved WhatsApp message templates directly to Firestore', 'SUCCESS');
+      showToast('WhatsApp Message Templates saved live!', 'success');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to save WhatsApp Message Templates', 'error');
+      return false;
+    }
+  };
+
+  const resetWhatsAppTemplatesToDefault = async (): Promise<boolean> => {
+    try {
+      setWhatsappTemplatesConfig(DEFAULT_WHATSAPP_TEMPLATES_CONFIG);
+      localStorage.setItem('mfp_whatsapp_templates_config', JSON.stringify(DEFAULT_WHATSAPP_TEMPLATES_CONFIG));
+      await setDoc(doc(db, 'settings', 'whatsappTemplates'), DEFAULT_WHATSAPP_TEMPLATES_CONFIG);
+      recordAuditLog('Reset WhatsApp Templates', 'SETTINGS', 'Restored default WhatsApp message templates', 'WARNING');
+      showToast('Restored default WhatsApp templates', 'success');
+      return true;
+    } catch (e) {
+      console.error(e);
+      showToast('Failed to reset WhatsApp templates', 'error');
+      return false;
+    }
+  };
+
   const contextValue = React.useMemo(() => ({
     products: publishedProducts,
     reviews: publishedReviews,
@@ -2162,6 +2216,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     duplicateCoupon,
     validateCoupon,
     trackCouponUse,
+
+    // WhatsApp Message Templates
+    whatsappTemplatesConfig,
+    updateWhatsAppTemplatesConfig,
+    resetWhatsAppTemplatesToDefault,
   }), [
     publishedProducts, publishedReviews, publishedStoreInfo, publishedHeroContent,
     publishedAnnouncements, publishedCategoryHighlights, publishedTrendingCollections,
@@ -2172,7 +2231,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     socialAnalytics, spinWheelConfig, engagementAnalytics,
     orderCelebrationConfig, isCelebrating, customerUser, customerProfile,
     isCustomerAuthLoading, customerAuthError, toastMessage, campaigns, subscribers,
-    coupons,
+    coupons, whatsappTemplatesConfig,
     // callbacks and functions
     updatePetShoeConfig, updateInstagramConfig,
     updatePaymentSettings, updateSoundConfig, updateTopAnnouncementBarConfig,
@@ -2189,7 +2248,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteReview, updateStoreInfo, updateHeroContent, setAnnouncementsList,
     updateCategoryHighlight, saveCategoryHighlights, updateTrendingCollection,
     refreshAuditLogs, createStoreBackup, restoreStoreBackup, resetToDefaults,
-    addCoupon, updateCoupon, deleteCoupon, duplicateCoupon, validateCoupon, trackCouponUse
+    addCoupon, updateCoupon, deleteCoupon, duplicateCoupon, validateCoupon, trackCouponUse,
+    updateWhatsAppTemplatesConfig, resetWhatsAppTemplatesToDefault
   ]);
 
   return (

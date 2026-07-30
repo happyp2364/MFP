@@ -48,6 +48,7 @@ import {
   Ticket,
   Gift,
   Zap,
+  MessageSquare,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
@@ -70,6 +71,7 @@ import { AdminNotificationDrawer } from './AdminNotificationDrawer';
 import { CouponManagementView } from './CouponManagementView';
 import { SpinWheelSettingsView } from './SpinWheelSettingsView';
 import { EngagementAnalyticsView } from './EngagementAnalyticsView';
+import { WhatsAppTemplateManager } from './WhatsAppTemplateManager';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -78,7 +80,7 @@ interface AdminDashboardModalProps {
   onClose: () => void;
 }
 
-type TabType = 'orders' | 'marketing' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics';
+type TabType = 'orders' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -458,6 +460,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <span>Coupon & Promotions</span>
             </button>
 
+            <button
+              onClick={() => setActiveTab('whatsapp_templates')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'whatsapp_templates'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4 text-emerald-500" />
+              <span>📱 WhatsApp Templates</span>
+            </button>
+
             <div className="my-1 border-t border-neutral-200 hidden md:block" />
             <div className="px-3.5 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-widest hidden md:block">Reward Center</div>
 
@@ -691,6 +705,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: COUPON & PROMOTIONS ----------------- */}
             {activeTab === 'coupons' && <CouponManagementView />}
+
+            {/* ----------------- TAB: WHATSAPP MESSAGE TEMPLATES ----------------- */}
+            {activeTab === 'whatsapp_templates' && <WhatsAppTemplateManager />}
 
             {/* ----------------- TAB: SPIN THE WHEEL ----------------- */}
             {activeTab === 'spin_wheel' && <SpinWheelSettingsView />}

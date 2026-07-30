@@ -971,6 +971,47 @@ export interface OrderCelebrationConfig {
   desktopOnly: boolean;
 }
 
+export type WhatsAppTemplateActionCategory =
+  | 'buy_now'
+  | 'cart_order'
+  | 'cod_order'
+  | 'online_order'
+  | 'inquiry'
+  | 'product_enquiry'
+  | 'bulk_order'
+  | 'wholesale_order'
+  | 'support_request';
+
+export interface WhatsAppTemplateAdvancedOptions {
+  showProductImageLink: boolean;
+  showProductURL: boolean;
+  showCouponDetails: boolean;
+  showCustomerAddress: boolean;
+  showPaymentDetails: boolean;
+  showDeliveryNotes: boolean;
+  customThankYouMessage: string;
+  storePoliciesNote: string;
+  returnExchangeNote: string;
+}
+
+export interface WhatsAppTemplate {
+  id: string;
+  title: string;
+  actionCategory: WhatsAppTemplateActionCategory;
+  enabled: boolean;
+  isActiveForAction: boolean;
+  isDefault?: boolean;
+  messageBody: string;
+  advancedOptions: WhatsAppTemplateAdvancedOptions;
+  updatedAt: string;
+}
+
+export interface WhatsAppTemplatesConfig {
+  templates: WhatsAppTemplate[];
+  activeCategoryMap: Record<WhatsAppTemplateActionCategory, string>;
+}
+
+
 
 
 

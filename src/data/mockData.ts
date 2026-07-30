@@ -624,22 +624,39 @@ export const DEFAULT_HANGING_SNEAKER_CONFIG = {
   ropeColor: '#C5A059',
 };
 
-export const DEFAULT_PET_SHOE_CONFIG = {
+export const DEFAULT_PET_SHOE_CONFIG: import('../types').PetShoeConfig = {
   enabled: true,
-  mascotName: 'Sneaker Pet',
-  mascotAvatar: '👟',
-  greetingText: 'Looking for the perfect fit today?',
-  discountBadge: '15% OFF ON WHATSAPP ORDERS',
+  imageUri: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80',
+  wingsEnabled: true,
+  wingColor: '#F59E0B',
+  glowEnabled: true,
+  glowColor: '#F59E0B',
+  shineEnabled: true,
+  movementSpeed: 'medium',
+  sizePx: 130,
+  wingFlapSpeed: 'normal',
+  hoverAmplitude: 'gentle',
+  opacity: 1,
+  defaultPosition: 'bottom-right',
+  enableClickInteraction: true,
+  enableScrollFollowing: true,
+  enableIdleMovement: true,
+  enableSpeechBubbles: true,
+  speechMessages: ['Welcome to Marudhar Fashion Point! 👟', 'Looking for custom sizing? Ask Viju Bhai on WhatsApp! 📱', 'Free local delivery on selected orders! 🚚'],
+  scheduleMode: 'always',
 };
 
-export const DEFAULT_INSTAGRAM_CONFIG = {
+export const DEFAULT_INSTAGRAM_CONFIG: import('../types').InstagramConfig = {
   enabled: true,
   username: 'marudhar_fashion_point',
-  profileUrl: 'https://www.instagram.com/marudhar_fashion_point/',
-  followersCount: '25.8K+',
-  postsCount: '450+',
-  reels: [],
+  displayName: 'Marudhar Fashion Point',
+  postLimit: 8,
+  layout: 'grid',
+  showBio: true,
+  showStats: true,
+  autoRefreshMinutes: 60,
 };
+
 
 export const DEFAULT_SOUND_CONFIG = {
   enabled: true,

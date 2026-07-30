@@ -123,6 +123,29 @@ const STORAGE_KEYS = {
   SOCIAL_ANALYTICS: 'mfp_social_analytics_live_v2',
 };
 
+function safeGetLocalStorage<T>(key: string, fallback: T): T {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return fallback;
+    const item = localStorage.getItem(key);
+    if (!item) return fallback;
+    return JSON.parse(item) as T;
+  } catch (err) {
+    console.warn(`Safe LocalStorage read notice for key "${key}":`, err);
+    return fallback;
+  }
+}
+
+function safeSetLocalStorage(key: string, value: any): void {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    const payload = typeof value === 'string' ? value : JSON.stringify(value);
+    localStorage.setItem(key, payload);
+  } catch (err) {
+    console.warn(`Safe LocalStorage write notice for key "${key}":`, err);
+  }
+}
+
+
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 
 interface StoreContextType {
@@ -347,75 +370,62 @@ const DEFAULT_ORDER_CELEBRATION_CONFIG: OrderCelebrationConfig = {
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Real-time Live State
-  const [publishedProducts, setPublishedProducts] = useState<Product[]>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-    return local ? JSON.parse(local) : PRODUCTS_DATA;
-  });
+  const [publishedProducts, setPublishedProducts] = useState<Product[]>(() =>
+    safeGetLocalStorage<Product[]>(STORAGE_KEYS.PRODUCTS, PRODUCTS_DATA)
+  );
 
-  const [publishedReviews, setPublishedReviews] = useState<Review[]>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.REVIEWS);
-    return local ? JSON.parse(local) : REVIEWS_DATA;
-  });
+  const [publishedReviews, setPublishedReviews] = useState<Review[]>(() =>
+    safeGetLocalStorage<Review[]>(STORAGE_KEYS.REVIEWS, REVIEWS_DATA)
+  );
 
-  const [publishedStoreInfo, setPublishedStoreInfo] = useState<StoreInfo>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.STORE_INFO);
-    return local ? JSON.parse(local) : STORE_INFO;
-  });
+  const [publishedStoreInfo, setPublishedStoreInfo] = useState<StoreInfo>(() =>
+    safeGetLocalStorage<StoreInfo>(STORAGE_KEYS.STORE_INFO, STORE_INFO)
+  );
 
-  const [publishedHeroContent, setPublishedHeroContent] = useState<HeroContent>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.HERO_CONTENT);
-    return local ? JSON.parse(local) : DEFAULT_HERO_CONTENT;
-  });
+  const [publishedHeroContent, setPublishedHeroContent] = useState<HeroContent>(() =>
+    safeGetLocalStorage<HeroContent>(STORAGE_KEYS.HERO_CONTENT, DEFAULT_HERO_CONTENT)
+  );
 
-  const [publishedAnnouncements, setPublishedAnnouncements] = useState<string[]>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.ANNOUNCEMENTS);
-    return local ? JSON.parse(local) : ANNOUNCEMENT_ITEMS;
-  });
+  const [publishedAnnouncements, setPublishedAnnouncements] = useState<string[]>(() =>
+    safeGetLocalStorage<string[]>(STORAGE_KEYS.ANNOUNCEMENTS, ANNOUNCEMENT_ITEMS)
+  );
 
-  const [publishedCategoryHighlights, setPublishedCategoryHighlights] = useState<CategoryHighlight[]>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS);
-    return local ? JSON.parse(local) : (CATEGORY_HIGHLIGHTS as CategoryHighlight[]);
-  });
+  const [publishedCategoryHighlights, setPublishedCategoryHighlights] = useState<CategoryHighlight[]>(() =>
+    safeGetLocalStorage<CategoryHighlight[]>(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, CATEGORY_HIGHLIGHTS as CategoryHighlight[])
+  );
 
-  const [publishedTrendingCollections, setPublishedTrendingCollections] = useState<TrendingCollectionItem[]>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.TRENDING_COLLECTIONS);
-    return local ? JSON.parse(local) : TRENDING_COLLECTIONS;
-  });
+  const [publishedTrendingCollections, setPublishedTrendingCollections] = useState<TrendingCollectionItem[]>(() =>
+    safeGetLocalStorage<TrendingCollectionItem[]>(STORAGE_KEYS.TRENDING_COLLECTIONS, TRENDING_COLLECTIONS)
+  );
 
-  const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.PAYMENT_SETTINGS);
-    return local ? JSON.parse(local) : DEFAULT_PAYMENT_SETTINGS;
-  });
+  const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(() =>
+    safeGetLocalStorage<PaymentSettings>(STORAGE_KEYS.PAYMENT_SETTINGS, DEFAULT_PAYMENT_SETTINGS)
+  );
 
-  const [publishedPetShoeConfig, setPublishedPetShoeConfig] = useState<PetShoeConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.PET_SHOE_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_PET_SHOE_CONFIG;
-  });
+  const [publishedPetShoeConfig, setPublishedPetShoeConfig] = useState<PetShoeConfig>(() =>
+    safeGetLocalStorage<PetShoeConfig>(STORAGE_KEYS.PET_SHOE_CONFIG, DEFAULT_PET_SHOE_CONFIG)
+  );
 
-  const [publishedInstagramConfig, setPublishedInstagramConfig] = useState<InstagramConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.INSTAGRAM_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_INSTAGRAM_CONFIG;
-  });
+  const [publishedInstagramConfig, setPublishedInstagramConfig] = useState<InstagramConfig>(() =>
+    safeGetLocalStorage<InstagramConfig>(STORAGE_KEYS.INSTAGRAM_CONFIG, DEFAULT_INSTAGRAM_CONFIG)
+  );
 
-  const [publishedSoundConfig, setPublishedSoundConfig] = useState<SoundConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.SOUND_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_SOUND_CONFIG;
-  });
+  const [publishedSoundConfig, setPublishedSoundConfig] = useState<SoundConfig>(() =>
+    safeGetLocalStorage<SoundConfig>(STORAGE_KEYS.SOUND_CONFIG, DEFAULT_SOUND_CONFIG)
+  );
 
-  const [publishedTopAnnouncementBarConfig, setPublishedTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG;
-  });
+  const [publishedTopAnnouncementBarConfig, setPublishedTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(() =>
+    safeGetLocalStorage<TopAnnouncementBarConfig>(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG)
+  );
 
-  const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaCenterConfig>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG);
-    return local ? JSON.parse(local) : DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG;
-  });
+  const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaCenterConfig>(() =>
+    safeGetLocalStorage<SocialMediaCenterConfig>(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG)
+  );
 
-  const [socialAnalytics, setSocialAnalytics] = useState<SocialAnalyticsLog>(() => {
-    const local = localStorage.getItem(STORAGE_KEYS.SOCIAL_ANALYTICS);
-    return local ? JSON.parse(local) : DEFAULT_SOCIAL_ANALYTICS;
-  });
+  const [socialAnalytics, setSocialAnalytics] = useState<SocialAnalyticsLog>(() =>
+    safeGetLocalStorage<SocialAnalyticsLog>(STORAGE_KEYS.SOCIAL_ANALYTICS, DEFAULT_SOCIAL_ANALYTICS)
+  );
+
 
   // Coupons state
   const [coupons, setCoupons] = useState<PromoCoupon[]>([]);
@@ -451,10 +461,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [customerAuthError, setCustomerAuthError] = useState<string | null>(null);
 
   // Sound Engine
-  const [customerSoundSettings, setCustomerSoundSettingsState] = useState<CustomerSoundSettings>(() => {
-    const local = localStorage.getItem('mfp_customer_sound_settings');
-    return local ? JSON.parse(local) : DEFAULT_CUSTOMER_SOUND_SETTINGS;
-  });
+  const [customerSoundSettings, setCustomerSoundSettingsState] = useState<CustomerSoundSettings>(() =>
+    safeGetLocalStorage<CustomerSoundSettings>('mfp_customer_sound_settings', DEFAULT_CUSTOMER_SOUND_SETTINGS)
+  );
 
   // Orders & Notifications
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
@@ -466,25 +475,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [subscribers, setSubscribers] = useState<MarketingSubscriber[]>([]);
 
   // Customer Engagement State
-  const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(() => {
-    const local = localStorage.getItem('mfp_spin_wheel_config');
-    return local ? JSON.parse(local) : DEFAULT_SPIN_WHEEL_CONFIG;
-  });
+  const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(() =>
+    safeGetLocalStorage<SpinWheelConfig>('mfp_spin_wheel_config', DEFAULT_SPIN_WHEEL_CONFIG)
+  );
 
-  const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(() => {
-    const local = localStorage.getItem('mfp_scratch_win_config');
-    return local ? JSON.parse(local) : DEFAULT_SCRATCH_WIN_CONFIG;
-  });
+  const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(() =>
+    safeGetLocalStorage<ScratchWinConfig>('mfp_scratch_win_config', DEFAULT_SCRATCH_WIN_CONFIG)
+  );
 
-  const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(() => {
-    const local = localStorage.getItem('mfp_engagement_analytics');
-    return local ? JSON.parse(local) : DEFAULT_ENGAGEMENT_ANALYTICS;
-  });
+  const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(() =>
+    safeGetLocalStorage<EngagementAnalytics>('mfp_engagement_analytics', DEFAULT_ENGAGEMENT_ANALYTICS)
+  );
 
-  const [orderCelebrationConfig, setOrderCelebrationConfig] = useState<OrderCelebrationConfig>(() => {
-    const local = localStorage.getItem('mfp_order_celebration_config');
-    return local ? JSON.parse(local) : DEFAULT_ORDER_CELEBRATION_CONFIG;
-  });
+  const [orderCelebrationConfig, setOrderCelebrationConfig] = useState<OrderCelebrationConfig>(() =>
+    safeGetLocalStorage<OrderCelebrationConfig>('mfp_order_celebration_config', DEFAULT_ORDER_CELEBRATION_CONFIG)
+  );
+
 
   const [whatsappTemplatesConfig, setWhatsappTemplatesConfig] = useState<WhatsAppTemplatesConfig>(() => {
     return getStoredWhatsAppConfig();
@@ -615,7 +621,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Deep compare or check length to avoid unnecessary state updates if nothing changed
       setPublishedProducts(prev => {
         if (JSON.stringify(prev) === JSON.stringify(stitched)) return prev;
-        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(stitched));
+        safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, stitched);
         return stitched;
       });
     }
@@ -631,7 +637,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as StoreInfo;
             setPublishedStoreInfo(data);
-            localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.STORE_INFO, data);
           }
         }, (err) => console.warn('Live store settings listener notice:', err))
       );
@@ -641,7 +647,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as SpinWheelConfig;
             setSpinWheelConfig(data);
-            localStorage.setItem('mfp_spin_wheel_config', JSON.stringify(data));
+            safeSetLocalStorage('mfp_spin_wheel_config', data);
           }
         }, (err) => console.warn('Live spin wheel listener notice:', err))
       );
@@ -651,7 +657,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as ScratchWinConfig;
             setScratchWinConfig(data);
-            localStorage.setItem('mfp_scratch_win_config', JSON.stringify(data));
+            safeSetLocalStorage('mfp_scratch_win_config', data);
           }
         }, (err) => console.warn('Live scratch win listener notice:', err))
       );
@@ -661,7 +667,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as EngagementAnalytics;
             setEngagementAnalytics(data);
-            localStorage.setItem('mfp_engagement_analytics', JSON.stringify(data));
+            safeSetLocalStorage('mfp_engagement_analytics', data);
           }
         }, (err) => console.warn('Live engagement analytics listener notice:', err))
       );
@@ -671,7 +677,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as OrderCelebrationConfig;
             setOrderCelebrationConfig(data);
-            localStorage.setItem('mfp_order_celebration_config', JSON.stringify(data));
+            safeSetLocalStorage('mfp_order_celebration_config', data);
           }
         }, (err) => console.warn('Live order celebration listener notice:', err))
       );
@@ -681,7 +687,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as WhatsAppTemplatesConfig;
             setWhatsappTemplatesConfig(data);
-            localStorage.setItem('mfp_whatsapp_templates_config', JSON.stringify(data));
+            safeSetLocalStorage('mfp_whatsapp_templates_config', data);
           }
         }, (err) => console.warn('Live WhatsApp templates listener notice:', err))
       );
@@ -691,7 +697,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as HeroContent;
             setPublishedHeroContent(data);
-            localStorage.setItem(STORAGE_KEYS.HERO_CONTENT, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.HERO_CONTENT, data);
           }
         }, (err) => console.warn('Live hero listener notice:', err))
       );
@@ -701,7 +707,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists() && snap.data()?.items) {
             const data = snap.data().items as string[];
             setPublishedAnnouncements(data);
-            localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.ANNOUNCEMENTS, data);
           }
         }, (err) => console.warn('Live announcements listener notice:', err))
       );
@@ -711,7 +717,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists() && snap.data()?.items) {
             const data = snap.data().items as CategoryHighlight[];
             setPublishedCategoryHighlights(data);
-            localStorage.setItem(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, data);
           }
         }, (err) => console.warn('Live categories listener notice:', err))
       );
@@ -721,7 +727,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists() && snap.data()?.items) {
             const data = snap.data().items as TrendingCollectionItem[];
             setPublishedTrendingCollections(data);
-            localStorage.setItem(STORAGE_KEYS.TRENDING_COLLECTIONS, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.TRENDING_COLLECTIONS, data);
           }
         }, (err) => console.warn('Live trending collections listener notice:', err))
       );
@@ -731,7 +737,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as PaymentSettings;
             setPublishedPaymentSettings(data);
-            localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.PAYMENT_SETTINGS, data);
           }
         }, (err) => console.warn('Live payment listener notice:', err))
       );
@@ -741,7 +747,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as PetShoeConfig;
             setPublishedPetShoeConfig(data);
-            localStorage.setItem(STORAGE_KEYS.PET_SHOE_CONFIG, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.PET_SHOE_CONFIG, data);
           }
         }, (err) => console.warn('Live pet shoe listener notice:', err))
       );
@@ -751,7 +757,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as InstagramConfig;
             setPublishedInstagramConfig(data);
-            localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.INSTAGRAM_CONFIG, data);
           }
         }, (err) => console.warn('Live instagram listener notice:', err))
       );
@@ -761,17 +767,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as SoundConfig;
             setPublishedSoundConfig(data);
-            localStorage.setItem(STORAGE_KEYS.SOUND_CONFIG, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.SOUND_CONFIG, data);
           }
         }, (err) => console.warn('Live sound listener notice:', err))
       );
+
 
       unsubscribers.push(
         onSnapshot(doc(db, 'homepage', 'topAnnouncementBarConfig'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as TopAnnouncementBarConfig;
             setPublishedTopAnnouncementBarConfig(data);
-            localStorage.setItem(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.TOP_ANNOUNCEMENT_BAR_CONFIG, data);
           }
         }, (err) => console.warn('Live top announcement bar listener notice:', err))
       );
@@ -781,7 +788,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as SocialMediaCenterConfig;
             setSocialMediaConfig(data);
-            localStorage.setItem(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, data);
           }
         }, (err) => console.warn('Live social media config listener error:', err))
       );
@@ -791,7 +798,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (snap.exists()) {
             const data = snap.data() as SocialAnalyticsLog;
             setSocialAnalytics(data);
-            localStorage.setItem(STORAGE_KEYS.SOCIAL_ANALYTICS, JSON.stringify(data));
+            safeSetLocalStorage(STORAGE_KEYS.SOCIAL_ANALYTICS, data);
           }
         }, (err) => console.warn('Live social analytics listener error:', err))
       );
@@ -802,10 +809,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const list: Review[] = [];
             snap.forEach((d) => list.push({ ...d.data(), id: d.id } as Review));
             setPublishedReviews(list);
-            localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(list));
+            safeSetLocalStorage(STORAGE_KEYS.REVIEWS, list);
           }
         }, (err) => console.warn('Live reviews listener notice:', err))
       );
+
 
       let isFirstNotificationsLoad = true;
       unsubscribers.push(

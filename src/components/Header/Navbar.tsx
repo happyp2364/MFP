@@ -19,6 +19,20 @@ import {
   Mail,
   Volume2,
   VolumeX,
+  Home,
+  Layers,
+  Star,
+  Package,
+  Gift,
+  Ticket,
+  Megaphone,
+  LayoutDashboard,
+  TrendingUp,
+  CreditCard,
+  Database,
+  FileText,
+  Settings,
+  Share2,
 } from 'lucide-react';
 import { GenderCategory } from '../../types';
 import { useStore } from '../../context/StoreContext';
@@ -31,6 +45,7 @@ interface NavbarProps {
   onOpenOrderSheet: () => void;
   onOpenWishlist: () => void;
   onOpenAdmin: () => void;
+  onOpenAdminWithTab?: (tab: string) => void;
   onOpenCustomerAccount?: () => void;
   onOpenSoundSettings?: () => void;
   onOpenCalendarModal?: () => void;
@@ -48,6 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenOrderSheet,
   onOpenWishlist,
   onOpenAdmin,
+  onOpenAdminWithTab,
   onOpenCustomerAccount,
   onOpenSoundSettings,
   onOpenCalendarModal,
@@ -63,6 +79,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
+  const [adminExpanded, setAdminExpanded] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -384,7 +402,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="relative w-full max-w-[320px] bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-left duration-300 overflow-y-auto no-scrollbar">
             
             {/* Drawer Top Header */}
-            <div className="p-4 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/80">
+            <div className="p-4 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/80 sticky top-0 bg-white z-20 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-[#0B8F63] flex items-center justify-center text-white">
                   <Footprints className="w-4 h-4" />
@@ -407,214 +425,360 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
 
-            <div className="p-4 space-y-5 flex-1">
+            {/* Scrollable Nav List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
               
-              {/* 1. Greeting & Google Workspace Card */}
-              <div className="bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 text-white rounded-2xl p-4 shadow-md space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-sm tracking-tight flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>Google Workspace & Login</span>
-                  </h3>
-                </div>
-                <p className="text-[11px] text-neutral-300 leading-snug">
-                  Sign in with Google to sync VIP store fittings to Google Calendar and send direct Gmail inquiries.
-                </p>
-                <div className="space-y-2">
-                  <GoogleAuthButton onOpenWorkspaceHub={() => { setMobileMenuOpen(false); onOpenWorkspaceHub?.(); }} />
-                  
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    {onOpenCalendarModal && (
-                      <button
-                        onClick={() => { setMobileMenuOpen(false); onOpenCalendarModal(); }}
-                        className="bg-neutral-800 hover:bg-neutral-700 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all"
-                      >
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>Book Fitting</span>
-                      </button>
-                    )}
-                    {onOpenGmailModal && (
-                      <button
-                        onClick={() => { setMobileMenuOpen(false); onOpenGmailModal(); }}
-                        className="bg-neutral-800 hover:bg-neutral-700 text-red-400 border border-red-500/30 text-[11px] font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all"
-                      >
-                        <Mail className="w-3.5 h-3.5" />
-                        <span>Gmail Inquiry</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+              {/* Main Store Navigation */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-extrabold uppercase text-neutral-400 tracking-wider block mb-2 px-2">
+                  Store Directory
+                </span>
 
-              {/* 2. Drawer Search Bar */}
-              <button
-                onClick={() => { setMobileMenuOpen(false); onOpenSearch(); }}
-                className="w-full bg-neutral-100 hover:bg-neutral-200/80 text-neutral-500 text-xs font-medium px-3.5 py-3 rounded-xl flex items-center justify-between border border-neutral-200/60 transition-all text-left"
-              >
-                <span className="flex items-center gap-2">
-                  <Search className="w-4 h-4 text-[#0B8F63]" />
-                  <span>Search Men's Shoes, Women's Sports Shoes, Kids...</span>
-                </span>
-                <span className="text-[10px] bg-white px-2 py-0.5 rounded text-neutral-600 font-bold border">
-                  SEARCH
-                </span>
-              </button>
+                {/* 🏠 Home */}
+                <button
+                  onClick={() => { handleNavClick('hero'); setMobileMenuOpen(false); }}
+                  className="w-full flex items-center gap-3.5 py-3 px-3 rounded-xl text-xs font-bold text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-50 transition-all text-left animate-in fade-in duration-200"
+                >
+                  <Home className="w-4 h-4 text-[#0B8F63]" />
+                  <span>🏠 Home</span>
+                </button>
 
-              {/* 3. Shop Categories Grid Section */}
-              <div className="space-y-2.5">
-                <span className="text-[11px] font-extrabold uppercase text-neutral-400 tracking-wider block">
-                  Shop Collections
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  
-                  {/* Men Card */}
+                {/* 📂 Categories Accordion */}
+                <div className="space-y-1">
                   <button
-                    onClick={() => handleCategoryClick('men')}
-                    className="flex items-center gap-2 p-2 rounded-xl bg-neutral-50 hover:bg-[#0B8F63]/10 border border-neutral-200/70 transition-all text-left group"
+                    onClick={() => setCategoriesExpanded(!categoriesExpanded)}
+                    className="w-full flex items-center justify-between py-3 px-3 rounded-xl text-xs font-bold text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-50 transition-all text-left"
                   >
-                    <img
-                      src="https://images.unsplash.com/photo-1520639888713-7851133b1ed0?auto=format&fit=crop&w=100&q=80"
-                      alt="Men Wear"
-                      className="w-9 h-9 rounded-lg object-cover shrink-0"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-bold text-neutral-800 group-hover:text-[#0B8F63] block truncate">
+                    <span className="flex items-center gap-3.5">
+                      <Layers className="w-4 h-4 text-[#0B8F63]" />
+                      <span>📂 Categories</span>
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${categoriesExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {categoriesExpanded && (
+                    <div className="pl-9 pr-2 py-1 space-y-1 bg-neutral-50/50 rounded-xl border border-neutral-100 animate-in slide-in-from-top-2 duration-200">
+                      <button
+                        onClick={() => handleCategoryClick('men')}
+                        className="w-full text-left py-2 px-2 text-xs text-neutral-600 hover:text-[#0B8F63] font-medium"
+                      >
                         Men's Collection
-                      </span>
-                      <span className="text-[9px] text-neutral-500 block">Shoes & Apparel</span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-[#0B8F63] shrink-0" />
-                  </button>
-
-                  {/* Women Card */}
-                  <button
-                    onClick={() => handleCategoryClick('women')}
-                    className="flex items-center gap-2 p-2 rounded-xl bg-neutral-50 hover:bg-[#0B8F63]/10 border border-neutral-200/70 transition-all text-left group"
-                  >
-                    <img
-                      src="https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=100&q=80"
-                      alt="Women Sports Shoes"
-                      className="w-9 h-9 rounded-lg object-cover shrink-0"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-bold text-neutral-800 group-hover:text-[#0B8F63] block truncate">
+                      </button>
+                      <button
+                        onClick={() => handleCategoryClick('women')}
+                        className="w-full text-left py-2 px-2 text-xs text-neutral-600 hover:text-[#0B8F63] font-medium"
+                      >
                         Women's Sports Shoes
-                      </span>
-                      <span className="text-[9px] text-neutral-500 block">Athletic & Running</span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-[#0B8F63] shrink-0" />
-                  </button>
-
-                  {/* Kids Card */}
-                  <button
-                    onClick={() => handleCategoryClick('kids')}
-                    className="flex items-center gap-2 p-2 rounded-xl bg-neutral-50 hover:bg-[#0B8F63]/10 border border-neutral-200/70 transition-all text-left group"
-                  >
-                    <img
-                      src="https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=100&q=80"
-                      alt="Kids Footwear"
-                      className="w-9 h-9 rounded-lg object-cover shrink-0"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-bold text-neutral-800 group-hover:text-[#0B8F63] block truncate">
+                      </button>
+                      <button
+                        onClick={() => handleCategoryClick('kids')}
+                        className="w-full text-left py-2 px-2 text-xs text-neutral-600 hover:text-[#0B8F63] font-medium"
+                      >
                         Kids' Footwear
-                      </span>
-                      <span className="text-[9px] text-neutral-500 block">School & Sports</span>
+                      </button>
+                      <button
+                        onClick={() => handleCategoryClick('all')}
+                        className="w-full text-left py-2 px-2 text-xs text-[#0B8F63] font-bold"
+                      >
+                        ⚡ New Arrivals
+                      </button>
                     </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-[#0B8F63] shrink-0" />
-                  </button>
-
-                  {/* New Arrivals */}
-                  <button
-                    onClick={() => handleCategoryClick('all')}
-                    className="flex items-center gap-2 p-2 rounded-xl bg-neutral-50 hover:bg-[#0B8F63]/10 border border-neutral-200/70 transition-all text-left group"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-[#0B8F63]/10 text-[#0B8F63] flex items-center justify-center font-bold text-xs shrink-0">
-                      ⚡
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-bold text-neutral-800 group-hover:text-[#0B8F63] block truncate">
-                        New Arrivals
-                      </span>
-                      <span className="text-[9px] text-amber-600 font-semibold block">Just Launched</span>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-[#0B8F63] shrink-0" />
-                  </button>
-
+                  )}
                 </div>
-              </div>
 
-              {/* 4. Quick Actions (Wishlist, Bag) */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
+                {/* ⭐ Reviews */}
+                <button
+                  onClick={() => { handleNavClick('reviews'); setMobileMenuOpen(false); }}
+                  className="w-full flex items-center gap-3.5 py-3 px-3 rounded-xl text-xs font-bold text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-50 transition-all text-left animate-in fade-in duration-200"
+                >
+                  <Star className="w-4 h-4 text-[#0B8F63]" />
+                  <span>⭐ Reviews</span>
+                </button>
+
+                {/* ❤️ Wishlist */}
                 <button
                   onClick={() => { setMobileMenuOpen(false); onOpenWishlist(); }}
-                  className="p-3 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/70 text-xs font-bold flex items-center justify-between"
+                  className="w-full flex items-center justify-between py-3 px-3 rounded-xl text-xs font-bold text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-50 transition-all text-left animate-in fade-in duration-200"
                 >
-                  <span className="flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-amber-600 fill-amber-500" />
-                    <span>Wishlist</span>
+                  <span className="flex items-center gap-3.5">
+                    <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                    <span>❤️ Wishlist</span>
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 text-[10px]">
+                  <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold text-[10px]">
                     {wishlistCount}
                   </span>
                 </button>
 
+                {/* 🛒 Cart */}
                 <button
                   onClick={() => { setMobileMenuOpen(false); onOpenOrderSheet(); }}
-                  className="p-3 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200/70 text-xs font-bold flex items-center justify-between"
+                  className="w-full flex items-center justify-between py-3 px-3 rounded-xl text-xs font-bold text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-50 transition-all text-left animate-in fade-in duration-200"
                 >
-                  <span className="flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4 text-[#0B8F63]" />
-                    <span>Inquiry Bag</span>
+                  <span className="flex items-center gap-3.5">
+                    <ShoppingBag className="w-4 h-4 text-emerald-600" />
+                    <span>🛒 Cart</span>
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#0B8F63] text-white text-[10px]">
+                  <span className="bg-[#0B8F63] text-white px-2 py-0.5 rounded-full font-bold text-[10px]">
                     {cartCount}
                   </span>
                 </button>
+
+                {/* 📦 Orders */}
+                <button
+                  onClick={() => { setMobileMenuOpen(false); onOpenCustomerAccount?.(); }}
+                  className="w-full flex items-center gap-3.5 py-3 px-3 rounded-xl text-xs font-bold text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-50 transition-all text-left animate-in fade-in duration-200"
+                >
+                  <Package className="w-4 h-4 text-amber-500" />
+                  <span>📦 Orders</span>
+                </button>
+
+                {/* 📞 Contact */}
+                <button
+                  onClick={() => { handleNavClick('contact'); setMobileMenuOpen(false); }}
+                  className="w-full flex items-center gap-3.5 py-3 px-3 rounded-xl text-xs font-bold text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-50 transition-all text-left animate-in fade-in duration-200"
+                >
+                  <MapPin className="w-4 h-4 text-[#0B8F63]" />
+                  <span>📞 Contact</span>
+                </button>
+
+                {/* 👤 My Account */}
+                <button
+                  onClick={() => { setMobileMenuOpen(false); onOpenCustomerAccount?.(); }}
+                  className="w-full flex items-center gap-3.5 py-3 px-3 rounded-xl text-xs font-bold text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-50 transition-all text-left animate-in fade-in duration-200"
+                >
+                  <User className="w-4 h-4 text-[#0B8F63]" />
+                  <span>👤 My Account</span>
+                </button>
               </div>
 
-              {/* 5. Quick Links List */}
-              <div className="space-y-1 pt-2 border-t border-neutral-100">
-                <span className="text-[11px] font-extrabold uppercase text-neutral-400 tracking-wider block mb-1">
-                  Explore & Support
+              {/* Google Workspace Services */}
+              <div className="space-y-1.5 pt-2 border-t border-neutral-100">
+                <span className="text-[10px] font-extrabold uppercase text-neutral-400 tracking-wider block mb-2 px-2">
+                  VIP Workspace Services
                 </span>
-
-                <button
-                  onClick={() => handleNavClick('reviews')}
-                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <Sparkles className="w-4 h-4 text-[#0B8F63]" />
-                    <span>Customer Reviews & Ratings</span>
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-neutral-400" />
-                </button>
-
-                <button
-                  onClick={() => handleNavClick('about')}
-                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <Footprints className="w-4 h-4 text-[#0B8F63]" />
-                    <span>About Marudhar Fashion Point</span>
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-neutral-400" />
-                </button>
-
-                <button
-                  onClick={() => handleNavClick('contact')}
-                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <MapPin className="w-4 h-4 text-[#0B8F63]" />
-                    <span>Store Location & Directions</span>
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-neutral-400" />
-                </button>
+                <GoogleAuthButton onOpenWorkspaceHub={() => { setMobileMenuOpen(false); onOpenWorkspaceHub?.(); }} />
+                
+                <div className="grid grid-cols-2 gap-2 pt-1.5">
+                  {onOpenCalendarModal && (
+                    <button
+                      onClick={() => { setMobileMenuOpen(false); onOpenCalendarModal(); }}
+                      className="bg-neutral-50 hover:bg-neutral-100 text-neutral-700 border border-neutral-200 text-[10px] font-bold py-2 px-1 rounded-xl flex items-center justify-center gap-1 transition-all"
+                    >
+                      <Calendar className="w-3 h-3 text-[#0B8F63]" />
+                      <span>Book Fitting</span>
+                    </button>
+                  )}
+                  {onOpenGmailModal && (
+                    <button
+                      onClick={() => { setMobileMenuOpen(false); onOpenGmailModal(); }}
+                      className="bg-neutral-50 hover:bg-neutral-100 text-neutral-700 border border-neutral-200 text-[10px] font-bold py-2 px-1 rounded-xl flex items-center justify-center gap-1 transition-all"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-red-500" />
+                      <span>Gmail Inquiry</span>
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* If logged in user is Admin: Collapsible "Admin Panel" Section */}
+              {isAdmin && (
+                <div className="space-y-1.5 pt-4 border-t-2 border-amber-200/50">
+                  <div className="flex items-center justify-between px-2 mb-2">
+                    <span className="text-[10px] font-extrabold uppercase text-amber-600 tracking-wider flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Admin Control Panel</span>
+                    </span>
+                    <span className="bg-amber-100 text-amber-800 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest">
+                      Live
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => setAdminExpanded(!adminExpanded)}
+                    className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl text-xs font-extrabold bg-amber-50 text-amber-900 border border-amber-200/60 hover:bg-amber-100/80 transition-all text-left"
+                  >
+                    <span>Admin Panel Toggle</span>
+                    <ChevronDown className={`w-4 h-4 text-amber-600 transition-transform duration-200 ${adminExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {adminExpanded && (
+                    <div className="grid grid-cols-1 gap-1 pl-1 pr-1 py-1 bg-amber-50/20 rounded-xl border border-amber-100 animate-in slide-in-from-top-2 duration-200">
+                      
+                      {/* 📊 Dashboard */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('overview'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <LayoutDashboard className="w-3.5 h-3.5 text-amber-600" />
+                        <span>📊 Dashboard</span>
+                      </button>
+
+                      {/* 📦 Products & Stock */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('products'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Package className="w-3.5 h-3.5 text-amber-600" />
+                        <span>📦 Products & Stock</span>
+                      </button>
+
+                      {/* 🛍 Orders & Tracking */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('orders'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5 text-amber-600" />
+                        <span>🛍 Orders & Tracking</span>
+                      </button>
+
+                      {/* 🎟 Coupons */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('coupons'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Ticket className="w-3.5 h-3.5 text-amber-600" />
+                        <span>🎟 Coupons</span>
+                      </button>
+
+                      {/* ⚡ Flash Deals */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('marketing'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Megaphone className="w-3.5 h-3.5 text-amber-600" />
+                        <span>⚡ Flash Deals</span>
+                      </button>
+
+                      {/* 🎁 Lucky Box */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('lucky_box'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Gift className="w-3.5 h-3.5 text-amber-600" />
+                        <span>🎁 Lucky Box</span>
+                      </button>
+
+                      {/* 🎡 Spin Wheel */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('spin_wheel'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                        <span>🎡 Spin Wheel</span>
+                      </button>
+
+                      {/* 📰 Announcement Bar */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('top_announcement_bar'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Layers className="w-3.5 h-3.5 text-amber-600" />
+                        <span>📰 Announcement Bar</span>
+                      </button>
+
+                      {/* 🎨 Hero Section */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('homepage'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Home className="w-3.5 h-3.5 text-amber-600" />
+                        <span>🎨 Hero Section</span>
+                      </button>
+
+                      {/* 🏷 Categories & Highlights */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('categories'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Layers className="w-3.5 h-3.5 text-amber-600" />
+                        <span>🏷 Categories & Highlights</span>
+                      </button>
+
+                      {/* ⭐ Reviews Manager */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('reviews'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Star className="w-3.5 h-3.5 text-amber-600" />
+                        <span>⭐ Reviews Manager</span>
+                      </button>
+
+                      {/* 📸 Happy Customers Gallery */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('instagram'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-amber-600" />
+                        <span>📸 Happy Customers Gallery</span>
+                      </button>
+
+                      {/* 📱 Social Media */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('instagram'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-amber-600" />
+                        <span>📱 Social Media</span>
+                      </button>
+
+                      {/* 📈 Analytics */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('reports'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <TrendingUp className="w-3.5 h-3.5 text-amber-600" />
+                        <span>📈 Analytics</span>
+                      </button>
+
+                      {/* 💳 Payment Settings */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('payment_settings'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <CreditCard className="w-3.5 h-3.5 text-amber-600" />
+                        <span>💳 Payment Settings</span>
+                      </button>
+
+                      {/* 🏪 Store Information */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('homepage'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Home className="w-3.5 h-3.5 text-amber-600" />
+                        <span>🏪 Store Information</span>
+                      </button>
+
+                      {/* ☁ Google Drive Backup */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('backups'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Database className="w-3.5 h-3.5 text-amber-600" />
+                        <span>☁ Google Drive Backup</span>
+                      </button>
+
+                      {/* 🛠 Developer Diagnostic Center */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('audit'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-600" />
+                        <span>🛠 Developer Diagnostic Center</span>
+                      </button>
+
+                      {/* ⚙ Settings */}
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAdminWithTab?.('settings'); }}
+                        className="w-full flex items-center gap-2 py-2 px-2.5 rounded-lg text-xs font-bold text-neutral-700 hover:text-amber-900 hover:bg-amber-100/50 transition-colors text-left"
+                      >
+                        <Settings className="w-3.5 h-3.5 text-amber-600" />
+                        <span>⚙ Settings</span>
+                      </button>
+
+                    </div>
+                  )}
+                </div>
+              )}
 
             </div>
 

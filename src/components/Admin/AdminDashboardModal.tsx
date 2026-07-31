@@ -49,6 +49,7 @@ import {
   Gift,
   Zap,
   MessageSquare,
+  PartyPopper,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
@@ -72,6 +73,8 @@ import { CouponManagementView } from './CouponManagementView';
 import { SpinWheelSettingsView } from './SpinWheelSettingsView';
 import { EngagementAnalyticsView } from './EngagementAnalyticsView';
 import { WhatsAppTemplateManager } from './WhatsAppTemplateManager';
+import { ScratchAndWinSettingsView } from './ScratchAndWinSettingsView';
+import { OrderCelebrationSettingsView } from './OrderCelebrationSettingsView';
 import { AdminErrorBoundary } from './AdminErrorBoundary';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
@@ -79,13 +82,15 @@ import { optimizeImageFile } from '../../utils/imageOptimizer';
 interface AdminDashboardModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics';
+type TabType = 'orders' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
   onClose,
+  initialTab,
 }) => {
   if (!isOpen) return null;
 
@@ -125,7 +130,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     restoreStoreBackup,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<TabType>('orders');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'orders');
+
+  React.useEffect(() => {
+    if (initialTab && isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, isOpen]);
   const [saveNotification, setSaveNotification] = useState<string | null>(null);
   const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
 
@@ -497,6 +508,30 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('lucky_box')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'lucky_box'
+                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Gift className="w-4 h-4 text-amber-500" />
+              <span>Lucky Box (Scratch Card)</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('order_celebration')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'order_celebration'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <PartyPopper className="w-4 h-4 text-indigo-500" />
+              <span>Order Success Celebration</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('engagement_analytics')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'engagement_analytics'
@@ -721,6 +756,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: SPIN THE WHEEL ----------------- */}
             {activeTab === 'spin_wheel' && <SpinWheelSettingsView />}
+
+            {/* ----------------- TAB: LUCKY BOX (SCRATCH CARD) ----------------- */}
+            {activeTab === 'lucky_box' && <ScratchAndWinSettingsView />}
+
+            {/* ----------------- TAB: ORDER CELEBRATION ----------------- */}
+            {activeTab === 'order_celebration' && <OrderCelebrationSettingsView />}
 
             {/* ----------------- TAB: ENGAGEMENT ANALYTICS ----------------- */}
             {activeTab === 'engagement_analytics' && <EngagementAnalyticsView />}

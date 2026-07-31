@@ -77,6 +77,7 @@ function AppContent() {
   const [wishlistModalOpen, setWishlistModalOpen] = useState(false);
   const [adminLoginOpen, setAdminLoginOpen] = useState(false);
   const [adminDashboardOpen, setAdminDashboardOpen] = useState(false);
+  const [adminActiveTab, setAdminActiveTab] = useState<any>(undefined);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [customerAccountOpen, setCustomerAccountOpen] = useState(false);
   const [soundSettingsOpen, setSoundSettingsOpen] = useState(false);
@@ -361,7 +362,22 @@ function AppContent() {
         onOpenSearch={() => setSearchModalOpen(true)}
         onOpenOrderSheet={() => setOrderSheetOpen(true)}
         onOpenWishlist={() => setWishlistModalOpen(true)}
-        onOpenAdmin={() => (isAdmin ? setAdminDashboardOpen(true) : setAdminLoginOpen(true))}
+        onOpenAdmin={() => {
+          setAdminActiveTab(undefined);
+          if (isAdmin) {
+            setAdminDashboardOpen(true);
+          } else {
+            setAdminLoginOpen(true);
+          }
+        }}
+        onOpenAdminWithTab={(tab) => {
+          setAdminActiveTab(tab);
+          if (isAdmin) {
+            setAdminDashboardOpen(true);
+          } else {
+            setAdminLoginOpen(true);
+          }
+        }}
         onOpenCustomerAccount={() => setCustomerAccountOpen(true)}
         onOpenSoundSettings={() => setSoundSettingsOpen(true)}
         onOpenCalendarModal={() => setCalendarModalOpen(true)}
@@ -575,6 +591,7 @@ function AppContent() {
         <AdminDashboardModal
           isOpen={adminDashboardOpen}
           onClose={() => setAdminDashboardOpen(false)}
+          initialTab={adminActiveTab}
         />
       </AdminErrorBoundary>
 

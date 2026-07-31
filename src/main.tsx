@@ -2,7 +2,6 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import { StoreProvider } from './context/StoreContext.tsx';
-import { GlobalErrorBoundary } from './components/GlobalErrorBoundary.tsx';
 import { initAutoContrastEngine } from './utils/autoContrastEngine.ts';
 import './index.css';
 
@@ -17,11 +16,9 @@ const rootElement = document.getElementById('root');
 if (rootElement) {
   createRoot(rootElement).render(
     <StrictMode>
-      <GlobalErrorBoundary>
-        <StoreProvider>
-          <App />
-        </StoreProvider>
-      </GlobalErrorBoundary>
+      <StoreProvider>
+        <App />
+      </StoreProvider>
     </StrictMode>,
   );
 }

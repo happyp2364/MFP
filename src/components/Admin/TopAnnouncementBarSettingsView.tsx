@@ -56,6 +56,22 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
   const [permanentlyHidden, setPermanentlyHidden] = useState<boolean>(false);
 
+  // Top Bar Nav Links State
+  const [showStoreLocator, setShowStoreLocator] = useState<boolean>(true);
+  const [storeLocatorText, setStoreLocatorText] = useState<string>('Store Locator');
+  const [showTrackOrder, setShowTrackOrder] = useState<boolean>(true);
+  const [trackOrderText, setTrackOrderText] = useState<string>('Track Order');
+  const [showAbout, setShowAbout] = useState<boolean>(true);
+  const [aboutText, setAboutText] = useState<string>('About');
+  const [showHelp, setShowHelp] = useState<boolean>(true);
+  const [helpText, setHelpText] = useState<string>('Help');
+  const [showContact, setShowContact] = useState<boolean>(true);
+  const [contactText, setContactText] = useState<string>('Contact');
+  const [showLanguage, setShowLanguage] = useState<boolean>(true);
+  const [languageText, setLanguageText] = useState<string>('EN');
+  const [showOfferText, setShowOfferText] = useState<boolean>(true);
+  const [offerText, setOfferText] = useState<string>('LIMITED OFFER');
+
   // Countdown State
   const [countdownEnabled, setCountdownEnabled] = useState<boolean>(false);
   const [countdownFestivalName, setCountdownFestivalName] = useState<string>('');

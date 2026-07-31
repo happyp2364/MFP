@@ -791,6 +791,22 @@ export interface TopAnnouncementBarConfig {
   autoScroll?: boolean;
   permanentlyHidden?: boolean;
 
+  // Top Bar Secondary Navigation Links & Options
+  showStoreLocator?: boolean;
+  storeLocatorText?: string;
+  showTrackOrder?: boolean;
+  trackOrderText?: string;
+  showAbout?: boolean;
+  aboutText?: string;
+  showHelp?: boolean;
+  helpText?: string;
+  showContact?: boolean;
+  contactText?: string;
+  showLanguage?: boolean;
+  languageText?: string;
+  showOfferText?: boolean;
+  offerText?: string;
+
   // Countdown Feature
   countdownEnabled?: boolean;
   countdownFestivalName?: string;
@@ -1353,6 +1369,51 @@ export interface HomepagePreset {
   scheduledAt?: string;
   thumbnailUrl?: string;
   config: Partial<HomepageConfig>;
+}
+
+export interface ActiveThemeDoc {
+  themeId: string;
+  presetName: string;
+  themeMode?: 'light' | 'dark' | 'luxury' | 'festival' | 'glassmorphic';
+  colors: {
+    primary: string;
+    secondary: string;
+    background: string;
+    accent: string;
+    textColor: string;
+    cardBg: string;
+  };
+  fonts: {
+    headingFont: string;
+    bodyFont: string;
+    scaleRatio: number;
+  };
+  layout: {
+    containerWidth: string;
+    borderRadius: number;
+    spacing: string;
+  };
+  hero: {
+    heroType: string;
+    title?: string;
+    subtitle?: string;
+    bgGradient?: string;
+  };
+  cards: {
+    style: string;
+    borderRadius: number;
+    shadow: string;
+  };
+  buttons: {
+    style: string;
+    borderRadius: number;
+  };
+  banners: {
+    topAnnouncementEnabled: boolean;
+    bannerStyle: string;
+  };
+  updatedAt: string;
+  updatedBy: string;
 }
 
 

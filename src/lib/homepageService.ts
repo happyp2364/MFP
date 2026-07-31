@@ -1,12 +1,65 @@
 import { doc, getDoc, setDoc, onSnapshot, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, recordAuditLog } from './firebase';
-import { HomepageConfig, HomepageVersion } from '../types';
+import { HomepageConfig, HomepageVersion, ActiveThemeDoc } from '../types';
 import { DEFAULT_HOMEPAGE_CONFIG } from '../data/defaultHomepagePresets';
 
 const ACTIVE_CONFIG_DOC = 'active';
 
 /**
- * Fetch Homepage Config from Firestore
+ * Constructs the Active Theme Document matching Requirement 11
+ */
+export function buildActiveThemeDocument(config: HomepageConfig, authorEmail?: string): ActiveThemeDoc {
+  const heroSec = config.sections?.find((s) => s.type === 'hero_banner' || s.type === 'floating_sneaker');
+  const annSec = config.sections?.find((s) => s.type === 'announcements');
+
+  return {
+    themeId: config.id || `theme_${Date.now()}`,
+    presetName: config.presetName || config.name || 'Default Luxury Preset',
+    themeMode: config.themeMode || 'light',
+    colors: {
+      primary: heroSec?.styling?.accentColor || '#d97706',
+      secondary: '#0F172A',
+      background: heroSec?.styling?.bgColor || '#ffffff',
+      accent: heroSec?.styling?.accentColor || '#d97706',
+      textColor: heroSec?.styling?.textColor || '#0F172A',
+      cardBg: '#1e293b',
+    },
+    fonts: {
+      headingFont: 'Playfair Display',
+      bodyFont: 'Plus Jakarta Sans',
+      scaleRatio: 1.25,
+    },
+    layout: {
+      containerWidth: 'max-w-7xl',
+      borderRadius: heroSec?.styling?.borderRadius || 16,
+      spacing: 'relaxed',
+    },
+    hero: {
+      heroType: heroSec?.type || 'hero_banner',
+      title: heroSec?.title || config.name,
+      subtitle: heroSec?.subtitle || '',
+      bgGradient: heroSec?.styling?.bgGradient || '',
+    },
+    cards: {
+      style: 'glassmorphic',
+      borderRadius: 16,
+      shadow: heroSec?.styling?.shadow || 'xl',
+    },
+    buttons: {
+      style: 'filled',
+      borderRadius: 12,
+    },
+    banners: {
+      topAnnouncementEnabled: annSec?.enabled ?? true,
+      bannerStyle: 'classic',
+    },
+    updatedAt: new Date().toISOString(),
+    updatedBy: authorEmail || config.updatedBy || 'System Admin',
+  };
+}
+
+/**
+ * Fetch Homepage Config & Theme from Firestore
  */
 export async function fetchHomepageConfigFromFirestore(): Promise<HomepageConfig> {
   try {
@@ -15,6 +68,7 @@ export async function fetchHomepageConfigFromFirestore(): Promise<HomepageConfig
     if (snap.exists()) {
       const data = snap.data() as HomepageConfig;
       if (data && Array.isArray(data.sections) && data.sections.length > 0) {
+        console.log('[Theme Logger] Theme Loaded:', data.presetName || data.name);
         return data;
       }
     }
@@ -26,35 +80,62 @@ export async function fetchHomepageConfigFromFirestore(): Promise<HomepageConfig
   const local = localStorage.getItem('mfp_homepage_config');
   if (local) {
     try {
-      return JSON.parse(local);
+      const parsed = JSON.parse(local);
+      if (parsed && Array.isArray(parsed.sections) && parsed.sections.length > 0) {
+        console.log('[Theme Logger] Theme Loaded (LocalStorage Cache):', parsed.presetName || parsed.name);
+        return parsed;
+      }
     } catch (e) {
       console.warn('LocalStorage homepage config parse note:', e);
     }
   }
 
+  console.log('[Theme Logger] Theme Loaded (Default Fallback)');
   return DEFAULT_HOMEPAGE_CONFIG;
 }
 
+let activeUnsubscribeFn: (() => void) | null = null;
+
 /**
- * Subscribe to real-time changes on active Homepage Config
+ * Subscribe to real-time changes on active Homepage Config & Active Theme
  */
 export function subscribeToHomepageConfig(onUpdate: (config: HomepageConfig) => void): () => void {
+  // Prevent duplicate listeners (Requirement 6 & 14)
+  if (activeUnsubscribeFn) {
+    console.log('[Theme Logger] Cleaning up previous duplicate theme listener');
+    activeUnsubscribeFn();
+    activeUnsubscribeFn = null;
+  }
+
   const docRef = doc(db, 'homepage_config', ACTIVE_CONFIG_DOC);
-  return onSnapshot(
+  console.log('[Theme Logger] Theme Listener Updated (Subscribed)');
+
+  const unsub = onSnapshot(
     docRef,
     (snap) => {
       if (snap.exists()) {
         const data = snap.data() as HomepageConfig;
-        if (data && Array.isArray(data.sections)) {
+        if (data && Array.isArray(data.sections) && data.sections.length > 0) {
           localStorage.setItem('mfp_homepage_config', JSON.stringify(data));
+          console.log('[Theme Logger] Theme Sync Success:', data.presetName || data.name);
           onUpdate(data);
         }
       }
     },
     (err) => {
-      console.warn('Homepage realtime listener notice:', err.message);
+      console.warn('[Theme Logger] Homepage realtime listener notice:', err.message);
     }
   );
+
+  activeUnsubscribeFn = unsub;
+
+  return () => {
+    console.log('[Theme Logger] Theme Listener Unsubscribed');
+    if (activeUnsubscribeFn === unsub) {
+      unsub();
+      activeUnsubscribeFn = null;
+    }
+  };
 }
 
 /**
@@ -65,6 +146,14 @@ export async function saveHomepageConfigToFirestore(
   authorEmail?: string,
   note?: string
 ): Promise<boolean> {
+  const themeName = config.presetName || config.name || 'Custom Theme';
+  console.log('[Theme Logger] Theme Save Initiated:', themeName);
+
+  if (!config || !Array.isArray(config.sections) || config.sections.length === 0) {
+    console.error('[Theme Logger] Validation error: Attempted to save empty/invalid theme config');
+    return false;
+  }
+
   try {
     const now = new Date().toISOString();
     const updatedConfig: HomepageConfig = {
@@ -73,14 +162,20 @@ export async function saveHomepageConfigToFirestore(
       updatedBy: authorEmail || 'Admin User',
     };
 
-    // 1. Save to active document
+    // 1. Save to active homepage_config document
     const docRef = doc(db, 'homepage_config', ACTIVE_CONFIG_DOC);
     await setDoc(docRef, updatedConfig);
 
+    // 2. Build and save active theme document to theme/active (Requirement 11)
+    const activeThemeDoc = buildActiveThemeDocument(updatedConfig, authorEmail);
+    const themeRef = doc(db, 'theme', 'active');
+    await setDoc(themeRef, activeThemeDoc);
+
     // Save to local storage for immediate cache
     localStorage.setItem('mfp_homepage_config', JSON.stringify(updatedConfig));
+    localStorage.setItem('mfp_active_theme', JSON.stringify(activeThemeDoc));
 
-    // 2. Save version history snapshot
+    // 3. Save version history snapshot
     const versionId = `ver_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const versionRef = doc(db, 'homepage_versions', versionId);
     const versionDoc: HomepageVersion = {
@@ -88,20 +183,21 @@ export async function saveHomepageConfigToFirestore(
       config: updatedConfig,
       createdAt: now,
       createdBy: authorEmail || 'Admin User',
-      note: note || `Updated layout with ${updatedConfig.sections.length} sections (${updatedConfig.name})`,
+      note: note || `Updated layout with ${updatedConfig.sections.length} sections (${themeName})`,
     };
     await setDoc(versionRef, versionDoc);
 
     recordAuditLog(
-      'Homepage Layout Published',
+      'Homepage Layout & Theme Published',
       'SETTINGS',
-      `Published homepage "${updatedConfig.name}" with ${updatedConfig.sections.length} active sections.`,
+      `Published theme preset "${themeName}" with ${updatedConfig.sections.length} active sections.`,
       'SUCCESS'
     );
 
+    console.log('[Theme Logger] Theme Saved Successfully:', themeName);
     return true;
   } catch (err) {
-    console.error('Error saving homepage config:', err);
+    console.error('[Theme Logger] Theme Save Failed:', err);
     handleFirestoreError(err, OperationType.WRITE, `homepage_config/${ACTIVE_CONFIG_DOC}`);
     return false;
   }

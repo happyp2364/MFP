@@ -956,7 +956,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
 
       unsubscribers.push(
-        onSnapshot(doc(db, 'theme', 'current'), (snap) => {
+        onSnapshot(doc(db, 'settings', 'sound'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as SoundConfig;
             setPublishedSoundConfig(data);
@@ -1603,7 +1603,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateSoundConfig = async (updated: Partial<SoundConfig>) => {
     try {
       const newCfg = { ...publishedSoundConfig, ...updated };
-      await setDoc(doc(db, 'theme', 'current'), newCfg, { merge: true });
+      await setDoc(doc(db, 'settings', 'sound'), newCfg, { merge: true });
       showToast('💾 Sound Config Saved Live', 'success');
       recordAuditLog('Sound Settings Updated', 'SETTINGS', 'Updated audio configuration live', 'SUCCESS');
     } catch (err: any) {
@@ -2418,12 +2418,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateHomepageConfig = useCallback(async (newConfig: HomepageConfig, note?: string): Promise<boolean> => {
-    setHomepageConfig(newConfig);
-    const author = currentAdminUser?.email || customerUser?.email || 'Admin';
-    const success = await saveHomepageConfigToFirestore(newConfig, author, note);
-    if (success) {
-      showToast('Homepage layout published and live synced!', 'success');
+    console.log('[Theme Logger] Theme Apply Initiated:', newConfig.presetName || newConfig.name);
+
+    if (!newConfig || !Array.isArray(newConfig.sections) || newConfig.sections.length === 0) {
+      showToast('Invalid theme layout: Must contain at least one section', 'error');
+      return false;
     }
+
+    const author = currentAdminUser?.email || customerUser?.email || 'Admin User';
+
+    // 1. Save to Firestore FIRST (Requirement 2 & 3)
+    const success = await saveHomepageConfigToFirestore(newConfig, author, note);
+
+    if (success) {
+      // 2. Only after successful write, update UI state
+      setHomepageConfig(newConfig);
+      console.log('[Theme Logger] Theme Applied & UI Updated Successfully');
+      showToast('Theme Saved & Published Successfully!', 'success');
+    } else {
+      // 3. Keep previous theme on failure (Requirement 17)
+      console.error('[Theme Logger] Theme Save Failed: Previous theme preserved');
+      showToast('Failed to save theme to Firestore. Existing theme preserved.', 'error');
+    }
+
     return success;
   }, [currentAdminUser, customerUser, showToast]);
 

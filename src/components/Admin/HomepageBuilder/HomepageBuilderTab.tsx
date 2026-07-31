@@ -53,28 +53,57 @@ export const HomepageBuilderTab: React.FC = () => {
     }
   }, [homepageConfig]);
 
-  const handleApplyMarketplaceConfig = (cfg: Partial<HomepageConfig>) => {
-    setLocalConfig((prev) => ({
-      ...prev,
+  const handleApplyMarketplaceConfig = async (cfg: Partial<HomepageConfig>) => {
+    const themeName = cfg.presetName || cfg.name || 'Marketplace Preset';
+    console.log('[Theme Logger] Theme Applied via Preset:', themeName);
+
+    const targetConfig: HomepageConfig = {
+      ...localConfig,
       ...cfg,
-      sections: cfg.sections ? JSON.parse(JSON.stringify(cfg.sections)) : prev.sections,
-    }));
-    setActiveTab('canvas');
+      id: `hp_${Date.now()}`,
+      name: cfg.name || localConfig.name || 'Custom Theme',
+      presetName: cfg.presetName || cfg.name || 'Custom Preset',
+      sections: cfg.sections ? JSON.parse(JSON.stringify(cfg.sections)) : localConfig.sections,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (!targetConfig.sections || targetConfig.sections.length === 0) {
+      showToast('Cannot apply empty preset layout', 'error');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // 1. Save to Firestore FIRST (Requirement 2 & 8)
+      const success = await updateHomepageConfig(
+        targetConfig,
+        `Applied Preset: "${targetConfig.presetName || targetConfig.name}"`
+      );
+
+      if (success) {
+        // 2. Only after successful Firestore write, update local canvas state
+        setLocalConfig(targetConfig);
+        setActiveTab('canvas');
+        console.log('[Theme Logger] Theme Sync Success');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleApplyPreset = (presetId: string) => {
+  const handleApplyPreset = async (presetId: string) => {
     const preset = HOMEPAGE_PRESETS.find((p) => p.id === presetId);
     if (!preset) return;
 
-    if (window.confirm(`Apply "${preset.name}" preset layout? Any unsaved edits will be replaced.`)) {
-      setLocalConfig((prev) => ({
-        ...prev,
+    if (window.confirm(`Apply "${preset.name}" preset layout live? This will update your store theme.`)) {
+      const targetConfig: HomepageConfig = {
+        ...localConfig,
         ...preset.config,
         name: preset.name,
         presetName: preset.id,
-        sections: preset.config.sections || prev.sections,
-      }));
-      showToast(`Applied ${preset.name} preset! Click "Publish Homepage" to go live.`, 'info');
+        sections: preset.config.sections || localConfig.sections,
+      };
+      await handleApplyMarketplaceConfig(targetConfig);
     }
   };
 

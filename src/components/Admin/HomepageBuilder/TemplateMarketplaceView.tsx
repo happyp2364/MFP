@@ -553,9 +553,8 @@ export const TemplateMarketplaceView: React.FC<TemplateMarketplaceViewProps> = (
                   {/* One-Click Apply Button */}
                   <button
                     type="button"
-                    onClick={() => {
-                      onApplyPreset(preset.config);
-                      showToast(`Applied template: "${preset.name}"`, 'success');
+                    onClick={async () => {
+                      await onApplyPreset(preset.config);
                     }}
                     className="px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 dark:bg-amber-500 dark:hover:bg-amber-600 text-white dark:text-neutral-950 text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 transition-all transform active:scale-95"
                   >
@@ -586,9 +585,8 @@ export const TemplateMarketplaceView: React.FC<TemplateMarketplaceViewProps> = (
         isOpen={Boolean(previewingPreset)}
         onClose={() => setPreviewingPreset(null)}
         preset={previewingPreset}
-        onApply={(cfg) => {
-          onApplyPreset(cfg);
-          showToast(`Applied template: "${previewingPreset?.name}"`, 'success');
+        onApply={async (cfg) => {
+          await onApplyPreset(cfg);
         }}
       />
 

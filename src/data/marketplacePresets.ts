@@ -5,6 +5,25 @@ import {
 } from './defaultHomepagePresets';
 
 export const MARKETPLACE_PRESETS: HomepagePreset[] = [
+  // 0. Premium Marketplace Elite
+  {
+    id: 'mkt_premium_marketplace_elite',
+    name: '👑 Premium Marketplace Elite',
+    description: 'Original luxury marketplace storefront inspired by modern international footwear UX. Clean off-white canvas, large whitespace, rounded glassmorphic cards, footwear category strip, collapsible filters, and luxury product cards.',
+    previewColor: '#f8fafc',
+    badge: 'LUXURY ELITE',
+    category: 'Footwear Marketplace',
+    tags: ['Footwear', 'Luxury', 'Marketplace', 'Minimal', 'Modern', 'Elite'],
+    config: {
+      name: 'Premium Marketplace Elite Storefront',
+      presetName: 'Premium Marketplace Elite',
+      themeMode: 'luxury',
+      sections: [
+        FLOATING_SNEAKER_DEFAULT_SECTION,
+        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner'),
+      ],
+    },
+  },
   // 1. Premium Floating Sneaker
   {
     id: 'mkt_floating_sneaker',

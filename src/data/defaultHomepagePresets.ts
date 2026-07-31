@@ -469,6 +469,67 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
 
 export const HOMEPAGE_PRESETS: HomepagePreset[] = [
   {
+    id: 'preset_premium_marketplace_elite',
+    name: '👑 Premium Marketplace Elite',
+    description: 'Original luxury marketplace storefront inspired by modern international footwear UX. Clean off-white canvas, large whitespace, rounded cards, footwear category strip, collapsible filters, and luxury product cards.',
+    previewColor: '#f8fafc',
+    badge: 'LUXURY ELITE',
+    category: 'Footwear Marketplace',
+    tags: ['Footwear', 'Luxury', 'Marketplace', 'Minimal', 'Modern', 'Elite'],
+    config: {
+      name: 'Premium Marketplace Elite Storefront',
+      presetName: 'Premium Marketplace Elite',
+      themeMode: 'luxury',
+      sections: [
+        {
+          id: 'sec_top_announcement_elite',
+          type: 'announcements',
+          title: 'Top Announcement Bar',
+          enabled: true,
+          visibleDevices: ['desktop', 'tablet', 'mobile'],
+          styling: {
+            bgColor: '#0f172a',
+            textColor: '#ffffff',
+            accentColor: '#fbbf24',
+            paddingTop: 8,
+            paddingBottom: 8,
+          },
+          contentData: {
+            announcements: [
+              '⚡ EXPRESS FREE SHIPPING ON ALL FOOTWEAR ORDERS ACROSS INDIA',
+              '🔥 NEW SEASON LAUNCHES: ATHLETIC & FORMAL LEATHER COLLECTION',
+              '📦 100% OPEN BOX DELIVERY — INSPECT BEFORE YOU PAY',
+            ],
+          },
+        },
+        FLOATING_SNEAKER_DEFAULT_SECTION,
+        {
+          id: 'sec_categories_elite',
+          type: 'categories',
+          title: 'Footwear Collections & Categories',
+          subtitle: '100% Genuine Ergonomic Footwear for Men, Women & Kids',
+          enabled: true,
+          visibleDevices: ['desktop', 'tablet', 'mobile'],
+          styling: {
+            bgColor: '#ffffff',
+            textColor: '#0f172a',
+            paddingTop: 32,
+            paddingBottom: 32,
+          },
+          contentData: {
+            layoutStyle: 'horizontal_cards',
+            showBadges: true,
+          },
+        },
+        DEFAULT_HOMEPAGE_SECTIONS[4], // best_sellers
+        DEFAULT_HOMEPAGE_SECTIONS[7], // new_arrivals
+        DEFAULT_HOMEPAGE_SECTIONS[8], // open_box_delivery
+        DEFAULT_HOMEPAGE_SECTIONS[9], // coupons
+        DEFAULT_HOMEPAGE_SECTIONS[10], // why_choose_us
+      ],
+    },
+  },
+  {
     id: 'preset_floating_sneaker',
     name: '👟 Premium Floating Sneaker',
     description: 'Luxury floating sneaker centerpiece layout with soft warm beige backdrop, glassmorphism cards, MBH floating badges, and 3D floating footwear.',

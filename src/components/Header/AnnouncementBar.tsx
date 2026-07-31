@@ -153,6 +153,13 @@ export const AnnouncementBar: React.FC = () => {
                 </div>
               )}
 
+              {/* Offer Text if enabled */}
+              {topAnnouncementBarConfig?.showOfferText !== false && topAnnouncementBarConfig?.offerText && (
+                <span className="hidden lg:inline-block font-bold text-[11px] bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded border border-amber-400/30">
+                  {topAnnouncementBarConfig.offerText}
+                </span>
+              )}
+
               {/* Countdown / Count-up Display Overlay */}
               {timeLeft && (
                 <div className="flex items-center gap-1.5 border-t md:border-t-0 md:border-l border-white/20 pt-1 md:pt-0 pl-0 md:pl-3 text-[10px] font-extrabold tracking-wide uppercase shrink-0">
@@ -170,6 +177,40 @@ export const AnnouncementBar: React.FC = () => {
                 </div>
               )}
             </>
+          )}
+        </div>
+
+        {/* Top Bar Navigation Links (Store Locator, Track Order, About, Help, Contact, Language) */}
+        <div className="hidden lg:flex items-center gap-3 text-[11px] font-semibold opacity-90 shrink-0 border-l border-white/20 pl-3">
+          {topAnnouncementBarConfig?.showStoreLocator && (
+            <a href="#store-locator" className="hover:underline flex items-center gap-1">
+              📍 {topAnnouncementBarConfig.storeLocatorText || 'Store Locator'}
+            </a>
+          )}
+          {topAnnouncementBarConfig?.showTrackOrder && (
+            <a href="#track-order" className="hover:underline flex items-center gap-1">
+              📦 {topAnnouncementBarConfig.trackOrderText || 'Track Order'}
+            </a>
+          )}
+          {topAnnouncementBarConfig?.showAbout && (
+            <a href="#about" className="hover:underline">
+              {topAnnouncementBarConfig.aboutText || 'About'}
+            </a>
+          )}
+          {topAnnouncementBarConfig?.showHelp && (
+            <a href="#help" className="hover:underline">
+              {topAnnouncementBarConfig.helpText || 'Help'}
+            </a>
+          )}
+          {topAnnouncementBarConfig?.showContact && (
+            <a href="#contact" className="hover:underline">
+              {topAnnouncementBarConfig.contactText || 'Contact'}
+            </a>
+          )}
+          {topAnnouncementBarConfig?.showLanguage && (
+            <span className="bg-white/10 px-1.5 py-0.5 rounded cursor-pointer hover:bg-white/20">
+              🌐 {topAnnouncementBarConfig.languageText || 'EN'}
+            </span>
           )}
         </div>
 

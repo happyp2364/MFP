@@ -52,11 +52,11 @@ const SECTION_TEMPLATES: SectionTemplate[] = [
       slides: [
         {
           id: 'slide_1',
-          title: 'Royal Ethnic Collection 2026',
-          subtitle: 'Up to 50% OFF on Pure Silk Sarees & Heavy Lehengas',
-          badgeText: 'Diwali Festive Launch',
-          imageUrl: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&q=80&w=1200',
-          buttonText: 'SHOP FESTIVE SALE',
+          title: 'Royal Footwear Collection 2026',
+          subtitle: 'Up to 50% OFF on Premium Sneakers & Handcrafted Leather Loafers',
+          badgeText: 'New Season Drop',
+          imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1200',
+          buttonText: 'SHOP FOOTWEAR SALE',
           buttonLink: '/products',
         },
       ],
@@ -93,7 +93,7 @@ const SECTION_TEMPLATES: SectionTemplate[] = [
     description: 'Visual category cards with background images and counts.',
     icon: Grid,
     defaultData: {
-      categories: ['Sarees', 'Kurtis', 'Lehengas', 'Jewelry', 'Menswear'],
+      categories: ["Men's Sports Shoes", "Women's Sports Shoes", "Casual Sneakers", "Kids Footwear", "Loafers & Formals", "Slippers & Slides"],
     },
   },
   {
@@ -115,8 +115,8 @@ const SECTION_TEMPLATES: SectionTemplate[] = [
         {
           id: 'offer_2',
           title: 'Buy 1 Get 1 Free',
-          subtitle: 'On Selected Designer Kurtis',
-          imageUrl: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&q=80&w=600',
+          subtitle: 'On Selected Sports Shoes & Sneakers',
+          imageUrl: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&q=80&w=600',
           buttonText: 'Shop BOGO',
           buttonLink: '/products',
         },

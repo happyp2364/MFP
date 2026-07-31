@@ -92,6 +92,107 @@ export interface ContactFormInput {
   message: string;
 }
 
+export interface OwnerMember {
+  id: string;
+  fullName: string;
+  position: string; // e.g. Founder, Owner, Co-Owner, Director, Store Manager, Operations Head, Marketing Head, Inventory Manager
+  roleType: 'owner' | 'team';
+  shortIntro: string;
+  experience: string;
+  specialization: string;
+  profilePhoto: string;
+  contactNumber?: string;
+  email?: string;
+  signature?: string;
+  socialLinks: {
+    instagram?: string;
+    facebook?: string;
+    youtube?: string;
+    whatsapp?: string;
+    linkedin?: string;
+    website?: string;
+  };
+  enabled: boolean;
+  featured: boolean;
+  displayOrder: number;
+}
+
+export interface TimelineEvent {
+  id: string;
+  year: string;
+  title: string;
+  description: string;
+  image?: string;
+  icon?: string;
+  enabled: boolean;
+  displayOrder: number;
+}
+
+export interface StoreAchievement {
+  id: string;
+  type: 'certificate' | 'award' | 'media' | 'milestone';
+  title: string;
+  issuerOrPublisher: string;
+  year: string;
+  description: string;
+  imageUrl?: string;
+  link?: string;
+  enabled: boolean;
+  displayOrder: number;
+}
+
+export interface LiveCounterItem {
+  id: string;
+  label: string;
+  value: number | string;
+  prefix?: string;
+  suffix?: string;
+  autoCalculate: boolean;
+  autoMetric?: 'years' | 'customers' | 'products' | 'orders' | 'reviews';
+  icon?: string;
+  enabled: boolean;
+  displayOrder: number;
+}
+
+export interface StoreGalleryItem {
+  id: string;
+  category: 'shop_inside' | 'shop_outside' | 'team' | 'festival' | 'events' | 'general';
+  title: string;
+  caption?: string;
+  imageUrl: string;
+  enabled: boolean;
+  displayOrder: number;
+}
+
+export interface AboutUsConfig {
+  businessName: string;
+  establishmentYear: string;
+  experienceYears: string;
+  tagline: string;
+  shopDescription: string;
+  businessStory: string;
+  familyBusinessInfo: string;
+  mission: string;
+  vision: string;
+  journey: string;
+  storeHighlights: string[];
+  mainHeaderImage?: string;
+  ownersAndTeam: OwnerMember[];
+  timeline: TimelineEvent[];
+  achievements: StoreAchievement[];
+  counters: LiveCounterItem[];
+  gallery: StoreGalleryItem[];
+  socialLinks: {
+    instagram?: string;
+    facebook?: string;
+    youtube?: string;
+    whatsapp?: string;
+    linkedin?: string;
+    website?: string;
+  };
+  updatedAt?: string;
+}
+
 export interface StoreInfo {
   name: string;
   tagline: string;
@@ -160,12 +261,20 @@ export interface CategoryHighlight {
   itemCount: string;
   icon: string;
   subcategories: string[];
+  buttonText?: string;
+  categoryFilter?: string;
+  subcategoryFilter?: string;
+  linkedProductIds?: string[];
+  scheduleStart?: string;
+  scheduleEnd?: string;
+  hidden?: boolean;
   featured?: boolean;
   trending?: boolean;
   popular?: boolean;
   newBadge?: boolean;
   enabled?: boolean;
   displayOrder?: number;
+  coverType?: 'admin' | 'highest_selling' | 'featured' | 'ai';
 }
 
 export interface TrendingCollectionItem {

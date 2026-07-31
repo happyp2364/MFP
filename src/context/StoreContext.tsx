@@ -49,7 +49,9 @@ import {
   AdminModule,
   AdminAction,
   AdminPermissionMatrix,
+  AboutUsConfig,
 } from '../types';
+import { DEFAULT_ABOUT_US_CONFIG } from '../data/defaultAboutUs';
 import {
   getEffectivePermissions,
   hasAdminPermission,
@@ -152,6 +154,7 @@ const STORAGE_KEYS = {
   SOCIAL_MEDIA_CONFIG: 'mfp_social_media_config_live_v2',
   SOCIAL_ANALYTICS: 'mfp_social_analytics_live_v2',
   OPEN_BOX_DELIVERY_CONFIG: 'mfp_open_box_delivery_config_live',
+  ABOUT_US_CONFIG: 'mfp_about_us_config_live',
 };
 
 function safeGetLocalStorage<T>(key: string, fallback: T): T {
@@ -213,6 +216,9 @@ interface StoreContextType {
   updateSocialMediaConfig: (updated: Partial<SocialMediaCenterConfig>) => Promise<void>;
   socialAnalytics: SocialAnalyticsLog;
   recordSocialClick: (platformId: string) => Promise<void>;
+
+  aboutUsConfig: AboutUsConfig;
+  updateAboutUsConfig: (updated: Partial<AboutUsConfig>) => Promise<void>;
 
   placeOrderAndPay: (
     cartItems: CartItem[],
@@ -478,6 +484,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [openBoxDeliveryConfig, setOpenBoxDeliveryConfig] = useState<OpenBoxDeliveryConfig>(() =>
     safeGetLocalStorage<OpenBoxDeliveryConfig>(STORAGE_KEYS.OPEN_BOX_DELIVERY_CONFIG, DEFAULT_OPEN_BOX_DELIVERY_CONFIG)
+  );
+
+  const [aboutUsConfig, setAboutUsConfig] = useState<AboutUsConfig>(() =>
+    safeGetLocalStorage<AboutUsConfig>(STORAGE_KEYS.ABOUT_US_CONFIG, DEFAULT_ABOUT_US_CONFIG)
   );
 
 
@@ -984,6 +994,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             safeSetLocalStorage(STORAGE_KEYS.SOCIAL_ANALYTICS, data);
           }
         }, (err) => console.warn('Live social analytics listener error:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'about', 'config'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as AboutUsConfig;
+            setAboutUsConfig(data);
+            safeSetLocalStorage(STORAGE_KEYS.ABOUT_US_CONFIG, data);
+          }
+        }, (err) => console.warn('Live about us listener notice:', err))
       );
 
       unsubscribers.push(
@@ -1524,6 +1544,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (err: any) {
       console.error('Error updating social media config:', err);
       showToast('Failed to save social config', 'error');
+    }
+  };
+
+  const updateAboutUsConfig = async (updated: Partial<AboutUsConfig>) => {
+    try {
+      const newCfg = { ...aboutUsConfig, ...updated, updatedAt: new Date().toISOString() };
+      setAboutUsConfig(newCfg);
+      safeSetLocalStorage(STORAGE_KEYS.ABOUT_US_CONFIG, newCfg);
+      await setDoc(doc(db, 'about', 'config'), newCfg, { merge: true });
+      showToast('💾 About Us Section Saved Live', 'success');
+      recordAuditLog('About Us Updated', 'SETTINGS', 'Updated About Us section content & owners', 'SUCCESS');
+    } catch (err: any) {
+      console.error('Error updating About Us config:', err);
+      showToast('Failed to save About Us config to Firestore', 'error');
     }
   };
 
@@ -2453,6 +2487,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateSocialMediaConfig,
     socialAnalytics,
     recordSocialClick,
+
+    aboutUsConfig,
+    updateAboutUsConfig,
 
     // Customer Engagement
     spinWheelConfig,

@@ -33,7 +33,7 @@ export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
   onSelectProduct,
   onNavigateCategory,
 }) => {
-  const { homepageConfig, products, reviews } = useStore();
+  const { homepageConfig, products, reviews, categoryHighlights } = useStore();
   const config = previewConfig || homepageConfig;
 
   if (!config || !Array.isArray(config.sections) || config.sections.length === 0) {
@@ -51,6 +51,7 @@ export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
           section={section}
           products={products}
           reviews={reviews}
+          categoryHighlights={categoryHighlights}
           onSelectProduct={onSelectProduct}
           onNavigateCategory={onNavigateCategory}
         />
@@ -63,14 +64,101 @@ interface SectionItemProps {
   section: HomepageSection;
   products: Product[];
   reviews: any[];
+  categoryHighlights?: any[];
   onSelectProduct?: (p: Product) => void;
   onNavigateCategory?: (cat: string) => void;
 }
+
+function getCategoryCoverImage(catItem: any, products: Product[]): string {
+  // 1. Admin cover uploaded
+  if (
+    catItem.image &&
+    typeof catItem.image === 'string' &&
+    catItem.image.trim() !== '' &&
+    !catItem.image.includes('photo-1617038260897')
+  ) {
+    return catItem.image;
+  }
+
+  const catFilter = (catItem.categoryFilter || catItem.title || catItem.name || '').toLowerCase();
+  const subFilter = (catItem.subcategoryFilter || '').toLowerCase();
+
+  const matchingProducts = products.filter((p) => {
+    const pCat = (p.category || '').toLowerCase();
+    const pSub = (p.subcategory || '').toLowerCase();
+    const pName = (p.name || '').toLowerCase();
+
+    if (subFilter && pSub.includes(subFilter)) return true;
+    if (catFilter && (pCat.includes(catFilter) || pSub.includes(catFilter) || pName.includes(catFilter))) return true;
+    return false;
+  });
+
+  // 2. Highest selling product
+  if (matchingProducts.length > 0) {
+    const sorted = [...matchingProducts].sort(
+      (a, b) => (b.reviewsCount || 0) - (a.reviewsCount || 0)
+    );
+    if (sorted[0]?.images?.[0]) return sorted[0].images[0];
+
+    // 3. Featured product
+    const featured = matchingProducts.find((p) => p.isBestSeller || p.isFeatured || p.isTrending);
+    if (featured?.images?.[0]) return featured.images[0];
+
+    if (matchingProducts[0]?.images?.[0]) return matchingProducts[0].images[0];
+  }
+
+  // Check overall store products matching footwear category/gender
+  if (catFilter.includes('women')) {
+    const wShoe = products.find((p) => p.category === 'women' && p.images?.length);
+    if (wShoe?.images[0]) return wShoe.images[0];
+  }
+  if (catFilter.includes('kid')) {
+    const kShoe = products.find((p) => p.category === 'kids' && p.images?.length);
+    if (kShoe?.images[0]) return kShoe.images[0];
+  }
+
+  // 4. AI Footwear Cover by category
+  if (catFilter.includes('run') || catFilter.includes('sport')) {
+    return 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80';
+  }
+  if (catFilter.includes('sneak') || catFilter.includes('casual')) {
+    return 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=800&q=80';
+  }
+  if (catFilter.includes('women')) {
+    return 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=800&q=80';
+  }
+  if (catFilter.includes('kid') || catFilter.includes('school')) {
+    return 'https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=800&q=80';
+  }
+  if (catFilter.includes('loaf') || catFilter.includes('formal') || catFilter.includes('leather')) {
+    return 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&w=800&q=80';
+  }
+  if (catFilter.includes('slide') || catFilter.includes('slipper') || catFilter.includes('sandal') || catFilter.includes('croc')) {
+    return 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?auto=format&fit=crop&w=800&q=80';
+  }
+
+  return 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80';
+}
+
+const isCategoryVisible = (catItem: any) => {
+  if (catItem.enabled === false || catItem.hidden === true) return false;
+  const now = new Date().getTime();
+  if (catItem.scheduleStart) {
+    const start = new Date(catItem.scheduleStart).getTime();
+    if (!isNaN(start) && now < start) return false;
+  }
+  if (catItem.scheduleEnd) {
+    const end = new Date(catItem.scheduleEnd).getTime();
+    if (!isNaN(end) && now > end) return false;
+  }
+  return true;
+};
 
 const SectionItem: React.FC<SectionItemProps> = ({
   section,
   products,
   reviews,
+  categoryHighlights = [],
   onSelectProduct,
   onNavigateCategory,
 }) => {
@@ -199,35 +287,91 @@ const SectionItem: React.FC<SectionItemProps> = ({
     }
 
     case 'categories': {
-      const cats = data.categories || ['Sarees', 'Kurtis', 'Lehengas', 'Jewelry', 'Menswear'];
+      const rawItems = data.categoryItems || data.items || data.categories || categoryHighlights || [];
+      const normalizedItems = rawItems.map((item: any, idx: number) => {
+        if (typeof item === 'string') {
+          const found = categoryHighlights?.find((c: any) => c.title === item || c.id === item);
+          if (found) return found;
+          return {
+            id: `cat_${idx}`,
+            title: item,
+            subtitle: 'Explore Footwear Collection',
+            categoryFilter: item,
+            buttonText: 'Explore Collection →',
+            enabled: true,
+          };
+        }
+        return item;
+      });
+
+      const visibleItems = normalizedItems.filter(isCategoryVisible);
+
       return (
         <div style={sectionStyle} className="w-full">
           <div className={containerClass}>
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-black text-neutral-900">{section.title}</h2>
+              <h2 className="text-2xl font-black text-neutral-900">{section.title || 'Shop by Family & Gender'}</h2>
               {section.subtitle && <p className="text-xs text-neutral-500 mt-1">{section.subtitle}</p>}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-              {cats.map((cat: string, idx: number) => (
-                <div
-                  key={idx}
-                  onClick={() => onNavigateCategory && onNavigateCategory(cat)}
-                  className="group relative h-48 rounded-2xl overflow-hidden bg-neutral-900 cursor-pointer shadow-md hover:shadow-xl transition-all"
-                >
-                  <img
-                    src={`https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&q=80&w=400&sig=${idx}`}
-                    alt={cat}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-70"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-4">
-                    <div>
-                      <h3 className="text-base font-bold text-white group-hover:text-amber-300 transition-colors">{cat}</h3>
-                      <span className="text-[10px] font-semibold text-neutral-300 uppercase tracking-wider">Explore Collection →</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {visibleItems.map((cat: any, idx: number) => {
+                const coverImage = getCategoryCoverImage(cat, products);
+                const btnLabel = cat.buttonText || 'Explore Collection →';
+                const filterValue = cat.categoryFilter || cat.subcategoryFilter || cat.title || cat.name || 'all';
+
+                return (
+                  <div
+                    key={cat.id || idx}
+                    onClick={() => onNavigateCategory && onNavigateCategory(filterValue)}
+                    className="group relative h-56 rounded-2xl overflow-hidden bg-neutral-900 cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 border border-black/10 flex flex-col justify-end p-4"
+                  >
+                    <img
+                      src={coverImage}
+                      alt={cat.title || cat.name}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent transition-opacity group-hover:opacity-90" />
+
+                    {/* Status Badges */}
+                    <div className="absolute top-3 left-3 flex flex-wrap gap-1 z-10">
+                      {cat.featured && (
+                        <span className="px-2 py-0.5 bg-amber-400 text-neutral-950 font-black text-[9px] rounded-full uppercase tracking-wider shadow-sm">
+                          FEATURED
+                        </span>
+                      )}
+                      {cat.trending && (
+                        <span className="px-2 py-0.5 bg-rose-500 text-white font-black text-[9px] rounded-full uppercase tracking-wider shadow-sm">
+                          HOT
+                        </span>
+                      )}
+                      {cat.newBadge && (
+                        <span className="px-2 py-0.5 bg-emerald-500 text-white font-black text-[9px] rounded-full uppercase tracking-wider shadow-sm">
+                          NEW
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="relative z-10 space-y-1">
+                      <h3 className="text-base font-black text-white group-hover:text-amber-300 transition-colors leading-tight">
+                        {cat.title || cat.name}
+                      </h3>
+                      {cat.subtitle && (
+                        <p className="text-[11px] text-neutral-300 font-medium line-clamp-1 opacity-90">
+                          {cat.subtitle}
+                        </p>
+                      )}
+                      <div className="pt-1 flex items-center justify-between text-[10px] font-bold text-amber-300 group-hover:translate-x-1 transition-transform">
+                        <span>{btnLabel}</span>
+                        {cat.itemCount && (
+                          <span className="text-neutral-400 font-mono font-normal">{cat.itemCount}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

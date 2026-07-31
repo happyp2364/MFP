@@ -8,8 +8,8 @@ export const FLOATING_SNEAKER_DEFAULT_SECTION: HomepageSection = {
   enabled: true,
   visibleDevices: ['desktop', 'tablet', 'mobile'],
   styling: {
-    bgColor: '#f4f2ee',
-    bgGradient: 'from-[#f4f2ee] via-[#eae6df] to-[#e1ded6]',
+    bgColor: '#f5f3ef',
+    bgGradient: 'from-[#faf8f5] via-[#f2efe9] to-[#e8e4dc]',
     textColor: '#1c1917',
     accentColor: '#d97706',
     paddingTop: 48,
@@ -21,37 +21,37 @@ export const FLOATING_SNEAKER_DEFAULT_SECTION: HomepageSection = {
   },
   contentData: {
     // Large background word behind floating shoe
-    backgroundWord: 'SPORT', // Options: NIKE, SPORT, STYLE, MFP, PREMIUM, MARUDHAR, SALE, NEW, LUXURY, etc.
+    backgroundWord: 'MBH', // Editable background word (e.g. MBH, LUXURY, SPORT, SNEAKER, etc.)
     bgWordOpacity: 0.12,
     bgWordColor: '#1c1917',
     
     // Headings & Copy
     smallHeading: '2026 EDITION • MARUDHAR LUXURY',
-    mainHeading: 'AIR GLIDE PRO RUNNER',
-    description: 'Engineered with responsive cloud-foam cushioning, ultra-breathable flyknit weave, and polished burnished leather accents.',
+    mainHeading: 'AURA GLIDE GLASS SNEAKER',
+    description: 'Hand-crafted luxury runner engineered with soft cream flyknit weave, ivory suede overlays, and translucent glassmorphism cushioning.',
     
     // CTA Button Config
-    ctaText: 'EXPLORE & BUY NOW',
+    ctaText: 'EXPLORE LUXURY COLLECTION',
     ctaLink: 'products',
     ctaStyle: 'filled', // filled | glass | outline
     ctaBgColor: '#1c1917',
     ctaTextColor: '#ffffff',
     
     // Main Floating Product Image
-    mainImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80',
+    mainImage: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=1200&q=80',
     
     // Secondary Thumbnail Images
     secondaryImages: [
-      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=600&q=80',
       'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=600&q=80',
     ],
     
     // Floating Badges
     floatingBadges: [
-      { id: 'b1', title: 'Ultralight Cushioning', value: '320g', position: 'top-left' },
-      { id: 'b2', title: 'Air Flow Soles', value: '98% Breathable', position: 'bottom-right' },
-      { id: 'b3', title: 'Open Box Guarantee', value: 'Inspect & Pay', position: 'top-right' },
+      { id: 'b1', title: 'Ultralight Flyknit', value: '290g', position: 'top-left' },
+      { id: 'b2', title: 'Glass Air Cushioning', value: 'Cloud Feel', position: 'bottom-right' },
+      { id: 'b3', title: 'Open Box Inspection', value: 'Try & Pay', position: 'top-right' },
     ],
     
     // Glassmorphism controls
@@ -76,10 +76,10 @@ export const FLOATING_SNEAKER_DEFAULT_SECTION: HomepageSection = {
     enableParticles: true,
     
     // Navigation / Tabs
-    navLabels: ['Overview', 'Tech Specs', 'Size Guide', 'Reviews'],
+    navLabels: ['Overview', 'Materials', 'Fit Guide', 'Reviews'],
     
     // Custom Tags
-    productTags: ['🔥 HOT DROP', 'LIMITED EDITION', 'FREE SHIPPING'],
+    productTags: ['✨ EXCLUSIVE DROP', '100% GENUINE', 'FREE SHIPPING'],
   },
 };
 
@@ -108,35 +108,7 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
       speed: 18,
     },
   },
-  {
-    id: 'sec_hero_banner',
-    type: 'hero_banner',
-    title: 'Marudhar Royal Footwear Collection',
-    subtitle: 'Crafted for Royalty, Engineered for Supreme Comfort',
-    enabled: true,
-    visibleDevices: ['desktop', 'tablet', 'mobile'],
-    styling: {
-      bgColor: '#0F172A',
-      bgGradient: 'from-neutral-900 via-neutral-900/90 to-[#0B8F63]/20',
-      textColor: '#FFFFFF',
-      accentColor: '#0B8F63',
-      paddingTop: 48,
-      paddingBottom: 48,
-      fullWidth: true,
-      animation: 'fade',
-    },
-    contentData: {
-      badge: '👑 Royal Edition • Direct from Pipar City',
-      heading: 'Step into Royalty & Unmatched Elegance',
-      description: 'Explore handcrafted leather loafers, high-performance running sneakers, and Rajasthani zari juttis engineered with air-cushioned comfort.',
-      ctaText: 'Explore Collection',
-      ctaLink: 'products',
-      secondaryCtaText: 'Watch Video Tour',
-      secondaryCtaLink: 'about',
-      imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1600&q=80',
-      tagBadges: ['100% Genuine Leather', 'Air Glide Cushioning', 'Free Shipping'],
-    },
-  },
+  FLOATING_SNEAKER_DEFAULT_SECTION,
   {
     id: 'sec_quick_categories',
     type: 'quick_category_icons',
@@ -217,7 +189,84 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
       paddingTop: 32,
       paddingBottom: 32,
     },
-    contentData: {},
+    contentData: {
+      categoryItems: [
+        {
+          id: 'cat_mens_sports',
+          title: "Men's Sports Shoes",
+          subtitle: 'High-performance cushioned running & gym shoes',
+          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+          itemCount: '150+ Styles',
+          icon: 'Footprints',
+          buttonText: 'Explore Sports →',
+          categoryFilter: 'men',
+          subcategoryFilter: 'Running Shoes',
+          featured: true,
+          enabled: true,
+        },
+        {
+          id: 'cat_womens_sports',
+          title: "Women's Sports Shoes",
+          subtitle: 'Lightweight & stylish active footwear for women',
+          image: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=800&q=80',
+          itemCount: '80+ Styles',
+          icon: 'Sparkles',
+          buttonText: 'Shop Women →',
+          categoryFilter: 'women',
+          featured: true,
+          enabled: true,
+        },
+        {
+          id: 'cat_casual_sneakers',
+          title: 'Casual Sneakers',
+          subtitle: 'Streetwear, college & urban lifestyle sneakers',
+          image: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=800&q=80',
+          itemCount: '120+ Styles',
+          icon: 'Flame',
+          buttonText: 'Shop Sneakers →',
+          categoryFilter: 'men',
+          subcategoryFilter: 'Sneakers',
+          trending: true,
+          enabled: true,
+        },
+        {
+          id: 'cat_kids_footwear',
+          title: 'Kids Footwear',
+          subtitle: 'Durable school shoes, light-up sneakers & sandals',
+          image: 'https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=800&q=80',
+          itemCount: '90+ Styles',
+          icon: 'Smile',
+          buttonText: 'Explore Kids →',
+          categoryFilter: 'kids',
+          popular: true,
+          enabled: true,
+        },
+        {
+          id: 'cat_loafers_formals',
+          title: 'Loafers & Formal Shoes',
+          subtitle: 'Royal handcrafted leather loafers & Oxfords',
+          image: 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&w=800&q=80',
+          itemCount: '60+ Styles',
+          icon: 'Tag',
+          buttonText: 'View Royal Series →',
+          categoryFilter: 'men',
+          subcategoryFilter: 'Loafers',
+          featured: true,
+          enabled: true,
+        },
+        {
+          id: 'cat_slippers_slides',
+          title: 'Slippers & Slides',
+          subtitle: 'Ultra-soft memory foam slides & daily slippers',
+          image: 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?auto=format&fit=crop&w=800&q=80',
+          itemCount: '75+ Styles',
+          icon: 'ShoppingBag',
+          buttonText: 'Shop Comfort →',
+          categoryFilter: 'all',
+          enabled: true,
+        },
+      ],
+    },
   },
   {
     id: 'sec_offer_cards',
@@ -410,9 +459,9 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
 
 export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   id: 'homepage_default',
-  name: 'Marudhar Royal Storefront',
-  presetName: 'Marudhar Royal Default',
-  themeMode: 'light',
+  name: 'Marudhar Premium Floating Sneaker Storefront',
+  presetName: 'Premium Floating Sneaker Glass',
+  themeMode: 'glassmorphic',
   sections: DEFAULT_HOMEPAGE_SECTIONS,
   updatedAt: new Date().toISOString(),
   updatedBy: 'System Admin',
@@ -422,17 +471,14 @@ export const HOMEPAGE_PRESETS: HomepagePreset[] = [
   {
     id: 'preset_floating_sneaker',
     name: '👟 Premium Floating Sneaker',
-    description: 'Luxury floating sneaker centerpiece layout with soft neutral backdrop, glassmorphism cards, and floating badges.',
-    previewColor: '#f4f2ee',
-    badge: 'NEW LUXURY',
+    description: 'Luxury floating sneaker centerpiece layout with soft warm beige backdrop, glassmorphism cards, MBH floating badges, and 3D floating footwear.',
+    previewColor: '#f5f3ef',
+    badge: 'DEFAULT LUXURY',
     config: {
       name: 'Premium Floating Sneaker Glass Experience',
-      presetName: 'Premium Floating Sneaker',
+      presetName: 'Premium Floating Sneaker Glass',
       themeMode: 'glassmorphic',
-      sections: [
-        FLOATING_SNEAKER_DEFAULT_SECTION,
-        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner'),
-      ],
+      sections: DEFAULT_HOMEPAGE_SECTIONS,
     },
   },
   {
@@ -440,7 +486,7 @@ export const HOMEPAGE_PRESETS: HomepagePreset[] = [
     name: '👑 Marudhar Royal Heritage',
     description: 'Traditional Rajasthan elegance with gold accents, rich jutti highlights, and high-trust badges.',
     previewColor: '#0F172A',
-    badge: 'DEFAULT',
+    badge: 'HERITAGE',
     config: {
       name: 'Marudhar Royal Heritage',
       presetName: 'Marudhar Royal Heritage',

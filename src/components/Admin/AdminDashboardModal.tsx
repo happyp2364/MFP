@@ -50,6 +50,7 @@ import {
   Zap,
   MessageSquare,
   PartyPopper,
+  Heart,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
@@ -79,6 +80,7 @@ import { OpenBoxDeliverySettingsView } from './OpenBoxDeliverySettingsView';
 import { AdminManagementView } from './AdminManagementView';
 import { HomepageBuilderTab } from './HomepageBuilder/HomepageBuilderTab';
 import { AdminErrorBoundary } from './AdminErrorBoundary';
+import { AboutUsSettingsView } from './AboutUsSettingsView';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -88,7 +90,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -614,6 +616,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('about_us')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'about_us'
+                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Heart className="w-4 h-4 text-amber-500" />
+              <span>About Us Manager</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('top_announcement_bar')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'top_announcement_bar'
@@ -818,6 +832,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: VERSION HISTORY & ROLLBACKS ----------------- */}
             {activeTab === 'versions' && <VersionHistoryView />}
+
+            {/* ----------------- TAB: ABOUT US MANAGER ----------------- */}
+            {activeTab === 'about_us' && <AboutUsSettingsView />}
 
             {/* ----------------- TAB: TOP ANNOUNCEMENT BAR CUSTOMIZER ----------------- */}
             {activeTab === 'top_announcement_bar' && <TopAnnouncementBarSettingsView />}

@@ -599,6 +599,72 @@ Respond strictly with valid JSON:
     }
   });
 
+  app.post("/api/ai/generate-about-content", async (req, res) => {
+    try {
+      const { type = "story", prompt = "Enhance story with royal Rajasthani heritage and quality footwear craftsmanship", currentText = "" } = req.body || {};
+
+      const aiPrompt = `You are a world-class luxury brand storytelling copywriter for "Marudhar Fashion Point", Pipar City's top footwear destination.
+Task: Write compelling content of type "${type}".
+User Instruction: "${prompt}"
+Existing context (if any): "${currentText}"
+
+Requirements based on type:
+- "story": 2-3 engaging, warm paragraphs celebrating 16+ years of footwear heritage, Viju Bhai's quality commitment, and customer trust.
+- "bio": A inspiring 2-sentence executive/owner bio emphasizing customer satisfaction and footwear expertise.
+- "mission": A clear, inspiring 1-sentence mission statement.
+- "vision": A forward-looking 1-sentence vision statement.
+- "highlights": JSON array of 5-6 short bullet points (e.g. ["100% Fit Guarantee", "Handcrafted Mojaris"]).
+
+Respond strictly with valid JSON in format:
+{
+  "content": "Generated text here...",
+  "highlights": ["item 1", "item 2"]
+}`;
+
+      if (process.env.GEMINI_API_KEY) {
+        try {
+          const response = await ai.models.generateContent({
+            model: "gemini-3.6-flash",
+            contents: aiPrompt,
+            config: { responseMimeType: "application/json" }
+          });
+          if (response.text) {
+            const parsed = JSON.parse(response.text);
+            return res.json({ success: true, result: parsed });
+          }
+        } catch (aiErr) {
+          console.warn("[AI About Us] Gemini fallback note:", aiErr);
+        }
+      }
+
+      // Fallback
+      if (type === "highlights") {
+        return res.json({
+          success: true,
+          result: {
+            content: "100% Quality Inspected Before Dispatch",
+            highlights: [
+              "100% Fit & Comfort Guarantee",
+              "Handcrafted Royal Rajasthani Mojaris",
+              "Ergonomic Cushion Air Sole Sneakers",
+              "Direct Sourcing at Fair Family Prices",
+              "Personalized Sizing Guidance via WhatsApp"
+            ]
+          }
+        });
+      }
+
+      return res.json({
+        success: true,
+        result: {
+          content: "Founded in 2010 by Viju Bhai, Marudhar Fashion Point has grown from Pipar City's trusted local shoe store into Rajasthan's beloved multi-category family footwear landmark. Driven by relentless quality inspection and personal service, we ensure every step you take radiates royal comfort."
+        }
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // =========================================================================
   // LIVE LOCATION & GOOGLE MAPS STORE API
   // =========================================================================

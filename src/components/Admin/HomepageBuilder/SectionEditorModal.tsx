@@ -264,7 +264,7 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                   type="text"
                   value={edited.subtitle || ''}
                   onChange={(e) => setEdited({ ...edited, subtitle: e.target.value })}
-                  placeholder="e.g., Handcrafted Designer Sarees & Heavy Lehengas"
+                  placeholder="e.g., High-performance Sports Shoes & Premium Leather Sneakers"
                   className="w-full px-3.5 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
@@ -679,9 +679,159 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                           contentData: { ...edited.contentData, category: e.target.value },
                         })
                       }
-                      placeholder="e.g. Sarees, Kurtis, ALL"
+                      placeholder="e.g. Men's Sports Shoes, Casual Sneakers, ALL"
                       className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Categories Cards List Manager */}
+              {edited.type === 'categories' && (
+                <div className="p-4 border border-emerald-200 bg-emerald-50/50 rounded-2xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                        Category Cards Manager
+                      </h4>
+                      <p className="text-[11px] text-neutral-500">
+                        Add, edit, reorder or schedule footwear category cards in this section.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const items = edited.contentData?.categoryItems || [];
+                        const newItem = {
+                          id: `cat_${Date.now()}`,
+                          title: "Men's Sports Shoes",
+                          subtitle: "High-performance cushioned shoes",
+                          image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+                          itemCount: "100+ Styles",
+                          buttonText: "Explore Sports →",
+                          categoryFilter: "men",
+                          enabled: true,
+                        };
+                        setEdited({
+                          ...edited,
+                          contentData: {
+                            ...edited.contentData,
+                            categoryItems: [...items, newItem],
+                          },
+                        });
+                      }}
+                      className="px-3 py-1.5 bg-[#0B8F63] text-white text-xs font-bold rounded-xl hover:bg-[#086F4C] transition-colors"
+                    >
+                      + Add Category Card
+                    </button>
+                  </div>
+
+                  {/* List of Category Items */}
+                  <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                    {((edited.contentData?.categoryItems || []) as any[]).map((item: any, idx: number) => (
+                      <div key={item.id || idx} className="p-3 bg-white border border-neutral-200 rounded-xl space-y-2 shadow-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-xs text-neutral-900">
+                            #{idx + 1}: {item.title || 'Untitled Category'}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={idx === 0}
+                              onClick={() => {
+                                const list = [...(edited.contentData?.categoryItems || [])];
+                                const temp = list[idx];
+                                list[idx] = list[idx - 1];
+                                list[idx - 1] = temp;
+                                setEdited({ ...edited, contentData: { ...edited.contentData, categoryItems: list } });
+                              }}
+                              className="px-2 py-0.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-[10px] rounded disabled:opacity-30"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              disabled={idx === (edited.contentData?.categoryItems?.length || 1) - 1}
+                              onClick={() => {
+                                const list = [...(edited.contentData?.categoryItems || [])];
+                                const temp = list[idx];
+                                list[idx] = list[idx + 1];
+                                list[idx + 1] = temp;
+                                setEdited({ ...edited, contentData: { ...edited.contentData, categoryItems: list } });
+                              }}
+                              className="px-2 py-0.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-[10px] rounded disabled:opacity-30"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const list = (edited.contentData?.categoryItems || []).filter((_: any, i: number) => i !== idx);
+                                setEdited({ ...edited, contentData: { ...edited.contentData, categoryItems: list } });
+                              }}
+                              className="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-bold rounded"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-[10px] text-neutral-500 font-bold block">Title</span>
+                            <input
+                              type="text"
+                              value={item.title || ''}
+                              onChange={(e) => {
+                                const list = [...(edited.contentData?.categoryItems || [])];
+                                list[idx] = { ...list[idx], title: e.target.value };
+                                setEdited({ ...edited, contentData: { ...edited.contentData, categoryItems: list } });
+                              }}
+                              className="w-full p-1.5 border rounded bg-neutral-50"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-neutral-500 font-bold block">Subtitle</span>
+                            <input
+                              type="text"
+                              value={item.subtitle || ''}
+                              onChange={(e) => {
+                                const list = [...(edited.contentData?.categoryItems || [])];
+                                list[idx] = { ...list[idx], subtitle: e.target.value };
+                                setEdited({ ...edited, contentData: { ...edited.contentData, categoryItems: list } });
+                              }}
+                              className="w-full p-1.5 border rounded bg-neutral-50"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-neutral-500 font-bold block">Image URL</span>
+                            <input
+                              type="text"
+                              value={item.image || ''}
+                              onChange={(e) => {
+                                const list = [...(edited.contentData?.categoryItems || [])];
+                                list[idx] = { ...list[idx], image: e.target.value };
+                                setEdited({ ...edited, contentData: { ...edited.contentData, categoryItems: list } });
+                              }}
+                              className="w-full p-1.5 border rounded bg-neutral-50"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-neutral-500 font-bold block">Button CTA</span>
+                            <input
+                              type="text"
+                              value={item.buttonText || ''}
+                              onChange={(e) => {
+                                const list = [...(edited.contentData?.categoryItems || [])];
+                                list[idx] = { ...list[idx], buttonText: e.target.value };
+                                setEdited({ ...edited, contentData: { ...edited.contentData, categoryItems: list } });
+                              }}
+                              className="w-full p-1.5 border rounded bg-neutral-50"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

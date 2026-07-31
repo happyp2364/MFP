@@ -21,6 +21,8 @@ import {
   Palette,
   Loader2,
   ExternalLink,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { useStore } from '../../../context/StoreContext';
 import { HomepageSection, HomepageConfig } from '../../../types';
@@ -30,6 +32,7 @@ import { SectionLibraryModal } from './SectionLibraryModal';
 import { AILayoutGeneratorModal } from './AILayoutGeneratorModal';
 import { VersionHistoryModal } from './VersionHistoryModal';
 import { HomepageRenderer } from '../../Customer/HomepageRenderer';
+import { TemplateMarketplaceView } from './TemplateMarketplaceView';
 
 export const HomepageBuilderTab: React.FC = () => {
   const { homepageConfig, updateHomepageConfig, showToast } = useStore();
@@ -39,7 +42,8 @@ export const HomepageBuilderTab: React.FC = () => {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [previewDevice, setPreviewDevice] = useState<'builder' | 'desktop' | 'tablet' | 'mobile'>('builder');
+  const [activeTab, setActiveTab] = useState<'marketplace' | 'canvas' | 'simulator'>('marketplace');
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isSaving, setIsSaving] = useState(false);
 
   // Synchronize when global config updates from Firestore
@@ -48,6 +52,15 @@ export const HomepageBuilderTab: React.FC = () => {
       setLocalConfig(JSON.parse(JSON.stringify(homepageConfig)));
     }
   }, [homepageConfig]);
+
+  const handleApplyMarketplaceConfig = (cfg: Partial<HomepageConfig>) => {
+    setLocalConfig((prev) => ({
+      ...prev,
+      ...cfg,
+      sections: cfg.sections ? JSON.parse(JSON.stringify(cfg.sections)) : prev.sections,
+    }));
+    setActiveTab('canvas');
+  };
 
   const handleApplyPreset = (presetId: string) => {
     const preset = HOMEPAGE_PRESETS.find((p) => p.id === presetId);
@@ -63,6 +76,41 @@ export const HomepageBuilderTab: React.FC = () => {
       }));
       showToast(`Applied ${preset.name} preset! Click "Publish Homepage" to go live.`, 'info');
     }
+  };
+
+  const handleExportPreset = () => {
+    try {
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(localConfig, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', `homepage_preset_${(localConfig.name || 'custom').toLowerCase().replace(/\s+/g, '_')}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('Exported homepage preset JSON', 'success');
+    } catch (e) {
+      showToast('Failed to export preset JSON', 'error');
+    }
+  };
+
+  const handleImportPreset = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const imported = JSON.parse(event.target?.result as string);
+        if (imported && Array.isArray(imported.sections)) {
+          setLocalConfig(imported);
+          showToast('Successfully imported homepage preset layout!', 'success');
+        } else {
+          showToast('Invalid preset JSON file format', 'error');
+        }
+      } catch (err) {
+        showToast('Error parsing JSON file', 'error');
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleMoveSection = (index: number, direction: 'up' | 'down') => {
@@ -187,62 +235,79 @@ export const HomepageBuilderTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Preset Selector & Mode Tabs */}
-      <div className="bg-neutral-900 text-white p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
-        {/* Preset Badges */}
-        <div className="flex items-center gap-2 overflow-x-auto py-1">
-          <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider mr-1">Presets:</span>
-          {HOMEPAGE_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              onClick={() => handleApplyPreset(preset.id)}
-              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold rounded-lg border border-neutral-700 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-            >
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: preset.previewColor }} />
-              {preset.name}
-              <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-neutral-300">{preset.badge}</span>
-            </button>
-          ))}
+      {/* Primary View Tab Bar */}
+      <div className="bg-neutral-900 text-white p-2 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-lg">
+        <div className="flex items-center gap-1.5 bg-neutral-950 p-1 rounded-xl border border-neutral-800">
+          <button
+            type="button"
+            onClick={() => setActiveTab('marketplace')}
+            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${
+              activeTab === 'marketplace'
+                ? 'bg-amber-500 text-neutral-950 shadow-md scale-105'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" /> 🏠 Template Marketplace (50+)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('canvas')}
+            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${
+              activeTab === 'canvas'
+                ? 'bg-amber-500 text-neutral-950 shadow-md scale-105'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Layers className="w-4 h-4" /> 🛠️ Canvas Editor ({localConfig.sections.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('simulator')}
+            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${
+              activeTab === 'simulator'
+                ? 'bg-amber-500 text-neutral-950 shadow-md scale-105'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Eye className="w-4 h-4" /> 👁️ Device Simulator
+          </button>
         </div>
 
-        {/* Simulator Device Switcher */}
-        <div className="flex bg-neutral-800 p-1 rounded-xl border border-neutral-700">
-          {[
-            { id: 'builder', label: 'Canvas', icon: Layers },
-            { id: 'desktop', label: 'Desktop', icon: Monitor },
-            { id: 'tablet', label: 'Tablet', icon: Tablet },
-            { id: 'mobile', label: 'Mobile', icon: Smartphone },
-          ].map((mode) => {
-            const IconComp = mode.icon;
-            return (
-              <button
-                key={mode.id}
-                onClick={() => setPreviewDevice(mode.id as any)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
-                  previewDevice === mode.id
-                    ? 'bg-emerald-500 text-white shadow-xs'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-              >
-                <IconComp className="w-3.5 h-3.5" />
-                {mode.label}
-              </button>
-            );
-          })}
+        {/* Quick Active Config Indicator */}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-800/80 rounded-xl border border-neutral-700/80 text-xs text-neutral-300">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="font-bold text-white truncate max-w-[200px]">
+            {localConfig.name || 'Custom Draft'}
+          </span>
+          <span className="text-[10px] bg-neutral-700 px-2 py-0.5 rounded font-extrabold text-amber-400">
+            {localConfig.sections.length} Sections
+          </span>
         </div>
       </div>
 
-      {/* CANVAS BUILDER MODE */}
-      {previewDevice === 'builder' ? (
+      {/* VIEW RENDERER */}
+      {activeTab === 'marketplace' ? (
+        <TemplateMarketplaceView
+          currentConfig={localConfig}
+          onApplyPreset={handleApplyMarketplaceConfig}
+          onOpenAIGenerator={() => setIsAiModalOpen(true)}
+          showToast={showToast}
+        />
+      ) : activeTab === 'canvas' ? (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-neutral-800 uppercase tracking-wider flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-600" /> Active Homepage Sections ({localConfig.sections.length})
-            </h3>
+          <div className="flex items-center justify-between bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-xs">
+            <div>
+              <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <Layers className="w-4 h-4 text-amber-500" /> Active Homepage Sections ({localConfig.sections.length})
+              </h3>
+              <p className="text-xs text-neutral-500">Reorder, enable/disable, edit content, or duplicate sections.</p>
+            </div>
             <button
               type="button"
               onClick={() => setIsLibraryOpen(true)}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+              className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-neutral-950 text-xs font-black rounded-xl shadow-xs transition-all flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" /> Add Section
             </button>
@@ -343,7 +408,37 @@ export const HomepageBuilderTab: React.FC = () => {
         </div>
       ) : (
         /* LIVE SIMULATOR DEVICE PREVIEW MODE */
-        <div className="bg-neutral-900 p-6 rounded-2xl flex justify-center items-center overflow-x-auto min-h-[600px]">
+        <div className="bg-neutral-900 p-6 rounded-2xl flex flex-col items-center gap-4 min-h-[600px]">
+          <div className="flex items-center gap-2 bg-neutral-800 p-1.5 rounded-xl border border-neutral-700">
+            <button
+              type="button"
+              onClick={() => setPreviewDevice('desktop')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                previewDevice === 'desktop' ? 'bg-amber-500 text-neutral-950 font-black' : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Monitor className="w-4 h-4" /> Desktop (1440px)
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewDevice('tablet')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                previewDevice === 'tablet' ? 'bg-amber-500 text-neutral-950 font-black' : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Tablet className="w-4 h-4" /> Tablet (768px)
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewDevice('mobile')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                previewDevice === 'mobile' ? 'bg-amber-500 text-neutral-950 font-black' : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Smartphone className="w-4 h-4" /> Mobile (375px)
+            </button>
+          </div>
+
           <div
             className={`bg-white transition-all duration-300 overflow-hidden shadow-2xl rounded-3xl border-8 border-neutral-800 ${
               previewDevice === 'mobile'

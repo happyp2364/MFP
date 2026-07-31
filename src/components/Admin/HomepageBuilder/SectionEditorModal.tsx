@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { HomepageSection } from '../../../types';
 import { generateAISectionContent } from '../../../lib/homepageService';
+import { extractShoeFromImage } from '../../../utils/aiBackgroundRemoval';
 
 interface SectionEditorModalProps {
   section: HomepageSection;
@@ -34,8 +35,31 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [showAiInput, setShowAiInput] = useState(false);
+  const [isProcessingBgRemoval, setIsProcessingBgRemoval] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleRemoveBackground = async () => {
+    const imgUrl = edited.contentData?.mainImage;
+    if (!imgUrl) return;
+    setIsProcessingBgRemoval(true);
+    try {
+      const res = await extractShoeFromImage(imgUrl);
+      if (res && res.transparentPngUrl) {
+        setEdited((prev) => ({
+          ...prev,
+          contentData: {
+            ...prev.contentData,
+            mainImage: res.transparentPngUrl,
+          },
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to remove background:', e);
+    } finally {
+      setIsProcessingBgRemoval(false);
+    }
+  };
 
   const handleAIContentRewrite = async () => {
     if (!aiPrompt.trim()) return;
@@ -246,6 +270,295 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
               </div>
 
               {/* Specific Content Item Editors */}
+              {/* Specific Content Item Editors */}
+              {edited.type === 'floating_sneaker' && (
+                <div className="pt-2 space-y-4 border-t border-neutral-200">
+                  <h4 className="text-sm font-bold text-neutral-900 flex items-center gap-2 pt-2">
+                    <Sparkles className="w-4 h-4 text-amber-500" /> Floating Sneaker & Glass Showcase Controls
+                  </h4>
+
+                  {/* Background Typography Word */}
+                  <div className="p-3 bg-amber-50/60 border border-amber-200/60 rounded-xl space-y-2">
+                    <label className="block text-xs font-bold text-amber-900 uppercase tracking-wider">
+                      Large Background Typography Word
+                    </label>
+                    <input
+                      type="text"
+                      value={edited.contentData?.backgroundWord || 'SPORT'}
+                      onChange={(e) =>
+                        setEdited({
+                          ...edited,
+                          contentData: { ...edited.contentData, backgroundWord: e.target.value.toUpperCase() },
+                        })
+                      }
+                      placeholder="e.g. SPORT, NIKE, MFP, STYLE, LUXURY"
+                      className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm font-mono uppercase bg-white"
+                    />
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {['NIKE', 'SPORT', 'STYLE', 'MFP', 'PREMIUM', 'MARUDHAR', 'SALE', 'NEW', 'LUXURY'].map((word) => (
+                        <button
+                          key={word}
+                          type="button"
+                          onClick={() =>
+                            setEdited({
+                              ...edited,
+                              contentData: { ...edited.contentData, backgroundWord: word },
+                            })
+                          }
+                          className={`px-2.5 py-1 text-[10px] font-bold rounded-md border transition-colors ${
+                            edited.contentData?.backgroundWord === word
+                              ? 'bg-amber-600 text-white border-amber-700'
+                              : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
+                          }`}
+                        >
+                          {word}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Main Product Image & AI Background Removal */}
+                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-xl space-y-3">
+                    <label className="block text-xs font-bold text-neutral-800 uppercase tracking-wider">
+                      Main Centerpiece Product Image (PNG / Transparent)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={edited.contentData?.mainImage || ''}
+                        onChange={(e) =>
+                          setEdited({
+                            ...edited,
+                            contentData: { ...edited.contentData, mainImage: e.target.value },
+                          })
+                        }
+                        placeholder="https://..."
+                        className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveBackground}
+                        disabled={isProcessingBgRemoval || !edited.contentData?.mainImage}
+                        className="px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        {isProcessingBgRemoval ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Removing BG...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="w-3.5 h-3.5" /> AI Remove BG
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    {edited.contentData?.mainImage && (
+                      <div className="w-full h-28 bg-neutral-900/10 rounded-lg overflow-hidden flex items-center justify-center p-2 border border-neutral-200">
+                        <img
+                          src={edited.contentData?.mainImage}
+                          alt="Main Preview"
+                          className="max-h-full max-w-full object-contain filter drop-shadow-md"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Headings & CTA */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-700 mb-1">Small Heading / Eyebrow</label>
+                      <input
+                        type="text"
+                        value={edited.contentData?.smallHeading || ''}
+                        onChange={(e) =>
+                          setEdited({
+                            ...edited,
+                            contentData: { ...edited.contentData, smallHeading: e.target.value },
+                          })
+                        }
+                        className="w-full px-3 py-1.5 border border-neutral-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-700 mb-1">Main Heading</label>
+                      <input
+                        type="text"
+                        value={edited.contentData?.mainHeading || ''}
+                        onChange={(e) =>
+                          setEdited({
+                            ...edited,
+                            contentData: { ...edited.contentData, mainHeading: e.target.value },
+                          })
+                        }
+                        className="w-full px-3 py-1.5 border border-neutral-300 rounded-lg text-xs font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 mb-1">Description Copy</label>
+                    <textarea
+                      rows={2}
+                      value={edited.contentData?.description || ''}
+                      onChange={(e) =>
+                        setEdited({
+                          ...edited,
+                          contentData: { ...edited.contentData, description: e.target.value },
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-xs"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-700 mb-1">CTA Button Text</label>
+                      <input
+                        type="text"
+                        value={edited.contentData?.ctaText || ''}
+                        onChange={(e) =>
+                          setEdited({
+                            ...edited,
+                            contentData: { ...edited.contentData, ctaText: e.target.value },
+                          })
+                        }
+                        className="w-full px-3 py-1.5 border border-neutral-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-700 mb-1">CTA Target Link</label>
+                      <input
+                        type="text"
+                        value={edited.contentData?.ctaLink || 'products'}
+                        onChange={(e) =>
+                          setEdited({
+                            ...edited,
+                            contentData: { ...edited.contentData, ctaLink: e.target.value },
+                          })
+                        }
+                        className="w-full px-3 py-1.5 border border-neutral-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-700 mb-1">CTA Style</label>
+                      <select
+                        value={edited.contentData?.ctaStyle || 'filled'}
+                        onChange={(e) =>
+                          setEdited({
+                            ...edited,
+                            contentData: { ...edited.contentData, ctaStyle: e.target.value },
+                          })
+                        }
+                        className="w-full px-3 py-1.5 border border-neutral-300 rounded-lg text-xs font-bold bg-white"
+                      >
+                        <option value="filled">Dark Solid Button</option>
+                        <option value="glass">Glassmorphism Pill</option>
+                        <option value="outline">High Contrast Outline</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* 3D Transform Sliders */}
+                  <div className="p-3 bg-neutral-100 rounded-xl space-y-3">
+                    <label className="block text-xs font-bold text-neutral-800 uppercase tracking-wider">
+                      3D Shoe Transform & Position Controls
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold mb-1">
+                          <span>Rotation Angle</span>
+                          <span>{edited.contentData?.productRotation ?? -12}°</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-45"
+                          max="45"
+                          value={edited.contentData?.productRotation ?? -12}
+                          onChange={(e) =>
+                            setEdited({
+                              ...edited,
+                              contentData: { ...edited.contentData, productRotation: Number(e.target.value) },
+                            })
+                          }
+                          className="w-full accent-amber-600"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold mb-1">
+                          <span>Zoom Scale</span>
+                          <span>{edited.contentData?.productScale ?? 1.05}x</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.6"
+                          max="1.5"
+                          step="0.05"
+                          value={edited.contentData?.productScale ?? 1.05}
+                          onChange={(e) =>
+                            setEdited({
+                              ...edited,
+                              contentData: { ...edited.contentData, productScale: Number(e.target.value) },
+                            })
+                          }
+                          className="w-full accent-amber-600"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold mb-1">
+                          <span>Y-Offset (Float)</span>
+                          <span>{edited.contentData?.productPositionY ?? -10}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-50"
+                          max="50"
+                          value={edited.contentData?.productPositionY ?? -10}
+                          onChange={(e) =>
+                            setEdited({
+                              ...edited,
+                              contentData: { ...edited.contentData, productPositionY: Number(e.target.value) },
+                            })
+                          }
+                          className="w-full accent-amber-600"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Animation & Effect Toggles */}
+                  <div className="p-3 bg-white border border-neutral-200 rounded-xl space-y-2">
+                    <label className="block text-xs font-bold text-neutral-800 uppercase tracking-wider mb-2">
+                      Animation & Visual Effects Toggles
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                      {[
+                        { key: 'enableFloatingAnimation', label: 'Floating Motion' },
+                        { key: 'enableHoverZoom', label: '3D Hover Zoom' },
+                        { key: 'enableGlassShine', label: 'Glass Shine' },
+                        { key: 'enableSoftGlow', label: 'Radial Soft Glow' },
+                        { key: 'enableReflection', label: 'Floor Reflection' },
+                        { key: 'enableParticles', label: 'Dust Particles' },
+                      ].map((eff) => (
+                        <label key={eff.key} className="flex items-center gap-2 cursor-pointer p-2 bg-neutral-50 rounded-lg border border-neutral-200">
+                          <input
+                            type="checkbox"
+                            checked={edited.contentData?.[eff.key] ?? true}
+                            onChange={(e) =>
+                              setEdited({
+                                ...edited,
+                                contentData: { ...edited.contentData, [eff.key]: e.target.checked },
+                              })
+                            }
+                            className="w-4 h-4 text-amber-600 rounded"
+                          />
+                          <span className="font-semibold text-neutral-800">{eff.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {(edited.type === 'hero_banner' || edited.type === 'slider' || edited.type === 'image_carousel' || edited.type === 'offer_cards') && (
                 <div className="pt-2">
                   <div className="flex items-center justify-between mb-3">

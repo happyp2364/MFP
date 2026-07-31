@@ -16,6 +16,7 @@ import {
   Grid,
 } from 'lucide-react';
 import { HomepageSection, HomepageSectionType } from '../../../types';
+import { FLOATING_SNEAKER_DEFAULT_SECTION } from '../../../data/defaultHomepagePresets';
 
 interface SectionLibraryModalProps {
   isOpen: boolean;
@@ -33,6 +34,14 @@ interface SectionTemplate {
 }
 
 const SECTION_TEMPLATES: SectionTemplate[] = [
+  {
+    type: 'floating_sneaker',
+    category: 'banners',
+    title: '👟 Floating Sneaker Glass Hero',
+    description: 'Luxury floating sneaker centerpiece layout with soft neutral backdrop, glassmorphism cards, and floating badges.',
+    icon: Sparkles,
+    defaultData: FLOATING_SNEAKER_DEFAULT_SECTION.contentData,
+  },
   {
     type: 'hero_banner',
     category: 'banners',

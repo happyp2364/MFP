@@ -1141,6 +1141,7 @@ export interface AdminLoginHistoryEntry {
 
 export type HomepageSectionType =
   | 'hero_banner'
+  | 'floating_sneaker'
   | 'slider'
   | 'image_carousel'
   | 'video_banner'
@@ -1234,6 +1235,14 @@ export interface HomepagePreset {
   description: string;
   previewColor: string;
   badge: string;
+  category?: string;
+  tags?: string[];
+  isCustom?: boolean;
+  isFavorite?: boolean;
+  isPinned?: boolean;
+  createdAt?: string;
+  scheduledAt?: string;
+  thumbnailUrl?: string;
   config: Partial<HomepageConfig>;
 }
 

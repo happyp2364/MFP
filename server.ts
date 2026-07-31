@@ -390,7 +390,7 @@ The user requested a homepage layout design with prompt: "${prompt}".
 
 Generate a complete, highly structured HomepageConfig JSON with an array of section objects.
 Available section types:
-"hero_banner", "slider", "image_carousel", "video_banner", "featured_products", "trending_products", "new_arrivals", "best_sellers", "flash_sale", "festival_collection", "categories", "coupons", "announcements", "customer_reviews", "instagram_feed", "why_choose_us", "open_box_delivery", "offer_cards", "scrolling_banner", "countdown_timer", "newsletter", "faqs", "about_store", "custom_html", "rich_text", "gallery", "quick_category_icons", "footer_banner".
+"floating_sneaker", "hero_banner", "slider", "image_carousel", "video_banner", "featured_products", "trending_products", "new_arrivals", "best_sellers", "flash_sale", "festival_collection", "categories", "coupons", "announcements", "customer_reviews", "instagram_feed", "why_choose_us", "open_box_delivery", "offer_cards", "scrolling_banner", "countdown_timer", "newsletter", "faqs", "about_store", "custom_html", "rich_text", "gallery", "quick_category_icons", "footer_banner".
 
 Return strictly valid JSON matching this schema:
 {

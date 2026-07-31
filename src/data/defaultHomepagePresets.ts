@@ -1,5 +1,88 @@
 import { HomepageConfig, HomepagePreset, HomepageSection, HomepageSectionType } from '../types';
 
+export const FLOATING_SNEAKER_DEFAULT_SECTION: HomepageSection = {
+  id: 'sec_floating_sneaker_hero',
+  type: 'floating_sneaker',
+  title: 'Premium Floating Sneaker Glass Hero',
+  subtitle: 'Luxury footwear showcase with floating 3D centerpiece and glassmorphic controls',
+  enabled: true,
+  visibleDevices: ['desktop', 'tablet', 'mobile'],
+  styling: {
+    bgColor: '#f4f2ee',
+    bgGradient: 'from-[#f4f2ee] via-[#eae6df] to-[#e1ded6]',
+    textColor: '#1c1917',
+    accentColor: '#d97706',
+    paddingTop: 48,
+    paddingBottom: 48,
+    borderRadius: 24,
+    shadow: '2xl',
+    animation: 'fade',
+    fullWidth: true,
+  },
+  contentData: {
+    // Large background word behind floating shoe
+    backgroundWord: 'SPORT', // Options: NIKE, SPORT, STYLE, MFP, PREMIUM, MARUDHAR, SALE, NEW, LUXURY, etc.
+    bgWordOpacity: 0.12,
+    bgWordColor: '#1c1917',
+    
+    // Headings & Copy
+    smallHeading: '2026 EDITION • MARUDHAR LUXURY',
+    mainHeading: 'AIR GLIDE PRO RUNNER',
+    description: 'Engineered with responsive cloud-foam cushioning, ultra-breathable flyknit weave, and polished burnished leather accents.',
+    
+    // CTA Button Config
+    ctaText: 'EXPLORE & BUY NOW',
+    ctaLink: 'products',
+    ctaStyle: 'filled', // filled | glass | outline
+    ctaBgColor: '#1c1917',
+    ctaTextColor: '#ffffff',
+    
+    // Main Floating Product Image
+    mainImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80',
+    
+    // Secondary Thumbnail Images
+    secondaryImages: [
+      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=600&q=80',
+    ],
+    
+    // Floating Badges
+    floatingBadges: [
+      { id: 'b1', title: 'Ultralight Cushioning', value: '320g', position: 'top-left' },
+      { id: 'b2', title: 'Air Flow Soles', value: '98% Breathable', position: 'bottom-right' },
+      { id: 'b3', title: 'Open Box Guarantee', value: 'Inspect & Pay', position: 'top-right' },
+    ],
+    
+    // Glassmorphism controls
+    glassTransparency: 0.7, // 0.1 to 0.95
+    blurAmount: 16, // px
+    borderTransparency: 0.25,
+    shadowStrength: 'xl',
+    
+    // 3D Shoe Transform / Physics Settings
+    productPositionX: 0,
+    productPositionY: -10,
+    productRotation: -12, // degrees
+    productScale: 1.05,
+    
+    // Feature Toggles
+    enableFloatingAnimation: true,
+    enableHoverZoom: true,
+    enableGlassShine: true,
+    enableMouseParallax: true,
+    enableSoftGlow: true,
+    enableReflection: true,
+    enableParticles: true,
+    
+    // Navigation / Tabs
+    navLabels: ['Overview', 'Tech Specs', 'Size Guide', 'Reviews'],
+    
+    // Custom Tags
+    productTags: ['🔥 HOT DROP', 'LIMITED EDITION', 'FREE SHIPPING'],
+  },
+};
+
 export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
   {
     id: 'sec_announcements',
@@ -337,6 +420,22 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
 
 export const HOMEPAGE_PRESETS: HomepagePreset[] = [
   {
+    id: 'preset_floating_sneaker',
+    name: '👟 Premium Floating Sneaker',
+    description: 'Luxury floating sneaker centerpiece layout with soft neutral backdrop, glassmorphism cards, and floating badges.',
+    previewColor: '#f4f2ee',
+    badge: 'NEW LUXURY',
+    config: {
+      name: 'Premium Floating Sneaker Glass Experience',
+      presetName: 'Premium Floating Sneaker',
+      themeMode: 'glassmorphic',
+      sections: [
+        FLOATING_SNEAKER_DEFAULT_SECTION,
+        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner'),
+      ],
+    },
+  },
+  {
     id: 'preset_marudhar_royal',
     name: '👑 Marudhar Royal Heritage',
     description: 'Traditional Rajasthan elegance with gold accents, rich jutti highlights, and high-trust badges.',
@@ -458,6 +557,14 @@ export const SECTION_CATALOG_ITEMS: {
   icon: string;
   defaultSection: HomepageSection;
 }[] = [
+  {
+    type: 'floating_sneaker',
+    title: 'Floating Sneaker Glass Hero',
+    category: 'Banners & Media',
+    description: 'Luxury floating sneaker centerpiece with glassmorphism, 3D tilt, and background typography.',
+    icon: '👟',
+    defaultSection: FLOATING_SNEAKER_DEFAULT_SECTION,
+  },
   {
     type: 'hero_banner',
     title: 'Hero Banner / Poster',

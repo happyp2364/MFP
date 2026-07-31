@@ -87,6 +87,9 @@ const SectionItem: React.FC<SectionItemProps> = ({
   const containerClass = styling.fullWidth ? 'w-full' : 'max-w-7xl mx-auto px-4 sm:px-6';
 
   switch (section.type) {
+    case 'floating_sneaker':
+      return <FloatingSneakerHeroSection section={section} onNavigateCategory={onNavigateCategory} />;
+
     case 'hero_banner':
     case 'slider':
     case 'image_carousel': {
@@ -468,6 +471,257 @@ const FaqAccordion: React.FC<{ faqs: any[]; title?: string; subtitle?: string }>
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+};
+
+const FloatingSneakerHeroSection: React.FC<{
+  section: HomepageSection;
+  onNavigateCategory?: (cat: string) => void;
+}> = ({ section, onNavigateCategory }) => {
+  const data = section.contentData || {};
+  const styling = section.styling || {};
+
+  const mainImage =
+    data.mainImage ||
+    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80';
+  const secondaryImages = data.secondaryImages || [
+    mainImage,
+    'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=600&q=80',
+  ];
+
+  const [activeImage, setActiveImage] = useState(mainImage);
+  const [activeTab, setActiveTab] = useState(data.navLabels?.[0] || 'Overview');
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    setActiveImage(mainImage);
+  }, [mainImage]);
+
+  const bgWord = (data.backgroundWord || 'SPORT').toUpperCase();
+  const smallHeading = data.smallHeading || '2026 EDITION • MARUDHAR LUXURY';
+  const mainHeading = data.mainHeading || 'AIR GLIDE PRO RUNNER';
+  const description =
+    data.description ||
+    'Engineered with responsive cloud-foam cushioning, ultra-breathable flyknit weave, and polished burnished leather accents.';
+  const ctaText = data.ctaText || 'EXPLORE & BUY NOW';
+  const ctaStyle = data.ctaStyle || 'filled';
+
+  const rot = data.productRotation ?? -12;
+  const scale = data.productScale ?? 1.05;
+  const posY = data.productPositionY ?? -10;
+
+  const enableFloating = data.enableFloatingAnimation ?? true;
+  const enableHoverZoom = data.enableHoverZoom ?? true;
+  const enableSoftGlow = data.enableSoftGlow ?? true;
+  const enableReflection = data.enableReflection ?? true;
+
+  const floatingBadges = data.floatingBadges || [
+    { title: 'Ultralight Cushioning', value: '320g', position: 'top-left' },
+    { title: 'Air Flow Soles', value: '98% Breathable', position: 'bottom-right' },
+    { title: 'Open Box Guarantee', value: 'Inspect & Pay', position: 'top-right' },
+  ];
+
+  const navLabels = data.navLabels || ['Overview', 'Tech Specs', 'Size Guide', 'Reviews'];
+  const productTags = data.productTags || ['🔥 HOT DROP', 'LIMITED EDITION', 'FREE SHIPPING'];
+
+  return (
+    <div
+      className="relative w-full rounded-3xl overflow-hidden my-4 shadow-2xl transition-all border border-black/10 select-none"
+      style={{
+        backgroundColor: styling.bgColor || '#f4f2ee',
+      }}
+    >
+      {/* Big Background Display Typography Word */}
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none z-0">
+        <span
+          className="font-black text-[18vw] lg:text-[210px] tracking-widest uppercase leading-none opacity-[0.08] text-neutral-900 select-none transition-transform duration-700"
+          style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
+        >
+          {bgWord}
+        </span>
+      </div>
+
+      {/* Top Glassmorphic Navigation Bar */}
+      <div className="relative z-20 px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-black/5 bg-white/30 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <span className="w-8 h-8 rounded-full bg-neutral-900 text-white font-black text-xs flex items-center justify-center shadow-md">
+            M
+          </span>
+          <span className="text-xs font-black tracking-widest text-neutral-900 uppercase">
+            MARUDHAR LUXURY SNEAKERS
+          </span>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-1.5 bg-black/5 p-1 rounded-full border border-black/5">
+          {navLabels.map((lbl: string) => (
+            <button
+              key={lbl}
+              onClick={() => setActiveTab(lbl)}
+              className={`px-3.5 py-1 text-[11px] font-bold rounded-full transition-all ${
+                activeTab === lbl
+                  ? 'bg-neutral-900 text-white shadow-xs'
+                  : 'text-neutral-700 hover:text-black hover:bg-white/40'
+              }`}
+            >
+              {lbl}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {productTags.slice(0, 2).map((tag: string, i: number) => (
+            <span
+              key={i}
+              className="px-2.5 py-0.5 bg-amber-400/90 text-neutral-950 font-extrabold text-[10px] rounded-full uppercase tracking-wider shadow-2xs"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Grid Section */}
+      <div className="relative z-10 px-6 sm:px-12 py-8 lg:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        {/* LEFT COLUMN: Headings & CTA */}
+        <div className="lg:col-span-5 space-y-6 text-neutral-900">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-neutral-900 text-white text-[11px] font-extrabold rounded-full uppercase tracking-widest shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            {smallHeading}
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-none text-neutral-900 uppercase">
+              {mainHeading}
+            </h1>
+            <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed font-medium max-w-md">
+              {description}
+            </p>
+          </div>
+
+          {/* CTA Button */}
+          <div className="pt-2 flex flex-wrap items-center gap-4">
+            <button
+              onClick={() => onNavigateCategory && onNavigateCategory('ALL')}
+              className={`px-8 py-4 text-xs sm:text-sm font-black uppercase tracking-wider rounded-2xl shadow-xl transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-2.5 ${
+                ctaStyle === 'glass'
+                  ? 'bg-white/60 text-neutral-900 border border-white/80 backdrop-blur-md hover:bg-white'
+                  : ctaStyle === 'outline'
+                  ? 'bg-transparent text-neutral-900 border-2 border-neutral-900 hover:bg-neutral-900 hover:text-white'
+                  : 'bg-neutral-900 text-white hover:bg-neutral-800'
+              }`}
+            >
+              <span>{ctaText}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Secondary Thumbnail Gallery */}
+          <div className="pt-4 border-t border-black/5 space-y-2">
+            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
+              Colorways & Angle Showcase
+            </span>
+            <div className="flex gap-2.5 overflow-x-auto pb-2">
+              {secondaryImages.map((img: string, idx: number) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImage(img)}
+                  className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white shadow-xs ${
+                    activeImage === img
+                      ? 'border-neutral-900 ring-2 ring-amber-400/50 scale-105'
+                      : 'border-transparent opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* CENTER COLUMN: Floating Sneaker Showcase */}
+        <div
+          className="lg:col-span-7 relative flex flex-col items-center justify-center min-h-[380px] sm:min-h-[460px]"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          {/* Radial Soft Glow Ring */}
+          {enableSoftGlow && (
+            <div className="absolute w-[280px] sm:w-[380px] h-[280px] sm:h-[380px] bg-amber-400/20 rounded-full blur-3xl -z-10 animate-pulse pointer-events-none" />
+          )}
+
+          {/* Floating Shoe Image */}
+          <div
+            className={`relative transition-all duration-700 ease-out cursor-pointer ${
+              enableFloating ? 'animate-bounce' : ''
+            }`}
+            style={{
+              transform: `rotate(${rot}deg) scale(${
+                isHovered && enableHoverZoom ? scale * 1.08 : scale
+              }) translateY(${posY}px)`,
+            }}
+          >
+            <img
+              src={activeImage}
+              alt={mainHeading}
+              className="max-h-[300px] sm:max-h-[420px] w-auto object-contain filter drop-shadow-2xl transition-all duration-500"
+            />
+          </div>
+
+          {/* Soft Floor Shadow */}
+          <div
+            className="w-48 sm:w-64 h-5 bg-black/25 rounded-[100%] blur-md mt-4 transition-all duration-500"
+            style={{
+              transform: isHovered ? 'scale(0.85)' : 'scale(1)',
+              opacity: isHovered ? 0.4 : 0.6,
+            }}
+          />
+
+          {/* Floor Reflection */}
+          {enableReflection && (
+            <div className="w-64 sm:w-80 h-12 overflow-hidden opacity-15 pointer-events-none -mt-3 blur-[1px]">
+              <img
+                src={activeImage}
+                alt="Reflection"
+                className="w-full object-contain transform scale-y-[-1] rotate-180"
+              />
+            </div>
+          )}
+
+          {/* Floating Glass Badges */}
+          {floatingBadges[0] && (
+            <div className="absolute top-4 left-2 sm:left-6 bg-white/60 backdrop-blur-md border border-white/80 p-3 rounded-2xl shadow-xl space-y-0.5 animate-pulse">
+              <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+                {floatingBadges[0].title}
+              </span>
+              <span className="block text-xs font-black text-neutral-900">
+                {floatingBadges[0].value}
+              </span>
+            </div>
+          )}
+
+          {floatingBadges[1] && (
+            <div className="absolute bottom-12 right-2 sm:right-6 bg-white/60 backdrop-blur-md border border-white/80 p-3 rounded-2xl shadow-xl space-y-0.5">
+              <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+                {floatingBadges[1].title}
+              </span>
+              <span className="block text-xs font-black text-amber-600">
+                {floatingBadges[1].value}
+              </span>
+            </div>
+          )}
+
+          {floatingBadges[2] && (
+            <div className="hidden sm:block absolute top-8 right-8 bg-neutral-900/80 backdrop-blur-md border border-white/20 p-2.5 px-3.5 rounded-2xl shadow-xl text-white">
+              <span className="block text-[9px] font-bold text-amber-400 uppercase tracking-wider">
+                {floatingBadges[2].title}
+              </span>
+              <span className="block text-xs font-bold">{floatingBadges[2].value}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

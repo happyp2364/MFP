@@ -11,12 +11,20 @@ interface AILayoutGeneratorModalProps {
 
 const SAMPLE_PROMPTS = [
   {
+    title: '👟 Premium Floating Sneaker Glass UI',
+    prompt: 'Design a luxury floating sneaker glass UI homepage with oversized 3D centerpiece shoe, floating badges, glassmorphic cards, flash sale countdown, and specifications grid.',
+  },
+  {
     title: '👑 Royal Festive Utsav',
     prompt: 'Design a high-end royal Indian wedding festival homepage with gold & crimson tones, hero saree slider, flash sale countdown, category spotlights, and customer reviews.',
   },
   {
-    title: '⚡ Mega Flash Sale Express',
-    prompt: 'Create a high-energy flash deal sale homepage with urgent timer, promo coupon banners, top trending products grid, and trust badges.',
+    title: '💎 Ultra Luxury Glass Theme',
+    prompt: 'Design a sleek glassmorphic luxury store with frosted glass cards, glow effects, floating product centerpiece, and premium customer reviews.',
+  },
+  {
+    title: '⚡ Sports & Athletic Edition',
+    prompt: 'Build a dark athletic performance store featuring floating shoe showcase, responsive bounce technology callouts, and limited drop banners.',
   },
   {
     title: '🌿 Minimalist Ethnic Elegance',

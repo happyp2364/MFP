@@ -179,6 +179,14 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
+    match /admin_users/{adminId} {
+      allow read, write: if true;
+    }
+
+    match /admin_roles/{roleId} {
+      allow read, write: if true;
+    }
+
     // Marketing Campaigns
     match /marketingCampaigns/{campaignId} {
       allow read, write: if true;

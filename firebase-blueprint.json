@@ -252,6 +252,20 @@
           "write": "request.auth != null"
         }
       },
+      "admin_users": {
+        "path": "admin_users/{adminId}",
+        "allow": {
+          "read": "request.auth != null",
+          "write": "request.auth != null"
+        }
+      },
+      "admin_roles": {
+        "path": "admin_roles/{roleId}",
+        "allow": {
+          "read": "request.auth != null",
+          "write": "request.auth != null"
+        }
+      },
       "inquiries": {
         "path": "inquiries/{inquiryId}",
         "allow": {

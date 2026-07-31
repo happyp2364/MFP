@@ -177,9 +177,22 @@ export interface TrendingCollectionItem {
 }
 
 export interface AdminUser {
-  username: string;
-  isLoggedIn: boolean;
-  lastLoginTime?: string;
+  uid: string;
+  email: string;
+  name: string;
+  roleId: string; // e.g. 'super_admin', 'admin', 'inventory_manager', etc.
+  roleName?: string;
+  status: 'active' | 'disabled';
+  customPermissions?: Partial<AdminPermissionMatrix>; // Optional per-user overrides
+  createdAt: string;
+  createdBy: string;
+  lastLogin?: string;
+  loginHistory?: AdminLoginHistoryEntry[];
+  deviceInfo?: string;
+  forceLoggedOutAt?: string; // ISO string to invalidate active sessions
+  phoneNumber?: string;
+  username?: string;
+  isLoggedIn?: boolean;
 }
 
 // Enterprise Security Types
@@ -1046,6 +1059,77 @@ export const DEFAULT_OPEN_BOX_DELIVERY_CONFIG: OpenBoxDeliveryConfig = {
   minOrderValue: 0,
   paymentEligibility: 'all',
 };
+
+// ==========================================
+// MULTI ADMIN MANAGEMENT SYSTEM & RBAC TYPES
+// ==========================================
+
+export type AdminModule =
+  | 'dashboard'
+  | 'products'
+  | 'inventory'
+  | 'orders'
+  | 'customers'
+  | 'coupons'
+  | 'reviews'
+  | 'categories'
+  | 'brands'
+  | 'payments'
+  | 'reports'
+  | 'analytics'
+  | 'website_settings'
+  | 'theme'
+  | 'hero'
+  | 'announcements'
+  | 'ai_features'
+  | 'marketing'
+  | 'whatsapp_templates'
+  | 'google_drive_backup'
+  | 'admin_management';
+
+export type AdminAction = 'read' | 'create' | 'edit' | 'delete' | 'export';
+
+export interface AdminModulePermissions {
+  read: boolean;
+  create: boolean;
+  edit: boolean;
+  delete: boolean;
+  export: boolean;
+}
+
+export type AdminPermissionMatrix = Record<AdminModule, AdminModulePermissions>;
+
+export type BuiltInAdminRoleId =
+  | 'super_admin'
+  | 'admin'
+  | 'inventory_manager'
+  | 'order_manager'
+  | 'marketing_manager'
+  | 'finance_manager'
+  | 'customer_support'
+  | 'custom';
+
+export interface AdminRole {
+  id: string; // BuiltInAdminRoleId or custom generated ID
+  name: string;
+  description: string;
+  isSystemPreset: boolean;
+  permissions: AdminPermissionMatrix;
+  createdAt?: string;
+  createdBy?: string;
+  updatedAt?: string;
+}
+
+export interface AdminLoginHistoryEntry {
+  id: string;
+  timestamp: string;
+  ip?: string;
+  device: string;
+  loginMethod: 'google' | 'password';
+  status: 'success' | 'failed';
+  userAgent?: string;
+}
+
 
 
 

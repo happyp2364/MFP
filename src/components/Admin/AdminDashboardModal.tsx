@@ -76,6 +76,7 @@ import { WhatsAppTemplateManager } from './WhatsAppTemplateManager';
 import { ScratchAndWinSettingsView } from './ScratchAndWinSettingsView';
 import { OrderCelebrationSettingsView } from './OrderCelebrationSettingsView';
 import { OpenBoxDeliverySettingsView } from './OpenBoxDeliverySettingsView';
+import { AdminManagementView } from './AdminManagementView';
 import { AdminErrorBoundary } from './AdminErrorBoundary';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
@@ -86,7 +87,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -110,6 +111,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     markNotificationRead,
     isTwoFactorEnabled,
     logoutAdmin,
+    currentAdminUser,
+    canAccessTab,
+    hasPermission,
     addProduct,
     updateProduct,
     deleteProduct,
@@ -699,6 +703,20 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             <div className="my-1 border-t border-neutral-200 hidden md:block" />
 
+            {canAccessTab('admin_management') && (
+              <button
+                onClick={() => setActiveTab('admin_management')}
+                className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                  activeTab === 'admin_management'
+                    ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                    : 'text-neutral-600 hover:bg-neutral-100'
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-500" />
+                <span>Multi Admin & RBAC</span>
+              </button>
+            )}
+
             {/* SECURITY & BACKUP TABS */}
             <button
               onClick={() => setActiveTab('audit')}
@@ -755,6 +773,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-[#F7F7F7]">
             <AdminErrorBoundary key={activeTab} fallbackTitle="Admin Tab View Display Notice">
             
+            {/* ----------------- TAB: MULTI ADMIN & RBAC MANAGEMENT ----------------- */}
+            {activeTab === 'admin_management' && (
+              <AdminManagementView
+                currentUser={currentAdminUser}
+                auditLogs={auditLogs}
+                onRefreshAuditLogs={refreshAuditLogs}
+              />
+            )}
+
             {/* ----------------- TAB: ORDERS & TRACKING ----------------- */}
             {activeTab === 'orders' && <OrderManagementView />}
 

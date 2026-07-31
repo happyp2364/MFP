@@ -44,7 +44,24 @@ import {
   WhatsAppTemplatesConfig,
   OpenBoxDeliveryConfig,
   DEFAULT_OPEN_BOX_DELIVERY_CONFIG,
+  AdminUser,
+  AdminRole,
+  AdminModule,
+  AdminAction,
+  AdminPermissionMatrix,
 } from '../types';
+import {
+  getEffectivePermissions,
+  hasAdminPermission,
+  mapTabToModule,
+  BUILTIN_ROLES,
+} from '../lib/adminPermissions';
+import {
+  ensureSuperAdminExists,
+  fetchAdminUsers,
+  fetchAdminRoles,
+  recordAdminLoginHistory,
+} from '../lib/adminService';
 import {
   DEFAULT_WHATSAPP_TEMPLATES_CONFIG,
 } from '../data/defaultWhatsAppTemplates';
@@ -220,6 +237,14 @@ interface StoreContextType {
   sendCampaign: (campaign: MarketingCampaign) => Promise<{ success: boolean; message: string }>;
   updateSubscriberConsent: (subscriberId: string, consent: MarketingConsent) => Promise<boolean>;
   refreshMarketingData: () => Promise<void>;
+
+  // Multi Admin & RBAC
+  currentAdminUser: AdminUser | null;
+  adminUsersList: AdminUser[];
+  adminRolesList: AdminRole[];
+  adminPermissions: AdminPermissionMatrix | null;
+  hasPermission: (module: AdminModule, action: AdminAction) => boolean;
+  canAccessTab: (tab: string) => boolean;
 
   // Auth
   loginAdmin: (password: string, twoFactorCode?: string) => Promise<{ success: boolean; requires2FA?: boolean; message?: string }>;
@@ -455,6 +480,105 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isTwoFactorEnabled, setIsTwoFactorEnabled] = useState<boolean>(false);
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
+
+  // Multi Admin & RBAC state
+  const [currentAdminUser, setCurrentAdminUser] = useState<AdminUser | null>(null);
+  const [adminUsersList, setAdminUsersList] = useState<AdminUser[]>([]);
+  const [adminRolesList, setAdminRolesList] = useState<AdminRole[]>([]);
+  const [adminPermissions, setAdminPermissions] = useState<AdminPermissionMatrix | null>(null);
+
+  // Synchronize RBAC Admin profile & permission matrix when admin logs in
+  useEffect(() => {
+    if (!isAdmin) {
+      setCurrentAdminUser(null);
+      setAdminPermissions(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const syncAdminRBAC = async () => {
+      try {
+        const firebaseUser = auth.currentUser;
+        const [users, customRoles] = await Promise.all([
+          fetchAdminUsers(),
+          fetchAdminRoles(),
+        ]);
+
+        if (!isMounted) return;
+
+        setAdminUsersList(users);
+        setAdminRolesList(customRoles);
+
+        let activeAdmin = users.find(
+          (u) =>
+            u.uid === firebaseUser?.uid ||
+            u.email.toLowerCase() === firebaseUser?.email?.toLowerCase()
+        );
+
+        if (!activeAdmin && firebaseUser) {
+          activeAdmin = await ensureSuperAdminExists(firebaseUser);
+        }
+
+        if (activeAdmin) {
+          if (activeAdmin.status === 'disabled') {
+            setIsAdmin(false);
+            setCurrentAdminUser(null);
+            setAdminPermissions(null);
+            showToast('Account disabled. Contact Super Admin.', 'error');
+            return;
+          }
+
+          setCurrentAdminUser(activeAdmin);
+          const perms = getEffectivePermissions(activeAdmin, customRoles);
+          setAdminPermissions(perms);
+        } else {
+          const defaultSuper = await ensureSuperAdminExists(firebaseUser);
+          setCurrentAdminUser(defaultSuper);
+          setAdminPermissions(getEffectivePermissions(defaultSuper, customRoles));
+        }
+      } catch (err) {
+        console.warn('RBAC sync notice:', err);
+      }
+    };
+
+    syncAdminRBAC();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAdmin]);
+
+  const hasPermission = useCallback(
+    (module: AdminModule, action: AdminAction): boolean => {
+      if (!isAdmin) return false;
+      const curEmail = currentAdminUser?.email.toLowerCase() || auth.currentUser?.email?.toLowerCase();
+      if (
+        currentAdminUser?.roleId === 'super_admin' ||
+        curEmail === 'vpcreation2002@gmail.com'
+      ) {
+        return true;
+      }
+      return hasAdminPermission(adminPermissions, module, action);
+    },
+    [isAdmin, currentAdminUser, adminPermissions]
+  );
+
+  const canAccessTab = useCallback(
+    (tab: string): boolean => {
+      if (!isAdmin) return false;
+      const curEmail = currentAdminUser?.email.toLowerCase() || auth.currentUser?.email?.toLowerCase();
+      if (
+        currentAdminUser?.roleId === 'super_admin' ||
+        curEmail === 'vpcreation2002@gmail.com'
+      ) {
+        return true;
+      }
+      const targetModule = mapTabToModule(tab);
+      return hasPermission(targetModule, 'read');
+    },
+    [isAdmin, currentAdminUser, hasPermission]
+  );
 
   // Toast System
   const [toastMessage, setToastMessage] = useState<ToastState | null>(null);
@@ -2156,6 +2280,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     notifications,
     activeOrderNotification,
     setActiveOrderNotification,
+
+    // Multi Admin & RBAC
+    currentAdminUser,
+    adminUsersList,
+    adminRolesList,
+    adminPermissions,
+    hasPermission,
+    canAccessTab,
+
     petShoeConfig: publishedPetShoeConfig,
     updatePetShoeConfig,
     instagramConfig: publishedInstagramConfig,

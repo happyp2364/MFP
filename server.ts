@@ -378,6 +378,228 @@ Respond ONLY with valid JSON:
   });
 
   // =========================================================================
+  // AI HOMEPAGE EXPERIENCE BUILDER API ENDPOINTS
+  // =========================================================================
+  app.post("/api/ai/generate-homepage-layout", async (req, res) => {
+    try {
+      const { prompt = "", currentTheme = "light" } = req.body || {};
+      if (!prompt) return res.status(400).json({ error: "Prompt is required" });
+
+      const systemPrompt = `You are an expert e-commerce UI designer & UX conversion architect for Marudhar Fashion Point (Pipar City, Rajasthan).
+The user requested a homepage layout design with prompt: "${prompt}".
+
+Generate a complete, highly structured HomepageConfig JSON with an array of section objects.
+Available section types:
+"hero_banner", "slider", "image_carousel", "video_banner", "featured_products", "trending_products", "new_arrivals", "best_sellers", "flash_sale", "festival_collection", "categories", "coupons", "announcements", "customer_reviews", "instagram_feed", "why_choose_us", "open_box_delivery", "offer_cards", "scrolling_banner", "countdown_timer", "newsletter", "faqs", "about_store", "custom_html", "rich_text", "gallery", "quick_category_icons", "footer_banner".
+
+Return strictly valid JSON matching this schema:
+{
+  "name": "Design Name based on prompt",
+  "presetName": "AI Custom Layout",
+  "themeMode": "light" | "dark" | "luxury" | "festival" | "glassmorphic",
+  "sections": [
+    {
+      "id": "sec_ai_1",
+      "type": "hero_banner",
+      "title": "Main Heading",
+      "subtitle": "Subtitle text",
+      "enabled": true,
+      "visibleDevices": ["desktop", "tablet", "mobile"],
+      "styling": {
+        "bgColor": "#HEX",
+        "bgGradient": "tailwind gradient class or empty",
+        "textColor": "#HEX",
+        "accentColor": "#HEX",
+        "paddingTop": 32,
+        "paddingBottom": 32,
+        "fullWidth": true
+      },
+      "contentData": {
+        "badge": "Badge label",
+        "heading": "Hero heading",
+        "description": "Short marketing copy",
+        "ctaText": "Button label",
+        "ctaLink": "products",
+        "imageUrl": "Unsplash footwear photo URL"
+      }
+    }
+  ]
+}
+
+Ensure 6 to 10 sections are included to form a rich, realistic homepage! Include a hero_banner, quick_category_icons, countdown_timer or coupons, best_sellers, new_arrivals, why_choose_us, open_box_delivery, customer_reviews, and faqs.`;
+
+      if (process.env.GEMINI_API_KEY) {
+        try {
+          const response = await ai.models.generateContent({
+            model: "gemini-3.6-flash",
+            contents: systemPrompt,
+            config: { responseMimeType: "application/json" }
+          });
+          if (response.text) {
+            const parsed = JSON.parse(response.text);
+            return res.json({ success: true, config: parsed });
+          }
+        } catch (aiErr) {
+          console.warn("[AI Homepage Layout] Gemini fallback note:", aiErr);
+        }
+      }
+
+      // Smart Fallback layout based on prompt keywords
+      const isDark = prompt.toLowerCase().includes("dark") || prompt.toLowerCase().includes("black") || prompt.toLowerCase().includes("nike") || prompt.toLowerCase().includes("sports");
+      const isFestival = prompt.toLowerCase().includes("festival") || prompt.toLowerCase().includes("rakhi") || prompt.toLowerCase().includes("diwali") || prompt.toLowerCase().includes("wedding") || prompt.toLowerCase().includes("royal");
+
+      return res.json({
+        success: true,
+        config: {
+          name: `AI Custom: ${prompt.slice(0, 30)}`,
+          presetName: isFestival ? "Festive Celebration" : isDark ? "Dark Athletic" : "Modern Storefront",
+          themeMode: isFestival ? "festival" : isDark ? "dark" : "light",
+          sections: [
+            {
+              id: `sec_ai_hero_${Date.now()}`,
+              type: "hero_banner",
+              title: isFestival ? "Festive Royal Dhamaka" : isDark ? "UNLEASH YOUR PEAK SPEED" : "Step into Luxury & Supreme Comfort",
+              subtitle: "Handcrafted in Pipar City, Delivered Across India",
+              enabled: true,
+              visibleDevices: ["desktop", "tablet", "mobile"],
+              styling: {
+                bgColor: isFestival ? "#881337" : isDark ? "#000000" : "#0F172A",
+                bgGradient: isFestival ? "from-rose-950 via-red-900 to-amber-900" : isDark ? "from-black via-zinc-900 to-emerald-950" : "from-neutral-900 via-neutral-900/90 to-[#0B8F63]/20",
+                textColor: "#FFFFFF",
+                accentColor: isFestival ? "#F59E0B" : "#0B8F63",
+                paddingTop: 48,
+                paddingBottom: 48,
+                fullWidth: true
+              },
+              contentData: {
+                badge: isFestival ? "👑 FESTIVAL EDITION" : "⚡ NEW DROP 2026",
+                heading: isFestival ? "Royal Footwear for Every Grand Occasion" : "Precision Craftsmanship Meets Cloud Comfort",
+                description: "Explore air-cushioned sports sneakers, burnished leather loafers, and Rajasthani zari juttis.",
+                ctaText: "Shop Collection Now",
+                ctaLink: "products",
+                imageUrl: isFestival ? "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&w=1200&q=80" : "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
+              }
+            },
+            {
+              id: `sec_ai_cat_${Date.now()}`,
+              type: "quick_category_icons",
+              title: "Quick Category Filter",
+              subtitle: "Find your ideal fit in 1 click",
+              enabled: true,
+              visibleDevices: ["desktop", "tablet", "mobile"],
+              styling: { bgColor: "#FFFFFF", textColor: "#0F172A", paddingTop: 24, paddingBottom: 24 },
+              contentData: {
+                categories: [
+                  { id: "m", name: "Men's Shoes", icon: "👞", categoryFilter: "men", count: "120+ Styles" },
+                  { id: "w", name: "Women's Footwear", icon: "👠", categoryFilter: "women", count: "95+ Styles" },
+                  { id: "k", name: "Kids & Junior", icon: "👟", categoryFilter: "kids", count: "60+ Styles" },
+                  { id: "r", name: "Royal Juttis", icon: "👑", categoryFilter: "all", collectionFilter: "royal", count: "Handcrafted" }
+                ]
+              }
+            },
+            {
+              id: `sec_ai_timer_${Date.now()}`,
+              type: "countdown_timer",
+              title: "⚡ Flash Deal Countdown",
+              subtitle: "Extra 10% OFF on Instant UPI Payments",
+              enabled: true,
+              visibleDevices: ["desktop", "tablet", "mobile"],
+              styling: { bgColor: "#991B1B", bgGradient: "from-amber-600 via-rose-700 to-red-900", textColor: "#FFFFFF", paddingTop: 20, paddingBottom: 20, borderRadius: 16 },
+              contentData: {
+                targetDate: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
+                code: "AIFLASH10",
+                ctaText: "Claim Extra Offer"
+              }
+            },
+            {
+              id: `sec_ai_bestsellers_${Date.now()}`,
+              type: "best_sellers",
+              title: "Top Rated Footwear Picks",
+              subtitle: "Voted #1 by footwear lovers in Pipar City",
+              enabled: true,
+              visibleDevices: ["desktop", "tablet", "mobile"],
+              styling: { bgColor: "#F8FAFC", textColor: "#0F172A", paddingTop: 32, paddingBottom: 32 },
+              contentData: { limit: 8 }
+            },
+            {
+              id: `sec_ai_openbox_${Date.now()}`,
+              type: "open_box_delivery",
+              title: "Open Box Inspection Guarantee",
+              subtitle: "Inspect shoes before paying cash on delivery",
+              enabled: true,
+              visibleDevices: ["desktop", "tablet", "mobile"],
+              styling: { bgColor: "#F0FDF4", textColor: "#065F46", paddingTop: 24, paddingBottom: 24, borderRadius: 16 },
+              contentData: {}
+            },
+            {
+              id: `sec_ai_faqs_${Date.now()}`,
+              type: "faqs",
+              title: "Customer FAQs",
+              subtitle: "Sizing, Shipping & Easy Returns",
+              enabled: true,
+              visibleDevices: ["desktop", "tablet", "mobile"],
+              styling: { bgColor: "#FFFFFF", textColor: "#0F172A", paddingTop: 32, paddingBottom: 32 },
+              contentData: {
+                faqs: [
+                  { q: "How do I choose the correct shoe size?", a: "We follow standard UK/India shoe sizing. You can also chat with us on WhatsApp for exact foot length guidance." },
+                  { q: "Is Open Box Delivery available in my area?", a: "Yes, Open Box Delivery is available across 25,000+ PIN codes in India." }
+                ]
+              }
+            }
+          ]
+        }
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || "Failed to generate AI homepage layout" });
+    }
+  });
+
+  app.post("/api/ai/generate-section-content", async (req, res) => {
+    try {
+      const { sectionType = "hero_banner", prompt = "Make it persuasive and regal" } = req.body || {};
+
+      const aiPrompt = `You are a high-converting e-commerce copywriter for footwear brand Marudhar Fashion Point.
+Write engaging copy for homepage section "${sectionType}" with directive: "${prompt}".
+Respond strictly with valid JSON:
+{
+  "title": "Engaging Section Title",
+  "subtitle": "Clear, persuasive subtitle",
+  "badge": "Short badge tag",
+  "description": "Short 2-sentence description",
+  "ctaText": "Action Button Label"
+}`;
+
+      if (process.env.GEMINI_API_KEY) {
+        try {
+          const response = await ai.models.generateContent({
+            model: "gemini-3.6-flash",
+            contents: aiPrompt,
+            config: { responseMimeType: "application/json" }
+          });
+          if (response.text) {
+            return res.json({ success: true, result: JSON.parse(response.text) });
+          }
+        } catch (aiErr) {
+          console.warn("[AI Section Content] Gemini fallback note:", aiErr);
+        }
+      }
+
+      return res.json({
+        success: true,
+        result: {
+          title: "Step Into Royal Sophistication",
+          subtitle: "Handcrafted Juttis, Genuine Loafers & High-Performance Athletic Sneakers",
+          badge: "👑 ROYAL SELECTION",
+          description: "Engineered with ergonomic air soles and soft genuine leather. Direct factory dispatch from Pipar City.",
+          ctaText: "Shop Collection"
+        }
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // =========================================================================
   // LIVE LOCATION & GOOGLE MAPS STORE API
   // =========================================================================
   app.get("/api/location/store-info", (_req, res) => {

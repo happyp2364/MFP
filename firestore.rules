@@ -82,6 +82,12 @@ service cloud.firestore {
     match /homepage/{id} {
       allow read, write: if true;
     }
+    match /homepage_config/{id} {
+      allow read, write: if true;
+    }
+    match /homepage_versions/{id} {
+      allow read, write: if true;
+    }
     match /categories/{id} {
       allow read, write: if true;
     }

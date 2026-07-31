@@ -77,6 +77,7 @@ import { ScratchAndWinSettingsView } from './ScratchAndWinSettingsView';
 import { OrderCelebrationSettingsView } from './OrderCelebrationSettingsView';
 import { OpenBoxDeliverySettingsView } from './OpenBoxDeliverySettingsView';
 import { AdminManagementView } from './AdminManagementView';
+import { HomepageBuilderTab } from './HomepageBuilder/HomepageBuilderTab';
 import { AdminErrorBoundary } from './AdminErrorBoundary';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
@@ -1326,9 +1327,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               />
             )}
 
-            {/* TAB: STORE INFO, CONTACT & GOOGLE MAPS SETTINGS */}
+            {/* TAB: AI HOMEPAGE BUILDER & STORE INFO */}
             {activeTab === 'homepage' && (
-              <form onSubmit={handleSaveStoreContent} className="space-y-6 max-w-4xl">
+              <div className="space-y-8">
+                <AdminErrorBoundary fallbackTitle="Homepage Builder Error">
+                  <HomepageBuilderTab />
+                </AdminErrorBoundary>
+
+                <form onSubmit={handleSaveStoreContent} className="space-y-6 max-w-4xl pt-6 border-t border-neutral-200">
                 {/* Store Identity & Contact */}
                 <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
                   <h3 className="font-serif-heading font-bold text-base text-neutral-900 border-b border-neutral-100 pb-2 flex items-center justify-between">
@@ -1478,7 +1484,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   <span>SAVE STORE INFO & MAP DETAILS</span>
                 </button>
               </form>
-            )}
+            </div>
+          )}
 
             {activeTab === 'overview' && (
               <div className="space-y-6">

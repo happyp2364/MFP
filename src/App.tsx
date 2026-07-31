@@ -30,6 +30,7 @@ import { CalendarBookingModal } from './components/GoogleWorkspace/CalendarBooki
 import { GmailInquiryModal } from './components/GoogleWorkspace/GmailInquiryModal';
 import { WorkspaceHubDrawer } from './components/GoogleWorkspace/WorkspaceHubDrawer';
 import { ProductDetailPage } from './components/Products/ProductDetailPage';
+import { HomepageRenderer } from './components/Customer/HomepageRenderer';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ScratchCardPopup } from './components/Promo/ScratchCardPopup';
 import { SpinWheelPopup } from './components/Promo/SpinWheelPopup';
@@ -420,6 +421,15 @@ function AppContent() {
         />
       ) : (
         <>
+          {/* Dynamic AI Experience Builder Homepage */}
+          <HomepageRenderer
+            onSelectProduct={(p) => setQuickViewProduct(p)}
+            onNavigateCategory={(cat) => {
+              handleSelectCategory(cat as any);
+              handleNavigateToSection('products');
+            }}
+          />
+
           {/* 3. Hero Section */}
           <HeroSection onExploreClick={() => handleNavigateToSection('products')} />
 

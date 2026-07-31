@@ -370,10 +370,15 @@ export interface AdminNotification {
 
 export interface MarketingConsent {
   accepted: boolean;
+  marketingEnabled?: boolean;
   email: boolean;
+  emailMarketing?: boolean;
   push: boolean;
+  pushNotifications?: boolean;
   whatsApp: boolean;
+  whatsappMarketing?: boolean;
   updatedAt: string;
+  updatedBy?: string;
 }
 
 export interface MarketingSubscriber {
@@ -1129,6 +1134,109 @@ export interface AdminLoginHistoryEntry {
   status: 'success' | 'failed';
   userAgent?: string;
 }
+
+// ==========================================
+// AI HOME EXPERIENCE BUILDER TYPES
+// ==========================================
+
+export type HomepageSectionType =
+  | 'hero_banner'
+  | 'slider'
+  | 'image_carousel'
+  | 'video_banner'
+  | 'featured_products'
+  | 'trending_products'
+  | 'new_arrivals'
+  | 'best_sellers'
+  | 'flash_sale'
+  | 'festival_collection'
+  | 'brands'
+  | 'categories'
+  | 'coupons'
+  | 'announcements'
+  | 'customer_reviews'
+  | 'instagram_feed'
+  | 'youtube_videos'
+  | 'why_choose_us'
+  | 'open_box_delivery'
+  | 'offer_cards'
+  | 'scrolling_banner'
+  | 'countdown_timer'
+  | 'newsletter'
+  | 'faqs'
+  | 'about_store'
+  | 'custom_html'
+  | 'rich_text'
+  | 'gallery'
+  | 'horizontal_product_slider'
+  | 'vertical_product_list'
+  | 'recently_viewed'
+  | 'recommended_products'
+  | 'ai_recommended'
+  | 'quick_category_icons'
+  | 'footer_banner';
+
+export interface HomepageSectionStyling {
+  bgColor?: string;
+  bgGradient?: string;
+  bgImage?: string;
+  overlayOpacity?: number;
+  textColor?: string;
+  accentColor?: string;
+  paddingTop?: number; // rem or px
+  paddingBottom?: number;
+  borderRadius?: number;
+  shadow?: string;
+  animation?: 'fade' | 'slide-up' | 'zoom' | 'none';
+  fullWidth?: boolean;
+}
+
+export interface HomepageSection {
+  id: string;
+  type: HomepageSectionType;
+  title: string;
+  subtitle?: string;
+  enabled: boolean;
+  visibleDevices?: ('desktop' | 'tablet' | 'mobile')[];
+  styling: HomepageSectionStyling;
+  contentData: Record<string, any>;
+}
+
+export interface HomepageConfigSchedule {
+  enabled: boolean;
+  startDate?: string;
+  endDate?: string;
+  timeOfDay?: 'all' | 'day' | 'night';
+}
+
+export interface HomepageConfig {
+  id: string;
+  name: string;
+  presetName?: string;
+  themeMode?: 'light' | 'dark' | 'luxury' | 'festival' | 'glassmorphic';
+  sections: HomepageSection[];
+  updatedAt: string;
+  updatedBy?: string;
+  schedule?: HomepageConfigSchedule;
+}
+
+export interface HomepageVersion {
+  id: string;
+  config: HomepageConfig;
+  createdAt: string;
+  createdBy: string;
+  note?: string;
+}
+
+export interface HomepagePreset {
+  id: string;
+  name: string;
+  description: string;
+  previewColor: string;
+  badge: string;
+  config: Partial<HomepageConfig>;
+}
+
 
 
 

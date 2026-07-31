@@ -65,6 +65,15 @@ import {
 import {
   DEFAULT_WHATSAPP_TEMPLATES_CONFIG,
 } from '../data/defaultWhatsAppTemplates';
+import { HomepageConfig, HomepageVersion } from '../types';
+import { DEFAULT_HOMEPAGE_CONFIG } from '../data/defaultHomepagePresets';
+import {
+  fetchHomepageConfigFromFirestore,
+  subscribeToHomepageConfig,
+  saveHomepageConfigToFirestore,
+  fetchHomepageVersionsFromFirestore,
+  rollbackHomepageVersionInFirestore,
+} from '../lib/homepageService';
 import { getStoredWhatsAppConfig } from '../utils/whatsappTemplateParser';
 import { isOpenBoxDeliveryApplicable } from '../utils/openBoxDeliveryUtils';
 import {
@@ -95,6 +104,7 @@ import {
   fetchRemoteAuditLogs,
   checkRedirectAuthResult,
   recordAuditLog,
+  saveMarketingConsentInFirestore,
   saveOrderInFirestore,
   updateOrderStatusInFirestore,
   handleFirestoreError,
@@ -324,6 +334,13 @@ interface StoreContextType {
   whatsappTemplatesConfig: WhatsAppTemplatesConfig;
   updateWhatsAppTemplatesConfig: (cfg: WhatsAppTemplatesConfig) => Promise<boolean>;
   resetWhatsAppTemplatesToDefault: () => Promise<boolean>;
+
+  // AI Homepage Experience Builder
+  homepageConfig: HomepageConfig;
+  updateHomepageConfig: (config: HomepageConfig, note?: string) => Promise<boolean>;
+  rollbackHomepageVersion: (versionId: string) => Promise<boolean>;
+  homepageVersions: HomepageVersion[];
+  fetchHomepageVersionsList: () => Promise<HomepageVersion[]>;
 }
 
 const DEFAULT_SCRATCH_WIN_CONFIG: ScratchWinConfig = {
@@ -486,6 +503,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [adminUsersList, setAdminUsersList] = useState<AdminUser[]>([]);
   const [adminRolesList, setAdminRolesList] = useState<AdminRole[]>([]);
   const [adminPermissions, setAdminPermissions] = useState<AdminPermissionMatrix | null>(null);
+
+  // AI Homepage Experience Builder state
+  const [homepageConfig, setHomepageConfig] = useState<HomepageConfig>(DEFAULT_HOMEPAGE_CONFIG);
+  const [homepageVersions, setHomepageVersions] = useState<HomepageVersion[]>([]);
+
+  useEffect(() => {
+    fetchHomepageConfigFromFirestore().then((cfg) => {
+      if (cfg && Array.isArray(cfg.sections) && cfg.sections.length > 0) {
+        setHomepageConfig(cfg);
+      }
+    });
+
+    const unsubscribe = subscribeToHomepageConfig((newConfig) => {
+      if (newConfig && Array.isArray(newConfig.sections) && newConfig.sections.length > 0) {
+        setHomepageConfig(newConfig);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Synchronize RBAC Admin profile & permission matrix when admin logs in
   useEffect(() => {
@@ -1042,8 +1079,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       })
       .catch((err) => console.warn('Redirect auth check notice:', err));
 
+    let userDocUnsub: (() => void) | null = null;
+
     const unsubscribe = onUserAuthChange(async (user) => {
       if (!isMounted) return;
+      if (userDocUnsub) {
+        userDocUnsub();
+        userDocUnsub = null;
+      }
+
       setCustomerUser(user);
       setIsCustomerAuthLoading(false);
       if (user) {
@@ -1054,6 +1098,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } catch (e) {
           console.warn('Customer profile sync notice:', e);
         }
+
+        // Realtime listener for customer profile changes (including marketing consent)
+        userDocUnsub = onSnapshot(
+          doc(db, 'users', user.uid),
+          (snap) => {
+            if (snap.exists() && isMounted) {
+              const data = snap.data() as CustomerProfile;
+              console.log('[DEBUG] Listener Response - Realtime Profile Updated from Firestore:', data.marketingConsent);
+              setCustomerProfile(data);
+              localStorage.setItem('mfp_customer_profile', JSON.stringify(data));
+            }
+          },
+          (err) => {
+            console.warn('Realtime customer profile listener error:', err);
+          }
+        );
       } else {
         setCustomerProfile(null);
         setIsAdmin(false);
@@ -1062,6 +1122,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     return () => {
       isMounted = false;
+      if (userDocUnsub) userDocUnsub();
       unsubscribe();
     };
   }, [showToast]);
@@ -2092,7 +2153,66 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateCustomerMarketingConsent = async (consent: MarketingConsent): Promise<boolean> => {
-    return true;
+    const uid = customerUser?.uid || auth.currentUser?.uid || '';
+    const email = customerProfile?.email || customerUser?.email || auth.currentUser?.email || '';
+    const name = customerProfile?.name || customerUser?.displayName || (email ? email.split('@')[0] : 'Valued Customer');
+    const phone = customerProfile?.phoneNumber || customerUser?.phoneNumber || '';
+
+    const payload: MarketingConsent = {
+      accepted: consent.accepted ?? (consent.email || consent.push || consent.whatsApp),
+      marketingEnabled: consent.accepted ?? (consent.email || consent.push || consent.whatsApp),
+      email: Boolean(consent.email),
+      emailMarketing: Boolean(consent.email),
+      push: Boolean(consent.push),
+      pushNotifications: Boolean(consent.push),
+      whatsApp: Boolean(consent.whatsApp),
+      whatsappMarketing: Boolean(consent.whatsApp),
+      updatedAt: new Date().toISOString(),
+      updatedBy: email || uid || 'Customer',
+    };
+
+    console.log('[DEBUG] Button Click -> updateCustomerMarketingConsent initiated');
+    console.log('[DEBUG] UID:', uid || 'guest');
+    console.log('[DEBUG] Firestore Path:', uid ? `users/${uid}` : (email ? `marketingSubscribers/${email.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : 'marketingSubscribers'));
+    console.log('[DEBUG] Payload:', payload);
+
+    try {
+      // 1. If user is authenticated, update users/{uid} document
+      if (uid) {
+        const userRef = doc(db, 'users', uid);
+        await setDoc(userRef, { marketingConsent: payload }, { merge: true });
+        console.log('[DEBUG] Firestore Response (users doc): SUCCESS');
+
+        // Optimistically update local profile state & cache
+        setCustomerProfile((prev) => {
+          const updated = prev
+            ? { ...prev, marketingConsent: payload }
+            : ({
+                uid,
+                name,
+                email,
+                marketingConsent: payload,
+                createdAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+              } as CustomerProfile);
+          localStorage.setItem('mfp_customer_profile', JSON.stringify(updated));
+          console.log('[DEBUG] Listener Response: Local state updated with new marketing preferences');
+          return updated;
+        });
+      }
+
+      // 2. Also persist in marketingSubscribers collection
+      const subSuccess = await saveMarketingConsentInFirestore(payload, email, name, phone);
+      console.log('[DEBUG] Firestore Response (marketingSubscribers):', subSuccess);
+
+      showToast('Marketing Preferences Saved Successfully.', 'success');
+      return true;
+    } catch (err: any) {
+      console.error('[DEBUG] Firestore Response (ERROR):', err);
+      const errMsg = err?.message || 'Failed to update preferences';
+      showToast(`Failed to save preferences: ${errMsg}`, 'error');
+      return false;
+    }
   };
 
   const saveCampaign = async (campaign: MarketingCampaign): Promise<boolean> => {
@@ -2263,6 +2383,33 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const updateHomepageConfig = useCallback(async (newConfig: HomepageConfig, note?: string): Promise<boolean> => {
+    setHomepageConfig(newConfig);
+    const author = currentAdminUser?.email || customerUser?.email || 'Admin';
+    const success = await saveHomepageConfigToFirestore(newConfig, author, note);
+    if (success) {
+      showToast('Homepage layout published and live synced!', 'success');
+    }
+    return success;
+  }, [currentAdminUser, customerUser, showToast]);
+
+  const rollbackHomepageVersion = useCallback(async (versionId: string): Promise<boolean> => {
+    const author = currentAdminUser?.email || 'Admin';
+    const success = await rollbackHomepageVersionInFirestore(versionId, author);
+    if (success) {
+      const updated = await fetchHomepageConfigFromFirestore();
+      setHomepageConfig(updated);
+      showToast('Homepage layout version restored successfully!', 'success');
+    }
+    return success;
+  }, [currentAdminUser, showToast]);
+
+  const fetchHomepageVersionsList = useCallback(async (): Promise<HomepageVersion[]> => {
+    const versions = await fetchHomepageVersionsFromFirestore();
+    setHomepageVersions(versions);
+    return versions;
+  }, []);
+
   const contextValue = React.useMemo(() => ({
     products: publishedProducts,
     reviews: publishedReviews,
@@ -2408,6 +2555,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Open Box Delivery
     openBoxDeliveryConfig,
     updateOpenBoxDeliveryConfig,
+
+    // AI Homepage Experience Builder
+    homepageConfig,
+    updateHomepageConfig,
+    rollbackHomepageVersion,
+    homepageVersions,
+    fetchHomepageVersionsList,
   }), [
     publishedProducts, publishedReviews, publishedStoreInfo, publishedHeroContent,
     publishedAnnouncements, publishedCategoryHighlights, publishedTrendingCollections,
@@ -2418,7 +2572,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     socialAnalytics, spinWheelConfig, engagementAnalytics,
     orderCelebrationConfig, isCelebrating, customerUser, customerProfile,
     isCustomerAuthLoading, customerAuthError, toastMessage, campaigns, subscribers,
-    coupons, whatsappTemplatesConfig, openBoxDeliveryConfig,
+    coupons, whatsappTemplatesConfig, openBoxDeliveryConfig, homepageConfig, homepageVersions,
     // callbacks and functions
     updatePetShoeConfig, updateInstagramConfig,
     updatePaymentSettings, updateSoundConfig, updateTopAnnouncementBarConfig,
@@ -2436,7 +2590,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateCategoryHighlight, saveCategoryHighlights, updateTrendingCollection,
     refreshAuditLogs, createStoreBackup, restoreStoreBackup, resetToDefaults,
     addCoupon, updateCoupon, deleteCoupon, duplicateCoupon, validateCoupon, trackCouponUse,
-    updateWhatsAppTemplatesConfig, resetWhatsAppTemplatesToDefault, updateOpenBoxDeliveryConfig
+    updateWhatsAppTemplatesConfig, resetWhatsAppTemplatesToDefault, updateOpenBoxDeliveryConfig,
+    updateHomepageConfig, rollbackHomepageVersion, fetchHomepageVersionsList
   ]);
 
   return (

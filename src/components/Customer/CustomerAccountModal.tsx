@@ -71,6 +71,14 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
   const [marketingConsent, setMarketingConsent] = useState<MarketingConsent>(() => {
     return customerProfile?.marketingConsent || { accepted: true, email: true, push: true, whatsApp: false, updatedAt: new Date().toISOString() };
   });
+
+  // Keep marketingConsent in sync with customerProfile whenever it updates from Firestore
+  React.useEffect(() => {
+    if (customerProfile?.marketingConsent) {
+      setMarketingConsent(customerProfile.marketingConsent);
+    }
+  }, [customerProfile?.marketingConsent, isOpen]);
+
   const [isSavingConsent, setIsSavingConsent] = useState(false);
   const [pushState, setPushState] = useState(getPushPermissionState());
 
@@ -462,15 +470,26 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
           {/* TAB CONTENT: MARKETING PREFERENCES */}
           {activeTab === 'MARKETING' && (
             <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto">
-              <div className="p-4 bg-gradient-to-r from-amber-950 to-neutral-900 text-white rounded-2xl shadow-sm">
-                <div className="flex items-center space-x-3 mb-1">
-                  <Megaphone className="w-5 h-5 text-amber-400" />
-                  <h3 className="text-sm font-serif font-bold text-amber-100">Marketing Consent & Channel Preferences</h3>
+              <div className="p-4 bg-gradient-to-r from-amber-950 to-neutral-900 text-white rounded-2xl shadow-sm flex items-start justify-between">
+                <div>
+                  <div className="flex items-center space-x-3 mb-1">
+                    <Megaphone className="w-5 h-5 text-amber-400" />
+                    <h3 className="text-sm font-serif font-bold text-amber-100">Marketing Consent & Channel Preferences</h3>
+                  </div>
+                  <p className="text-xs text-amber-200/70">
+                    Choose how you would like to receive exclusive offers, new arrival drops, festival deals, and order updates from Marudhar Fashion Point. You can change these preferences at any time.
+                  </p>
                 </div>
-                <p className="text-xs text-amber-200/70">
-                  Choose how you would like to receive exclusive offers, new arrival drops, festival deals, and order updates from Marudhar Fashion Point. You can change these preferences at any time.
-                </p>
               </div>
+
+              {customerProfile?.marketingConsent?.updatedAt && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center space-x-2 font-medium">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>
+                    Preferences last stored in Firestore: {new Date(customerProfile.marketingConsent.updatedAt).toLocaleString()}
+                  </span>
+                </div>
+              )}
 
               <div className="space-y-4">
                 {/* Master Consent Checkbox */}
@@ -478,14 +497,18 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                   <input
                     type="checkbox"
                     id="masterConsent"
-                    checked={marketingConsent.email || marketingConsent.push || marketingConsent.whatsApp}
+                    checked={marketingConsent.accepted ?? (marketingConsent.email || marketingConsent.push || marketingConsent.whatsApp)}
                     onChange={(e) => {
                       const checked = e.target.checked;
                       setMarketingConsent({
                         accepted: checked,
+                        marketingEnabled: checked,
                         email: checked,
+                        emailMarketing: checked,
                         push: checked,
+                        pushNotifications: checked,
                         whatsApp: checked,
+                        whatsappMarketing: checked,
                         updatedAt: new Date().toISOString(),
                       });
                     }}
@@ -513,8 +536,18 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={marketingConsent.email}
-                        onChange={(e) => setMarketingConsent({ ...marketingConsent, email: e.target.checked })}
+                        checked={Boolean(marketingConsent.email)}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          setMarketingConsent((prev) => ({
+                            ...prev,
+                            email: val,
+                            emailMarketing: val,
+                            accepted: val || prev.push || prev.whatsApp,
+                            marketingEnabled: val || prev.push || prev.whatsApp,
+                            updatedAt: new Date().toISOString(),
+                          }));
+                        }}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
@@ -548,8 +581,18 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={marketingConsent.push}
-                        onChange={(e) => setMarketingConsent({ ...marketingConsent, push: e.target.checked })}
+                        checked={Boolean(marketingConsent.push)}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          setMarketingConsent((prev) => ({
+                            ...prev,
+                            push: val,
+                            pushNotifications: val,
+                            accepted: prev.email || val || prev.whatsApp,
+                            marketingEnabled: prev.email || val || prev.whatsApp,
+                            updatedAt: new Date().toISOString(),
+                          }));
+                        }}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
@@ -574,8 +617,18 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={marketingConsent.whatsApp}
-                        onChange={(e) => setMarketingConsent({ ...marketingConsent, whatsApp: e.target.checked })}
+                        checked={Boolean(marketingConsent.whatsApp)}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          setMarketingConsent((prev) => ({
+                            ...prev,
+                            whatsApp: val,
+                            whatsappMarketing: val,
+                            accepted: prev.email || prev.push || val,
+                            marketingEnabled: prev.email || prev.push || val,
+                            updatedAt: new Date().toISOString(),
+                          }));
+                        }}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
@@ -585,16 +638,36 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
 
                 <div className="pt-4 flex justify-end">
                   <button
+                    type="button"
                     onClick={async () => {
+                      if (isSavingConsent) return;
                       setIsSavingConsent(true);
-                      await updateCustomerMarketingConsent(marketingConsent);
-                      setIsSavingConsent(false);
+                      console.log('[DEBUG] Button Click Event: Save Marketing Preferences');
+                      console.log('[DEBUG] UID:', customerUser?.uid || 'guest');
+                      console.log('[DEBUG] Payload:', marketingConsent);
+                      try {
+                        const res = await updateCustomerMarketingConsent(marketingConsent);
+                        console.log('[DEBUG] Firestore Response:', res);
+                      } catch (err) {
+                        console.error('[DEBUG] Save Button Error:', err);
+                      } finally {
+                        setIsSavingConsent(false);
+                      }
                     }}
                     disabled={isSavingConsent}
-                    className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center space-x-2"
+                    className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center space-x-2"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{isSavingConsent ? 'Saving Preferences...' : 'Save Marketing Preferences'}</span>
+                    {isSavingConsent ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Saving Preferences...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Save Marketing Preferences</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

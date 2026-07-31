@@ -907,45 +907,68 @@ export async function saveMarketingConsentInFirestore(
   userName?: string,
   phoneNumber?: string
 ): Promise<boolean> {
-  try {
-    const now = new Date().toISOString();
-    const currentUser = auth.currentUser;
-    const email = userEmail || currentUser?.email || '';
-    const name = userName || currentUser?.displayName || email.split('@')[0] || 'Valued Customer';
-    const phone = phoneNumber || currentUser?.phoneNumber || '';
+  const now = new Date().toISOString();
+  const currentUser = auth.currentUser;
+  const email = userEmail || currentUser?.email || '';
+  const name = userName || currentUser?.displayName || email.split('@')[0] || 'Valued Customer';
+  const phone = phoneNumber || currentUser?.phoneNumber || '';
 
+  const fullConsentPayload: MarketingConsent = {
+    accepted: consent.accepted ?? (consent.email || consent.push || consent.whatsApp),
+    marketingEnabled: consent.accepted ?? (consent.email || consent.push || consent.whatsApp),
+    email: Boolean(consent.email),
+    emailMarketing: Boolean(consent.email),
+    push: Boolean(consent.push),
+    pushNotifications: Boolean(consent.push),
+    whatsApp: Boolean(consent.whatsApp),
+    whatsappMarketing: Boolean(consent.whatsApp),
+    updatedAt: consent.updatedAt || now,
+    updatedBy: email || currentUser?.uid || 'Customer',
+  };
+
+  console.log('[DEBUG] saveMarketingConsentInFirestore -> Initiated');
+  console.log('[DEBUG] UID:', currentUser?.uid || 'guest');
+  console.log('[DEBUG] User Email:', email);
+  console.log('[DEBUG] Payload:', fullConsentPayload);
+
+  try {
     // 1. Update user profile if authenticated
     if (currentUser?.uid) {
       const userRef = doc(db, 'users', currentUser.uid);
-      await setDoc(userRef, { marketingConsent: consent }, { merge: true });
+      console.log('[DEBUG] Firestore Path (users):', `users/${currentUser.uid}`);
+      await setDoc(userRef, { marketingConsent: fullConsentPayload }, { merge: true });
+      console.log('[DEBUG] Firestore Response (users): SUCCESS');
     }
 
     // 2. Upsert subscriber entry in marketingSubscribers collection
     if (email) {
       const subId = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
       const subRef = doc(db, 'marketingSubscribers', subId);
+      console.log('[DEBUG] Firestore Path (marketingSubscribers):', `marketingSubscribers/${subId}`);
       const subscriberDoc: MarketingSubscriber = {
         id: subId,
         name,
         email,
         phoneNumber: phone,
-        preferences: consent,
-        pushPermissionGranted: consent.push,
+        preferences: fullConsentPayload,
+        pushPermissionGranted: fullConsentPayload.push,
         subscribedAt: now,
       };
       await setDoc(subRef, subscriberDoc, { merge: true });
+      console.log('[DEBUG] Firestore Response (marketingSubscribers): SUCCESS');
     }
 
     recordAuditLog(
       'Marketing Preferences Updated',
       'SETTINGS',
-      `Updated engagement channels for ${email || 'guest'} (Email: ${consent.email}, Push: ${consent.push}, WhatsApp: ${consent.whatsApp})`,
+      `Updated engagement channels for ${email || 'guest'} (Email: ${fullConsentPayload.email}, Push: ${fullConsentPayload.push}, WhatsApp: ${fullConsentPayload.whatsApp})`,
       'SUCCESS'
     );
     return true;
-  } catch (err) {
+  } catch (err: any) {
+    console.error('[DEBUG] saveMarketingConsentInFirestore -> FAILED:', err);
     handleFirestoreError(err, OperationType.WRITE, 'marketingSubscribers');
-    return false;
+    throw err;
   }
 }
 

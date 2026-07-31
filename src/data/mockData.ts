@@ -14,6 +14,16 @@ export const STORE_INFO: StoreInfo = {
   instagram: 'https://www.instagram.com/marudhar_fashion_point/',
   facebook: 'https://www.facebook.com/share/1Antw1LgKS/',
   youtube: 'https://yt.openinapp.co/10n4u',
+
+  // Header Customization Option Defaults
+  showHeaderLogo: true,
+  showHeaderSearch: true,
+  showHeaderCategories: true,
+  showHeaderWishlist: true,
+  showHeaderCart: true,
+  showHeaderAccount: true,
+  showHeaderOffers: true,
+  headerLogoText: 'Marudhar',
 };
 
 export const DEFAULT_HERO_CONTENT: HeroContent = {

@@ -131,27 +131,31 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
 
               {/* Brand Logo */}
-              <button
-                onClick={() => handleNavClick('hero')}
-                className="flex items-center gap-2 text-left group"
-              >
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0B8F63] flex items-center justify-center text-white shadow-md shadow-[#0B8F63]/20 group-hover:scale-105 transition-transform duration-300">
-                  <Footprints className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-1">
-                    <span className="font-serif-heading font-extrabold text-base sm:text-xl text-neutral-900 tracking-tight">
-                      Marudhar
-                    </span>
-                    <span className="text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 rounded bg-[#0B8F63]/10 text-[#0B8F63] uppercase tracking-wider">
-                      Point
-                    </span>
+              {storeInfo?.showHeaderLogo !== false && (
+                <button
+                  onClick={() => handleNavClick('hero')}
+                  className="flex items-center gap-2 text-left group"
+                >
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0B8F63] flex items-center justify-center text-white shadow-md shadow-[#0B8F63]/20 group-hover:scale-105 transition-transform duration-300">
+                    <Footprints className="w-5 h-5" />
                   </div>
-                  <p className="text-[9px] sm:text-[10px] text-neutral-500 font-medium tracking-wide hidden xs:block">
-                    Fashion & Footwear
-                  </p>
-                </div>
-              </button>
+                  <div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-serif-heading font-extrabold text-base sm:text-xl text-neutral-900 tracking-tight">
+                        {storeInfo?.headerLogoText || 'Marudhar'}
+                      </span>
+                      {(!storeInfo?.headerLogoText || storeInfo.headerLogoText === 'Marudhar') && (
+                        <span className="text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 rounded bg-[#0B8F63]/10 text-[#0B8F63] uppercase tracking-wider">
+                          Point
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[9px] sm:text-[10px] text-neutral-500 font-medium tracking-wide hidden xs:block">
+                      Fashion & Footwear
+                    </p>
+                  </div>
+                </button>
+              )}
             </div>
 
             {/* Middle Desktop Navigation Links */}
@@ -164,86 +168,88 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
 
               {/* Mega Menu Trigger */}
-              <div
-                className="relative"
-                onMouseEnter={() => setMegaMenuOpen(true)}
-                onMouseLeave={() => setMegaMenuOpen(false)}
-              >
-                <button
-                  onClick={() => handleNavClick('products')}
-                  className="flex items-center gap-1 text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors py-2"
+              {storeInfo?.showHeaderCategories !== false && (
+                <div
+                  className="relative"
+                  onMouseEnter={() => setMegaMenuOpen(true)}
+                  onMouseLeave={() => setMegaMenuOpen(false)}
                 >
-                  <span>Shop Categories</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${megaMenuOpen ? 'rotate-180 text-[#0B8F63]' : ''}`} />
-                </button>
+                  <button
+                    onClick={() => handleNavClick('products')}
+                    className="flex items-center gap-1 text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors py-2"
+                  >
+                    <span>Shop Categories</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${megaMenuOpen ? 'rotate-180 text-[#0B8F63]' : ''}`} />
+                  </button>
 
-                {/* Mega Dropdown */}
-                {megaMenuOpen && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-[600px] bg-white rounded-2xl shadow-2xl border border-neutral-100 p-6 grid grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 border-b pb-2">
-                        <span className="w-2 h-2 rounded-full bg-[#0B8F63]" />
-                        <h4 className="font-bold text-sm text-neutral-900">Men's Footwear</h4>
+                  {/* Mega Dropdown */}
+                  {megaMenuOpen && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-[600px] bg-white rounded-2xl shadow-2xl border border-neutral-100 p-6 grid grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 border-b pb-2">
+                          <span className="w-2 h-2 rounded-full bg-[#0B8F63]" />
+                          <h4 className="font-bold text-sm text-neutral-900">Men's Footwear</h4>
+                        </div>
+                        <ul className="space-y-2 text-xs text-neutral-600">
+                          <li>
+                            <button onClick={() => handleCategoryClick('men')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
+                              Sports & Running Shoes
+                            </button>
+                          </li>
+                          <li>
+                            <button onClick={() => handleCategoryClick('men')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
+                              Casual Sneakers & Slip-Ons
+                            </button>
+                          </li>
+                          <li>
+                            <button onClick={() => handleCategoryClick('men')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
+                              Formal Leather Shoes
+                            </button>
+                          </li>
+                        </ul>
                       </div>
-                      <ul className="space-y-2 text-xs text-neutral-600">
-                        <li>
-                          <button onClick={() => handleCategoryClick('men')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                            Sports & Running Shoes
-                          </button>
-                        </li>
-                        <li>
-                          <button onClick={() => handleCategoryClick('men')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                            Casual Sneakers & Slip-Ons
-                          </button>
-                        </li>
-                        <li>
-                          <button onClick={() => handleCategoryClick('men')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                            Formal Leather Shoes
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
 
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 border-b pb-2">
-                        <span className="w-2 h-2 rounded-full bg-[#0B8F63]" />
-                        <h4 className="font-bold text-sm text-neutral-900">Women's Sports Shoes</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 border-b pb-2">
+                          <span className="w-2 h-2 rounded-full bg-[#0B8F63]" />
+                          <h4 className="font-bold text-sm text-neutral-900">Women's Sports Shoes</h4>
+                        </div>
+                        <ul className="space-y-2 text-xs text-neutral-600">
+                          <li>
+                            <button onClick={() => handleCategoryClick('women')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5 font-medium">
+                              Athletic Running & Sports Shoes
+                            </button>
+                          </li>
+                        </ul>
                       </div>
-                      <ul className="space-y-2 text-xs text-neutral-600">
-                        <li>
-                          <button onClick={() => handleCategoryClick('women')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5 font-medium">
-                            Athletic Running & Sports Shoes
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
 
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 border-b pb-2">
-                        <span className="w-2 h-2 rounded-full bg-[#0B8F63]" />
-                        <h4 className="font-bold text-sm text-neutral-900">Kids' Footwear</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 border-b pb-2">
+                          <span className="w-2 h-2 rounded-full bg-[#0B8F63]" />
+                          <h4 className="font-bold text-sm text-neutral-900">Kids' Footwear</h4>
+                        </div>
+                        <ul className="space-y-2 text-xs text-neutral-600">
+                          <li>
+                            <button onClick={() => handleCategoryClick('kids')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
+                              Light-Up Sports Shoes
+                            </button>
+                          </li>
+                          <li>
+                            <button onClick={() => handleCategoryClick('kids')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
+                              School Shoes & Assembly Wear
+                            </button>
+                          </li>
+                          <li>
+                            <button onClick={() => handleCategoryClick('kids')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
+                              Party Wear Shoes & Sandals
+                            </button>
+                          </li>
+                        </ul>
                       </div>
-                      <ul className="space-y-2 text-xs text-neutral-600">
-                        <li>
-                          <button onClick={() => handleCategoryClick('kids')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                            Light-Up Sports Shoes
-                          </button>
-                        </li>
-                        <li>
-                          <button onClick={() => handleCategoryClick('kids')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                            School Shoes & Assembly Wear
-                          </button>
-                        </li>
-                        <li>
-                          <button onClick={() => handleCategoryClick('kids')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                            Party Wear Shoes & Sandals
-                          </button>
-                        </li>
-                      </ul>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               <button
                 onClick={() => handleNavClick('reviews')}
@@ -265,6 +271,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 Contact
               </button>
+
+              {storeInfo?.showHeaderOffers !== false && (
+                <button
+                  onClick={() => handleNavClick('products')}
+                  className="relative text-sm font-bold text-rose-600 hover:text-rose-700 transition-colors flex items-center gap-1 group py-2"
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>Offers</span>
+                  <span className="absolute -top-1 -right-4 px-1 py-0.5 text-[8px] bg-rose-600 text-white rounded font-sans-body font-bold uppercase animate-pulse">
+                    Hot
+                  </span>
+                </button>
+              )}
             </nav>
 
             {/* Right Utilities Icons */}
@@ -275,27 +294,31 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
 
               {/* Search Trigger */}
-              <button
-                onClick={onOpenSearch}
-                className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-100 transition-all active:scale-95"
-                aria-label="Search products"
-              >
-                <Search className="w-5 h-5" />
-              </button>
+              {storeInfo?.showHeaderSearch !== false && (
+                <button
+                  onClick={onOpenSearch}
+                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-100 transition-all active:scale-95"
+                  aria-label="Search products"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+              )}
 
               {/* Wishlist Icon */}
-              <button
-                onClick={onOpenWishlist}
-                className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-100 transition-all relative active:scale-95"
-                aria-label="View Wishlist"
-              >
-                <Heart className="w-5 h-5" />
-                {wishlistCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#0B8F63] text-white text-[10px] font-bold flex items-center justify-center animate-bounce">
-                    {wishlistCount}
-                  </span>
-                )}
-              </button>
+              {storeInfo?.showHeaderWishlist !== false && (
+                <button
+                  onClick={onOpenWishlist}
+                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-100 transition-all relative active:scale-95"
+                  aria-label="View Wishlist"
+                >
+                  <Heart className="w-5 h-5" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#0B8F63] text-white text-[10px] font-bold flex items-center justify-center animate-bounce">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </button>
+              )}
 
               {/* Customer Sound Settings Button */}
               {onOpenSoundSettings && (
@@ -318,7 +341,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
 
               {/* My Orders & Account Button */}
-              {onOpenCustomerAccount && (
+              {storeInfo?.showHeaderAccount !== false && onOpenCustomerAccount && (
                 <button
                   onClick={onOpenCustomerAccount}
                   className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-amber-800 hover:bg-amber-50 transition-all relative active:scale-95"
@@ -330,18 +353,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
 
               {/* Order Bag Icon */}
-              <button
-                onClick={onOpenOrderSheet}
-                className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-100 transition-all relative active:scale-95"
-                aria-label="View Order Bag"
-              >
-                <ShoppingBag className="w-5 h-5" />
-                {cartCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#0B8F63] text-white text-[10px] font-bold flex items-center justify-center">
-                    {cartCount}
-                  </span>
-                )}
-              </button>
+              {storeInfo?.showHeaderCart !== false && (
+                <button
+                  onClick={onOpenOrderSheet}
+                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-100 transition-all relative active:scale-95"
+                  aria-label="View Order Bag"
+                >
+                  <ShoppingBag className="w-5 h-5" />
+                  {cartCount > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#0B8F63] text-white text-[10px] font-bold flex items-center justify-center">
+                      {cartCount}
+                    </span>
+                  )}
+                </button>
+              )}
 
               {/* Direct WhatsApp Desktop Button */}
               <a

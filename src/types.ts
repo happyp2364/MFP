@@ -209,6 +209,16 @@ export interface StoreInfo {
   instagram: string;
   facebook: string;
   youtube: string;
+
+  // Header Customization Options
+  showHeaderLogo?: boolean;
+  showHeaderSearch?: boolean;
+  showHeaderCategories?: boolean;
+  showHeaderWishlist?: boolean;
+  showHeaderCart?: boolean;
+  showHeaderAccount?: boolean;
+  showHeaderOffers?: boolean;
+  headerLogoText?: string;
 }
 
 export interface FloatingShoeItem {

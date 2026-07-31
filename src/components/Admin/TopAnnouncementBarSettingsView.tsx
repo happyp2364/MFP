@@ -115,6 +115,22 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
       setCountdownEndTime(topAnnouncementBarConfig.countdownEndTime || '');
       setCountdownExpiryOption(topAnnouncementBarConfig.countdownExpiryOption || 'switch_slide');
       setCountdownReverseMode(topAnnouncementBarConfig.countdownReverseMode || false);
+
+      // Top bar links and options
+      setShowStoreLocator(topAnnouncementBarConfig.showStoreLocator !== false);
+      setStoreLocatorText(topAnnouncementBarConfig.storeLocatorText || 'Store Locator');
+      setShowTrackOrder(topAnnouncementBarConfig.showTrackOrder !== false);
+      setTrackOrderText(topAnnouncementBarConfig.trackOrderText || 'Track Order');
+      setShowAbout(topAnnouncementBarConfig.showAbout !== false);
+      setAboutText(topAnnouncementBarConfig.aboutText || 'About');
+      setShowHelp(topAnnouncementBarConfig.showHelp !== false);
+      setHelpText(topAnnouncementBarConfig.helpText || 'Help');
+      setShowContact(topAnnouncementBarConfig.showContact !== false);
+      setContactText(topAnnouncementBarConfig.contactText || 'Contact');
+      setShowLanguage(topAnnouncementBarConfig.showLanguage !== false);
+      setLanguageText(topAnnouncementBarConfig.languageText || 'EN');
+      setShowOfferText(topAnnouncementBarConfig.showOfferText !== false);
+      setOfferText(topAnnouncementBarConfig.offerText || 'LIMITED OFFER');
     }
   }, [topAnnouncementBarConfig]);
 
@@ -263,6 +279,20 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
       countdownEndTime,
       countdownExpiryOption,
       countdownReverseMode,
+      showStoreLocator,
+      storeLocatorText,
+      showTrackOrder,
+      trackOrderText,
+      showAbout,
+      aboutText,
+      showHelp,
+      helpText,
+      showContact,
+      contactText,
+      showLanguage,
+      languageText,
+      showOfferText,
+      offerText,
     };
 
     try {
@@ -745,6 +775,209 @@ export const TopAnnouncementBarSettingsView: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Section 4: Top Bar Secondary Navigation Links */}
+          <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
+            <h3 className="font-serif-heading font-bold text-sm text-neutral-900 border-b border-neutral-100 pb-2.5 flex items-center gap-2">
+              <span>Top Bar Navigation Links</span>
+            </h3>
+
+            {/* Store Locator Toggle & Label */}
+            <div className="space-y-2 pb-2 border-b border-neutral-100">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-neutral-800">Store Locator</span>
+                <input
+                  type="checkbox"
+                  checked={showStoreLocator}
+                  onChange={(e) => {
+                    setShowStoreLocator(e.target.checked);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4.5 h-4.5 cursor-pointer"
+                />
+              </div>
+              {showStoreLocator && (
+                <input
+                  type="text"
+                  value={storeLocatorText}
+                  onChange={(e) => {
+                    setStoreLocatorText(e.target.value);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-lg p-2 text-xs text-neutral-900 outline-none font-semibold"
+                  placeholder="Label (e.g. Store Locator)"
+                />
+              )}
+            </div>
+
+            {/* Track Order Toggle & Label */}
+            <div className="space-y-2 pb-2 border-b border-neutral-100">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-neutral-800">Track Order</span>
+                <input
+                  type="checkbox"
+                  checked={showTrackOrder}
+                  onChange={(e) => {
+                    setShowTrackOrder(e.target.checked);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4.5 h-4.5 cursor-pointer"
+                />
+              </div>
+              {showTrackOrder && (
+                <input
+                  type="text"
+                  value={trackOrderText}
+                  onChange={(e) => {
+                    setTrackOrderText(e.target.value);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-lg p-2 text-xs text-neutral-900 outline-none font-semibold"
+                  placeholder="Label (e.g. Track Order)"
+                />
+              )}
+            </div>
+
+            {/* About Toggle & Label */}
+            <div className="space-y-2 pb-2 border-b border-neutral-100">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-neutral-800">About Us</span>
+                <input
+                  type="checkbox"
+                  checked={showAbout}
+                  onChange={(e) => {
+                    setShowAbout(e.target.checked);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4.5 h-4.5 cursor-pointer"
+                />
+              </div>
+              {showAbout && (
+                <input
+                  type="text"
+                  value={aboutText}
+                  onChange={(e) => {
+                    setAboutText(e.target.value);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-lg p-2 text-xs text-neutral-900 outline-none font-semibold"
+                  placeholder="Label (e.g. About)"
+                />
+              )}
+            </div>
+
+            {/* Help Toggle & Label */}
+            <div className="space-y-2 pb-2 border-b border-neutral-100">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-neutral-800">Help Center</span>
+                <input
+                  type="checkbox"
+                  checked={showHelp}
+                  onChange={(e) => {
+                    setShowHelp(e.target.checked);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4.5 h-4.5 cursor-pointer"
+                />
+              </div>
+              {showHelp && (
+                <input
+                  type="text"
+                  value={helpText}
+                  onChange={(e) => {
+                    setHelpText(e.target.value);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-lg p-2 text-xs text-neutral-900 outline-none font-semibold"
+                  placeholder="Label (e.g. Help)"
+                />
+              )}
+            </div>
+
+            {/* Contact Toggle & Label */}
+            <div className="space-y-2 pb-2 border-b border-neutral-100">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-neutral-800">Contact</span>
+                <input
+                  type="checkbox"
+                  checked={showContact}
+                  onChange={(e) => {
+                    setShowContact(e.target.checked);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4.5 h-4.5 cursor-pointer"
+                />
+              </div>
+              {showContact && (
+                <input
+                  type="text"
+                  value={contactText}
+                  onChange={(e) => {
+                    setContactText(e.target.value);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-lg p-2 text-xs text-neutral-900 outline-none font-semibold"
+                  placeholder="Label (e.g. Contact)"
+                />
+              )}
+            </div>
+
+            {/* Language Toggle & Label */}
+            <div className="space-y-2 pb-2 border-b border-neutral-100">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-neutral-800">Language Selector</span>
+                <input
+                  type="checkbox"
+                  checked={showLanguage}
+                  onChange={(e) => {
+                    setShowLanguage(e.target.checked);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4.5 h-4.5 cursor-pointer"
+                />
+              </div>
+              {showLanguage && (
+                <input
+                  type="text"
+                  value={languageText}
+                  onChange={(e) => {
+                    setLanguageText(e.target.value);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-lg p-2 text-xs text-neutral-900 outline-none font-semibold"
+                  placeholder="Label (e.g. EN)"
+                />
+              )}
+            </div>
+
+            {/* Offer Text Toggle & Label */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-neutral-800">Offer Badge / Text</span>
+                <input
+                  type="checkbox"
+                  checked={showOfferText}
+                  onChange={(e) => {
+                    setShowOfferText(e.target.checked);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4.5 h-4.5 cursor-pointer"
+                />
+              </div>
+              {showOfferText && (
+                <input
+                  type="text"
+                  value={offerText}
+                  onChange={(e) => {
+                    setOfferText(e.target.value);
+                    setSaveStatus('IDLE');
+                  }}
+                  className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-lg p-2 text-xs text-neutral-900 outline-none font-semibold"
+                  placeholder="Label (e.g. LIMITED OFFER)"
+                />
+              )}
+            </div>
           </div>
         </div>
 

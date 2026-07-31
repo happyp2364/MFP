@@ -1493,6 +1493,126 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </div>
                 </div>
 
+                {/* Header Customization */}
+                <div className="bg-white p-6 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
+                  <h3 className="font-serif-heading font-extrabold text-base text-neutral-900 border-b border-neutral-100 pb-2.5 flex items-center justify-between">
+                    <span>Storefront Header Elements</span>
+                    <span className="text-xs text-[#0B8F63] font-sans-body font-bold uppercase tracking-wider">Editable</span>
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Header Logo Text */}
+                    <div className="md:col-span-2">
+                      <label className="font-bold text-neutral-700 block mb-1">Header Custom Logo Text</label>
+                      <input
+                        type="text"
+                        value={storeInfoForm.headerLogoText || ''}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, headerLogoText: e.target.value })}
+                        placeholder="Leave blank to use 'Marudhar Point'"
+                        className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+
+                    {/* Logo Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                      <div>
+                        <span className="font-bold text-xs text-neutral-800 block">Show Brand Logo</span>
+                        <span className="text-[10px] text-neutral-500 block">Toggle main header logo visibility</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={storeInfoForm.showHeaderLogo !== false}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, showHeaderLogo: e.target.checked })}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Search Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                      <div>
+                        <span className="font-bold text-xs text-neutral-800 block">Show Search Bar</span>
+                        <span className="text-[10px] text-neutral-500 block">Enable search capability in header</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={storeInfoForm.showHeaderSearch !== false}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, showHeaderSearch: e.target.checked })}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Categories Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                      <div>
+                        <span className="font-bold text-xs text-neutral-800 block">Show Categories Mega Menu</span>
+                        <span className="text-[10px] text-neutral-500 block">Show footwear category navigation dropdown</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={storeInfoForm.showHeaderCategories !== false}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, showHeaderCategories: e.target.checked })}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Wishlist Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                      <div>
+                        <span className="font-bold text-xs text-neutral-800 block">Show Wishlist Button</span>
+                        <span className="text-[10px] text-neutral-500 block">Toggle wishlist accessibility</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={storeInfoForm.showHeaderWishlist !== false}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, showHeaderWishlist: e.target.checked })}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Cart Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                      <div>
+                        <span className="font-bold text-xs text-neutral-800 block">Show Shopping Cart</span>
+                        <span className="text-[10px] text-neutral-500 block">Toggle order bag icon</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={storeInfoForm.showHeaderCart !== false}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, showHeaderCart: e.target.checked })}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Account Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                      <div>
+                        <span className="font-bold text-xs text-neutral-800 block">Show Customer Account / Tracking</span>
+                        <span className="text-[10px] text-neutral-500 block">Toggle customer profile login and orders tracking</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={storeInfoForm.showHeaderAccount !== false}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, showHeaderAccount: e.target.checked })}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Offers Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100 md:col-span-2">
+                      <div>
+                        <span className="font-bold text-xs text-neutral-800 block">Show Offers & Promotional Badge Link</span>
+                        <span className="text-[10px] text-neutral-500 block">Display hot discount tag link inside header</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={storeInfoForm.showHeaderOffers !== false}
+                        onChange={(e) => setStoreInfoForm({ ...storeInfoForm, showHeaderOffers: e.target.checked })}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="submit"
                   className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-6 py-3.5 rounded-2xl shadow-lg flex items-center gap-2 transition-all cursor-pointer"

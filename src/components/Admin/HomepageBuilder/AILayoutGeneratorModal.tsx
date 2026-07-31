@@ -172,7 +172,7 @@ export const AILayoutGeneratorModal: React.FC<AILayoutGeneratorModalProps> = ({
 
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {previewConfig.sections.map((sec, idx) => (
-                  <div key={sec.id || idx} className="p-2.5 bg-white border border-emerald-100 rounded-lg flex items-center justify-between text-xs">
+                  <div key={`${sec.id || 'sec'}-${idx}`} className="p-2.5 bg-white border border-emerald-100 rounded-lg flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
                       <span className="w-5 h-5 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-full flex items-center justify-center">
                         {idx + 1}

@@ -20,7 +20,7 @@ export const MARKETPLACE_PRESETS: HomepagePreset[] = [
       themeMode: 'luxury',
       sections: [
         FLOATING_SNEAKER_DEFAULT_SECTION,
-        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner'),
+        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner' && s.type !== 'floating_sneaker'),
       ],
     },
   },
@@ -39,7 +39,7 @@ export const MARKETPLACE_PRESETS: HomepagePreset[] = [
       themeMode: 'glassmorphic',
       sections: [
         FLOATING_SNEAKER_DEFAULT_SECTION,
-        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner'),
+        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner' && s.type !== 'floating_sneaker'),
       ],
     },
   },
@@ -75,7 +75,7 @@ export const MARKETPLACE_PRESETS: HomepagePreset[] = [
             ctaTextColor: '#000000',
           },
         },
-        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner'),
+        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner' && s.type !== 'floating_sneaker'),
       ],
     },
   },
@@ -486,7 +486,7 @@ export const MARKETPLACE_PRESETS: HomepagePreset[] = [
       themeMode: 'glassmorphic',
       sections: [
         FLOATING_SNEAKER_DEFAULT_SECTION,
-        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner'),
+        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner' && s.type !== 'floating_sneaker'),
       ],
     },
   },
@@ -574,7 +574,7 @@ export const MARKETPLACE_PRESETS: HomepagePreset[] = [
       themeMode: 'glassmorphic',
       sections: [
         FLOATING_SNEAKER_DEFAULT_SECTION,
-        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner'),
+        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner' && s.type !== 'floating_sneaker'),
       ],
     },
   },
@@ -883,7 +883,7 @@ export const MARKETPLACE_PRESETS: HomepagePreset[] = [
       themeMode: 'glassmorphic',
       sections: [
         FLOATING_SNEAKER_DEFAULT_SECTION,
-        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner'),
+        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner' && s.type !== 'floating_sneaker'),
       ],
     },
   },

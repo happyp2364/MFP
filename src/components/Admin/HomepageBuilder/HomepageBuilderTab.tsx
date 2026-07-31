@@ -346,7 +346,7 @@ export const HomepageBuilderTab: React.FC = () => {
           <div className="space-y-3">
             {localConfig.sections.map((sec, index) => (
               <div
-                key={sec.id || index}
+                key={`${sec.id || 'sec'}-${index}`}
                 className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
                   sec.enabled
                     ? 'bg-white border-neutral-200 shadow-xs hover:border-emerald-300'

@@ -45,9 +45,9 @@ export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
 
   return (
     <div className="w-full space-y-8 pb-12">
-      {activeSections.map((section) => (
+      {activeSections.map((section, idx) => (
         <SectionItem
-          key={section.id}
+          key={`${section.id}-${idx}`}
           section={section}
           products={products}
           reviews={reviews}

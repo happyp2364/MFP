@@ -42,11 +42,14 @@ import {
   EngagementAnalytics,
   OrderCelebrationConfig,
   WhatsAppTemplatesConfig,
+  OpenBoxDeliveryConfig,
+  DEFAULT_OPEN_BOX_DELIVERY_CONFIG,
 } from '../types';
 import {
   DEFAULT_WHATSAPP_TEMPLATES_CONFIG,
 } from '../data/defaultWhatsAppTemplates';
 import { getStoredWhatsAppConfig } from '../utils/whatsappTemplateParser';
+import { isOpenBoxDeliveryApplicable } from '../utils/openBoxDeliveryUtils';
 import {
   PRODUCTS_DATA,
   REVIEWS_DATA,
@@ -121,6 +124,7 @@ const STORAGE_KEYS = {
   TOP_ANNOUNCEMENT_BAR_CONFIG: 'mfp_top_announcement_bar_config_live',
   SOCIAL_MEDIA_CONFIG: 'mfp_social_media_config_live_v2',
   SOCIAL_ANALYTICS: 'mfp_social_analytics_live_v2',
+  OPEN_BOX_DELIVERY_CONFIG: 'mfp_open_box_delivery_config_live',
 };
 
 function safeGetLocalStorage<T>(key: string, fallback: T): T {
@@ -271,6 +275,10 @@ interface StoreContextType {
   duplicateCoupon: (id: string) => Promise<boolean>;
   validateCoupon: (code: string, cartItems: CartItem[]) => { valid: boolean; reason?: string; discountAmount?: number; freeShipping?: boolean; freeGift?: boolean; giftName?: string; eligibleProductIds?: string[] };
   trackCouponUse: (code: string, success: boolean, revenue?: number, discount?: number) => Promise<void>;
+
+  // Open Box Delivery Management
+  openBoxDeliveryConfig: OpenBoxDeliveryConfig;
+  updateOpenBoxDeliveryConfig: (updated: Partial<OpenBoxDeliveryConfig>) => Promise<void>;
 
   // Customer Engagement Reward Center
   spinWheelConfig: SpinWheelConfig;
@@ -424,6 +432,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [socialAnalytics, setSocialAnalytics] = useState<SocialAnalyticsLog>(() =>
     safeGetLocalStorage<SocialAnalyticsLog>(STORAGE_KEYS.SOCIAL_ANALYTICS, DEFAULT_SOCIAL_ANALYTICS)
+  );
+
+  const [openBoxDeliveryConfig, setOpenBoxDeliveryConfig] = useState<OpenBoxDeliveryConfig>(() =>
+    safeGetLocalStorage<OpenBoxDeliveryConfig>(STORAGE_KEYS.OPEN_BOX_DELIVERY_CONFIG, DEFAULT_OPEN_BOX_DELIVERY_CONFIG)
   );
 
 
@@ -690,6 +702,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             safeSetLocalStorage('mfp_whatsapp_templates_config', data);
           }
         }, (err) => console.warn('Live WhatsApp templates listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'openBoxDelivery'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as OpenBoxDeliveryConfig;
+            setOpenBoxDeliveryConfig(data);
+            safeSetLocalStorage(STORAGE_KEYS.OPEN_BOX_DELIVERY_CONFIG, data);
+          }
+        }, (err) => console.warn('Live open box delivery listener notice:', err))
       );
 
       unsubscribers.push(
@@ -1423,6 +1445,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const updateOpenBoxDeliveryConfig = async (updated: Partial<OpenBoxDeliveryConfig>) => {
+    try {
+      const newCfg = { ...openBoxDeliveryConfig, ...updated };
+      setOpenBoxDeliveryConfig(newCfg);
+      safeSetLocalStorage(STORAGE_KEYS.OPEN_BOX_DELIVERY_CONFIG, newCfg);
+      await setDoc(doc(db, 'settings', 'openBoxDelivery'), newCfg, { merge: true });
+      showToast('💾 Open Box Delivery Config Saved Live', 'success');
+      recordAuditLog('UPDATE_OPEN_BOX_DELIVERY', 'SETTINGS', `Updated Open Box Delivery config (Enabled: ${newCfg.enabled})`);
+    } catch (err: any) {
+      console.error('Error updating open box delivery config:', err);
+      showToast('Failed to save open box delivery config', 'error');
+    }
+  };
+
   // Customer Orders & Checkout
   const placeOrderAndPay = async (
     cartItems: CartItem[],
@@ -1444,6 +1480,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           : (paymentMethod as PaymentMethodType);
       const mappedPaymentStatus: PaymentStatus = paymentMethod === 'COD' ? 'PENDING' : 'PAID';
 
+      const openBoxApplicable = isOpenBoxDeliveryApplicable({
+        config: openBoxDeliveryConfig,
+        cartItems,
+        totalAmount: totalAmt,
+        paymentMethod: mappedPaymentMethod,
+      });
+
       const newOrder: CustomerOrder = {
         id: orderId,
         orderNumber: Date.now(),
@@ -1464,6 +1507,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         shippingAddress,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        isOpenBoxDelivery: openBoxApplicable,
+        openBoxDeliveryNote: openBoxApplicable ? (openBoxDeliveryConfig.heading || 'Open Box Delivery Available') : undefined,
       };
 
       if (couponCode) {
@@ -2226,6 +2271,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     whatsappTemplatesConfig,
     updateWhatsAppTemplatesConfig,
     resetWhatsAppTemplatesToDefault,
+
+    // Open Box Delivery
+    openBoxDeliveryConfig,
+    updateOpenBoxDeliveryConfig,
   }), [
     publishedProducts, publishedReviews, publishedStoreInfo, publishedHeroContent,
     publishedAnnouncements, publishedCategoryHighlights, publishedTrendingCollections,
@@ -2236,7 +2285,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     socialAnalytics, spinWheelConfig, engagementAnalytics,
     orderCelebrationConfig, isCelebrating, customerUser, customerProfile,
     isCustomerAuthLoading, customerAuthError, toastMessage, campaigns, subscribers,
-    coupons, whatsappTemplatesConfig,
+    coupons, whatsappTemplatesConfig, openBoxDeliveryConfig,
     // callbacks and functions
     updatePetShoeConfig, updateInstagramConfig,
     updatePaymentSettings, updateSoundConfig, updateTopAnnouncementBarConfig,
@@ -2254,7 +2303,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateCategoryHighlight, saveCategoryHighlights, updateTrendingCollection,
     refreshAuditLogs, createStoreBackup, restoreStoreBackup, resetToDefaults,
     addCoupon, updateCoupon, deleteCoupon, duplicateCoupon, validateCoupon, trackCouponUse,
-    updateWhatsAppTemplatesConfig, resetWhatsAppTemplatesToDefault
+    updateWhatsAppTemplatesConfig, resetWhatsAppTemplatesToDefault, updateOpenBoxDeliveryConfig
   ]);
 
   return (

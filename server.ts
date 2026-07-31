@@ -59,10 +59,22 @@ async function startServer() {
         return res.status(400).json({ error: "imageSrc is required" });
       }
 
-      // If GEMINI_API_KEY is available, use Gemini 3.6 Flash Vision to detect shoe bounding box & segmentation instructions
-      let visionPrompt = `Analyze this image containing a shoe/sneaker.
-Identify the exact bounding box coordinates [ymin, xmin, ymax, xmax] of ONLY the primary shoe object, ignoring all background, poster text, rocks, badges, and logos outside the shoe.
-Respond with JSON: {"box": [ymin, xmin, ymax, xmax], "confidence": 0.95, "shoeType": "sneaker"}`;
+      let visionPrompt = `Analyze this footwear photo/poster/design.
+Identify the primary shoe object as the central subject.
+1. Provide the exact bounding box coordinates [ymin, xmin, ymax, xmax] as normalized integers from 0 to 1000 encompassing the COMPLETE shoe, including all wings, laces, soles, tongues, and fine details. Add a safe generous margin so NO part of the shoe is cut off.
+2. Identify RGB samples of the surrounding background colors.
+3. Classify the background type and halo risk (e.g. white background glow, dark shadow).
+
+Respond strictly with valid JSON:
+{
+  "box": [ymin, xmin, ymax, xmax],
+  "confidence": 0.98,
+  "shoeType": "footwear",
+  "backgroundColors": [[255,255,255], [245,245,245]],
+  "backgroundType": "white",
+  "haloRisk": "white_halo",
+  "hasWingsOrLaces": true
+}`;
 
       let base64Data = "";
       let mimeType = "image/png";
@@ -74,6 +86,10 @@ Respond with JSON: {"box": [ymin, xmin, ymax, xmax], "confidence": 0.95, "shoeTy
       }
 
       let boundingBox = null;
+      let backgroundColors: Array<[number, number, number]> = [];
+      let backgroundType = "unknown";
+      let haloRisk = "none";
+      let confidence = 0.9;
 
       if (base64Data && process.env.GEMINI_API_KEY) {
         try {
@@ -97,8 +113,20 @@ Respond with JSON: {"box": [ymin, xmin, ymax, xmax], "confidence": 0.95, "shoeTy
 
           if (geminiRes.text) {
             const parsed = JSON.parse(geminiRes.text);
-            if (parsed.box && Array.isArray(parsed.box)) {
+            if (parsed.box && Array.isArray(parsed.box) && parsed.box.length === 4) {
               boundingBox = parsed.box; // [ymin, xmin, ymax, xmax] normalized 0-1000
+            }
+            if (Array.isArray(parsed.backgroundColors)) {
+              backgroundColors = parsed.backgroundColors;
+            }
+            if (parsed.backgroundType) {
+              backgroundType = parsed.backgroundType;
+            }
+            if (parsed.haloRisk) {
+              haloRisk = parsed.haloRisk;
+            }
+            if (typeof parsed.confidence === "number") {
+              confidence = parsed.confidence;
             }
           }
         } catch (geminiErr) {
@@ -109,6 +137,10 @@ Respond with JSON: {"box": [ymin, xmin, ymax, xmax], "confidence": 0.95, "shoeTy
       return res.json({
         success: true,
         boundingBox,
+        backgroundColors,
+        backgroundType,
+        haloRisk,
+        confidence,
         message: "Shoe AI detection completed successfully",
       });
     } catch (err: any) {

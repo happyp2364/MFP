@@ -5,6 +5,7 @@ import { useStore } from '../../context/StoreContext';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
 import { getProductSKU, getProductUrl } from '../../utils/productUtils';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
+import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 import {
   normalizeProductSizeStocks,
   isProductCompletelyOutOfStock,
@@ -252,6 +253,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 Inclusive of all taxes
               </span>
             </div>
+
+            {/* Open Box Delivery Feature Banner */}
+            <OpenBoxDeliveryBadge product={product} variant="banner" />
 
             {/* Description */}
             {product.description && product.description.trim().length > 0 && (

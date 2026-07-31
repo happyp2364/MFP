@@ -3,6 +3,7 @@ import { Heart, Eye, MessageCircle, Star, Sparkles, Flame, Bell, ImageOff, Zap, 
 import { Product } from '../../types';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
+import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 import { useStore } from '../../context/StoreContext';
 import {
   normalizeProductSizeStocks,
@@ -128,6 +129,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Top Badges Left */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+          <OpenBoxDeliveryBadge product={product} variant="compact" />
           {product.price >= 999 && (
             <span className="bg-emerald-800 text-white text-[9px] font-extrabold tracking-wider uppercase px-2.5 py-0.5 rounded-md shadow-sm">
               🚚 Free Delivery

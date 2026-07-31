@@ -75,6 +75,7 @@ import { EngagementAnalyticsView } from './EngagementAnalyticsView';
 import { WhatsAppTemplateManager } from './WhatsAppTemplateManager';
 import { ScratchAndWinSettingsView } from './ScratchAndWinSettingsView';
 import { OrderCelebrationSettingsView } from './OrderCelebrationSettingsView';
+import { OpenBoxDeliverySettingsView } from './OpenBoxDeliverySettingsView';
 import { AdminErrorBoundary } from './AdminErrorBoundary';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
@@ -85,7 +86,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -457,6 +458,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('open_box_delivery')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'open_box_delivery'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Package className="w-4 h-4 text-emerald-500" />
+              <span>📦 Open Box Delivery</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('marketing')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'marketing'
@@ -744,6 +757,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             
             {/* ----------------- TAB: ORDERS & TRACKING ----------------- */}
             {activeTab === 'orders' && <OrderManagementView />}
+
+            {/* ----------------- TAB: OPEN BOX DELIVERY ----------------- */}
+            {activeTab === 'open_box_delivery' && <OpenBoxDeliverySettingsView />}
 
             {/* ----------------- TAB: MARKETING & ENGAGEMENT CENTER ----------------- */}
             {activeTab === 'marketing' && <MarketingCenterView />}

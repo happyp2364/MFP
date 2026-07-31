@@ -325,6 +325,8 @@ export interface CustomerOrder {
     note?: string;
   }[];
   customerNotes?: string;
+  isOpenBoxDelivery?: boolean;
+  openBoxDeliveryNote?: string;
 }
 
 export interface TransactionRecord {
@@ -1010,6 +1012,41 @@ export interface WhatsAppTemplatesConfig {
   templates: WhatsAppTemplate[];
   activeCategoryMap: Record<WhatsAppTemplateActionCategory, string>;
 }
+
+export interface OpenBoxDeliveryConfig {
+  enabled: boolean;
+  heading: string;
+  description: string;
+  icon: 'package' | 'shield' | 'box' | 'check' | 'truck' | 'eye' | 'lock' | 'award' | string;
+  badgeColor: 'emerald' | 'amber' | 'blue' | 'indigo' | 'purple' | 'rose' | 'dark' | string;
+  backgroundColor: 'emerald-light' | 'amber-light' | 'blue-light' | 'neutral-light' | 'dark-slate' | string;
+  textColor: 'default' | 'dark' | 'emerald' | 'amber' | 'indigo' | string;
+  borderStyle: 'solid' | 'dashed' | 'dotted' | 'none';
+  displayPriority: 'high' | 'normal' | 'low';
+  applicabilityScope: 'all' | 'categories' | 'products';
+  applicableCategoryIds: string[];
+  applicableProductIds: string[];
+  minOrderValue: number;
+  paymentEligibility: 'all' | 'cod_only' | 'prepaid_only';
+}
+
+export const DEFAULT_OPEN_BOX_DELIVERY_CONFIG: OpenBoxDeliveryConfig = {
+  enabled: true,
+  heading: 'Open Box Delivery Available',
+  description: 'Your order will be opened in front of you at the time of delivery for verification before handover.',
+  icon: 'package',
+  badgeColor: 'emerald',
+  backgroundColor: 'emerald-light',
+  textColor: 'default',
+  borderStyle: 'dashed',
+  displayPriority: 'high',
+  applicabilityScope: 'all',
+  applicableCategoryIds: [],
+  applicableProductIds: [],
+  minOrderValue: 0,
+  paymentEligibility: 'all',
+};
+
 
 
 

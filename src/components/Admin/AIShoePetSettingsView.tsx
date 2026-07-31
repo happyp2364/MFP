@@ -91,10 +91,8 @@ export const AIShoePetSettingsView: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStage, setProcessingStage] = useState<string>('');
   const [extractedShoePng, setExtractedShoePng] = useState<string | null>(null);
-  const [validationResult, setValidationResult] = useState<{
-    isValid: boolean;
-    message: string;
-  } | null>(null);
+  const [extractionResult, setExtractionResult] = useState<any | null>(null);
+  const [retryAttempt, setRetryAttempt] = useState<number>(1);
 
   // Preset Pre-Isolated Transparent PNG Shoes
   const PRESET_PET_SHOES = [
@@ -127,51 +125,50 @@ export const AIShoePetSettingsView: React.FC = () => {
   };
 
   // Run AI Processing Pipeline on uploaded or selected image
-  const processImageForShoeExtraction = async (srcUrl: string) => {
+  const processImageForShoeExtraction = async (srcUrl: string, manualRetry: boolean = false) => {
     setOriginalImage(srcUrl);
     setIsProcessing(true);
     setExtractedShoePng(null);
-    setValidationResult(null);
+    setExtractionResult(null);
+
+    const currentAttempt = manualRetry ? retryAttempt + 1 : 1;
+    if (manualRetry) {
+      setRetryAttempt(currentAttempt);
+    } else {
+      setRetryAttempt(1);
+    }
 
     try {
-      setProcessingStage('Detecting shoe object using AI...');
-      await new Promise((r) => setTimeout(r, 300));
-
-      setProcessingStage('Removing background, text, borders & poster elements...');
-      const result = await extractShoeFromImage(srcUrl);
-
-      setProcessingStage('Validating transparent PNG quality...');
+      setProcessingStage('Detecting shoe subject & bounding box using AI...');
       await new Promise((r) => setTimeout(r, 200));
 
-      // Automated validation check
+      setProcessingStage('Executing boundary flood-fill & background subtraction...');
+      await new Promise((r) => setTimeout(r, 200));
+
+      setProcessingStage('Applying de-halo filter & soft edge feathering...');
+      const result = await extractShoeFromImage(srcUrl, {
+        maxRetries: 3,
+        sensitivity: manualRetry ? 40 + currentAttempt * 4 : 38,
+        padding: manualRetry ? 24 + currentAttempt * 3 : 20,
+      });
+
+      setProcessingStage('Validating transparent PNG quality...');
+      await new Promise((r) => setTimeout(r, 150));
+
+      setExtractionResult(result);
+
       if (result && result.transparentPngUrl) {
         setExtractedShoePng(result.transparentPngUrl);
-        // Automatically update the imageUri state with the extracted transparent PNG
-        setImageUri(result.transparentPngUrl);
 
-        if (result.confidence >= 0.7) {
-          setValidationResult({
-            isValid: true,
-            message: 'Shoe object isolated successfully! 100% background, text & poster removed.',
-          });
+        if (result.isValid) {
+          showToast('Shoe isolated cleanly! High-quality transparent PNG generated.', 'success');
         } else {
-          setValidationResult({
-            isValid: false,
-            message: 'Only a shoe could not be extracted cleanly. Please upload a clearer shoe image.',
-          });
+          showToast('Extraction did not pass quality checks. Please review validation feedback.', 'error');
         }
-      } else {
-        setValidationResult({
-          isValid: false,
-          message: 'Only a shoe could not be extracted cleanly. Please upload a clearer shoe image.',
-        });
       }
     } catch (err: any) {
       console.error('[AI Shoe Extraction Error]:', err);
-      setValidationResult({
-        isValid: false,
-        message: 'Only a shoe could not be extracted cleanly. Please upload a clearer shoe image.',
-      });
+      showToast('Extraction failed. Please try another image.', 'error');
     } finally {
       setIsProcessing(false);
       setProcessingStage('');
@@ -204,14 +201,22 @@ export const AIShoePetSettingsView: React.FC = () => {
     }
   };
 
-  // Preview Approval: Apply Approved Transparent PNG Shoe to Website Flying Mascot Instantly
-  const handleApproveExtractedShoe = () => {
-    const targetPng = extractedShoePng || imageUri;
-    if (!targetPng) return;
+  // Admin Accept Control: Apply Extracted Transparent PNG Shoe to Mascot
+  const handleAcceptExtractedShoe = () => {
+    if (!extractedShoePng) return;
     
-    setImageUri(targetPng);
-    updatePetShoeConfig({ imageUri: targetPng, enabled: true });
-    showToast('Extracted transparent PNG shoe applied to Flying Mascot instantly!', 'success');
+    setImageUri(extractedShoePng);
+    updatePetShoeConfig({ imageUri: extractedShoePng, enabled: true });
+    showToast('Accepted! Extracted transparent PNG shoe applied to Flying Mascot instantly.', 'success');
+  };
+
+  // Admin Cancel Control: Discard current extraction preview
+  const handleCancelExtraction = () => {
+    setOriginalImage(null);
+    setExtractedShoePng(null);
+    setExtractionResult(null);
+    setRetryAttempt(1);
+    showToast('Extraction preview cancelled.', 'info');
   };
 
   // Restore Default Mascot
@@ -434,51 +439,57 @@ export const AIShoePetSettingsView: React.FC = () => {
             </div>
           </div>
 
-          {/* PIPELINE DISPLAY STEPS */}
+          {/* PIPELINE DISPLAY & ADMIN COMPARATIVE PREVIEW */}
           {(originalImage || isProcessing || extractedShoePng) && (
-            <div className="p-6 rounded-2xl bg-neutral-900 text-white space-y-6 animate-in fade-in duration-300 border border-neutral-800">
-              <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+            <div className="p-6 rounded-3xl bg-neutral-900 text-white space-y-6 animate-in fade-in duration-300 border border-neutral-800 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-neutral-800 pb-3 flex-wrap gap-2">
                 <span className="text-xs font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-2">
                   <Layers className="w-4 h-4" />
-                  AI Extraction Step-by-Step Pipeline
+                  Admin Comparative Extraction Preview
                 </span>
-                {isProcessing && (
+                {isProcessing ? (
                   <span className="text-xs text-amber-300 font-bold flex items-center gap-1.5 animate-pulse">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     {processingStage}
                   </span>
-                )}
+                ) : extractionResult ? (
+                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                    extractionResult.isValid 
+                      ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40' 
+                      : 'bg-rose-950/80 text-rose-300 border-rose-500/40'
+                  }`}>
+                    Quality Score: {extractionResult.validationScore}/100
+                  </span>
+                ) : null}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                {/* Step 1: Original Image */}
-                <div className="space-y-2 text-center">
+              {/* Side-by-Side Comparison */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+                {/* 1. Original Image */}
+                <div className="space-y-2 text-center bg-neutral-950/80 p-4 rounded-2xl border border-neutral-800/80 flex flex-col justify-between">
                   <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block">
-                    1. Original Image
+                    1. Original Image Upload
                   </span>
-                  <div className="w-full h-36 bg-neutral-950 rounded-2xl border border-neutral-800 flex items-center justify-center p-2 overflow-hidden relative">
+                  <div className="w-full h-48 bg-neutral-900 rounded-xl border border-neutral-800 flex items-center justify-center p-2 overflow-hidden my-2">
                     {originalImage ? (
                       <img src={originalImage} alt="Original uploaded" className="max-w-full max-h-full object-contain" />
                     ) : (
                       <span className="text-xs text-neutral-600">No image loaded</span>
                     )}
                   </div>
+                  <span className="text-[10px] text-neutral-500 font-mono">
+                    {originalImage ? 'Source image provided for AI segmentation' : '—'}
+                  </span>
                 </div>
 
-                {/* Arrow indicator */}
-                <div className="hidden md:flex flex-col items-center justify-center text-amber-500">
-                  <Wand2 className={`w-6 h-6 mb-1 ${isProcessing ? 'animate-bounce' : ''}`} />
-                  <ArrowRight className="w-5 h-5" />
-                  <span className="text-[10px] text-neutral-400 font-mono mt-1">AI Segmentation</span>
-                </div>
-
-                {/* Step 2: Background Removed / Transparent PNG */}
-                <div className="space-y-2 text-center md:col-span-1">
-                  <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block">
-                    2. Transparent PNG Preview
+                {/* 2. Transparent PNG Preview */}
+                <div className="space-y-2 text-center bg-neutral-950/80 p-4 rounded-2xl border border-neutral-800/80 flex flex-col justify-between">
+                  <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block flex items-center justify-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    2. Extracted Transparent PNG
                   </span>
                   <div
-                    className="w-full h-36 rounded-2xl border-2 border-emerald-500/50 flex items-center justify-center p-3 relative overflow-hidden shadow-inner"
+                    className="w-full h-48 rounded-xl border-2 border-emerald-500/40 flex items-center justify-center p-3 relative overflow-hidden my-2 shadow-inner"
                     style={{
                       backgroundImage: `
                         linear-gradient(45deg, #262626 25%, transparent 25%), 
@@ -492,56 +503,135 @@ export const AIShoePetSettingsView: React.FC = () => {
                     }}
                   >
                     {isProcessing ? (
-                      <div className="flex flex-col items-center gap-2 text-amber-400">
-                        <RefreshCw className="w-6 h-6 animate-spin" />
+                      <div className="flex flex-col items-center gap-2 text-amber-400 py-6">
+                        <RefreshCw className="w-8 h-8 animate-spin" />
                         <span className="text-xs font-bold">{processingStage}</span>
                       </div>
                     ) : extractedShoePng ? (
                       <img
                         src={extractedShoePng}
                         alt="Extracted transparent shoe"
-                        className="max-w-full max-h-full object-contain filter drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)]"
+                        className="max-w-full max-h-full object-contain filter drop-shadow-[0_12px_20px_rgba(0,0,0,0.85)]"
                       />
                     ) : (
                       <span className="text-xs text-neutral-600">Pending extraction</span>
                     )}
                   </div>
+                  <span className="text-[10px] text-emerald-400/80 font-mono">
+                    {extractedShoePng ? 'Rendered on transparent checkerboard canvas' : '—'}
+                  </span>
                 </div>
               </div>
 
-              {/* Validation Check Results */}
-              {validationResult && (
+              {/* Quality Metrics Chips */}
+              {extractionResult && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  <div className="p-2.5 bg-neutral-950 rounded-xl border border-neutral-800 text-center">
+                    <span className="text-[9px] uppercase font-bold text-neutral-500 block">Corner Transparency</span>
+                    <span className="text-xs font-black text-emerald-400">
+                      {extractionResult.metrics?.cornerTransparencyPct?.toFixed(0)}% Clear
+                    </span>
+                  </div>
+                  <div className="p-2.5 bg-neutral-950 rounded-xl border border-neutral-800 text-center">
+                    <span className="text-[9px] uppercase font-bold text-neutral-500 block">Shoe Object Area</span>
+                    <span className="text-xs font-black text-amber-400">
+                      {extractionResult.metrics?.shoeCoveragePct?.toFixed(1)}% Coverage
+                    </span>
+                  </div>
+                  <div className="p-2.5 bg-neutral-950 rounded-xl border border-neutral-800 text-center">
+                    <span className="text-[9px] uppercase font-bold text-neutral-500 block">Edge Halos</span>
+                    <span className={`text-xs font-black ${extractionResult.metrics?.hasHalo ? 'text-rose-400' : 'text-emerald-400'}`}>
+                      {extractionResult.metrics?.hasHalo ? 'Halo Detected' : '0% Clean Edges'}
+                    </span>
+                  </div>
+                  <div className="p-2.5 bg-neutral-950 rounded-xl border border-neutral-800 text-center">
+                    <span className="text-[9px] uppercase font-bold text-neutral-500 block">Output Dimensions</span>
+                    <span className="text-xs font-black text-indigo-300">
+                      {extractionResult.width} × {extractionResult.height}px
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Validation Status & Fallback Message */}
+              {extractionResult && (
                 <div
-                  className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-                    validationResult.isValid
+                  className={`p-4 rounded-2xl border ${
+                    extractionResult.isValid
                       ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200'
                       : 'bg-rose-950/40 border-rose-500/50 text-rose-200'
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    {validationResult.isValid ? (
+                    {extractionResult.isValid ? (
                       <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                     ) : (
                       <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
                     )}
-                    <div>
-                      <span className="text-xs font-bold block">
-                        {validationResult.isValid ? 'Validation Passed' : 'Validation Error'}
+                    <div className="space-y-1">
+                      <span className="text-xs font-extrabold block">
+                        {extractionResult.isValid
+                          ? '✓ Automatic Validation Passed: Clean Transparent PNG Ready'
+                          : '✕ Automatic Quality Check Failed — High Quality Extraction Required'}
                       </span>
-                      <p className="text-xs leading-relaxed opacity-90">{validationResult.message}</p>
+                      {extractionResult.isValid ? (
+                        <p className="text-xs leading-relaxed opacity-90">
+                          Shoe details (soles, wings, laces) were fully preserved with zero background artifacts. Safe for live website mascot flight!
+                        </p>
+                      ) : (
+                        <div className="space-y-1">
+                          <p className="text-xs leading-relaxed opacity-90">
+                            The AI extraction engine could not isolate a clean transparent shoe PNG.
+                          </p>
+                          {extractionResult.validationIssues?.map((issue: string, idx: number) => (
+                            <div key={idx} className="text-[11px] font-mono text-rose-300 flex items-center gap-1.5">
+                              <span>•</span>
+                              <span>{issue}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
+                </div>
+              )}
 
-                  {validationResult.isValid && extractedShoePng && (
+              {/* Admin Action Controls: Accept / Retry / Cancel */}
+              {extractedShoePng && !isProcessing && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-neutral-800">
+                  <button
+                    type="button"
+                    onClick={handleCancelExtraction}
+                    className="w-full sm:w-auto px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-bold rounded-xl transition-all"
+                  >
+                    Cancel
+                  </button>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                     <button
                       type="button"
-                      onClick={handleApproveExtractedShoe}
-                      className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-black text-xs font-extrabold rounded-xl shadow-lg shrink-0 flex items-center gap-1.5 transition-transform hover:scale-105"
+                      onClick={() => originalImage && processImageForShoeExtraction(originalImage, true)}
+                      className="px-4 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
                     >
-                      <Zap className="w-4 h-4" />
-                      <span>Replace Mascot Instantly</span>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Retry AI Extraction {retryAttempt > 1 ? `(#${retryAttempt})` : ''}</span>
                     </button>
-                  )}
+
+                    {extractionResult?.isValid ? (
+                      <button
+                        type="button"
+                        onClick={handleAcceptExtractedShoe}
+                        className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-black text-xs font-extrabold rounded-xl shadow-lg flex items-center gap-2 transition-transform hover:scale-105"
+                      >
+                        <Check className="w-4 h-4 stroke-[3]" />
+                        <span>Accept & Apply to Website</span>
+                      </button>
+                    ) : (
+                      <span className="text-[11px] font-bold text-rose-400 bg-rose-950/60 border border-rose-500/30 px-3 py-2 rounded-xl">
+                        Accept Disabled (Failed Quality Check)
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

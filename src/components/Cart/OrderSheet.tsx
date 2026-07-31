@@ -4,6 +4,7 @@ import { CartItem } from '../../types';
 import { useStore } from '../../context/StoreContext';
 import { generateCartWhatsAppLink } from '../../utils/whatsapp';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
+import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 
 interface OrderSheetProps {
   isOpen: boolean;
@@ -195,6 +196,9 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Open Box Delivery Notice */}
+            <OpenBoxDeliveryBadge cartItems={cartItems} totalAmount={totalAmount} variant="inline" />
 
             <button
               onClick={() => {

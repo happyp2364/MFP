@@ -115,6 +115,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <p className="text-neutral-700 font-mono">Transaction ID: {order.transactionId}</p>
               <p className="text-neutral-700 font-mono">Payment Ref: {order.paymentReference || 'N/A'}</p>
               <p className="text-neutral-700">Order Status: <span className="font-bold text-amber-800">{order.orderStatus}</span></p>
+              {order.isOpenBoxDelivery && (
+                <div className="mt-2 p-1.5 bg-emerald-50 border border-emerald-200 rounded-md text-emerald-800 text-[11px] font-bold flex items-center gap-1">
+                  <span>📦 OPEN BOX DELIVERY: Inspect items with courier prior to OTP verification.</span>
+                </div>
+              )}
             </div>
           </div>
 

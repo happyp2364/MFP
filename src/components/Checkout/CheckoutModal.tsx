@@ -31,6 +31,7 @@ import { CartItem, ShippingAddressInfo, PaymentMethodType, CustomerOrder, Market
 import { generateUPILink, getQRCodeImageUrl, cleanAndSanitizeUPIId, isValidUPIIdFormat } from '../../utils/qrCode';
 import { generateOrderWhatsAppLink } from '../../utils/whatsapp';
 import { InvoiceModal } from '../Customer/InvoiceModal';
+import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 import { db } from '../../lib/firebase';
 import { getDoc, doc } from 'firebase/firestore';
 
@@ -1217,6 +1218,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             </div>
 
+            {/* Open Box Delivery Feature Badge */}
+            <OpenBoxDeliveryBadge cartItems={cartItems} totalAmount={totalAmount} variant="checkout" />
+
             <button
               type="submit"
               className="w-full py-3 bg-amber-700 hover:bg-amber-800 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center space-x-2 shadow-md hover:shadow-lg"
@@ -1697,6 +1701,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             </div>
 
+            {/* Open Box Delivery Feature Badge */}
+            <OpenBoxDeliveryBadge cartItems={cartItems} totalAmount={totalAmount} paymentMethod={selectedMethod} variant="checkout" />
+
             {/* Complete & Verify Button */}
             <button
               type="button"
@@ -1847,6 +1854,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {shippingInfo.street}, {shippingInfo.city}, {shippingInfo.pincode}
                 </span>
               </div>
+              {createdOrder?.isOpenBoxDelivery && (
+                <div className="flex justify-between items-center text-[#0B8F63] font-bold pt-1 border-t border-neutral-200">
+                  <span>Open Box Delivery:</span>
+                  <span className="bg-[#0B8F63]/10 px-2 py-0.5 rounded text-[11px] border border-[#0B8F63]/20">
+                    📦 Enabled (Inspect Before OTP)
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons Post Verification */}

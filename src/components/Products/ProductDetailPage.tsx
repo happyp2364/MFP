@@ -30,6 +30,7 @@ import {
   getSizeStockInfo,
 } from '../../utils/sizeStockUtils';
 import { ProductCard } from './ProductCard';
+import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 import { useStore } from '../../context/StoreContext';
 
 interface ProductDetailPageProps {
@@ -439,6 +440,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               Inclusive of all taxes • Free Shipping on orders over ₹999
             </p>
           </div>
+
+          {/* Open Box Delivery Feature Banner */}
+          <OpenBoxDeliveryBadge product={product} variant="banner" />
 
           {/* Description */}
           {product.description && (

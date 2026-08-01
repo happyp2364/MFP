@@ -47,6 +47,7 @@ function AppContent() {
 
   // --- STATE ---
   const [activeCategory, setActiveCategory] = useState<GenderCategory>('all');
+  const [isShopActive, setIsShopActive] = useState(false);
   const [filterState, setFilterState] = useState<FilterState>({
     searchQuery: '',
     category: 'all',
@@ -176,6 +177,7 @@ function AppContent() {
       sortBy: 'featured',
     });
     setActiveCategory('all');
+    setIsShopActive(false);
   };
 
   const handleSelectCategory = (cat: GenderCategory) => {
@@ -185,6 +187,9 @@ function AppContent() {
       category: cat,
       subcategories: [], // reset subcategories on category change
     }));
+    if (cat !== 'all') {
+      setIsShopActive(true);
+    }
     if (productRouteSlug) {
       setProductRouteSlug(null);
       window.history.pushState({}, '', '/');
@@ -198,6 +203,7 @@ function AppContent() {
       category: cat,
       subcategories: [sub],
     }));
+    setIsShopActive(true);
     if (productRouteSlug) {
       setProductRouteSlug(null);
       window.history.pushState({}, '', '/');
@@ -378,15 +384,52 @@ function AppContent() {
     return sortProductsWithSmartMix(unique, productFeedConfig, filterState.sortBy);
   }, [filterState, products, productFeedConfig]);
 
+  const showShopView = useMemo(() => {
+    return isShopActive ||
+      activeCategory !== 'all' ||
+      filterState.searchQuery !== '' ||
+      filterState.subcategories.length > 0 ||
+      filterState.colors.length > 0 ||
+      filterState.sizes.length > 0 ||
+      filterState.badgeFilter !== 'all' ||
+      filterState.collection !== '';
+  }, [isShopActive, activeCategory, filterState]);
+
   // Carousels Products (Limited to 8 products per homepage limit as requested)
   const bestSellers = useMemo(() => {
     const raw = products.filter((p) => p.isBestSeller);
-    return deduplicateProducts(raw, productFeedConfig).slice(0, 8);
+    const unique = deduplicateProducts(raw, productFeedConfig);
+    if (unique.length === 0) {
+      return products.slice(0, 8);
+    }
+    return unique.slice(0, 8);
   }, [products, productFeedConfig]);
 
   const newArrivals = useMemo(() => {
     const raw = products.filter((p) => p.isNewArrival);
-    return deduplicateProducts(raw, productFeedConfig).slice(0, 8);
+    const unique = deduplicateProducts(raw, productFeedConfig);
+    if (unique.length === 0) {
+      return products.slice(4, 12);
+    }
+    return unique.slice(0, 8);
+  }, [products, productFeedConfig]);
+
+  const featuredProducts = useMemo(() => {
+    const raw = products.filter((p) => p.isFeatured);
+    const unique = deduplicateProducts(raw, productFeedConfig);
+    if (unique.length === 0) {
+      return products.slice(0, 8);
+    }
+    return unique.slice(0, 8);
+  }, [products, productFeedConfig]);
+
+  const trendingProducts = useMemo(() => {
+    const raw = products.filter((p) => p.isTrending);
+    const unique = deduplicateProducts(raw, productFeedConfig);
+    if (unique.length === 0) {
+      return products.slice(8, 16);
+    }
+    return unique.slice(0, 8);
   }, [products, productFeedConfig]);
   const wishlistedProducts = useMemo(
     () => products.filter((p) => wishlistIds.includes(p.id)),
@@ -428,7 +471,16 @@ function AppContent() {
         cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
         activeCategory={activeCategory}
         onSelectCategory={handleSelectCategory}
-        onNavigateToSection={handleNavigateToSection}
+        onNavigateToSection={(sec) => {
+          if (sec === 'hero') {
+            setIsShopActive(false);
+            handleSelectCategory('all');
+            handleResetFilters();
+          } else if (sec === 'products') {
+            setIsShopActive(true);
+          }
+          handleNavigateToSection(sec);
+        }}
         onSelectSubcategory={handleSelectSubcategory}
       />
 
@@ -437,7 +489,16 @@ function AppContent() {
         <HorizontalCategoryBar
           activeCategory={activeCategory}
           onSelectCategory={handleSelectCategory}
-          onNavigateToSection={handleNavigateToSection}
+          onNavigateToSection={(sec) => {
+            if (sec === 'hero') {
+              setIsShopActive(false);
+              handleSelectCategory('all');
+              handleResetFilters();
+            } else if (sec === 'products') {
+              setIsShopActive(true);
+            }
+            handleNavigateToSection(sec);
+          }}
         />
       </div>
 
@@ -460,37 +521,39 @@ function AppContent() {
           onQuickView={(p) => setQuickViewProduct(p)}
           wishlistIds={wishlistIds}
         />
-      ) : (
+      ) : showShopView ? (
         <>
-          {/* Dynamic AI Experience Builder Homepage */}
-          <HomepageRenderer
-            onSelectProduct={(p) => setQuickViewProduct(p)}
-            onNavigateCategory={(cat) => {
-              handleSelectCategory(cat as any);
-              handleNavigateToSection('products');
-            }}
-          />
-
-          {/* 3. Hero Section */}
-          <HeroSection onExploreClick={() => handleNavigateToSection('products')} />
-
-          {/* 4. Family Category Cards */}
-          <CategorySection
-            activeCategory={activeCategory}
-            onSelectCategory={handleSelectCategory}
-          />
-
-          {/* 5. Best Sellers Auto Carousel */}
-          <ProductCarousel
-            title="Best Sellers in Store"
-            subtitle="Customer Favorites"
-            products={bestSellers}
-            wishlistIds={wishlistIds}
-            onToggleWishlist={handleToggleWishlist}
-            onQuickView={(p) => setQuickViewProduct(p)}
-            onAddToCart={handleAddToCart}
-            onBuyNow={handleBuyNow}
-          />
+          {/* Breadcrumbs with Back to Home button for Shop View */}
+          <div className="bg-white border-b border-neutral-100 py-4 sm:py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between text-xs font-bold text-neutral-500">
+              <div className="flex items-center gap-1.5">
+                <button 
+                  onClick={handleResetFilters}
+                  className="hover:text-[#0B8F63] transition-colors"
+                >
+                  Home
+                </button>
+                <span>/</span>
+                <span className="text-[#0B8F63] capitalize">
+                  {activeCategory === 'all' ? 'All Products' : activeCategory}
+                </span>
+                {filterState.subcategories.length > 0 && (
+                  <>
+                    <span>/</span>
+                    <span className="text-neutral-900 capitalize">
+                      {filterState.subcategories[0]}
+                    </span>
+                  </>
+                )}
+              </div>
+              <button
+                onClick={handleResetFilters}
+                className="flex items-center gap-1 text-[#0B8F63] hover:text-[#0B8F63]/80 transition-all font-extrabold uppercase tracking-wide bg-[#0B8F63]/10 px-3 py-1.5 rounded-lg border border-[#0B8F63]/20 shadow-sm cursor-pointer"
+              >
+                ← Back to Homepage
+              </button>
+            </div>
+          </div>
 
           {/* 6. Main Interactive Product Catalog */}
           <ProductGrid
@@ -505,11 +568,80 @@ function AppContent() {
             onAddToCart={handleAddToCart}
             onBuyNow={handleBuyNow}
           />
+        </>
+      ) : (
+        <>
+          {/* Dynamic AI Experience Builder Homepage */}
+          <HomepageRenderer
+            onSelectProduct={(p) => setQuickViewProduct(p)}
+            onNavigateCategory={(cat) => {
+              handleSelectCategory(cat as any);
+              setIsShopActive(true);
+              setTimeout(() => {
+                handleNavigateToSection('products');
+              }, 100);
+            }}
+          />
 
-          {/* 7. Trending Collections */}
+          {/* 3. Hero Section */}
+          <HeroSection onExploreClick={() => {
+            setIsShopActive(true);
+            setTimeout(() => {
+              handleNavigateToSection('products');
+            }, 100);
+          }} />
+
+          {/* 4. Family Category Cards */}
+          <CategorySection
+            activeCategory={activeCategory}
+            onSelectCategory={(cat) => {
+              handleSelectCategory(cat);
+              setIsShopActive(true);
+              setTimeout(() => {
+                handleNavigateToSection('products');
+              }, 100);
+            }}
+          />
+
+          {/* 4b. Featured Collection Carousel */}
+          <ProductCarousel
+            title="Featured Collection"
+            subtitle="Handpicked Styles"
+            products={featuredProducts}
+            wishlistIds={wishlistIds}
+            onToggleWishlist={handleToggleWishlist}
+            onQuickView={(p) => setQuickViewProduct(p)}
+            onAddToCart={handleAddToCart}
+            onBuyNow={handleBuyNow}
+          />
+
+          {/* 5. Best Sellers Auto Carousel */}
+          <ProductCarousel
+            title="Best Sellers in Store"
+            subtitle="Customer Favorites"
+            products={bestSellers}
+            wishlistIds={wishlistIds}
+            onToggleWishlist={handleToggleWishlist}
+            onQuickView={(p) => setQuickViewProduct(p)}
+            onAddToCart={handleAddToCart}
+            onBuyNow={handleBuyNow}
+          />
+
+          {/* 7. Trending Products Carousel */}
+          <ProductCarousel
+            title="Trending Products"
+            subtitle="Hot Right Now"
+            products={trendingProducts}
+            wishlistIds={wishlistIds}
+            onToggleWishlist={handleToggleWishlist}
+            onQuickView={(p) => setQuickViewProduct(p)}
+            onAddToCart={handleAddToCart}
+            onBuyNow={handleBuyNow}
+          />
+
           <TrendingCollections onSelectCollection={handleSelectCollection} />
 
-          {/* 8. New Arrivals Carousel */}
+          {/* 8. New Season Arrivals Carousel */}
           <ProductCarousel
             title="New Season Arrivals"
             subtitle="Fresh Drops"

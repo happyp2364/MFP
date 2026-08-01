@@ -46,6 +46,17 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     maxCategoryProducts: 100,
   };
 
+  // Sync pagingMode with configured productFeedConfig preferences
+  useEffect(() => {
+    if (config.infiniteScroll) {
+      setPagingMode('infinite');
+    } else if (config.loadMoreButton) {
+      setPagingMode('load-more');
+    } else {
+      setPagingMode('numeric');
+    }
+  }, [productFeedConfig, config.infiniteScroll, config.loadMoreButton]);
+
   // Reset pagination on filter changes
   useEffect(() => {
     setCurrentPage(1);

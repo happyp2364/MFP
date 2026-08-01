@@ -53,8 +53,10 @@ export const ProductFeedSettingsView: React.FC = () => {
         bestSellerPriority: Number(bestSellerPriority),
         recentlyAddedPriority: Number(recentlyAddedPriority),
       });
+      showToast?.('Product feed configurations saved successfully!', 'success');
     } catch (err) {
       console.error(err);
+      showToast?.('Failed to save product feed configurations', 'error');
     } finally {
       setIsSaving(false);
     }

@@ -56,6 +56,7 @@ interface NavbarProps {
   activeCategory: GenderCategory;
   onSelectCategory: (cat: GenderCategory) => void;
   onNavigateToSection: (sectionId: string) => void;
+  onSelectSubcategory?: (sub: string, cat: GenderCategory) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -74,8 +75,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeCategory,
   onSelectCategory,
   onNavigateToSection,
+  onSelectSubcategory,
 }) => {
-  const { storeInfo, isAdmin, customerSoundSettings } = useStore();
+  const { storeInfo, isAdmin, customerSoundSettings, megaMenuCategories } = useStore();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
@@ -184,68 +186,54 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                   {/* Mega Dropdown */}
                   {megaMenuOpen && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-[600px] bg-white rounded-2xl shadow-2xl border border-neutral-100 p-6 grid grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 border-b pb-2">
-                          <span className="w-2 h-2 rounded-full bg-[#0B8F63]" />
-                          <h4 className="font-bold text-sm text-neutral-900">Men's Footwear</h4>
-                        </div>
-                        <ul className="space-y-2 text-xs text-neutral-600">
-                          <li>
-                            <button onClick={() => handleCategoryClick('men')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                              Sports & Running Shoes
-                            </button>
-                          </li>
-                          <li>
-                            <button onClick={() => handleCategoryClick('men')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                              Casual Sneakers & Slip-Ons
-                            </button>
-                          </li>
-                          <li>
-                            <button onClick={() => handleCategoryClick('men')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                              Formal Leather Shoes
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 border-b pb-2">
-                          <span className="w-2 h-2 rounded-full bg-[#0B8F63]" />
-                          <h4 className="font-bold text-sm text-neutral-900">Women's Sports Shoes</h4>
-                        </div>
-                        <ul className="space-y-2 text-xs text-neutral-600">
-                          <li>
-                            <button onClick={() => handleCategoryClick('women')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5 font-medium">
-                              Athletic Running & Sports Shoes
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 border-b pb-2">
-                          <span className="w-2 h-2 rounded-full bg-[#0B8F63]" />
-                          <h4 className="font-bold text-sm text-neutral-900">Kids' Footwear</h4>
-                        </div>
-                        <ul className="space-y-2 text-xs text-neutral-600">
-                          <li>
-                            <button onClick={() => handleCategoryClick('kids')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                              Light-Up Sports Shoes
-                            </button>
-                          </li>
-                          <li>
-                            <button onClick={() => handleCategoryClick('kids')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                              School Shoes & Assembly Wear
-                            </button>
-                          </li>
-                          <li>
-                            <button onClick={() => handleCategoryClick('kids')} className="hover:text-[#0B8F63] hover:translate-x-0.5 transition-all block w-full text-left py-0.5">
-                              Party Wear Shoes & Sandals
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-[720px] bg-white rounded-2xl shadow-2xl border border-neutral-100 p-6 grid grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                      {(megaMenuCategories?.filter(cat => cat.enabled && !cat.hidden) || [])
+                        .sort((a, b) => a.displayOrder - b.displayOrder)
+                        .map((category) => {
+                          const genderName = category.name.toUpperCase();
+                          const gender: GenderCategory = genderName.includes("WOMEN") ? 'women' : genderName.includes("MEN") ? 'men' : genderName.includes("KID") ? 'kids' : 'all';
+                          return (
+                            <div key={category.id} className="space-y-4">
+                              <div className="flex items-center gap-2 border-b pb-2">
+                                <span className="w-2 h-2 rounded-full bg-[#0B8F63]" />
+                                <h4 className="font-bold text-sm text-neutral-900 tracking-tight">{category.name}</h4>
+                              </div>
+                              <div className="space-y-4">
+                                {category.sections
+                                  ?.sort((a, b) => a.displayOrder - b.displayOrder)
+                                  .map((section) => (
+                                    <div key={section.id} className="space-y-2">
+                                      {category.sections.length > 1 && (
+                                        <h5 className="font-semibold text-[10px] text-neutral-400 uppercase tracking-wider">{section.title}</h5>
+                                      )}
+                                      <ul className="space-y-1.5 text-xs text-neutral-600">
+                                        {section.subcategories
+                                          ?.filter(sub => sub.enabled)
+                                          .sort((a, b) => a.displayOrder - b.displayOrder)
+                                          .map((sub) => (
+                                            <li key={sub.id}>
+                                              <button
+                                                onClick={() => {
+                                                  if (onSelectSubcategory) {
+                                                    onSelectSubcategory(sub.name, gender);
+                                                  } else {
+                                                    handleCategoryClick(gender);
+                                                  }
+                                                  setMegaMenuOpen(false);
+                                                }}
+                                                className="hover:text-[#0B8F63] hover:translate-x-1 transition-all block w-full text-left py-0.5"
+                                              >
+                                                {sub.name}
+                                              </button>
+                                            </li>
+                                          ))}
+                                      </ul>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                     </div>
                   )}
                 </div>
@@ -482,28 +470,57 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
 
                   {categoriesExpanded && (
-                    <div className="pl-9 pr-2 py-1 space-y-1 bg-neutral-50/50 rounded-xl border border-neutral-100 animate-in slide-in-from-top-2 duration-200">
+                    <div className="pl-6 pr-2 py-2 space-y-3 bg-neutral-50/50 rounded-xl border border-neutral-100 animate-in slide-in-from-top-2 duration-200">
+                      {(megaMenuCategories?.filter(cat => cat.enabled && !cat.hidden) || [])
+                        .sort((a, b) => a.displayOrder - b.displayOrder)
+                        .map((category) => {
+                          const genderName = category.name.toUpperCase();
+                          const gender: GenderCategory = genderName.includes("WOMEN") ? 'women' : genderName.includes("MEN") ? 'men' : genderName.includes("KID") ? 'kids' : 'all';
+                          return (
+                            <div key={category.id} className="space-y-1">
+                              <span className="block text-[10px] font-black uppercase text-neutral-400 tracking-wider mb-1 px-2 border-l-2 border-[#0B8F63]">
+                                {category.name}
+                              </span>
+                              <div className="space-y-2 pl-2">
+                                {category.sections
+                                  ?.sort((a, b) => a.displayOrder - b.displayOrder)
+                                  .map((section) => (
+                                    <div key={section.id} className="space-y-1">
+                                      {category.sections.length > 1 && (
+                                        <span className="block text-[9px] font-extrabold text-neutral-500 uppercase tracking-wide px-2 pt-0.5">
+                                          {section.title}
+                                        </span>
+                                      )}
+                                      <div className="grid grid-cols-1 gap-0.5">
+                                        {section.subcategories
+                                          ?.filter(sub => sub.enabled)
+                                          .sort((a, b) => a.displayOrder - b.displayOrder)
+                                          .map((sub) => (
+                                            <button
+                                              key={sub.id}
+                                              onClick={() => {
+                                                if (onSelectSubcategory) {
+                                                  onSelectSubcategory(sub.name, gender);
+                                                } else {
+                                                  handleCategoryClick(gender);
+                                                }
+                                                setMobileMenuOpen(false);
+                                              }}
+                                              className="w-full text-left py-1 px-2 text-[11px] text-neutral-600 hover:text-[#0B8F63] hover:bg-[#0B8F63]/5 rounded transition-all"
+                                            >
+                                              {sub.name}
+                                            </button>
+                                          ))}
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       <button
-                        onClick={() => handleCategoryClick('men')}
-                        className="w-full text-left py-2 px-2 text-xs text-neutral-600 hover:text-[#0B8F63] font-medium"
-                      >
-                        Men's Collection
-                      </button>
-                      <button
-                        onClick={() => handleCategoryClick('women')}
-                        className="w-full text-left py-2 px-2 text-xs text-neutral-600 hover:text-[#0B8F63] font-medium"
-                      >
-                        Women's Sports Shoes
-                      </button>
-                      <button
-                        onClick={() => handleCategoryClick('kids')}
-                        className="w-full text-left py-2 px-2 text-xs text-neutral-600 hover:text-[#0B8F63] font-medium"
-                      >
-                        Kids' Footwear
-                      </button>
-                      <button
-                        onClick={() => handleCategoryClick('all')}
-                        className="w-full text-left py-2 px-2 text-xs text-[#0B8F63] font-bold"
+                        onClick={() => { handleCategoryClick('all'); setMobileMenuOpen(false); }}
+                        className="w-full text-left py-1.5 px-2 text-[11px] text-[#0B8F63] font-bold border-t border-neutral-200 mt-2"
                       >
                         ⚡ New Arrivals
                       </button>

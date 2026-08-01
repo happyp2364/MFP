@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Save,
   Plus,
@@ -16,10 +16,17 @@ import { useStore } from '../../context/StoreContext';
 import { SpinWheelConfig, WheelSection } from '../../types';
 
 export const SpinWheelSettingsView: React.FC = () => {
-  const { spinWheelConfig, updateSpinWheelConfig } = useStore();
+  const { spinWheelConfig, updateSpinWheelConfig, showToast } = useStore();
 
   const [config, setConfig] = useState<SpinWheelConfig>({ ...spinWheelConfig });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Sync state with remote config when loaded
+  useEffect(() => {
+    if (spinWheelConfig) {
+      setConfig({ ...spinWheelConfig });
+    }
+  }, [spinWheelConfig]);
 
   // Section form state
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
@@ -39,6 +46,7 @@ export const SpinWheelSettingsView: React.FC = () => {
     setIsSaving(true);
     await updateSpinWheelConfig(config);
     setIsSaving(false);
+    showToast('Spin wheel configuration saved successfully!', 'success');
   };
 
   const handleToggle = (field: keyof Omit<SpinWheelConfig, 'sections' | 'sectionsCount' | 'canSpinAgainDays'>) => {
@@ -50,7 +58,7 @@ export const SpinWheelSettingsView: React.FC = () => {
 
   const handleSaveSection = () => {
     if (!sectionForm.title) {
-      alert('Please provide a title');
+      showToast('Please provide a title', 'error');
       return;
     }
 

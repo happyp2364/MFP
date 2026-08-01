@@ -27,7 +27,7 @@ import { PaymentSettings } from '../../types';
 import { generateUPILink, getQRCodeImageUrl, cleanAndSanitizeUPIId, isValidUPIIdFormat } from '../../utils/qrCode';
 
 export const PaymentSettingsView: React.FC = () => {
-  const { paymentSettings, updatePaymentSettings } = useStore();
+  const { paymentSettings, updatePaymentSettings, showToast } = useStore();
 
   // Local Form State
   const [upiId, setUpiId] = useState(paymentSettings.upiId || 'marudharfashion@upi');
@@ -221,12 +221,12 @@ export const PaymentSettingsView: React.FC = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please upload a valid image file (PNG, JPG, WEBP).');
+      showToast('Please upload a valid image file (PNG, JPG, WEBP).', 'error');
       return;
     }
 
     if (file.size > 3 * 1024 * 1024) {
-      alert('Image size exceeds 3MB limit. Please upload a smaller image.');
+      showToast('Image size exceeds 3MB limit. Please upload a smaller image.', 'error');
       return;
     }
 
@@ -399,14 +399,14 @@ export const PaymentSettingsView: React.FC = () => {
 
       const data = await res.json();
       if (data.success) {
-        alert(`✓ Refund Processed Successfully! Refund ID: ${data.refundId}`);
+        showToast(`✓ Refund Processed Successfully! Refund ID: ${data.refundId}`, 'success');
         setRefundTx(null);
         loadTransactions();
       } else {
-        alert(`Refund failed: ${data.message}`);
+        showToast(`Refund failed: ${data.message}`, 'error');
       }
     } catch (err: any) {
-      alert(`Refund Error: ${err.message}`);
+      showToast(`Refund Error: ${err.message}`, 'error');
     } finally {
       setIsRefunding(false);
     }

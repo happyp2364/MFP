@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   Save,
@@ -17,10 +17,17 @@ import { useStore } from '../../context/StoreContext';
 import { ScratchWinConfig, ScratchReward, CouponType } from '../../types';
 
 export const ScratchAndWinSettingsView: React.FC = () => {
-  const { scratchWinConfig, updateScratchWinConfig, coupons } = useStore();
+  const { scratchWinConfig, updateScratchWinConfig, coupons, showToast } = useStore();
 
   const [config, setConfig] = useState<ScratchWinConfig>({ ...scratchWinConfig });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Sync state with remote config when loaded
+  useEffect(() => {
+    if (scratchWinConfig) {
+      setConfig({ ...scratchWinConfig });
+    }
+  }, [scratchWinConfig]);
 
   // Rewards list form state
   const [editingRewardId, setEditingRewardId] = useState<string | null>(null);
@@ -43,6 +50,7 @@ export const ScratchAndWinSettingsView: React.FC = () => {
     setIsSaving(true);
     const success = await updateScratchWinConfig(config);
     setIsSaving(false);
+    showToast('Scratch card configuration saved successfully!', 'success');
   };
 
   const handleToggle = (field: keyof Omit<ScratchWinConfig, 'rewards' | 'startDate' | 'endDate' | 'dailyActiveHoursStart' | 'dailyActiveHoursEnd' | 'minCartValue' | 'showAfterSeconds' | 'showAfterPageViews'>) => {
@@ -61,12 +69,12 @@ export const ScratchAndWinSettingsView: React.FC = () => {
 
   const handleSaveReward = () => {
     if (!rewardForm.name) {
-      alert('Please provide a reward name');
+      showToast('Please provide a reward name', 'error');
       return;
     }
 
     if (rewardForm.type !== 'NONE' && !rewardForm.couponCode) {
-      alert('Please specify a Coupon Code for discount rewards');
+      showToast('Please specify a Coupon Code for discount rewards', 'error');
       return;
     }
 

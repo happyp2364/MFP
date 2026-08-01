@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SizeStock } from '../../types';
 import { SIZE_PRESETS, syncSizesFromSizeStocks } from '../../utils/sizeStockUtils';
 import { Plus, Trash2, CheckCircle2, XCircle, RefreshCw, Sparkles, Layers } from 'lucide-react';
+import { useStore } from '../../context/StoreContext';
 
 interface SizeStockManagerProps {
   sizeStocks: SizeStock[];
@@ -15,6 +16,7 @@ export const SizeStockManager: React.FC<SizeStockManagerProps> = ({
   category = 'men',
 }) => {
   const [customInput, setCustomInput] = useState('');
+  const { showToast } = useStore();
 
   const updateStocks = (newStocks: SizeStock[]) => {
     const updatedSizesList = syncSizesFromSizeStocks(newStocks);
@@ -68,7 +70,7 @@ export const SizeStockManager: React.FC<SizeStockManagerProps> = ({
 
     const trimmed = customInput.trim();
     if (sizeStocks.some((s) => s.size.toLowerCase() === trimmed.toLowerCase())) {
-      alert(`Size "${trimmed}" is already added.`);
+      showToast(`Size "${trimmed}" is already added.`, 'error');
       return;
     }
 

@@ -327,6 +327,169 @@ Respond ONLY with valid JSON:
   });
 
   // =========================================================================
+  // AI SOCIAL MEDIA MANAGEMENT ASSISTANT
+  // =========================================================================
+  app.post("/api/ai/social-media-assistant", async (req, res) => {
+    try {
+      const { action, platform, context } = req.body || {};
+      if (!action) return res.status(400).json({ error: "action parameter is required" });
+
+      let systemPrompt = `You are a social media branding expert and footwear copywriter for Marudhar Fashion Point (located in Pipar City, Rajasthan).
+We sell high-grade sports shoes, royal leather loafers, mirror-work Kolhapuris, and men's apparel.
+Help with the action: "${action}" for platform: "${platform || 'All'}". Context: ${typeof context === 'object' ? JSON.stringify(context) : (context || 'N/A')}.`;
+
+      let prompt = "";
+      if (action === 'suggest_placement') {
+        prompt = `${systemPrompt}
+Suggest the best social media placements (e.g. Header, Footer, Floating Buttons, Checkout Page, Product Details) to maximize user click-through rate.
+Respond strictly in valid JSON format:
+{
+  "title": "AI Placement Strategy",
+  "suggestions": [
+    "Placing WhatsApp floating button on Product details for sizing help",
+    "Placing Instagram Feed on the Homepage for social proof",
+    "Placing Map/Address link in Site Footer and Contact Page"
+  ],
+  "reasoning": "Since footwear has sizing ambiguity, WhatsApp floating helper placement offers high conversion."
+}`;
+      } else if (action === 'suggest_cta') {
+        prompt = `${systemPrompt}
+Suggest 5 extremely engaging and urgent Call-to-Action (CTA) button labels for ${platform || 'our social channels'}.
+Respond strictly in valid JSON format:
+{
+  "title": "High-Converting CTAs",
+  "suggestions": [
+    "Shop on WhatsApp 💬",
+    "View Wedding Lookbook 👑",
+    "Claim Festive 10% Off 🎁",
+    "Order via Messenger ⚡",
+    "Get Sizing Help Live 👞"
+  ],
+  "reasoning": "CTAs that use icons and offer immediate help or discounts perform up to 40% better on regional storefronts."
+}`;
+      } else if (action === 'suggest_button_color') {
+        prompt = `${systemPrompt}
+Suggest modern, high-contrast, premium brand colors (Hex codes) and matching light card backgrounds for ${platform || 'various social platform buttons'}.
+Respond strictly in valid JSON format:
+{
+  "title": "Premium Brand Color Palette",
+  "suggestions": [
+    "Emerald Sizing Green (#0B8F63) on Off-White (#F4FAF7) for trust & clarity",
+    "Royal Gold (#D4AF37) on Cream (#FDFBF7) for premium loafers",
+    "Deep Cobalt Blue (#1E40AF) on Blue-Wash (#EFF6FF) for formal shoes"
+  ],
+  "hexColors": ["#0B8F63", "#D4AF37", "#1E40AF"],
+  "bgColors": ["#F4FAF7", "#FDFBF7", "#EFF6FF"],
+  "reasoning": "High-contrast colors help button visibility without causing aesthetic visual pollution."
+}`;
+      } else {
+        // Caption, Promo, Festival, Product launch
+        prompt = `${systemPrompt}
+Generate highly engaging social media copywriting suitable for sharing. Include relevant emojis, local flavor (Pipar City shoe expertise), clear CTA, and relevant tags.
+Respond strictly in valid JSON format:
+{
+  "title": "AI Copywriter Draft",
+  "caption": "Write 2-3 engaging, well-formatted paragraphs here with emojis and local flavor.",
+  "suggestions": [
+    "Share on Instagram Reels at 7 PM IST",
+    "Pin this with a high-quality photo of Jodhpuri Jutis"
+  ],
+  "hashtags": ["#marudharfashion", "#footwear", "#piparcity", "#jodhpurishoes"],
+  "reasoning": "Using local storytelling about artisanal shoe crafting builds local brand authority and customer trust."
+}`;
+      }
+
+      if (process.env.GEMINI_API_KEY) {
+        try {
+          const response = await ai.models.generateContent({
+            model: "gemini-3.6-flash",
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+          });
+          if (response.text) {
+            return res.json({ success: true, result: JSON.parse(response.text) });
+          }
+        } catch (aiErr) {
+          console.warn("[AI Social Assistant] Gemini fallback note:", aiErr);
+        }
+      }
+
+      // Default static fallback values if API key is missing or model fails
+      let fallbackResult: any = {
+        title: "Marudhar AI Social Strategy Draft",
+        suggestions: [
+          "Place a WhatsApp Support floating button on Product details pages to answer sizing inquiries instantly.",
+          "Display Instagram story highlights right on the homepage to showcase live customer testimonials in Pipar City.",
+          "Promote wedding collection launch on YouTube with a curated lookbook video."
+        ],
+        reasoning: "Personalized regional customer assistance on WhatsApp combined with social proof on Instagram boosts digital credibility."
+      };
+
+      if (action === 'suggest_cta') {
+        fallbackResult = {
+          title: "Suggested Call-to-Actions",
+          suggestions: [
+            "Shop Sizing on WhatsApp 💬",
+            "View Real Shoe Videos 🎥",
+            "Get Instant Size Help 👞",
+            "Explore Wedding Mojaris 👑",
+            "Claim 10% Jodhpur Discount 🎁"
+          ],
+          reasoning: "Direct, descriptive CTAs specifying footwear type outperform generic terms like 'Visit Us'."
+        };
+      } else if (action === 'suggest_button_color') {
+        fallbackResult = {
+          title: "Branding Color Suggestions",
+          suggestions: [
+            "WhatsApp Forest Green: #25D366 (Icon) on #E8F9EE (Bg)",
+            "Royal Jodhpuri Gold: #D4AF37 (Icon) on #FDFBF7 (Bg)",
+            "Midnight Sports Black: #111827 (Icon) on #F9FAFB (Bg)"
+          ],
+          hexColors: ["#25D366", "#D4AF37", "#111827"],
+          bgColors: ["#E8F9EE", "#FDFBF7", "#F9FAFB"],
+          reasoning: "Authentic, high-contrast combinations designed to look spectacular on both mobile and desktop screens."
+        };
+      } else if (action === 'generate_caption') {
+        fallbackResult = {
+          title: "Footwear Showcase Caption",
+          caption: `👑 Step into absolute royalty directly from Pipar City! Our handcrafted wedding leather Mojaris are designed with premium leather, cushioned insoles, and beautiful traditional mirror-work to keep you comfortable all day long. 👞✨\n\nPerfect for groom-wear, festivals, and royal family gatherings. Available now in sizes 6 to 11. Drop us a message on WhatsApp for customized sizing advice!`,
+          suggestions: ["Post on Instagram Reels during evening peak traffic.", "Add 3 close-up shoe photos showing hand-stitch details."],
+          hashtags: ["#marudharfashion", "#royalmojari", "#weddingfootwear", "#piparcity", "#jodhpurishoes"],
+          reasoning: "Capturing wedding season excitement Jodhpur style increases engagement among families."
+        };
+      } else if (action === 'generate_promotional') {
+        fallbackResult = {
+          title: "Promo Offer Copywriter",
+          caption: `⚡ FLASH SALE: Grab the most durable sports sneakers in Pipar City at up to 15% OFF! 👟🔥\n\nMarudhar Fashion Point brings you double-soled, breathable training shoes built for maximum speed and longevity. Whether running or walking, experience the ultimate comfort.\n\n🎁 Message us today and mention 'MARUDHAR15' to get an instant discount with free doorstep delivery!`,
+          suggestions: ["Share to local WhatsApp Broadcast lists.", "Embed as a popup announcement on the storefront."],
+          hashtags: ["#sneakerhead", "#marudharfashion", "#shoesale", "#piparcity"],
+          reasoning: "Creating immediate FOMO combined with direct local delivery hooks buyers."
+        };
+      } else if (action === 'generate_festival') {
+        fallbackResult = {
+          title: "Festive Celebration Copywriter",
+          caption: `✨ Shubh Tyohar! From the entire family of Marudhar Fashion Point, we wish you a prosperous festive season! 🪔🌸\n\nCelebrate in premium style with our special Royal Loafers and traditional Juttis. Specially curated for wedding celebrations and prayer events. Each pair represents heritage and pride.\n\n📞 Click the WhatsApp bubble to secure your festive sizing today!`,
+          suggestions: ["Publish as a greeting post on Google Business Profile.", "Pin at the top of the Facebook page."],
+          hashtags: ["#festiveshoes", "#traditionaljuttis", "#shubhtyohar", "#marudharfashion"],
+          reasoning: "Combining warm greetings with product collections establishes visual connection and community warmth."
+        };
+      } else if (action === 'generate_product_launch') {
+        fallbackResult = {
+          title: "New Product Launch Alert",
+          caption: `🚀 THE WAIT IS OVER: Introducing the Midnight Stealth Sneaker Series! 👟🖤\n\nEngineered with an ultra-responsive flex-sole, water-resistant knit-upper, and modern reflective laces. Exclusive to Marudhar Fashion Point, Jodhpur.\n\nBe the first in Pipar City to own these. Extremely limited stock! Sizing help is available live on WhatsApp.`,
+          suggestions: ["Launch an Instagram Reel showing shoe flexibility.", "Update your WhatsApp status to capture early orders."],
+          hashtags: ["#newlaunch", "#stealthsneakers", "#marudharfashion", "#piparcity"],
+          reasoning: "Pre-launch hype combined with limited availability alerts sneakers collectors to act fast."
+        };
+      }
+
+      return res.json({ success: true, result: fallbackResult });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // =========================================================================
   // AI ANALYTICS SUMMARY REPORT
   // =========================================================================
   app.post("/api/ai/analytics-summary", async (req, res) => {

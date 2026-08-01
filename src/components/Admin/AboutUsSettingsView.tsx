@@ -3,6 +3,7 @@ import { useStore } from '../../context/StoreContext';
 import { AboutUsConfig, OwnerMember, TimelineEvent, StoreAchievement, LiveCounterItem, StoreGalleryItem } from '../../types';
 import { DEFAULT_ABOUT_US_CONFIG } from '../../data/defaultAboutUs';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { AdminImageSelector } from '../Common/UniversalImageSystem';
 import {
   Sparkles,
   Save,
@@ -34,7 +35,7 @@ import {
 } from 'lucide-react';
 
 export const AboutUsSettingsView: React.FC = () => {
-  const { aboutUsConfig, updateAboutUsConfig } = useStore();
+  const { aboutUsConfig, updateAboutUsConfig, showToast } = useStore();
   const [formData, setFormData] = useState<AboutUsConfig>(aboutUsConfig || DEFAULT_ABOUT_US_CONFIG);
   const [activeTab, setActiveTab] = useState<'story' | 'owners' | 'timeline' | 'achievements' | 'gallery' | 'counters' | 'social'>('story');
   
@@ -83,7 +84,7 @@ export const AboutUsSettingsView: React.FC = () => {
       const compressed = await optimizeImageFile(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.82 });
       callback(compressed);
     } catch (err) {
-      alert('Failed to process image file. Please try another image.');
+      showToast('Failed to process image file. Please try another image.', 'error');
     }
   };
 
@@ -123,7 +124,7 @@ export const AboutUsSettingsView: React.FC = () => {
       }
     } catch (err) {
       console.error(err);
-      alert('AI Generation service failed. Please try again.');
+      showToast('AI Generation service failed. Please try again.', 'error');
     } finally {
       setIsGeneratingAI(false);
     }
@@ -492,34 +493,12 @@ export const AboutUsSettingsView: React.FC = () => {
 
           {/* Main Banner Image */}
           <div className="bg-neutral-800/60 border border-neutral-700/60 rounded-xl p-4">
-            <label className="block text-xs font-semibold text-neutral-300 mb-2">Main About Us Showcase Image</label>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              {formData.mainHeaderImage && (
-                <img
-                  src={formData.mainHeaderImage}
-                  alt="Showcase"
-                  className="w-28 h-20 object-cover rounded-lg border border-neutral-600 shadow-md"
-                />
-              )}
-              <div className="flex-1 space-y-2 w-full">
-                <input
-                  type="text"
-                  value={formData.mainHeaderImage || ''}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, mainHeaderImage: e.target.value }))}
-                  placeholder="Image URL (e.g. Unsplash or direct link)"
-                  className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                />
-                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-neutral-200 text-xs font-medium rounded-lg cursor-pointer transition-colors">
-                  <Upload className="w-3.5 h-3.5" /> Upload Image File
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileUpload(e, (url) => setFormData((prev) => ({ ...prev, mainHeaderImage: url })))}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-            </div>
+            <AdminImageSelector
+              value={formData.mainHeaderImage || ''}
+              onChange={(url) => setFormData((prev) => ({ ...prev, mainHeaderImage: url }))}
+              label="Main About Us Showcase Image"
+              description="Upload showroom photos, paste a valid URL, capture, or use standard presets."
+            />
           </div>
 
           {/* Store Highlights Bullet Points */}
@@ -1086,31 +1065,13 @@ export const AboutUsSettingsView: React.FC = () => {
             </div>
 
             {/* Profile Image URL or Upload */}
-            <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Profile Photo</label>
-              <div className="flex items-center gap-3">
-                <img
-                  src={editingOwner.profilePhoto || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80'}
-                  alt="Preview"
-                  className="w-12 h-12 rounded-full object-cover border border-amber-500/40 shrink-0"
-                />
-                <input
-                  type="text"
-                  value={editingOwner.profilePhoto}
-                  onChange={(e) => setEditingOwner({ ...editingOwner, profilePhoto: e.target.value })}
-                  placeholder="Photo URL"
-                  className="flex-1 bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white focus:outline-none"
-                />
-                <label className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold rounded-lg cursor-pointer transition-colors border border-neutral-700 flex items-center gap-1">
-                  <Upload className="w-3.5 h-3.5" /> Upload
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileUpload(e, (url) => setEditingOwner({ ...editingOwner, profilePhoto: url }))}
-                    className="hidden"
-                  />
-                </label>
-              </div>
+            <div className="pt-2">
+              <AdminImageSelector
+                value={editingOwner.profilePhoto || ''}
+                onChange={(url) => setEditingOwner({ ...editingOwner, profilePhoto: url })}
+                label="Profile Photo"
+                description="Upload, paste, capture, or generate custom headshots."
+              />
             </div>
 
             {/* Social Links for Owner */}
@@ -1358,25 +1319,13 @@ export const AboutUsSettingsView: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Photo URL / Upload</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={editingGallery.imageUrl}
-                  onChange={(e) => setEditingGallery({ ...editingGallery, imageUrl: e.target.value })}
-                  className="flex-1 bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
-                />
-                <label className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold rounded-lg cursor-pointer border border-neutral-700">
-                  <Upload className="w-3.5 h-3.5" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleFileUpload(e, (url) => setEditingGallery({ ...editingGallery, imageUrl: url }))}
-                    className="hidden"
-                  />
-                </label>
-              </div>
+            <div className="pt-2">
+              <AdminImageSelector
+                value={editingGallery.imageUrl || ''}
+                onChange={(url) => setEditingGallery({ ...editingGallery, imageUrl: url })}
+                label="Showroom Photo"
+                description="Upload store showroom or facade photos, paste standard URLs, or generate."
+              />
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-neutral-800">

@@ -39,9 +39,10 @@ import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebrat
 import { useStore } from './context/StoreContext';
 import { Product, FilterState, GenderCategory, CartItem } from './types';
 import { findProductBySlugOrId, getProductSlug } from './utils/productUtils';
+import { deduplicateProducts, sortProductsWithSmartMix } from './utils/productFeedOptimizer';
 
 function AppContent() {
-  const { products, isAdmin, toastMessage } = useStore();
+  const { products, isAdmin, toastMessage, productFeedConfig } = useStore();
   const { backgroundGradientClass } = useTheme();
 
   // --- STATE ---
@@ -144,8 +145,12 @@ function AppContent() {
       if (window.location.pathname !== targetUrl) {
         window.history.pushState({ productId: quickViewProduct.id }, '', targetUrl);
       }
+    } else {
+      if (!productRouteSlug && window.location.pathname.startsWith('/product/')) {
+        window.history.pushState({}, '', '/');
+      }
     }
-  }, [quickViewProduct]);
+  }, [quickViewProduct, productRouteSlug]);
 
   // --- HANDLERS ---
   const handleUpdateFilter = (updated: Partial<FilterState>) => {
@@ -180,6 +185,24 @@ function AppContent() {
       category: cat,
       subcategories: [], // reset subcategories on category change
     }));
+    if (productRouteSlug) {
+      setProductRouteSlug(null);
+      window.history.pushState({}, '', '/');
+    }
+  };
+
+  const handleSelectSubcategory = (sub: string, cat: GenderCategory) => {
+    setActiveCategory(cat);
+    setFilterState((prev) => ({
+      ...prev,
+      category: cat,
+      subcategories: [sub],
+    }));
+    if (productRouteSlug) {
+      setProductRouteSlug(null);
+      window.history.pushState({}, '', '/');
+    }
+    handleNavigateToSection('products');
   };
 
   const handleToggleWishlist = (product: Product) => {
@@ -263,6 +286,10 @@ function AppContent() {
       ...prev,
       collection: collectionId,
     }));
+    if (productRouteSlug) {
+      setProductRouteSlug(null);
+      window.history.pushState({}, '', '/');
+    }
     handleNavigateToSection('products');
   };
 
@@ -279,7 +306,7 @@ function AppContent() {
 
   // --- FILTERED PRODUCTS ---
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    const rawFiltered = products.filter((p) => {
       // Gender Category
       if (filterState.category !== 'all' && p.category !== filterState.category) {
         return false;
@@ -335,19 +362,32 @@ function AppContent() {
       }
 
       return true;
-    }).sort((a, b) => {
-      if (filterState.sortBy === 'price-low') return a.price - b.price;
-      if (filterState.sortBy === 'price-high') return b.price - a.price;
-      if (filterState.sortBy === 'rating') return b.rating - a.rating;
-      if (filterState.sortBy === 'newest') return (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0);
-      if (filterState.sortBy === 'discount') return b.discountPercent - a.discountPercent;
-      return 0; // featured default order
     });
-  }, [filterState, products]);
 
-  // Carousels Products
-  const bestSellers = useMemo(() => products.filter((p) => p.isBestSeller), [products]);
-  const newArrivals = useMemo(() => products.filter((p) => p.isNewArrival), [products]);
+    // Deduplicate Products
+    const unique = deduplicateProducts(rawFiltered, productFeedConfig);
+
+    // Sort Products
+    if (filterState.sortBy === 'price-low') return [...unique].sort((a, b) => a.price - b.price);
+    if (filterState.sortBy === 'price-high') return [...unique].sort((a, b) => b.price - a.price);
+    if (filterState.sortBy === 'rating') return [...unique].sort((a, b) => b.rating - a.rating);
+    if (filterState.sortBy === 'newest') return [...unique].sort((a, b) => (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0));
+    if (filterState.sortBy === 'discount') return [...unique].sort((a, b) => b.discountPercent - a.discountPercent);
+
+    // Default 'featured' ranking utilizes the smart mix weighted algorithm
+    return sortProductsWithSmartMix(unique, productFeedConfig, filterState.sortBy);
+  }, [filterState, products, productFeedConfig]);
+
+  // Carousels Products (Limited to 8 products per homepage limit as requested)
+  const bestSellers = useMemo(() => {
+    const raw = products.filter((p) => p.isBestSeller);
+    return deduplicateProducts(raw, productFeedConfig).slice(0, 8);
+  }, [products, productFeedConfig]);
+
+  const newArrivals = useMemo(() => {
+    const raw = products.filter((p) => p.isNewArrival);
+    return deduplicateProducts(raw, productFeedConfig).slice(0, 8);
+  }, [products, productFeedConfig]);
   const wishlistedProducts = useMemo(
     () => products.filter((p) => wishlistIds.includes(p.id)),
     [wishlistIds, products]
@@ -389,6 +429,7 @@ function AppContent() {
         activeCategory={activeCategory}
         onSelectCategory={handleSelectCategory}
         onNavigateToSection={handleNavigateToSection}
+        onSelectSubcategory={handleSelectSubcategory}
       />
 
       {/* Horizontal Category Slider Bar */}

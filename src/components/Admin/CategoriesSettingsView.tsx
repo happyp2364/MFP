@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { CategoryHighlight } from '../../types';
+import { AdminImageSelector } from '../Common/UniversalImageSystem';
 
 export const CategoriesSettingsView: React.FC = () => {
   const { categoryHighlights, saveCategoryHighlights, products } = useStore();
@@ -565,23 +566,13 @@ export const CategoriesSettingsView: React.FC = () => {
                     <option value="ai">Auto: AI Premium Footwear Cover</option>
                   </select>
 
-                  <div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={formImage}
-                        onChange={(e) => setFormImage(e.target.value)}
-                        placeholder="https://images.unsplash.com/..."
-                        className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 focus:ring-2 focus:ring-[#0B8F63] outline-none"
-                      />
-                      <label className="p-2.5 bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 rounded-xl cursor-pointer flex items-center justify-center text-neutral-600 shadow-xs">
-                        <Upload className="w-4 h-4" />
-                        <input type="file" accept="image/*" onChange={simulateImageUpload} className="hidden" />
-                      </label>
-                    </div>
-                    <div className="mt-1.5 w-full h-24 rounded-xl overflow-hidden border border-neutral-200 bg-neutral-50">
-                      <img src={formImage} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=150&q=80' }} referrerPolicy="no-referrer" />
-                    </div>
+                  <div className="pt-2">
+                    <AdminImageSelector
+                      value={formImage}
+                      onChange={(url) => setFormImage(url)}
+                      label="Category Cover Image"
+                      description="Paste a valid URL, upload a file, capture with camera, or select from presets."
+                    />
                   </div>
                 </div>
 

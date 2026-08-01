@@ -24,6 +24,9 @@ import {
   MarketingConsent,
   CategoryHighlight,
   TrendingCollectionItem,
+  MegaMenuCategory,
+  MegaMenuSection,
+  MegaMenuSubcategory,
   ToastState,
   CartItem,
   PaymentMethodType,
@@ -50,6 +53,7 @@ import {
   AdminAction,
   AdminPermissionMatrix,
   AboutUsConfig,
+  ProductFeedConfig,
 } from '../types';
 import { DEFAULT_ABOUT_US_CONFIG } from '../data/defaultAboutUs';
 import {
@@ -85,6 +89,7 @@ import {
   DEFAULT_HERO_CONTENT,
   ANNOUNCEMENT_ITEMS,
   CATEGORY_HIGHLIGHTS,
+  DEFAULT_MEGA_MENU_CATEGORIES,
   TRENDING_COLLECTIONS,
   DEFAULT_PET_SHOE_CONFIG,
   DEFAULT_INSTAGRAM_CONFIG,
@@ -155,6 +160,22 @@ const STORAGE_KEYS = {
   SOCIAL_ANALYTICS: 'mfp_social_analytics_live_v2',
   OPEN_BOX_DELIVERY_CONFIG: 'mfp_open_box_delivery_config_live',
   ABOUT_US_CONFIG: 'mfp_about_us_config_live',
+  PRODUCT_FEED_CONFIG: 'mfp_product_feed_config_live',
+  MEGA_MENU_CATEGORIES: 'mfp_mega_menu_categories_live',
+};
+
+export const DEFAULT_PRODUCT_FEED_CONFIG: ProductFeedConfig = {
+  productsPerPage: 24,
+  infiniteScroll: false,
+  loadMoreButton: true,
+  maxHomepageProducts: 32,
+  maxCategoryProducts: 100,
+  duplicateDetection: true,
+  randomization: false,
+  featuredPriority: 10,
+  trendingPriority: 8,
+  bestSellerPriority: 9,
+  recentlyAddedPriority: 7
 };
 
 function safeGetLocalStorage<T>(key: string, fallback: T): T {
@@ -188,6 +209,7 @@ interface StoreContextType {
   storeInfo: StoreInfo;
   announcements: string[];
   categoryHighlights: CategoryHighlight[];
+  megaMenuCategories: MegaMenuCategory[];
   trendingCollections: TrendingCollectionItem[];
   isAdmin: boolean;
   isTwoFactorEnabled: boolean;
@@ -219,6 +241,9 @@ interface StoreContextType {
 
   aboutUsConfig: AboutUsConfig;
   updateAboutUsConfig: (updated: Partial<AboutUsConfig>) => Promise<void>;
+
+  productFeedConfig: ProductFeedConfig;
+  updateProductFeedConfig: (updated: Partial<ProductFeedConfig>) => Promise<void>;
 
   placeOrderAndPay: (
     cartItems: CartItem[],
@@ -287,6 +312,7 @@ interface StoreContextType {
   setAnnouncementsList: (items: string[]) => Promise<void>;
   updateCategoryHighlight: (id: string, updated: Partial<CategoryHighlight>) => Promise<void>;
   saveCategoryHighlights: (items: CategoryHighlight[]) => Promise<void>;
+  saveMegaMenuCategories: (items: MegaMenuCategory[]) => Promise<void>;
   updateTrendingCollection: (id: string, updated: Partial<TrendingCollectionItem>) => Promise<void>;
 
   // Legacy compatibility declarations (Stubbed/Empty)
@@ -450,6 +476,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     safeGetLocalStorage<CategoryHighlight[]>(STORAGE_KEYS.CATEGORY_HIGHLIGHTS, CATEGORY_HIGHLIGHTS as CategoryHighlight[])
   );
 
+  const [publishedMegaMenuCategories, setPublishedMegaMenuCategories] = useState<MegaMenuCategory[]>(() =>
+    safeGetLocalStorage<MegaMenuCategory[]>(STORAGE_KEYS.MEGA_MENU_CATEGORIES, DEFAULT_MEGA_MENU_CATEGORIES)
+  );
+
   const [publishedTrendingCollections, setPublishedTrendingCollections] = useState<TrendingCollectionItem[]>(() =>
     safeGetLocalStorage<TrendingCollectionItem[]>(STORAGE_KEYS.TRENDING_COLLECTIONS, TRENDING_COLLECTIONS)
   );
@@ -488,6 +518,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [aboutUsConfig, setAboutUsConfig] = useState<AboutUsConfig>(() =>
     safeGetLocalStorage<AboutUsConfig>(STORAGE_KEYS.ABOUT_US_CONFIG, DEFAULT_ABOUT_US_CONFIG)
+  );
+
+  const [productFeedConfig, setProductFeedConfig] = useState<ProductFeedConfig>(() =>
+    safeGetLocalStorage<ProductFeedConfig>(STORAGE_KEYS.PRODUCT_FEED_CONFIG, DEFAULT_PRODUCT_FEED_CONFIG)
   );
 
 
@@ -916,6 +950,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
 
       unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'megaMenu'), (snap) => {
+          if (snap.exists() && snap.data()?.items) {
+            const data = snap.data().items as MegaMenuCategory[];
+            setPublishedMegaMenuCategories(data);
+            safeSetLocalStorage(STORAGE_KEYS.MEGA_MENU_CATEGORIES, data);
+          }
+        }, (err) => console.warn('Live mega menu listener notice:', err))
+      );
+
+      unsubscribers.push(
         onSnapshot(doc(db, 'homepage', 'trendingCollections'), (snap) => {
           if (snap.exists() && snap.data()?.items) {
             const data = snap.data().items as TrendingCollectionItem[];
@@ -1004,6 +1048,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             safeSetLocalStorage(STORAGE_KEYS.ABOUT_US_CONFIG, data);
           }
         }, (err) => console.warn('Live about us listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'productFeed'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as ProductFeedConfig;
+            setProductFeedConfig(data);
+            safeSetLocalStorage(STORAGE_KEYS.PRODUCT_FEED_CONFIG, data);
+          }
+        }, (err) => console.warn('Live product feed config listener notice:', err))
       );
 
       unsubscribers.push(
@@ -1503,6 +1557,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const saveMegaMenuCategories = async (items: MegaMenuCategory[]) => {
+    try {
+      await setDoc(doc(db, 'settings', 'megaMenu'), { items }, { merge: true });
+      showToast('💾 Mega Menu Saved Live Successfully', 'success');
+      recordAuditLog('Mega Menu Saved', 'SETTINGS', 'Shop categories mega menu structure saved live', 'SUCCESS');
+    } catch (err: any) {
+      console.error('Error saving mega menu categories:', err);
+      showToast('Failed to save mega menu categories to Firestore', 'error');
+    }
+  };
+
   const updateTrendingCollection = async (id: string, updated: Partial<TrendingCollectionItem>) => {
     try {
       const updatedTrending = publishedTrendingCollections.map((col) => (col.id === id ? { ...col, ...updated } : col));
@@ -1558,6 +1623,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (err: any) {
       console.error('Error updating About Us config:', err);
       showToast('Failed to save About Us config to Firestore', 'error');
+    }
+  };
+
+  const updateProductFeedConfig = async (updated: Partial<ProductFeedConfig>) => {
+    try {
+      const newCfg = { ...productFeedConfig, ...updated };
+      setProductFeedConfig(newCfg);
+      safeSetLocalStorage(STORAGE_KEYS.PRODUCT_FEED_CONFIG, newCfg);
+      await setDoc(doc(db, 'settings', 'productFeed'), newCfg, { merge: true });
+      showToast('💾 Product Feed Settings Saved Live', 'success');
+      recordAuditLog('Product Feed Updated', 'SETTINGS', 'Updated product feed listing pagination & optimization settings', 'SUCCESS');
+    } catch (err: any) {
+      console.error('Error updating Product Feed config:', err);
+      showToast('Failed to save Product Feed config to Firestore', 'error');
     }
   };
 
@@ -2468,6 +2547,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     heroContent: publishedHeroContent,
     announcements: publishedAnnouncements,
     categoryHighlights: publishedCategoryHighlights,
+    megaMenuCategories: publishedMegaMenuCategories,
     trendingCollections: publishedTrendingCollections,
     isAdmin,
     isTwoFactorEnabled,
@@ -2507,6 +2587,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     aboutUsConfig,
     updateAboutUsConfig,
+
+    productFeedConfig,
+    updateProductFeedConfig,
 
     // Customer Engagement
     spinWheelConfig,
@@ -2586,6 +2669,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setAnnouncementsList,
     updateCategoryHighlight,
     saveCategoryHighlights,
+    saveMegaMenuCategories,
     updateTrendingCollection,
     refreshAuditLogs,
     createStoreBackup,

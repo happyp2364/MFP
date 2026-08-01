@@ -16,6 +16,7 @@ import {
 import { HomepageSection } from '../../../types';
 import { generateAISectionContent } from '../../../lib/homepageService';
 import { extractShoeFromImage } from '../../../utils/aiBackgroundRemoval';
+import { AdminImageSelector } from '../../Common/UniversalImageSystem';
 
 interface SectionEditorModalProps {
   section: HomepageSection;
@@ -606,19 +607,13 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                               className="w-full px-2.5 py-1.5 bg-white border border-neutral-300 rounded text-xs"
                             />
                           </div>
-                          <div className="md:col-span-2">
-                            <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Image URL</label>
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={slide.imageUrl || ''}
-                                onChange={(e) => handleUpdateSlideItem(idx, 'imageUrl', e.target.value)}
-                                className="flex-1 px-2.5 py-1.5 bg-white border border-neutral-300 rounded text-xs"
-                              />
-                              {slide.imageUrl && (
-                                <img src={slide.imageUrl} alt="preview" className="w-9 h-9 object-cover rounded border border-neutral-200" />
-                              )}
-                            </div>
+                          <div className="md:col-span-2 pt-2">
+                            <AdminImageSelector
+                              value={slide.imageUrl || ''}
+                              onChange={(url) => handleUpdateSlideItem(idx, 'imageUrl', url)}
+                              label="Slide Image"
+                              description="Supports upload, paste URL, capture with camera, presets, and AI generation."
+                            />
                           </div>
                           <div>
                             <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Button Text</label>
@@ -803,17 +798,16 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                               className="w-full p-1.5 border rounded bg-neutral-50"
                             />
                           </div>
-                          <div>
-                            <span className="text-[10px] text-neutral-500 font-bold block">Image URL</span>
-                            <input
-                              type="text"
+                          <div className="md:col-span-2 pt-2">
+                            <AdminImageSelector
                               value={item.image || ''}
-                              onChange={(e) => {
+                              onChange={(url) => {
                                 const list = [...(edited.contentData?.categoryItems || [])];
-                                list[idx] = { ...list[idx], image: e.target.value };
+                                list[idx] = { ...list[idx], image: url };
                                 setEdited({ ...edited, contentData: { ...edited.contentData, categoryItems: list } });
                               }}
-                              className="w-full p-1.5 border rounded bg-neutral-50"
+                              label="Category Item Image"
+                              description="Supports upload, paste URL, capture, presets, and AI generation."
                             />
                           </div>
                           <div>

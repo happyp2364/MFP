@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 
 export const WhatsAppTemplateManager: React.FC = () => {
-  const { whatsappTemplatesConfig, updateWhatsAppTemplatesConfig, resetWhatsAppTemplatesToDefault } = useStore();
+  const { whatsappTemplatesConfig, updateWhatsAppTemplatesConfig, resetWhatsAppTemplatesToDefault, showToast } = useStore();
 
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [editingTemplate, setEditingTemplate] = useState<WhatsAppTemplate | null>(null);
@@ -103,7 +103,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
 
   const handleDelete = (id: string) => {
     if (templates.length <= 1) {
-      alert('You must keep at least one template in the system.');
+      showToast('You must keep at least one template in the system.', 'error');
       return;
     }
     if (confirm('Are you sure you want to delete this WhatsApp message template?')) {
@@ -112,6 +112,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
         ...whatsappTemplatesConfig,
         templates: updatedList,
       });
+      showToast('Template deleted successfully.', 'success');
     }
   };
 
@@ -141,7 +142,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
   const handleSaveEditing = () => {
     if (!editingTemplate) return;
     if (!editingTemplate.title.trim()) {
-      alert('Template title cannot be empty.');
+      showToast('Template title cannot be empty.', 'error');
       return;
     }
 
@@ -168,6 +169,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
       activeCategoryMap: updatedMap,
     });
 
+    showToast('Template saved successfully.', 'success');
     setEditingTemplate(null);
   };
 

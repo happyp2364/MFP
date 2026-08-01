@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { 
-  Footprints, MessageCircle, Phone, Mail, MapPin, ShieldCheck, Heart, Send, Sparkles,
-  Instagram, Facebook, Youtube, Send as TelegramIcon, Twitter, AtSign, Pin, Camera, Linkedin, Share2
+  Footprints, MessageCircle, Phone, Mail, MapPin, ShieldCheck, Heart, Send, Sparkles
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { generateGeneralInquiryWhatsAppLink } from '../../utils/whatsapp';
+import { SocialIconRenderer } from '../Social/SocialIconRenderer';
 
 export const Footer: React.FC = () => {
   const { storeInfo, socialMediaConfig, recordSocialClick } = useStore();
@@ -19,23 +19,6 @@ export const Footer: React.FC = () => {
       setSubscribed(false);
       setNewsletterEmail('');
     }, 2500);
-  };
-
-  const getPlatformIcon = (id: string) => {
-    switch (id) {
-      case 'instagram': return <Instagram className="w-4 h-4" />;
-      case 'facebook': return <Facebook className="w-4 h-4" />;
-      case 'whatsapp': return <MessageCircle className="w-4 h-4" />;
-      case 'youtube': return <Youtube className="w-4 h-4" />;
-      case 'telegram': return <TelegramIcon className="w-4 h-4" />;
-      case 'twitter': return <Twitter className="w-4 h-4" />;
-      case 'threads': return <AtSign className="w-4 h-4" />;
-      case 'pinterest': return <Pin className="w-4 h-4" />;
-      case 'snapchat': return <Camera className="w-4 h-4" />;
-      case 'linkedin': return <Linkedin className="w-4 h-4" />;
-      case 'google_business': return <MapPin className="w-4 h-4" />;
-      default: return <Share2 className="w-4 h-4" />;
-    }
   };
 
   // Get active and ordered footer platforms
@@ -132,7 +115,11 @@ export const Footer: React.FC = () => {
                       title={plat.customLabel || plat.name}
                     >
                       <span style={{ color: plat.iconColor || '#fff' }}>
-                        {getPlatformIcon(plat.id)}
+                        <SocialIconRenderer 
+                          iconNameOrUrl={plat.customIcon} 
+                          platformId={plat.id} 
+                          className="w-4 h-4" 
+                        />
                       </span>
                     </a>
                   );

@@ -263,6 +263,32 @@ export interface HeroContent {
   animationSpeed?: 'slow' | 'normal' | 'fast';
 }
 
+export interface MegaMenuSubcategory {
+  id: string;
+  name: string;
+  displayOrder: number;
+  enabled: boolean;
+}
+
+export interface MegaMenuSection {
+  id: string;
+  title: string;
+  displayOrder: number;
+  subcategories: MegaMenuSubcategory[];
+}
+
+export interface MegaMenuCategory {
+  id: string;
+  name: string;
+  displayOrder: number;
+  enabled: boolean;
+  hidden?: boolean;
+  icon?: string;
+  image?: string;
+  banner?: string;
+  sections: MegaMenuSection[];
+}
+
 export interface CategoryHighlight {
   id: string;
   title: string;
@@ -827,7 +853,7 @@ export interface TopAnnouncementBarConfig {
 }
 
 export interface SocialPlatformConfig {
-  id: string; // 'instagram' | 'facebook' | 'whatsapp' | 'youtube' | 'telegram' | 'twitter' | 'threads' | 'pinterest' | 'snapchat' | 'linkedin' | 'google_business'
+  id: string;
   name: string;
   enabled: boolean;
   username: string;
@@ -849,6 +875,15 @@ export interface SocialPlatformConfig {
   bgColor: string;
   hoverEffect: 'scale' | 'glow' | 'bounce' | 'fade' | 'rotate';
   animationType: 'none' | 'bounce' | 'pulse' | 'pulse-slow' | 'shake' | 'float';
+  
+  // Advanced Placements
+  showTopBar?: boolean;
+  showOnCheckout?: boolean;
+  showOnAboutUs?: boolean;
+  showOnOrderSuccess?: boolean;
+  showOnCustomerProfile?: boolean;
+  showOnPopup?: boolean;
+  showOnCustomSection?: boolean;
 }
 
 export interface InstagramStoryHighlight {
@@ -894,6 +929,38 @@ export interface SocialMediaCenterConfig {
   facebookPageLikeUrl?: string;
   facebookMessengerUrl?: string;
   facebookFeedEmbed?: string;
+
+  // WhatsApp Advanced Configs
+  whatsappPhone?: string;
+  whatsappCountryCode?: string;
+  whatsappDefaultMessage?: string;
+  whatsappProductInquiryMessage?: string;
+  whatsappOrderMessage?: string;
+  whatsappSupportMessage?: string;
+  whatsappBulkOrderMessage?: string;
+  whatsappFestivalGreeting?: string;
+  whatsappBusinessHours?: string;
+  whatsappAutoReplyText?: string;
+
+  // Instagram Advanced Configs
+  instagramFollowButtonText?: string;
+  instagramProfilePictureLink?: string;
+  instagramFeedEnabled?: boolean;
+  instagramGalleryEnabled?: boolean;
+  instagramReviewIntegrationEnabled?: boolean;
+
+  // YouTube Advanced Configs
+  youtubeChannelName?: string;
+  youtubeChannelUrl?: string;
+  youtubeSubscribeButtonText?: string;
+  youtubeShortsSectionEnabled?: boolean;
+
+  // Facebook Advanced Configs
+  facebookPageName?: string;
+  facebookPageUrl?: string;
+  facebookMessengerLink?: string;
+  facebookLikeButtonEnabled?: boolean;
+  facebookShareButtonEnabled?: boolean;
 }
 
 export interface SocialAnalyticsLog {
@@ -1425,6 +1492,21 @@ export interface ActiveThemeDoc {
   updatedAt: string;
   updatedBy: string;
 }
+
+export interface ProductFeedConfig {
+  productsPerPage: number; // 12, 24, 36, 48
+  infiniteScroll: boolean; // ON/OFF
+  loadMoreButton: boolean; // ON/OFF
+  maxHomepageProducts: number; // Max total homepage products allowed
+  maxCategoryProducts: number; // Max category page products allowed
+  duplicateDetection: boolean; // ON/OFF
+  randomization: boolean; // ON/OFF
+  featuredPriority: number; // Priority 1-10
+  trendingPriority: number; // Priority 1-10
+  bestSellerPriority: number; // Priority 1-10
+  recentlyAddedPriority: number; // Priority 1-10
+}
+
 
 
 

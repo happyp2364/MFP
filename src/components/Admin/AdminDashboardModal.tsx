@@ -7,6 +7,7 @@ import {
   Star,
   Home,
   Settings,
+  Sliders,
   Plus,
   Trash2,
   Edit,
@@ -61,7 +62,6 @@ import { OrderManagementView } from './OrderManagementView';
 import { PaymentSettingsView } from './PaymentSettingsView';
 import { ReportsAnalyticsView } from './ReportsAnalyticsView';
 import { AIShoePetSettingsView } from './AIShoePetSettingsView';
-import { InstagramSettingsView } from './InstagramSettingsView';
 import { MarketingCenterView } from './MarketingCenterView';
 import { CategoriesSettingsView } from './CategoriesSettingsView';
 import { ReviewsSettingsView } from './ReviewsSettingsView';
@@ -81,6 +81,7 @@ import { AdminManagementView } from './AdminManagementView';
 import { HomepageBuilderTab } from './HomepageBuilder/HomepageBuilderTab';
 import { AdminErrorBoundary } from './AdminErrorBoundary';
 import { AboutUsSettingsView } from './AboutUsSettingsView';
+import { ProductFeedSettingsView } from './ProductFeedSettingsView';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -90,7 +91,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -604,6 +605,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('product_feed_settings')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'product_feed_settings'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Sliders className="w-4 h-4 text-emerald-600" />
+              <span>Product Feed Settings</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('homepage')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'homepage'
@@ -847,6 +860,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: CATEGORIES & HIGHLIGHTS ----------------- */}
             {activeTab === 'categories' && <CategoriesSettingsView />}
+
+            {/* ----------------- TAB: PRODUCT FEED SETTINGS ----------------- */}
+            {activeTab === 'product_feed_settings' && <ProductFeedSettingsView />}
 
             {/* ----------------- TAB: CUSTOMER REVIEWS MANAGEMENT ----------------- */}
             {activeTab === 'reviews' && <ReviewsSettingsView />}

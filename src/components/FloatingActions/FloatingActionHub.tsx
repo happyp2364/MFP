@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  MessageCircle, Phone, ArrowUp, Instagram, Facebook, Youtube, X, Share2, Calendar, Volume2, VolumeX,
-  Send as TelegramIcon, Twitter, AtSign, Pin, Camera, Linkedin, MapPin
+  MessageCircle, Phone, ArrowUp, X, Share2, Calendar, Volume2, VolumeX, Instagram
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { generateGeneralInquiryWhatsAppLink } from '../../utils/whatsapp';
+import { SocialIconRenderer } from '../Social/SocialIconRenderer';
 
 interface FloatingActionHubProps {
   onOpenCalendarModal?: () => void;
@@ -29,23 +29,6 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const getPlatformIcon = (id: string) => {
-    switch (id) {
-      case 'instagram': return <Instagram className="w-5 h-5" />;
-      case 'facebook': return <Facebook className="w-5 h-5" />;
-      case 'whatsapp': return <MessageCircle className="w-5 h-5" />;
-      case 'youtube': return <Youtube className="w-5 h-5" />;
-      case 'telegram': return <TelegramIcon className="w-5 h-5" />;
-      case 'twitter': return <Twitter className="w-5 h-5" />;
-      case 'threads': return <AtSign className="w-5 h-5" />;
-      case 'pinterest': return <Pin className="w-5 h-5" />;
-      case 'snapchat': return <Camera className="w-5 h-5" />;
-      case 'linkedin': return <Linkedin className="w-5 h-5" />;
-      case 'google_business': return <MapPin className="w-5 h-5" />;
-      default: return <Share2 className="w-5 h-5" />;
-    }
   };
 
   // Extract other active floating platforms except WhatsApp (which is treated as a primary floating button below)
@@ -93,7 +76,11 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
                     title={plat.name}
                   >
                     <span style={{ color: plat.iconColor || '#fff' }}>
-                      {getPlatformIcon(plat.id)}
+                      <SocialIconRenderer 
+                        iconNameOrUrl={plat.customIcon} 
+                        platformId={plat.id} 
+                        className="w-5 h-5" 
+                      />
                     </span>
                   </a>
                 </div>

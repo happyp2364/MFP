@@ -2,6 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Default-deny catch-all for global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
     // Global Safety Helper Functions
     function isSignedIn() {
       return request.auth != null;
@@ -20,11 +25,6 @@ service cloud.firestore {
 
     function isValidString(val, minLen, maxLen) {
       return val is string && val.size() >= minLen && val.size() <= maxLen;
-    }
-
-    // Default Deny All Policy
-    match /{document=**} {
-      allow read, write: if false;
     }
 
     // Public Products Catalog (Read-Only for Public, Write for Admins)
@@ -117,6 +117,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    match /about/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
     match /coupons/{id} {
       allow read: if true;
       allow write: if isAdmin();
@@ -151,7 +155,7 @@ service cloud.firestore {
 
     // Customer Inquiries
     match /inquiries/{inquiryId} {
-      allow create: if true && request.resource.data.name is string;
+      allow create: if true;
       allow read, update, delete: if isAdmin();
     }
 
@@ -162,11 +166,9 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Security Audit Logs Collection (Immutable except creates)
-    match /auditLogs/{logId} {
-      allow create: if true;
-      allow read: if isAdmin();
-      allow update, delete: if false;
+    // Security Audit Logs Collection (Allow open read/write recursively)
+    match /auditLogs/{document=**} {
+      allow read, write: if true;
     }
 
     // Real-time Admin Notifications
@@ -189,11 +191,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Payment Transactions Log (Immutable)
+    // Payment Transactions Log (Immutable except admin deletes/manages)
     match /transactions/{txId} {
       allow create: if true;
       allow read: if isAdmin();
-      allow update, delete: if false;
+      allow update, delete: if isAdmin();
     }
 
     // Store Snapshots & Recovery Backups

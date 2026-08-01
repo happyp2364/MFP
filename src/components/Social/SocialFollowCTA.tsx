@@ -1,9 +1,14 @@
 import React from 'react';
-import { Instagram, Facebook, Youtube, Sparkles, Heart, BellRing, ArrowRight } from 'lucide-react';
+import { Sparkles, BellRing, ArrowRight } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { SocialIconRenderer } from './SocialIconRenderer';
 
 export const SocialFollowCTA: React.FC = () => {
-  const { storeInfo } = useStore();
+  const { socialMediaConfig, recordSocialClick } = useStore();
+
+  const enabledPlatforms = (socialMediaConfig?.platforms || [])
+    .filter(p => p.enabled)
+    .sort((a, b) => a.displayOrder - b.displayOrder);
 
   return (
     <section className="py-16 bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 text-white relative overflow-hidden border-t border-b border-white/10">
@@ -27,65 +32,56 @@ export const SocialFollowCTA: React.FC = () => {
         </p>
 
         {/* Animated Social Buttons Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-3xl mx-auto">
-          
-          {/* Instagram Button */}
-          <a
-            href={storeInfo.instagram}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative p-5 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white font-bold shadow-xl hover:shadow-2xl hover:shadow-rose-500/25 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-between overflow-hidden"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 group-hover:rotate-12 transition-transform">
-                <Instagram className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-left">
-                <span className="block text-xs uppercase tracking-wider text-rose-100 font-semibold">Instagram</span>
-                <span className="block text-sm font-black tracking-tight">@marudhar_fashion_point</span>
-              </div>
-            </div>
-            <ArrowRight className="w-5 h-5 text-white/80 group-hover:translate-x-1 transition-transform" />
-          </a>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
+          {enabledPlatforms.length > 0 ? (
+            enabledPlatforms.map((plat) => {
+              const getHoverStyle = (effect: string) => {
+                switch (effect) {
+                  case 'glow': return 'hover:shadow-[0_0_20px_rgba(255,255,255,0.4)]';
+                  case 'bounce': return 'hover:-translate-y-1';
+                  case 'fade': return 'hover:opacity-85';
+                  case 'rotate': return 'hover:rotate-3';
+                  default: return 'hover:scale-[1.03]';
+                }
+              };
 
-          {/* Facebook Button */}
-          <a
-            href={storeInfo.facebook}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative p-5 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-700 text-white font-bold shadow-xl hover:shadow-2xl hover:shadow-blue-600/25 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-between overflow-hidden"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 group-hover:rotate-12 transition-transform">
-                <Facebook className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-left">
-                <span className="block text-xs uppercase tracking-wider text-blue-100 font-semibold">Facebook</span>
-                <span className="block text-sm font-black tracking-tight">Marudhar Fashion Point</span>
-              </div>
+              return (
+                <a
+                  key={plat.id}
+                  href={plat.profileUrl}
+                  onClick={() => recordSocialClick(plat.id)}
+                  target={plat.openInNewTab ? "_blank" : "_self"}
+                  rel="noopener noreferrer"
+                  className={`group relative p-5 rounded-2xl text-white font-bold shadow-xl transition-all duration-300 flex items-center justify-between overflow-hidden border border-white/10 ${getHoverStyle(plat.hoverEffect)}`}
+                  style={{ backgroundColor: plat.bgColor || '#171717' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center shrink-0 group-hover:rotate-6 transition-transform">
+                      <SocialIconRenderer 
+                        iconNameOrUrl={plat.customIcon} 
+                        platformId={plat.id} 
+                        className="w-5 h-5" 
+                        style={{ color: plat.iconColor || '#fff' }}
+                      />
+                    </div>
+                    <div className="text-left">
+                      <span className="block text-xs uppercase tracking-wider text-neutral-300 font-semibold">
+                        {plat.name}
+                      </span>
+                      <span className="block text-sm font-black tracking-tight truncate max-w-[150px]">
+                        {plat.username ? `@${plat.username}` : (plat.customButtonText || 'Connect')}
+                      </span>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-white/60 group-hover:translate-x-1 transition-transform" />
+                </a>
+              );
+            })
+          ) : (
+            <div className="col-span-full py-8 text-neutral-400">
+              No social platforms configured.
             </div>
-            <ArrowRight className="w-5 h-5 text-white/80 group-hover:translate-x-1 transition-transform" />
-          </a>
-
-          {/* YouTube Button */}
-          <a
-            href={storeInfo.youtube}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative p-5 rounded-2xl bg-gradient-to-tr from-red-700 via-red-600 to-rose-700 text-white font-bold shadow-xl hover:shadow-2xl hover:shadow-red-600/25 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-between overflow-hidden"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 group-hover:rotate-12 transition-transform">
-                <Youtube className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-left">
-                <span className="block text-xs uppercase tracking-wider text-red-100 font-semibold">YouTube</span>
-                <span className="block text-sm font-black tracking-tight">Watch Collections</span>
-              </div>
-            </div>
-            <ArrowRight className="w-5 h-5 text-white/80 group-hover:translate-x-1 transition-transform" />
-          </a>
-
+          )}
         </div>
 
         {/* Bottom Assurance Note */}

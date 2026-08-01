@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { AdminImageSelector } from '../Common/UniversalImageSystem';
 import {
   Sparkles,
   Zap,
@@ -355,54 +356,25 @@ export const AIShoePetSettingsView: React.FC = () => {
           {/* Upload Dropzone & URL Input */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             <div className="space-y-4">
-              <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
-                1. Upload Shoe Image / Poster / Photo
-              </label>
-
-              <div className="border-2 border-dashed border-amber-300 dark:border-amber-700 hover:border-amber-500 rounded-2xl p-5 text-center bg-amber-50/50 hover:bg-amber-50 transition-all cursor-pointer relative group">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                />
-                <div className="flex flex-col items-center justify-center gap-2">
-                  <div className="p-3 bg-amber-500 text-white rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                    <Upload className="w-6 h-6" />
-                  </div>
-                  <span className="text-xs font-bold text-neutral-900">
-                    Click or Drag & Drop Shoe Photograph
-                  </span>
-                  <span className="text-[11px] text-neutral-500">
-                    Supports PNG, JPG, WebP. AI will automatically isolate the shoe!
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-neutral-600 mb-1">
-                  Or Paste External Image URL
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={imageUri}
-                    onChange={(e) => setImageUri(e.target.value)}
-                    placeholder="https://... image URL"
-                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs font-semibold text-neutral-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B8F63]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (imageUri) processImageForShoeExtraction(imageUri);
-                    }}
-                    className="px-3 py-2 bg-neutral-900 hover:bg-black text-white text-xs font-bold rounded-xl shrink-0 flex items-center gap-1"
-                  >
-                    <Wand2 className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Run AI</span>
-                  </button>
-                </div>
-              </div>
+              <AdminImageSelector
+                value={imageUri}
+                onChange={(url) => {
+                  setImageUri(url);
+                }}
+                label="1. Shoe Photograph / Poster"
+                description="Upload, paste, or select a shoe image. Then trigger AI Segmentation below to extract it."
+              />
+              
+              {imageUri && (
+                <button
+                  type="button"
+                  onClick={() => processImageForShoeExtraction(imageUri)}
+                  className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 transition-all hover:scale-[1.01]"
+                >
+                  <Sparkles className="w-4 h-4 text-white animate-pulse" />
+                  <span>Isolate Transparent Shoe via AI Segmentation</span>
+                </button>
+              )}
             </div>
 
             {/* Quick Presets */}

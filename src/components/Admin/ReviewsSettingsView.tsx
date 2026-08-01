@@ -8,7 +8,7 @@ import { useStore } from '../../context/StoreContext';
 import { Review } from '../../types';
 
 export const ReviewsSettingsView: React.FC = () => {
-  const { reviews, updateReview, deleteReview, addReview } = useStore();
+  const { reviews, updateReview, deleteReview, addReview, showToast } = useStore();
   const [error, setError] = useState<string | null>(null);
 
   // Search & Filters
@@ -218,10 +218,12 @@ export const ReviewsSettingsView: React.FC = () => {
     if (selectedIds.length === 0) return;
     try {
       await Promise.all(selectedIds.map(id => updateReview(id, { approved: true })));
+      const count = selectedIds.length;
       setSelectedIds([]);
-      alert(`Bulk approved ${selectedIds.length} reviews successfully!`);
+      showToast(`Bulk approved ${count} reviews successfully!`, 'success');
     } catch (err: any) {
       setError('Bulk approve failed.');
+      showToast('Bulk approve failed.', 'error');
     }
   };
 
@@ -230,10 +232,12 @@ export const ReviewsSettingsView: React.FC = () => {
     if (!window.confirm(`Are you sure you want to bulk delete the ${selectedIds.length} selected reviews?`)) return;
     try {
       await Promise.all(selectedIds.map(id => updateReview(id, { deleted: true })));
+      const count = selectedIds.length;
       setSelectedIds([]);
-      alert(`Bulk deleted ${selectedIds.length} reviews successfully!`);
+      showToast(`Bulk deleted ${count} reviews successfully!`, 'success');
     } catch (err: any) {
       setError('Bulk delete failed.');
+      showToast('Bulk delete failed.', 'error');
     }
   };
 

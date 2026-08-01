@@ -36,6 +36,7 @@ import {
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { validateFileUpload } from '../../lib/security';
 import { QuickViewModal } from '../Products/QuickViewModal';
+import { AdminImageSelector } from '../Common/UniversalImageSystem';
 
 interface SmartProductFormModalProps {
   product: Product;
@@ -433,57 +434,18 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Drag & Drop Upload */}
-              <label className="border-2 border-dashed border-[#0B8F63]/40 hover:border-[#0B8F63] bg-[#0B8F63]/5 hover:bg-[#0B8F63]/10 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all text-center group">
-                <Upload className="w-6 h-6 text-[#0B8F63] mb-1 group-hover:scale-110 transition-transform" />
-                <span className="font-extrabold text-[#0B8F63] text-xs">Upload Image / Drag & Drop</span>
-                <span className="text-[10px] text-neutral-500 mt-0.5">JPEG, PNG, WEBP (Supports multiple files)</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={async (e) => {
-                    if (!e.target.files || e.target.files.length === 0) return;
-                    setIsOptimizingImage(true);
-                    const files = Array.from(e.target.files) as File[];
-                    for (const file of files) {
-                      const validation = validateFileUpload(file);
-                      if (!validation.isValid) {
-                        alert(validation.error || 'Invalid file format');
-                        continue;
-                      }
-                      try {
-                        const optimizedUrl = await optimizeImageFile(file, { enhance: true });
-                        setProductState((prev) => ({
-                          ...prev,
-                          images: [...(prev.images || []), optimizedUrl],
-                        }));
-                      } catch (err) {
-                        console.error('Error optimizing image:', err);
-                      }
-                    }
-                    setIsOptimizingImage(false);
-                    e.target.value = '';
-                  }}
-                />
-              </label>
+            <div className="w-full">
+              <AdminImageSelector
+                value={imageInputUrl}
+                onChange={(url) => {
+                  setImageInputUrl(url);
+                }}
+                label="Add Image to Product Gallery"
+                description="Upload a photo, capture via camera, paste direct HTTPS link, generate with AI, or use presets."
+              />
 
-              {/* Direct Web URL Input */}
-              <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-3 flex flex-col justify-between">
-                <div>
-                  <span className="font-bold text-neutral-800 text-xs mb-0.5 block">Or Add Image via Web URL</span>
-                  <p className="text-[10px] text-neutral-500 mb-2">Provide direct image link for real shop photo.</p>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    placeholder="https://..."
-                    value={imageInputUrl}
-                    onChange={(e) => setImageInputUrl(e.target.value)}
-                    className="flex-1 bg-white border border-neutral-200 rounded-xl p-2 text-xs outline-none focus:ring-2 focus:ring-[#0B8F63]"
-                  />
+              {imageInputUrl && (
+                <div className="mt-3 flex justify-end">
                   <button
                     type="button"
                     onClick={() => {
@@ -494,12 +456,13 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                       }));
                       setImageInputUrl('');
                     }}
-                    className="bg-[#0B8F63] text-white font-extrabold text-xs px-3.5 py-2 rounded-xl hover:bg-[#086F4C] transition-colors"
+                    className="w-full sm:w-auto bg-[#0B8F63] text-white font-extrabold text-xs px-6 py-3 rounded-xl hover:bg-[#086F4C] transition-all shadow-md flex items-center justify-center gap-1.5"
                   >
-                    Add
+                    <Plus className="w-4 h-4" />
+                    <span>Add Selected Image to Product Gallery</span>
                   </button>
                 </div>
-              </div>
+              )}
             </div>
 
             {isOptimizingImage && (

@@ -1,4 +1,4 @@
-import { Product, Review, StoreInfo, HeroContent, CategoryHighlight, TrendingCollectionItem, TopAnnouncementBarConfig } from '../types';
+import { Product, Review, StoreInfo, HeroContent, CategoryHighlight, TrendingCollectionItem, TopAnnouncementBarConfig, MegaMenuCategory } from '../types';
 
 export const STORE_INFO: StoreInfo = {
   name: 'Marudhar Fashion Point',
@@ -47,6 +47,99 @@ export const ANNOUNCEMENT_ITEMS = [
   '👟 New Season Sports Shoes & Sneakers Just Arrived',
   '⭐ Rated 4.9/5 by 15,000+ Happy Local Families',
   '📱 Easy WhatsApp Order & Instant Confirmation',
+];
+
+export const DEFAULT_MEGA_MENU_CATEGORIES: MegaMenuCategory[] = [
+  {
+    id: "mens_collection",
+    name: "MEN'S COLLECTION",
+    displayOrder: 1,
+    enabled: true,
+    hidden: false,
+    icon: "Footprints",
+    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80",
+    banner: "https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=1200&q=80",
+    sections: [
+      {
+        id: "mens_footwear",
+        title: "Men's Footwear",
+        displayOrder: 1,
+        subcategories: [
+          { id: "sub_m_sports", name: "Sports & Running Shoes", displayOrder: 1, enabled: true },
+          { id: "sub_m_sneakers", name: "Casual Sneakers", displayOrder: 2, enabled: true },
+          { id: "sub_m_formal", name: "Formal Leather Shoes", displayOrder: 3, enabled: true },
+          { id: "sub_m_loafers", name: "Loafers", displayOrder: 4, enabled: true },
+          { id: "sub_m_sandals", name: "Sandals & Slippers", displayOrder: 5, enabled: true },
+          { id: "sub_m_safety", name: "Safety Shoes", displayOrder: 6, enabled: true }
+        ]
+      },
+      {
+        id: "mens_clothing",
+        title: "Men's Clothing",
+        displayOrder: 2,
+        subcategories: [
+          { id: "sub_m_tshirts", name: "Premium T-Shirts", displayOrder: 1, enabled: true },
+          { id: "sub_m_cshirts", name: "Casual Shirts", displayOrder: 2, enabled: true },
+          { id: "sub_m_fshirts", name: "Formal Shirts", displayOrder: 3, enabled: true },
+          { id: "sub_m_jeans", name: "Jeans & Denim", displayOrder: 4, enabled: true },
+          { id: "sub_m_lowers", name: "Lowers & Track Pants", displayOrder: 5, enabled: true },
+          { id: "sub_m_hoodies", name: "Hoodies & Sweatshirts", displayOrder: 6, enabled: true },
+          { id: "sub_m_jackets", name: "Jackets", displayOrder: 7, enabled: true },
+          { id: "sub_m_innerwear", name: "Innerwear & Essentials", displayOrder: 8, enabled: true }
+        ]
+      }
+    ]
+  },
+  {
+    id: "womens_sports",
+    name: "WOMEN'S SPORTS SHOES",
+    displayOrder: 2,
+    enabled: true,
+    hidden: false,
+    icon: "Sparkles",
+    image: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=400&q=80",
+    banner: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80",
+    sections: [
+      {
+        id: "womens_footwear",
+        title: "Women's Sports Shoes",
+        displayOrder: 1,
+        subcategories: [
+          { id: "sub_w_running", name: "Running Shoes", displayOrder: 1, enabled: true },
+          { id: "sub_w_walking", name: "Walking Shoes", displayOrder: 2, enabled: true },
+          { id: "sub_w_gym", name: "Gym Shoes", displayOrder: 3, enabled: true },
+          { id: "sub_w_casual", name: "Casual Sports Shoes", displayOrder: 4, enabled: true },
+          { id: "sub_w_slipon", name: "Slip-On Sports Shoes", displayOrder: 5, enabled: true },
+          { id: "sub_w_daily", name: "Lightweight Daily Wear", displayOrder: 6, enabled: true }
+        ]
+      }
+    ]
+  },
+  {
+    id: "kids_footwear",
+    name: "KIDS' FOOTWEAR",
+    displayOrder: 3,
+    enabled: true,
+    hidden: false,
+    icon: "Smile",
+    image: "https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=400&q=80",
+    banner: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=1200&q=80",
+    sections: [
+      {
+        id: "kids_footwear_sec",
+        title: "Kids' Footwear",
+        displayOrder: 1,
+        subcategories: [
+          { id: "sub_k_school", name: "School Shoes", displayOrder: 1, enabled: true },
+          { id: "sub_k_sports", name: "Sports Shoes", displayOrder: 2, enabled: true },
+          { id: "sub_k_casual", name: "Casual Shoes", displayOrder: 3, enabled: true },
+          { id: "sub_k_sandals", name: "Sandals", displayOrder: 4, enabled: true },
+          { id: "sub_k_party", name: "Party Shoes", displayOrder: 5, enabled: true },
+          { id: "sub_k_lightup", name: "Light-Up Shoes", displayOrder: 6, enabled: true }
+        ]
+      }
+    ]
+  }
 ];
 
 export const CATEGORY_HIGHLIGHTS: CategoryHighlight[] = [
@@ -1251,7 +1344,36 @@ export const DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG: import('../types').SocialMediaC
   whatsappSupportRole: 'Senior Sizing Consultant',
   facebookPageLikeUrl: 'https://facebook.com/marudharfashionpoint',
   facebookMessengerUrl: 'https://m.me/marudharfashionpoint',
-  facebookFeedEmbed: 'https://facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Ffacebook&tabs=timeline'
+  facebookFeedEmbed: 'https://facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Ffacebook&tabs=timeline',
+
+  // Default values for new properties
+  whatsappPhone: '919876543210',
+  whatsappCountryCode: '91',
+  whatsappDefaultMessage: 'Hello Viju Bhai, I would like to inquire about products at Marudhar Fashion Point.',
+  whatsappProductInquiryMessage: 'Namaste, I am interested in this shoe: {{productName}} (Price: {{productPrice}}). Is it available in size {{selectedSize}}?',
+  whatsappOrderMessage: 'Hello, I would like to place an order for: {{productName}}.',
+  whatsappSupportMessage: 'Hi, I need assistance with my order sizing.',
+  whatsappBulkOrderMessage: 'Hi, I would like to ask about special pricing for bulk/wedding footwear orders.',
+  whatsappFestivalGreeting: 'Happy Festive Season! Marudhar Fashion Point is open with fresh collections.',
+  whatsappBusinessHours: '10:00 AM - 9:00 PM IST',
+  whatsappAutoReplyText: 'Thank you for reaching out to Marudhar Fashion Point. We will get back to you shortly!',
+
+  instagramFollowButtonText: 'Follow us on Instagram',
+  instagramProfilePictureLink: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=120&q=80',
+  instagramFeedEnabled: true,
+  instagramGalleryEnabled: true,
+  instagramReviewIntegrationEnabled: true,
+
+  youtubeChannelName: 'Marudhar Fashion Point Jodhpur',
+  youtubeChannelUrl: 'https://youtube.com/@marudhar_fashion_point',
+  youtubeSubscribeButtonText: 'Subscribe Now',
+  youtubeShortsSectionEnabled: true,
+
+  facebookPageName: 'Marudhar Fashion Point Official',
+  facebookPageUrl: 'https://facebook.com/marudharfashionpoint',
+  facebookMessengerLink: 'https://m.me/marudharfashionpoint',
+  facebookLikeButtonEnabled: true,
+  facebookShareButtonEnabled: true
 };
 
 export const DEFAULT_SOCIAL_ANALYTICS: import('../types').SocialAnalyticsLog = {

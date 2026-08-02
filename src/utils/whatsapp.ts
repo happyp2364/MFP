@@ -3,6 +3,7 @@ import { STORE_INFO } from '../data/mockData';
 import { isProductCompletelyOutOfStock, getSizeStockInfo } from './sizeStockUtils';
 import { getProductSKU, getProductUrl } from './productUtils';
 import { generateWhatsAppLinkFromCategory, WhatsAppPayloadData, getActiveStorePhone } from './whatsappTemplateParser';
+import { getProductPrice } from './variantUtils';
 
 export function generateProductWhatsAppLink(
   product: Product,
@@ -16,6 +17,7 @@ export function generateProductWhatsAppLink(
   const sku = getProductSKU(product);
   const productUrl = getProductUrl(product);
   const mainImage = product.images && product.images.length > 0 ? product.images[0] : '';
+  const currentPrice = getProductPrice(product, sizeText, colorText);
 
   const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
   const sizeInfo = getSizeStockInfo(product, sizeText);
@@ -27,8 +29,8 @@ export function generateProductWhatsAppLink(
     productName: product.name,
     productBrand: product.brand || 'Marudhar Royal',
     productCategory: product.category,
-    productPrice: product.price,
-    finalPrice: product.price * quantity,
+    productPrice: currentPrice,
+    finalPrice: currentPrice * quantity,
     selectedSize: sizeText,
     selectedColor: colorText,
     quantity,
@@ -52,7 +54,8 @@ export function generateCartWhatsAppLink(
 
   let totalPrice = 0;
   const itemNames = items.map((item) => {
-    totalPrice += item.product.price * item.quantity;
+    const itemPrice = getProductPrice(item.product, item.selectedSize, item.selectedColor);
+    totalPrice += itemPrice * item.quantity;
     return `${item.product.name} (Qty: ${item.quantity}, Size: ${item.selectedSize})`;
   }).join(', ');
 

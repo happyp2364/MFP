@@ -79,6 +79,128 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const [customColorName, setCustomColorName] = useState('');
   const [customColorHex, setCustomColorHex] = useState('#1E40AF');
 
+  // --- ENTERPRISE VARIANT MATRIX STATE ---
+  const [variantTab, setVariantTab] = useState<'galleries' | 'matrix' | 'ai'>('galleries');
+  const [selectedColorForGallery, setSelectedColorForGallery] = useState<string>('');
+  const [bulkPriceInput, setBulkPriceInput] = useState<string>('');
+  const [bulkOrigPriceInput, setBulkOrigPriceInput] = useState<string>('');
+  const [bulkStockInput, setBulkStockInput] = useState<string>('');
+  const [bulkLowStockLimit, setBulkLowStockLimit] = useState<string>('');
+  const [bulkStatusInput, setBulkStatusInput] = useState<'active' | 'hidden'>('active');
+  const [selectedVariantIds, setSelectedVariantIds] = useState<string[]>([]);
+  const [bulkUrlInput, setBulkUrlInput] = useState<string>('');
+  const [colorCopySource, setColorCopySource] = useState<string>('');
+
+  // Helper functions for auto-SKU and auto-barcode
+  const generateAutoSKU = (productName: string, color: string, size: string): string => {
+    const cleanName = productName.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const cleanColor = color.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const cleanSize = size.padStart(2, '0').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return `${cleanName}-${cleanColor}-${cleanSize}`;
+  };
+
+  const generateAutoBarcode = (productId: string, color: string, size: string): string => {
+    const cleanId = productId.substring(0, 4).toUpperCase();
+    const cleanColor = color.substring(0, 2).toUpperCase();
+    const cleanSize = size.replace(/[^0-9]/g, '');
+    return `890${cleanId}${cleanColor}${cleanSize}`.padEnd(13, '0').substring(0, 13);
+  };
+
+  // Matrix Auto-Regeneration Helper
+  const regenerateVariantMatrix = () => {
+    const newVariants: ProductVariant[] = [];
+    const activeSizes = productState.sizeStocks 
+      ? productState.sizeStocks.filter(s => s.isAvailable).map(s => s.size) 
+      : productState.sizes;
+    
+    productState.colors.forEach(col => {
+      activeSizes.forEach(sz => {
+        const existing = (productState.variants || []).find(
+          v => v.color.toLowerCase() === col.name.toLowerCase() && v.size.toString() === sz.toString()
+        );
+        
+        if (existing) {
+          newVariants.push({
+            ...existing,
+            color: col.name,
+            colorCode: col.hex,
+            size: sz
+          });
+        } else {
+          const varId = `${productState.id || 'prod'}_${col.name.replace(/\s+/g, '')}_${sz}`;
+          const autoSku = generateAutoSKU(productState.name || 'MFP', col.name, sz);
+          const autoBarcode = generateAutoBarcode(productState.id || '101', col.name, sz);
+          
+          const siblingImages = (productState.variants || [])
+            .find(v => v.color.toLowerCase() === col.name.toLowerCase() && v.images && v.images.length > 0)
+            ?.images || [];
+
+          newVariants.push({
+            id: varId,
+            sku: autoSku,
+            barcode: autoBarcode,
+            color: col.name,
+            colorCode: col.hex,
+            size: sz,
+            price: productState.price || 999,
+            originalPrice: productState.originalPrice || productState.price || 1499,
+            discount: productState.discountPercent || 0,
+            stock: 10,
+            lowStockLimit: 2,
+            images: siblingImages.length > 0 ? siblingImages : [...(productState.images || [])],
+            status: 'active',
+            updatedAt: new Date().toISOString(),
+            updatedBy: 'Admin'
+          });
+        }
+      });
+    });
+    
+    setProductState(prev => ({
+      ...prev,
+      variants: newVariants
+    }));
+  };
+
+  // Sync Variant Matrix on changes to Colors/Sizes
+  useEffect(() => {
+    if (productState.colors && productState.colors.length > 0) {
+      regenerateVariantMatrix();
+    }
+  }, [productState.colors, productState.sizes]);
+
+  // Set default gallery color selection
+  useEffect(() => {
+    if (productState.colors && productState.colors.length > 0 && !selectedColorForGallery) {
+      setSelectedColorForGallery(productState.colors[0].name);
+    }
+  }, [productState.colors, selectedColorForGallery]);
+
+  const updateColorGalleryImages = (colorName: string, newImages: string[], videoUrl?: string, labels?: Record<string, string>) => {
+    const updatedVariants = (productState.variants || []).map(v => {
+      if (v.color.toLowerCase() === colorName.toLowerCase()) {
+        return {
+          ...v,
+          images: newImages,
+          video: videoUrl !== undefined ? videoUrl : v.video,
+          imageLabels: labels !== undefined ? labels : (v as any).imageLabels
+        };
+      }
+      return v;
+    });
+
+    const allUniqueImages = Array.from(new Set([
+      ...(productState.images || []),
+      ...newImages
+    ])).filter(Boolean) as string[];
+
+    setProductState(prev => ({
+      ...prev,
+      variants: updatedVariants,
+      images: allUniqueImages
+    }));
+  };
+
   // Auto-Save Draft logic for NEW products
   useEffect(() => {
     if (isCreating) {
@@ -836,6 +958,724 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                 Add Color
               </button>
             </div>
+          </div>
+
+          {/* ENTERPRISE VARIANT MANAGEMENT STUDIO */}
+          <div className="bg-white p-5 rounded-2xl border-2 border-emerald-500/80 shadow-md space-y-4">
+            <div className="border-b border-neutral-100 pb-3">
+              <h3 className="font-extrabold text-neutral-900 text-sm uppercase tracking-wider flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-emerald-600" />
+                <span>Enterprise Variant Management Studio</span>
+              </h3>
+              <p className="text-[11px] font-medium text-neutral-500 mt-1">
+                Configure color-specific image galleries, custom variant prices, stocks, independent SKUs, and barcodes.
+              </p>
+            </div>
+
+            {/* TAB SELECTOR */}
+            <div className="flex border-b border-neutral-200">
+              <button
+                type="button"
+                onClick={() => setVariantTab('galleries')}
+                className={`flex-1 py-2 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-1.5 ${
+                  variantTab === 'galleries'
+                    ? 'border-emerald-600 text-emerald-800 bg-emerald-50/40'
+                    : 'border-transparent text-neutral-500 hover:text-neutral-900'
+                }`}
+              >
+                🎥 Color-Wise Galleries ({productState.colors.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setVariantTab('matrix')}
+                className={`flex-1 py-2 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-1.5 ${
+                  variantTab === 'matrix'
+                    ? 'border-emerald-600 text-emerald-800 bg-emerald-50/40'
+                    : 'border-transparent text-neutral-500 hover:text-neutral-900'
+                }`}
+              >
+                📊 Variant Matrix Table ({(productState.variants || []).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setVariantTab('ai')}
+                className={`flex-1 py-2 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-1.5 ${
+                  variantTab === 'ai'
+                    ? 'border-emerald-600 text-emerald-800 bg-emerald-50/40'
+                    : 'border-transparent text-neutral-500 hover:text-neutral-900'
+                }`}
+              >
+                🧠 AI Intelligence & Alerts
+              </button>
+            </div>
+
+            {/* TAB CONTENT: 1. GALLERIES */}
+            {variantTab === 'galleries' && (
+              <div className="space-y-4">
+                {productState.colors.length === 0 ? (
+                  <div className="text-center py-6 text-xs text-neutral-500 font-medium">
+                    ⚠️ Please add at least one color in Section 5 above to configure media galleries.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Active Color for Media Row */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-extrabold uppercase text-neutral-600 tracking-wider block">Select Color Variant Studio:</label>
+                      <div className="flex flex-wrap gap-2">
+                        {productState.colors.map((c) => (
+                          <button
+                            type="button"
+                            key={c.name}
+                            onClick={() => setSelectedColorForGallery(c.name)}
+                            className={`px-3 py-1.5 rounded-xl border-2 font-bold text-xs flex items-center gap-1.5 transition-all ${
+                              selectedColorForGallery.toLowerCase() === c.name.toLowerCase()
+                                ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/15'
+                                : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
+                            }`}
+                          >
+                            <span className="w-3.5 h-3.5 rounded-full border border-neutral-300" style={{ backgroundColor: c.hex }} />
+                            <span>{c.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Color Studio Tools & Quick Actions */}
+                    <div className="bg-neutral-50 p-3.5 rounded-2xl border border-neutral-200 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-200/80 pb-2">
+                        <span className="font-extrabold text-neutral-800 text-xs block">
+                          🎨 Media Workspace: <span className="text-emerald-700 font-mono font-black">{selectedColorForGallery || 'Standard'}</span>
+                        </span>
+
+                        {/* Copy Option */}
+                        <div className="flex items-center gap-1.5">
+                          <select
+                            value={colorCopySource}
+                            onChange={(e) => setColorCopySource(e.target.value)}
+                            className="bg-white border border-neutral-200 rounded-lg p-1 text-[11px] font-bold outline-none"
+                          >
+                            <option value="">Copy Gallery from...</option>
+                            {productState.colors
+                              .filter(c => c.name.toLowerCase() !== selectedColorForGallery.toLowerCase())
+                              .map(c => (
+                                <option key={c.name} value={c.name}>{c.name}</option>
+                              ))
+                            }
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!colorCopySource) return;
+                              // Find siblings' images
+                              const sourceImages = (productState.variants || [])
+                                .find(v => v.color.toLowerCase() === colorCopySource.toLowerCase() && v.images && v.images.length > 0)
+                                ?.images || [];
+                              if (sourceImages.length > 0) {
+                                updateColorGalleryImages(selectedColorForGallery, sourceImages);
+                                showToast?.(`Copied ${sourceImages.length} images from ${colorCopySource} successfully!`, 'success');
+                              } else {
+                                showToast?.(`No images found in source color: ${colorCopySource}`, 'info');
+                              }
+                            }}
+                            className="bg-white hover:bg-neutral-100 text-neutral-800 px-2 py-1 rounded-lg text-[10px] font-extrabold border border-neutral-300 transition-colors"
+                          >
+                            Clone
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Bulk URL Import */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">Bulk Paste Image URLs (One link per line):</label>
+                        <div className="flex gap-2">
+                          <textarea
+                            rows={2}
+                            value={bulkUrlInput}
+                            onChange={(e) => setBulkUrlInput(e.target.value)}
+                            placeholder="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=60"
+                            className="flex-1 bg-white border border-neutral-200 rounded-xl p-2 text-xs font-mono outline-none focus:ring-2 focus:ring-emerald-600"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const urls = bulkUrlInput
+                                .split(/[\n,]/)
+                                .map(u => u.trim())
+                                .filter(u => u.startsWith('http'));
+                              if (urls.length === 0) {
+                                showToast?.('Please enter valid HTTP/HTTPS image links.', 'error');
+                                return;
+                              }
+                              const existingImages = (productState.variants || [])
+                                .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
+                                ?.images || [];
+                              const merged = [...existingImages, ...urls];
+                              updateColorGalleryImages(selectedColorForGallery, merged);
+                              setBulkUrlInput('');
+                              showToast?.(`Added ${urls.length} images successfully!`, 'success');
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-3.5 rounded-xl transition-colors self-end h-fit py-3"
+                          >
+                            Import
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* AI Generator Tool Mock */}
+                      <div className="bg-[#0B8F63]/5 p-3 rounded-xl border border-[#0B8F63]/20 flex items-center justify-between gap-2">
+                        <div className="space-y-0.5">
+                          <span className="text-[11px] font-extrabold text-emerald-950 flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-[#0B8F63]" />
+                            AI Image Generator Studio
+                          </span>
+                          <span className="text-[9px] text-emerald-700 font-medium block">
+                            Generate authentic premium footwear photos using our local generative canvas.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Seed standard clean model placeholders for mockup
+                            const demoImages = [
+                              'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=60',
+                              'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600&auto=format&fit=crop&q=60',
+                              'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&auto=format&fit=crop&q=60',
+                            ];
+                            const existingImages = (productState.variants || [])
+                              .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
+                              ?.images || [];
+                            const merged = [...existingImages, ...demoImages];
+                            updateColorGalleryImages(selectedColorForGallery, merged);
+                            showToast?.('AI Generated 3 premium model images successfully!', 'success');
+                          }}
+                          className="bg-emerald-100 hover:bg-emerald-200 text-[#0B8F63] font-black text-[10px] px-3 py-1.5 rounded-lg border border-[#0B8F63]/30 flex items-center gap-1 transition-all"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          <span>Generate</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* RENDER ACTIVE COLOR GALLERY LIST */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-extrabold text-neutral-700 block">
+                        Gallery Portfolio ({
+                          ((productState.variants || []).find(
+                            v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+                          )?.images || []).length
+                        } / 50 Images)
+                      </span>
+
+                      {(() => {
+                        const activeImages = ((productState.variants || []).find(
+                          v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+                        )?.images || []);
+
+                        if (activeImages.length === 0) {
+                          return (
+                            <div className="text-center py-8 rounded-2xl bg-neutral-50 border border-dashed border-neutral-300 text-xs text-neutral-400 font-medium">
+                              No images added to this color yet. Use URLs above or generate.
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                            {activeImages.map((img, index) => {
+                              const activeVarObj = (productState.variants || []).find(
+                                v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+                              );
+                              const labels = (activeVarObj as any)?.imageLabels || {};
+                              const activeLabel = labels[img] || '';
+
+                              return (
+                                <div key={img + index} className="relative aspect-square rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 group flex flex-col justify-between p-1.5">
+                                  <img src={img} alt="Thumbnail" className="absolute inset-0 w-full h-full object-cover z-0" referrerPolicy="no-referrer" />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+
+                                  {/* Pill Badge Tag Label */}
+                                  {activeLabel ? (
+                                    <span className="z-20 bg-emerald-600 text-white font-extrabold text-[9px] uppercase px-1.5 py-0.5 rounded-full shadow-md w-fit">
+                                      {activeLabel}
+                                    </span>
+                                  ) : <span className="z-20" />}
+
+                                  {/* Action Panels */}
+                                  <div className="z-20 flex items-center justify-between w-full mt-auto">
+                                    {/* Set Cover Indicator */}
+                                    {index === 0 ? (
+                                      <span className="bg-amber-500 text-white font-bold text-[8px] uppercase px-1 rounded-sm shadow-xs">
+                                        COVER
+                                      </span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const reordered = [...activeImages];
+                                          const [removed] = reordered.splice(index, 1);
+                                          reordered.unshift(removed);
+                                          updateColorGalleryImages(selectedColorForGallery, reordered);
+                                        }}
+                                        className="bg-black/60 hover:bg-black/80 text-white font-extrabold text-[8px] uppercase px-1 rounded-sm transition-colors"
+                                      >
+                                        Cover
+                                      </button>
+                                    )}
+
+                                    {/* Operations */}
+                                    <div className="flex items-center gap-1">
+                                      {/* Reorder Left */}
+                                      {index > 0 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const reordered = [...activeImages];
+                                            const temp = reordered[index - 1];
+                                            reordered[index - 1] = reordered[index];
+                                            reordered[index] = temp;
+                                            updateColorGalleryImages(selectedColorForGallery, reordered);
+                                          }}
+                                          className="p-1 bg-white/90 hover:bg-white text-neutral-800 rounded-md shadow-xs text-xs font-black"
+                                        >
+                                          &lt;
+                                        </button>
+                                      )}
+                                      
+                                      {/* Label Selector Dropdown */}
+                                      <select
+                                        value={activeLabel}
+                                        onChange={(e) => {
+                                          const nextLabels = { ...labels, [img]: e.target.value };
+                                          updateColorGalleryImages(selectedColorForGallery, activeImages, undefined, nextLabels);
+                                        }}
+                                        className="bg-black/60 hover:bg-black/85 text-white border-none rounded p-0.5 text-[8px] font-extrabold outline-none cursor-pointer"
+                                        title="Image Perspective Label"
+                                      >
+                                        <option value="">LBL</option>
+                                        <option value="NEW">NEW</option>
+                                        <option value="360°">360°</option>
+                                        <option value="ON FOOT">ON FOOT</option>
+                                        <option value="TOP VIEW">TOP</option>
+                                        <option value="SIDE VIEW">SIDE</option>
+                                        <option value="BACK VIEW">BACK</option>
+                                        <option value="SOLE VIEW">SOLE</option>
+                                        <option value="IN BOX">IN BOX</option>
+                                      </select>
+
+                                      {/* Delete */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const filtered = activeImages.filter((_, i) => i !== index);
+                                          updateColorGalleryImages(selectedColorForGallery, filtered);
+                                          showToast?.('Image removed from color gallery.', 'info');
+                                        }}
+                                        className="p-1 bg-red-600 hover:bg-red-700 text-white rounded-md shadow-xs transition-colors"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB CONTENT: 2. MATRIX GRID */}
+            {variantTab === 'matrix' && (
+              <div className="space-y-4">
+                {/* Bulk Actions Panel */}
+                <div className="bg-neutral-50 p-3 rounded-2xl border border-neutral-200/80 space-y-2.5">
+                  <span className="text-[10px] font-black uppercase text-neutral-500 tracking-wider block">Bulk Matrix Updates ({selectedVariantIds.length} Selected):</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 items-end">
+                    {/* Price */}
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-neutral-500 block">Price (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 999"
+                        value={bulkPriceInput}
+                        onChange={(e) => setBulkPriceInput(e.target.value)}
+                        className="w-full bg-white border border-neutral-200 rounded-lg p-1 text-xs font-bold outline-none"
+                      />
+                    </div>
+                    {/* MRP */}
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-neutral-500 block">MRP (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 1499"
+                        value={bulkOrigPriceInput}
+                        onChange={(e) => setBulkOrigPriceInput(e.target.value)}
+                        className="w-full bg-white border border-neutral-200 rounded-lg p-1 text-xs font-bold outline-none"
+                      />
+                    </div>
+                    {/* Stock */}
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-neutral-500 block">Stock</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 20"
+                        value={bulkStockInput}
+                        onChange={(e) => setBulkStockInput(e.target.value)}
+                        className="w-full bg-white border border-neutral-200 rounded-lg p-1 text-xs font-bold outline-none"
+                      />
+                    </div>
+                    {/* Low Stock Limit */}
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-neutral-500 block">Low Stock Warning</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 3"
+                        value={bulkLowStockLimit}
+                        onChange={(e) => setBulkLowStockLimit(e.target.value)}
+                        className="w-full bg-white border border-neutral-200 rounded-lg p-1 text-xs font-bold outline-none"
+                      />
+                    </div>
+                    {/* Status */}
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-neutral-500 block">Status</label>
+                      <select
+                        value={bulkStatusInput}
+                        onChange={(e) => setBulkStatusInput(e.target.value as 'active' | 'hidden')}
+                        className="w-full bg-white border border-neutral-200 rounded-lg p-1 text-xs font-bold outline-none"
+                      >
+                        <option value="active">🟢 Active</option>
+                        <option value="hidden">👁️ Hidden</option>
+                      </select>
+                    </div>
+
+                    {/* Apply Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedVariantIds.length === 0) {
+                          showToast?.('Please select at least one variant row to bulk update.', 'info');
+                          return;
+                        }
+                        const updated = (productState.variants || []).map(v => {
+                          if (selectedVariantIds.includes(v.id)) {
+                            const newP = bulkPriceInput ? Number(bulkPriceInput) : v.price;
+                            const newOP = bulkOrigPriceInput ? Number(bulkOrigPriceInput) : v.originalPrice;
+                            let newDisc = v.discount;
+                            if (newOP > newP && newOP > 0) {
+                              newDisc = Math.round(((newOP - newP) / newOP) * 100);
+                            }
+                            return {
+                              ...v,
+                              price: newP,
+                              originalPrice: newOP,
+                              discount: newDisc,
+                              stock: bulkStockInput ? Number(bulkStockInput) : v.stock,
+                              lowStockLimit: bulkLowStockLimit ? Number(bulkLowStockLimit) : v.lowStockLimit,
+                              status: bulkStatusInput as 'active' | 'hidden' | 'out_of_stock'
+                            };
+                          }
+                          return v;
+                        });
+                        setProductState(prev => ({ ...prev, variants: updated }));
+                        setBulkPriceInput('');
+                        setBulkOrigPriceInput('');
+                        setBulkStockInput('');
+                        setBulkLowStockLimit('');
+                        setSelectedVariantIds([]);
+                        showToast?.('Applied bulk parameters successfully!', 'success');
+                      }}
+                      className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs py-2 rounded-lg transition-all w-full text-center"
+                    >
+                      Apply Bulk
+                    </button>
+                  </div>
+                </div>
+
+                {/* Variants Table Container */}
+                <div className="border border-neutral-200 rounded-2xl overflow-x-auto bg-neutral-50 max-h-[400px] overflow-y-auto">
+                  <table className="w-full border-collapse text-left text-xs">
+                    <thead>
+                      <tr className="bg-neutral-100/90 border-b border-neutral-200 sticky top-0 z-10">
+                        <th className="p-2.5 font-extrabold text-neutral-600 text-[10px] w-8">
+                          <input
+                            type="checkbox"
+                            checked={selectedVariantIds.length === (productState.variants || []).length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedVariantIds((productState.variants || []).map(v => v.id));
+                              } else {
+                                setSelectedVariantIds([]);
+                              }
+                            }}
+                            className="rounded text-emerald-600 focus:ring-emerald-600"
+                          />
+                        </th>
+                        <th className="p-2.5 font-extrabold text-neutral-600 text-[10px]">VARIANT ATTRIB</th>
+                        <th className="p-2.5 font-extrabold text-neutral-600 text-[10px]">PRICES (₹)</th>
+                        <th className="p-2.5 font-extrabold text-neutral-600 text-[10px]">STOCKS</th>
+                        <th className="p-2.5 font-extrabold text-neutral-600 text-[10px]">SKU / BARCODE</th>
+                        <th className="p-2.5 font-extrabold text-neutral-600 text-[10px]">STATUS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-200">
+                      {(productState.variants || []).map((variant, index) => {
+                        const isSelected = selectedVariantIds.includes(variant.id);
+                        return (
+                          <tr key={variant.id} className={`hover:bg-neutral-100/50 transition-colors ${isSelected ? 'bg-emerald-50/20' : ''}`}>
+                            <td className="p-2.5">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedVariantIds([...selectedVariantIds, variant.id]);
+                                  } else {
+                                    setSelectedVariantIds(selectedVariantIds.filter(id => id !== variant.id));
+                                  }
+                                }}
+                                className="rounded text-emerald-600 focus:ring-emerald-600"
+                              />
+                            </td>
+                            {/* Color & Size Badges */}
+                            <td className="p-2.5">
+                              <div className="flex flex-col gap-1">
+                                <span className="font-extrabold text-neutral-900 flex items-center gap-1.5">
+                                  <span className="w-3.5 h-3.5 rounded-full border border-neutral-300" style={{ backgroundColor: variant.colorCode }} />
+                                  <span>{variant.color}</span>
+                                </span>
+                                <span className="bg-neutral-200/80 text-neutral-800 font-bold px-1.5 py-0.5 rounded-md w-fit text-[9px] uppercase">
+                                  Size {variant.size}
+                                </span>
+                              </div>
+                            </td>
+                            {/* Price / MRP Inputs */}
+                            <td className="p-2.5">
+                              <div className="flex flex-col gap-1 max-w-[110px]">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[9px] font-bold text-neutral-400">Sale:</span>
+                                  <input
+                                    type="number"
+                                    value={variant.price}
+                                    onChange={(e) => {
+                                      const val = Number(e.target.value);
+                                      const updated = (productState.variants || []).map((v, i) => {
+                                        if (i === index) {
+                                          let disc = v.discount;
+                                          if (v.originalPrice > val && v.originalPrice > 0) {
+                                            disc = Math.round(((v.originalPrice - val) / v.originalPrice) * 100);
+                                          }
+                                          return { ...v, price: val, discount: disc };
+                                        }
+                                        return v;
+                                      });
+                                      setProductState(prev => ({ ...prev, variants: updated }));
+                                    }}
+                                    className="bg-white border border-neutral-200 rounded p-0.5 text-xs font-black text-emerald-700 w-16"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[9px] font-bold text-neutral-400">MRP:</span>
+                                  <input
+                                    type="number"
+                                    value={variant.originalPrice}
+                                    onChange={(e) => {
+                                      const val = Number(e.target.value);
+                                      const updated = (productState.variants || []).map((v, i) => {
+                                        if (i === index) {
+                                          let disc = 0;
+                                          if (val > v.price && val > 0) {
+                                            disc = Math.round(((val - v.price) / val) * 100);
+                                          }
+                                          return { ...v, originalPrice: val, discount: disc };
+                                        }
+                                        return v;
+                                      });
+                                      setProductState(prev => ({ ...prev, variants: updated }));
+                                    }}
+                                    className="bg-white border border-neutral-200 rounded p-0.5 text-xs font-semibold text-neutral-500 w-16"
+                                  />
+                                </div>
+                                {variant.discount > 0 && (
+                                  <span className="text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-1 py-0.5 rounded-sm w-fit">
+                                    {variant.discount}% OFF
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            {/* Stock & Low Stock Warning */}
+                            <td className="p-2.5">
+                              <div className="flex flex-col gap-1 max-w-[100px]">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[9px] font-bold text-neutral-400">Qty:</span>
+                                  <input
+                                    type="number"
+                                    value={variant.stock}
+                                    onChange={(e) => {
+                                      const val = Number(e.target.value);
+                                      const updated = (productState.variants || []).map((v, i) => {
+                                        if (i === index) {
+                                          return { ...v, stock: val };
+                                        }
+                                        return v;
+                                      });
+                                      setProductState(prev => ({ ...prev, variants: updated }));
+                                    }}
+                                    className="bg-white border border-neutral-200 rounded p-0.5 text-xs font-bold w-12 text-center"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[9px] font-bold text-neutral-400">Min:</span>
+                                  <input
+                                    type="number"
+                                    value={variant.lowStockLimit}
+                                    onChange={(e) => {
+                                      const val = Number(e.target.value);
+                                      const updated = (productState.variants || []).map((v, i) => {
+                                        if (i === index) {
+                                          return { ...v, lowStockLimit: val };
+                                        }
+                                        return v;
+                                      });
+                                      setProductState(prev => ({ ...prev, variants: updated }));
+                                    }}
+                                    className="bg-white border border-neutral-200 rounded p-0.5 text-xs font-bold w-12 text-center text-amber-700"
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            {/* SKU / Barcode */}
+                            <td className="p-2.5">
+                              <div className="flex flex-col gap-1 max-w-[150px]">
+                                <input
+                                  type="text"
+                                  value={variant.sku}
+                                  placeholder="SKU Code"
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const updated = (productState.variants || []).map((v, i) => {
+                                      if (i === index) return { ...v, sku: val };
+                                      return v;
+                                    });
+                                    setProductState(prev => ({ ...prev, variants: updated }));
+                                  }}
+                                  className="bg-white border border-neutral-200 rounded p-0.5 text-[10px] font-mono font-bold uppercase w-28 outline-none"
+                                />
+                                <input
+                                  type="text"
+                                  value={variant.barcode || ''}
+                                  placeholder="Barcode"
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const updated = (productState.variants || []).map((v, i) => {
+                                      if (i === index) return { ...v, barcode: val };
+                                      return v;
+                                    });
+                                    setProductState(prev => ({ ...prev, variants: updated }));
+                                  }}
+                                  className="bg-white border border-neutral-200 rounded p-0.5 text-[10px] font-mono font-bold w-28 outline-none"
+                                />
+                              </div>
+                            </td>
+                            {/* Status */}
+                            <td className="p-2.5">
+                              <select
+                                value={variant.status}
+                                onChange={(e) => {
+                                  const val = e.target.value as 'active' | 'hidden';
+                                  const updated = (productState.variants || []).map((v, i) => {
+                                    if (i === index) return { ...v, status: val };
+                                    return v;
+                                  });
+                                  setProductState(prev => ({ ...prev, variants: updated }));
+                                }}
+                                className="bg-white border border-neutral-200 rounded p-1 text-[10px] font-bold outline-none cursor-pointer"
+                              >
+                                <option value="active">Active</option>
+                                <option value="hidden">Hidden</option>
+                              </select>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* TAB CONTENT: 3. AI STRATEGY & ALERTS */}
+            {variantTab === 'ai' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Alerts Card */}
+                  <div className="bg-amber-50/50 border border-amber-200 rounded-2xl p-4 space-y-3">
+                    <span className="font-extrabold text-amber-950 text-xs flex items-center gap-1.5 uppercase tracking-wider block">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 animate-pulse" />
+                      Low Stock Alert Warnings
+                    </span>
+                    <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                      {(() => {
+                        const lowStockItems = (productState.variants || []).filter(v => v.stock <= v.lowStockLimit);
+                        if (lowStockItems.length === 0) {
+                          return (
+                            <span className="text-[11px] text-emerald-800 font-bold block bg-emerald-50 p-2 rounded-xl border border-emerald-100">
+                              🟢 Perfect: All variant configurations have healthy inventory reserves.
+                            </span>
+                          );
+                        }
+                        return lowStockItems.map(item => (
+                          <div key={item.id} className="flex justify-between items-center gap-1 bg-white p-2 rounded-xl border border-amber-100 text-[10px] font-bold text-amber-900">
+                            <span className="flex items-center gap-1">
+                              <span className="w-2.5 h-2.5 rounded-full border border-neutral-300 shrink-0" style={{ backgroundColor: item.colorCode }} />
+                              <span>{item.color} (Size {item.size})</span>
+                            </span>
+                            <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                              Only {item.stock} left
+                            </span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* AI Forecasting Demand */}
+                  <div className="bg-emerald-50/40 border border-emerald-200 rounded-2xl p-4 space-y-3">
+                    <span className="font-extrabold text-emerald-950 text-xs flex items-center gap-1.5 uppercase tracking-wider block">
+                      <Sparkles className="w-4 h-4 text-emerald-600" />
+                      AI Optimization & Pricing Recommendations
+                    </span>
+                    <div className="space-y-2.5 text-[11px] leading-relaxed text-neutral-600">
+                      <p>
+                        Our machine learning models recommend a <strong className="text-emerald-800">10% premium markdown adjustments</strong> for high-performing size variants like <strong className="text-emerald-900">Size 8 and Size 9</strong> across standard solid black shoes due to regional seasonal footfalls.
+                      </p>
+                      <div className="bg-white p-2.5 rounded-xl border border-emerald-100 text-[10px] font-bold text-emerald-950 flex items-center justify-between">
+                        <span>Slow-Moving Variants: Size 11</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = (productState.variants || []).map(v => {
+                              if (v.size.toString() === '11') {
+                                return { ...v, price: Math.round(v.price * 0.9) };
+                              }
+                              return v;
+                            });
+                            setProductState(prev => ({ ...prev, variants: updated }));
+                            showToast?.('Applied 10% markdown on Size 11 variants!', 'success');
+                          }}
+                          className="bg-emerald-100 hover:bg-emerald-200 text-[#0B8F63] px-2 py-1 rounded-md border border-[#0B8F63]/30 uppercase text-[9px] font-black transition-all"
+                        >
+                          Markdown 10%
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* SECTION 6: PRODUCT DESCRIPTION */}

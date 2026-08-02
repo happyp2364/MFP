@@ -20,6 +20,7 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { CustomerOrder, OrderStatus } from '../../types';
 import { InvoiceModal } from '../Customer/InvoiceModal';
+import { getProductPrice, getProductImage } from '../../utils/variantUtils';
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string; color: string }[] = [
   { value: 'PENDING', label: 'Pending', color: 'bg-amber-100 text-amber-900 border-amber-300' },
@@ -243,30 +244,34 @@ export const OrderManagementView: React.FC = () => {
                         Ordered Items ({order.items.reduce((a, b) => a + b.quantity, 0)})
                       </p>
                       <div className="space-y-2">
-                        {order.items.map((item, idx) => (
-                          <div
-                            key={idx}
-                            className="p-2.5 bg-white rounded-xl border border-neutral-200 flex items-center justify-between"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <img
-                                src={item.product.images[0]}
-                                alt={item.product.name}
-                                className="w-12 h-12 object-cover rounded-lg"
-                              />
-                              <div>
-                                <p className="font-bold text-neutral-900">{item.product.name}</p>
-                                <p className="text-neutral-500 text-[11px]">
-                                  Size: <strong className="text-neutral-800">{item.selectedSize}</strong> | Color: <strong className="text-neutral-800">{item.selectedColor}</strong> | Qty: <strong className="text-neutral-800">{item.quantity}</strong>
-                                </p>
+                        {order.items.map((item, idx) => {
+                          const itemPrice = getProductPrice(item.product, item.selectedSize, item.selectedColor);
+                          const itemImage = getProductImage(item.product, item.selectedColor);
+                          return (
+                            <div
+                              key={idx}
+                              className="p-2.5 bg-white rounded-xl border border-neutral-200 flex items-center justify-between"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <img
+                                  src={itemImage}
+                                  alt={item.product.name}
+                                  className="w-12 h-12 object-cover rounded-lg"
+                                />
+                                <div>
+                                  <p className="font-bold text-neutral-900">{item.product.name}</p>
+                                  <p className="text-neutral-500 text-[11px]">
+                                    Size: <strong className="text-neutral-800">{item.selectedSize}</strong> | Color: <strong className="text-neutral-800">{item.selectedColor}</strong> | Qty: <strong className="text-neutral-800">{item.quantity}</strong>
+                                  </p>
+                                </div>
                               </div>
-                            </div>
 
-                            <p className="font-mono font-bold text-neutral-900">
-                              ₹{(item.product.price * item.quantity).toLocaleString()}
-                            </p>
-                          </div>
-                        ))}
+                              <p className="font-mono font-bold text-neutral-900">
+                                ₹{(itemPrice * item.quantity).toLocaleString()}
+                              </p>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 

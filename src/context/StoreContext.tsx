@@ -139,6 +139,7 @@ import {
   limit,
 } from 'firebase/firestore';
 import { splitProduct, stitchProduct, estimateObjectSizeKb } from '../utils/productSplitter';
+import { getCartItemPrice } from '../utils/variantUtils';
 import { playSound, applyAudioCustomerSettings } from '../utils/audio';
 import { securityRateLimiter, sanitizeString, sanitizeEmail, sanitizePhone, sanitizePrice } from '../lib/security';
 
@@ -1768,7 +1769,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   ) => {
     try {
       const orderId = `MFP-ORD-${Date.now()}`;
-      const subtotalAmt = cartItems.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+      const subtotalAmt = cartItems.reduce((acc, item) => acc + (getCartItemPrice(item) * item.quantity), 0);
       const totalAmt = Math.max(0, subtotalAmt - discountAmount);
       const mappedPaymentMethod: PaymentMethodType =
         paymentMethod === 'ONLINE'
@@ -2132,7 +2133,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return { valid: false, reason };
     }
 
-    const eligibleSubtotal = eligibleItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+    const eligibleSubtotal = eligibleItems.reduce((sum, item) => sum + (getCartItemPrice(item) * item.quantity), 0);
 
     // Min/Max order subtotal
     if (coupon.minOrderAmount && eligibleSubtotal < coupon.minOrderAmount) {
@@ -2163,7 +2164,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const buyX = coupon.discountValue || 2;
       const getY = 1;
       if (totalEligibleQty >= buyX) {
-        const itemPrices = eligibleItems.flatMap((item) => Array(item.quantity).fill(item.product.price));
+        const itemPrices = eligibleItems.flatMap((item) => Array(item.quantity).fill(getCartItemPrice(item)));
         itemPrices.sort((a, b) => a - b);
         const freeCount = Math.floor(totalEligibleQty / (buyX + getY));
         const freeItems = itemPrices.slice(0, freeCount > 0 ? freeCount : 1);

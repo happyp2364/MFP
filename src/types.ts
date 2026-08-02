@@ -5,6 +5,26 @@ export interface ProductColor {
   hex: string;
 }
 
+export interface ProductVariant {
+  id: string;          // unique variant ID (e.g. prodId_color_size)
+  sku: string;         // independent SKU
+  barcode: string;     // independent barcode
+  color: string;       // color name
+  colorCode: string;   // color hex code
+  size: string;        // size value
+  price: number;       // independent price
+  originalPrice: number; // independent original price
+  discount: number;    // independent discount %
+  stock: number;       // independent stock
+  lowStockLimit: number; // independent low stock alert limit
+  weight?: number;     // independent weight
+  images: string[];    // independent color-specific images
+  video?: string;      // optional video URL
+  status: 'active' | 'hidden' | 'out_of_stock';
+  updatedAt: string;
+  updatedBy: string;
+}
+
 export interface SizeStock {
   size: string;
   isAvailable: boolean;
@@ -45,6 +65,7 @@ export interface Product {
   inStock: boolean;
   createdAt?: string;
   updatedAt?: string;
+  variants?: ProductVariant[];
 }
 
 export interface Review {
@@ -82,6 +103,7 @@ export interface CartItem {
   selectedSize: string;
   selectedColor: string;
   quantity: number;
+  selectedVariant?: ProductVariant;
 }
 
 export interface ContactFormInput {

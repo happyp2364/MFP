@@ -10,6 +10,7 @@ import {
   isProductCompletelyOutOfStock,
   getFirstAvailableInStockSize,
 } from '../../utils/sizeStockUtils';
+import { getProductPrice } from '../../utils/variantUtils';
 
 interface ProductCardProps {
   product: Product;
@@ -91,13 +92,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }
   };
 
-  const rawImageSrc = product.images && product.images.length > 0 
-    ? (product.images[currentImageIndex] || product.images[0])
+  const activeVariantWithImages = product.variants?.find(
+    (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+  );
+
+  const displayImages = activeVariantWithImages?.images || product.images || [];
+
+  const rawImageSrc = displayImages.length > 0 
+    ? (displayImages[currentImageIndex] || displayImages[0])
     : '';
 
   const displayImageSrc = (!rawImageSrc || imageError) 
     ? CLEAN_IMAGE_COMING_SOON_SVG 
     : rawImageSrc;
+
+  // Compute pricing dynamically based on selection
+  const computedPrice = getProductPrice(product, selectedSize, selectedColor);
+  const isVariantSelected = Boolean(product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize));
+  const activeVariant = product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize);
+  const originalPrice = isVariantSelected && activeVariant ? activeVariant.originalPrice : product.originalPrice;
+  const currentPrice = isVariantSelected && activeVariant ? activeVariant.price : product.price;
 
   return (
     <div
@@ -130,7 +144,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Top Badges Left */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
           <OpenBoxDeliveryBadge product={product} variant="compact" />
-          {product.price >= 999 && (
+          {currentPrice >= 999 && (
             <span className="bg-emerald-800 text-white text-[9px] font-extrabold tracking-wider uppercase px-2.5 py-0.5 rounded-md shadow-sm">
               🚚 Free Delivery
             </span>
@@ -185,9 +199,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Image Swatcher Hover Preview Dots */}
-        {product.images.length > 1 && (
+        {displayImages.length > 1 && (
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-black/30 px-2 py-1 rounded-full backdrop-blur-sm">
-            {product.images.map((_, idx) => (
+            {displayImages.map((_, idx) => (
               <button
                 key={idx}
                 onClick={(e) => {
@@ -203,9 +217,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         )}
 
         {/* Discount Badge */}
-        {product.discountPercent > 0 && (
+        {(originalPrice > currentPrice) && (
           <div className="absolute bottom-3 left-3 bg-red-600 text-white font-extrabold text-[11px] px-2 py-0.5 rounded shadow-sm">
-            {product.discountPercent}% OFF
+            {Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}% OFF
           </div>
         )}
       </div>
@@ -308,11 +322,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <div className="flex items-baseline justify-between">
             <div className="flex items-baseline gap-2">
               <span className="font-serif-heading font-extrabold text-lg text-neutral-900">
-                ₹{product.price.toLocaleString('en-IN')}
+                ₹{currentPrice.toLocaleString('en-IN')}
               </span>
-              {product.originalPrice > product.price && (
+              {originalPrice > currentPrice && (
                 <span className="text-xs text-neutral-400 line-through">
-                  ₹{product.originalPrice.toLocaleString('en-IN')}
+                  ₹{originalPrice.toLocaleString('en-IN')}
                 </span>
               )}
             </div>

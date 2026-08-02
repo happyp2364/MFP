@@ -6,10 +6,30 @@ import { useStore } from '../../context/StoreContext';
 import { generateGeneralInquiryWhatsAppLink } from '../../utils/whatsapp';
 import { SocialIconRenderer } from '../Social/SocialIconRenderer';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onOpenAdmin?: () => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
   const { storeInfo, socialMediaConfig, recordSocialClick } = useStore();
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+
+  const copyrightTapCount = React.useRef(0);
+  const copyrightTapTimeout = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleCopyrightClick = () => {
+    if (!onOpenAdmin) return;
+    copyrightTapCount.current += 1;
+    if (copyrightTapCount.current >= 5) {
+      onOpenAdmin();
+      copyrightTapCount.current = 0;
+    }
+    if (copyrightTapTimeout.current) clearTimeout(copyrightTapTimeout.current);
+    copyrightTapTimeout.current = setTimeout(() => {
+      copyrightTapCount.current = 0;
+    }, 2000);
+  };
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,7 +222,7 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Guarantees & Copyright Bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 select-none cursor-pointer" onClick={handleCopyrightClick} onDoubleClick={onOpenAdmin}>
             <span>© {new Date().getFullYear()} Marudhar Fashion Point. All rights reserved.</span>
           </div>
 

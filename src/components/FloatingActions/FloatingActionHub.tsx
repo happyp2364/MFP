@@ -15,7 +15,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
   onOpenCalendarModal,
   onOpenSoundSettings,
 }) => {
-  const { storeInfo, customerSoundSettings, socialMediaConfig, recordSocialClick } = useStore();
+  const { storeInfo, customerSoundSettings, socialMediaConfig, recordSocialClick, isAdmin } = useStore();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [expandedSocials, setExpandedSocials] = useState(false);
 
@@ -44,7 +44,11 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
   const waUrl = generateGeneralInquiryWhatsAppLink(waMessage);
 
   return (
-    <div className="fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
+    <div className={`fixed right-4 sm:right-6 z-40 flex flex-col items-end gap-3 pointer-events-none transition-all duration-300 ${
+      isAdmin 
+        ? 'bottom-[88px] sm:bottom-[96px]' 
+        : 'bottom-5 sm:bottom-6'
+    }`}>
       
       {/* Social Links Sub-Menu (Glassmorphism Circular Buttons with Tooltips) */}
       {expandedSocials && (

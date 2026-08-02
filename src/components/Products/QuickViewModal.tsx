@@ -12,6 +12,7 @@ import {
   getFirstAvailableInStockSize,
   getSizeStockInfo,
 } from '../../utils/sizeStockUtils';
+import { getProductPrice } from '../../utils/variantUtils';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -103,13 +104,24 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     setTimeout(() => setAddedNotice(false), 2000);
   };
 
-  const rawImageSrc = product.images && product.images.length > 0
-    ? (product.images[activeImageIndex] || product.images[0])
+  const activeVariantWithImages = product.variants?.find(
+    (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+  );
+  
+  const displayImages = activeVariantWithImages?.images || product.images || [];
+
+  const rawImageSrc = displayImages.length > 0
+    ? (displayImages[activeImageIndex] || displayImages[0])
     : '';
 
   const displayImageSrc = (!rawImageSrc || imageError)
     ? CLEAN_IMAGE_COMING_SOON_SVG
     : rawImageSrc;
+
+  const currentPrice = getProductPrice(product, selectedSize, selectedColor);
+  const isVariantSelected = Boolean(product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize));
+  const activeVariant = product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize);
+  const originalPrice = isVariantSelected && activeVariant ? activeVariant.originalPrice : product.originalPrice;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -162,9 +174,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
           </div>
 
           {/* Thumbnails list */}
-          {product.images.length > 1 && (
+          {displayImages.length > 1 && (
             <div className="flex items-center gap-3 overflow-x-auto pb-1 no-scrollbar">
-              {product.images.map((img, idx) => (
+              {displayImages.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
@@ -242,11 +254,11 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             {/* Price Box */}
             <div className="flex items-baseline gap-3">
               <span className="font-serif-heading font-extrabold text-3xl text-neutral-900">
-                ₹{product.price.toLocaleString('en-IN')}
+                ₹{currentPrice.toLocaleString('en-IN')}
               </span>
-              {product.originalPrice > product.price && (
+              {originalPrice > currentPrice && (
                 <span className="text-base text-neutral-400 line-through">
-                  ₹{product.originalPrice.toLocaleString('en-IN')}
+                  ₹{originalPrice.toLocaleString('en-IN')}
                 </span>
               )}
               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
@@ -369,12 +381,12 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             <div className="grid grid-cols-2 gap-2 text-[11px] font-medium">
               <div className="bg-black/40 p-2 rounded-xl border border-white/10">
                 <span className="font-extrabold text-emerald-300 block">
-                  {product.price >= (paymentSettings.freeShippingMinAmount || 999)
+                  {currentPrice >= (paymentSettings.freeShippingMinAmount || 999)
                     ? '🚚 FREE DELIVERY'
                     : `🚚 ₹${paymentSettings.flatShippingRate || 80} Shipping`}
                 </span>
                 <span className="text-[9px] text-neutral-300">
-                  {product.price >= (paymentSettings.freeShippingMinAmount || 999)
+                  {currentPrice >= (paymentSettings.freeShippingMinAmount || 999)
                     ? 'Free Standard Delivery'
                     : `Min ₹${paymentSettings.freeShippingMinAmount || 999} for Free Shipping`}
                 </span>

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { CartItem, ShippingAddressInfo, PaymentMethodType, CustomerOrder, MarketingConsent } from '../../types';
+import { getCartItemPrice } from '../../utils/variantUtils';
 import { generateUPILink, getQRCodeImageUrl, cleanAndSanitizeUPIId, isValidUPIIdFormat } from '../../utils/qrCode';
 import { generateOrderWhatsAppLink } from '../../utils/whatsapp';
 import { InvoiceModal } from '../Customer/InvoiceModal';
@@ -404,7 +405,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   if (!isOpen) return null;
 
   // Price calculations
-  const subtotal = cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+  const subtotal = cartItems.reduce((acc, item) => acc + getCartItemPrice(item) * item.quantity, 0);
   const baseShippingFee = subtotal >= (paymentSettings.freeShippingMinAmount || 999) ? 0 : paymentSettings.flatShippingRate || 0;
   const shippingFee = freeShippingPromo ? 0 : baseShippingFee;
 

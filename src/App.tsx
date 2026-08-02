@@ -23,6 +23,7 @@ import { WishlistModal } from './components/Wishlist/WishlistModal';
 import { AdminLoginModal } from './components/Admin/AdminLoginModal';
 import { AdminDashboardModal } from './components/Admin/AdminDashboardModal';
 import { AdminErrorBoundary } from './components/Admin/AdminErrorBoundary';
+import { FloatingAdminButton } from './components/Admin/FloatingAdminButton';
 import { CheckoutModal } from './components/Checkout/CheckoutModal';
 import { CustomerAccountModal } from './components/Customer/CustomerAccountModal';
 import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
@@ -37,9 +38,10 @@ import { SpinWheelPopup } from './components/Promo/SpinWheelPopup';
 import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebration';
 
 import { useStore } from './context/StoreContext';
-import { Product, FilterState, GenderCategory, CartItem } from './types';
+import { Product, FilterState, GenderCategory, CartItem, ProductVariant } from './types';
 import { findProductBySlugOrId, getProductSlug } from './utils/productUtils';
 import { deduplicateProducts, sortProductsWithSmartMix } from './utils/productFeedOptimizer';
+import { getCartItemPrice } from './utils/variantUtils';
 
 function AppContent() {
   const { products, isAdmin, toastMessage, productFeedConfig } = useStore();
@@ -95,7 +97,7 @@ function AppContent() {
 
   const scratchCurrentPath = productRouteSlug ? `/product/${productRouteSlug}` : checkoutModalOpen ? '/checkout' : '/';
   const scratchCartSubtotal = useMemo(() => {
-    return cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+    return cartItems.reduce((acc, item) => acc + getCartItemPrice(item) * item.quantity, 0);
   }, [cartItems]);
 
   React.useEffect(() => {
@@ -130,6 +132,18 @@ function AppContent() {
     handleUrlChange();
     window.addEventListener('popstate', handleUrlChange);
     return () => window.removeEventListener('popstate', handleUrlChange);
+  }, []);
+
+  // Global hotkey shortcut to open Admin Login: Ctrl + Alt + A (or Cmd + Opt + A on Mac)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        setAdminLoginOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Matched product for active URL route
@@ -219,7 +233,14 @@ function AppContent() {
     );
   };
 
-  const handleAddToCart = (product: Product, size: string, color: string) => {
+  const handleAddToCart = (product: Product, size: string, color: string, selectedVariant?: ProductVariant) => {
+    let variant = selectedVariant;
+    if (!variant && product.variants && product.variants.length > 0) {
+      variant = product.variants.find(
+        (v) => v.color.toLowerCase() === color.toLowerCase() && v.size.toString() === size.toString()
+      );
+    }
+
     setCartItems((prev) => {
       const existingIndex = prev.findIndex(
         (item) =>
@@ -231,6 +252,9 @@ function AppContent() {
       if (existingIndex > -1) {
         const copy = [...prev];
         copy[existingIndex].quantity += 1;
+        if (variant) {
+          copy[existingIndex].selectedVariant = variant;
+        }
         return copy;
       }
 
@@ -241,14 +265,22 @@ function AppContent() {
           selectedSize: size || product.sizes[0] || 'Standard',
           selectedColor: color || (product.colors[0] ? product.colors[0].name : 'Standard'),
           quantity: 1,
+          selectedVariant: variant,
         },
       ];
     });
   };
 
-  const handleBuyNow = (product: Product, size: string, color: string, quantity: number = 1) => {
+  const handleBuyNow = (product: Product, size: string, color: string, quantity: number = 1, selectedVariant?: ProductVariant) => {
     const chosenSize = size || (product.sizes && product.sizes[0]) || 'Standard';
     const chosenColor = color || (product.colors && product.colors[0] ? product.colors[0].name : 'Standard');
+
+    let variant = selectedVariant;
+    if (!variant && product.variants && product.variants.length > 0) {
+      variant = product.variants.find(
+        (v) => v.color.toLowerCase() === chosenColor.toLowerCase() && v.size.toString() === chosenSize.toString()
+      );
+    }
 
     setDirectCheckoutItems([
       {
@@ -256,6 +288,7 @@ function AppContent() {
         selectedSize: chosenSize,
         selectedColor: chosenColor,
         quantity: quantity > 0 ? quantity : 1,
+        selectedVariant: variant,
       },
     ]);
     setCheckoutModalOpen(true);
@@ -674,12 +707,32 @@ function AppContent() {
       )}
 
       {/* 14. Footer */}
-      <Footer />
+      <Footer onOpenAdmin={() => setAdminLoginOpen(true)} />
 
       {/* 13. Floating Action Hub (WhatsApp, Call, Socials, Back To Top, Calendar, Sound) */}
       <FloatingActionHub
         onOpenCalendarModal={() => setCalendarModalOpen(true)}
         onOpenSoundSettings={() => setSoundSettingsOpen(true)}
+      />
+
+      {/* Premium Floating Admin Command Button */}
+      <FloatingAdminButton
+        onOpenAdmin={() => {
+          setAdminActiveTab(undefined);
+          if (isAdmin) {
+            setAdminDashboardOpen(true);
+          } else {
+            setAdminLoginOpen(true);
+          }
+        }}
+        onOpenAdminWithTab={(tab) => {
+          setAdminActiveTab(tab as any);
+          if (isAdmin) {
+            setAdminDashboardOpen(true);
+          } else {
+            setAdminLoginOpen(true);
+          }
+        }}
       />
 
       {/* Interactive AI Pet Shoe Brand Mascot */}

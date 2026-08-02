@@ -5,6 +5,7 @@ import { useStore } from '../../context/StoreContext';
 import { generateCartWhatsAppLink } from '../../utils/whatsapp';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
+import { getCartItemPrice, getCartItemImage } from '../../utils/variantUtils';
 
 interface OrderSheetProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
   if (!isOpen) return null;
 
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
+    (sum, item) => sum + getCartItemPrice(item) * item.quantity,
     0
   );
 
@@ -90,7 +91,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
                 className="flex items-center gap-3 p-3 rounded-2xl bg-[#F7F7F7] border border-neutral-200/80"
               >
                 <img
-                  src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : CLEAN_IMAGE_COMING_SOON_SVG}
+                  src={getCartItemImage(item) || CLEAN_IMAGE_COMING_SOON_SVG}
                   alt={item.product.name}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = CLEAN_IMAGE_COMING_SOON_SVG;
@@ -107,7 +108,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
                     Size: <strong className="text-neutral-800">{item.selectedSize}</strong> | Color: <strong className="text-neutral-800">{item.selectedColor}</strong>
                   </div>
                   <div className="font-bold text-xs text-[#0B8F63]">
-                    ₹{(item.product.price * item.quantity).toLocaleString('en-IN')}
+                    ₹{(getCartItemPrice(item) * item.quantity).toLocaleString('en-IN')}
                   </div>
                 </div>
 

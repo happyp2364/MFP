@@ -84,6 +84,22 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [adminExpanded, setAdminExpanded] = useState(false);
 
+  const logoTapCount = React.useRef(0);
+  const logoTapTimeout = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleLogoClick = () => {
+    handleNavClick('hero');
+    logoTapCount.current += 1;
+    if (logoTapCount.current >= 5) {
+      onOpenAdmin();
+      logoTapCount.current = 0;
+    }
+    if (logoTapTimeout.current) clearTimeout(logoTapTimeout.current);
+    logoTapTimeout.current = setTimeout(() => {
+      logoTapCount.current = 0;
+    }, 2000);
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 40) {
@@ -135,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Brand Logo */}
               {storeInfo?.showHeaderLogo !== false && (
                 <button
-                  onClick={() => handleNavClick('hero')}
+                  onClick={handleLogoClick}
                   className="flex items-center gap-2 text-left group"
                 >
                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0B8F63] flex items-center justify-center text-white shadow-md shadow-[#0B8F63]/20 group-hover:scale-105 transition-transform duration-300">
@@ -383,20 +399,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span>Book Fitting</span>
                 </button>
               )}
-
-              {/* Admin Panel Trigger */}
-              <button
-                onClick={onOpenAdmin}
-                className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-full border transition-all ${
-                  isAdmin
-                    ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 shadow-sm'
-                    : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border-neutral-200'
-                }`}
-                title={isAdmin ? 'Open Admin Dashboard' : 'Store Admin Login'}
-              >
-                <ShieldCheck className={`w-4 h-4 ${isAdmin ? 'text-amber-600' : 'text-[#0B8F63]'}`} />
-                <span className="hidden sm:inline">{isAdmin ? 'Admin Panel' : 'Admin'}</span>
-              </button>
             </div>
           </div>
         </div>

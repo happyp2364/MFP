@@ -18,8 +18,13 @@ import {
   Sparkles,
   Zap,
   Loader2,
+  ZoomIn,
+  ZoomOut,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
-import { Product } from '../../types';
+import { Product, ProductVariant } from '../../types';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
 import { getProductSKU, getProductUrl } from '../../utils/productUtils';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
@@ -40,10 +45,10 @@ interface ProductDetailPageProps {
   onBackToHome: () => void;
   onToggleWishlist: (product: Product) => void;
   isWishlisted: boolean;
-  onAddToCart: (product: Product, size: string, color: string) => void;
+  onAddToCart: (product: Product, size: string, color: string, selectedVariant?: ProductVariant) => void;
   onQuickView: (product: Product) => void;
   wishlistIds: string[];
-  onBuyNow?: (product: Product, size: string, color: string, quantity: number) => void;
+  onBuyNow?: (product: Product, size: string, color: string, quantity: number, selectedVariant?: ProductVariant) => void;
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
@@ -112,17 +117,117 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [quantity, setQuantity] = useState(1);
   const [addedNotice, setAddedNotice] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
 
   // Sync state when product loads or changes
   useEffect(() => {
     if (product) {
       setActiveImageIndex(0);
       setImageError(false);
-      setSelectedSize(getFirstAvailableInStockSize(product));
-      setSelectedColor(product.colors.length > 0 ? product.colors[0].name : 'Standard');
       setQuantity(1);
+      
+      if (product.variants && product.variants.length > 0) {
+        // Collect all available colors from variants
+        const varColors = Array.from(new Set(product.variants.map(v => v.color)));
+        const firstColor = varColors[0] || 'Standard';
+        setSelectedColor(firstColor);
+
+        // Find sizes for this color and set the first in-stock or available size
+        const sizesForFirstColor = product.variants.filter(
+          v => v.color.toLowerCase() === firstColor.toLowerCase() && v.status === 'active'
+        );
+        const inStockSizes = sizesForFirstColor.filter(v => v.stock > 0);
+        if (inStockSizes.length > 0) {
+          setSelectedSize(inStockSizes[0].size);
+        } else if (sizesForFirstColor.length > 0) {
+          setSelectedSize(sizesForFirstColor[0].size);
+        } else {
+          setSelectedSize('');
+        }
+      } else {
+        setSelectedSize(getFirstAvailableInStockSize(product));
+        setSelectedColor(product.colors.length > 0 ? product.colors[0].name : 'Standard');
+      }
     }
   }, [product]);
+
+  // Sync size when selectedColor changes
+  useEffect(() => {
+    if (product && product.variants && product.variants.length > 0 && selectedColor) {
+      const sizesForColor = product.variants.filter(
+        v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.status === 'active'
+      );
+      // If selectedSize is not available in new color, pick one
+      const exists = sizesForColor.some(v => v.size === selectedSize);
+      if (!exists && sizesForColor.length > 0) {
+        const inStock = sizesForColor.filter(v => v.stock > 0);
+        setSelectedSize(inStock.length > 0 ? inStock[0].size : sizesForColor[0].size);
+      }
+    }
+  }, [selectedColor, product]);
+
+  // Find current active variant
+  const activeVariant = product?.variants?.find(
+    (v) =>
+      v.color.toLowerCase() === selectedColor.toLowerCase() &&
+      v.size.toString() === selectedSize.toString()
+  );
+
+  // Prices
+  const displayPrice = activeVariant ? activeVariant.price : (product?.price || 0);
+  const displayOriginalPrice = activeVariant ? activeVariant.originalPrice : (product?.originalPrice || 0);
+  const displayDiscountPercent = activeVariant ? activeVariant.discount : (product?.discountPercent || 0);
+
+  // Gallery (Every color has its own gallery)
+  const colorSpecificImages = product?.variants
+    ? Array.from(
+        new Set(
+          product.variants
+            .filter((v) => v.color.toLowerCase() === selectedColor.toLowerCase())
+            .flatMap((v) => v.images || [])
+        )
+      ).filter(Boolean) as string[]
+    : [];
+
+  const displayImages = colorSpecificImages.length > 0 ? colorSpecificImages : (product?.images || []);
+
+  // Sync index to avoid index out of bounds if selected color has fewer images
+  useEffect(() => {
+    if (activeImageIndex >= displayImages.length) {
+      setActiveImageIndex(0);
+    }
+  }, [displayImages, activeImageIndex]);
+
+  // Touch Swiping Handlers
+  const touchStartX = React.useRef<number>(0);
+  const touchEndX = React.useRef<number>(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (diff > 50) {
+      if (activeImageIndex < displayImages.length - 1) {
+        setActiveImageIndex(prev => prev + 1);
+      } else {
+        setActiveImageIndex(0);
+      }
+    } else if (diff < -50) {
+      if (activeImageIndex > 0) {
+        setActiveImageIndex(prev => prev - 1);
+      } else {
+        setActiveImageIndex(displayImages.length - 1);
+      }
+    }
+  };
 
   // -------------------------------------------------------------
   // DELETED / NOT FOUND PRODUCT CUSTOM ERROR PAGE
@@ -215,16 +320,42 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   // -------------------------------------------------------------
   // VALID PRODUCT FULL PAGE DISPLAY
   // -------------------------------------------------------------
-  const sizeStocks = normalizeProductSizeStocks(product);
-  const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
+  const availableColors = product.variants && product.variants.length > 0
+    ? Array.from(
+        new Map(
+          product.variants.map((v) => [
+            v.color.toLowerCase(),
+            { name: v.color, hex: v.colorCode || '#FFFFFF' }
+          ])
+        ).values()
+      )
+    : product.colors;
 
-  const selectedSizeInfo = getSizeStockInfo(product, selectedSize);
+  const sizeStocks = product.variants && product.variants.length > 0
+    ? product.variants
+        .filter((v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.status === 'active')
+        .map((v) => ({
+          size: v.size,
+          inStock: v.stock > 0,
+          stockQuantity: v.stock,
+          isAvailable: true,
+        }))
+    : normalizeProductSizeStocks(product);
+
+  const isCompletelyOutOfStock = product.variants && product.variants.length > 0
+    ? !product.variants.some(v => v.stock > 0 && v.status === 'active')
+    : isProductCompletelyOutOfStock(product);
+
+  const selectedSizeInfo = product.variants && product.variants.length > 0
+    ? sizeStocks.find(s => s.size === selectedSize)
+    : getSizeStockInfo(product, selectedSize);
+
   const isSelectedSizeOutOfStock = selectedSizeInfo
     ? (!selectedSizeInfo.inStock || selectedSizeInfo.stockQuantity <= 0)
     : false;
 
-  const rawImageSrc = product.images && product.images.length > 0
-    ? (product.images[activeImageIndex] || product.images[0])
+  const rawImageSrc = displayImages && displayImages.length > 0
+    ? (displayImages[activeImageIndex] || displayImages[0])
     : '';
 
   const displayImageSrc = (!rawImageSrc || imageError)
@@ -257,13 +388,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     setTimeout(() => {
       setIsBuyNowLoading(false);
       if (onBuyNow) {
-        onBuyNow(product, selectedSize, selectedColor || 'Standard', quantity || 1);
+        onBuyNow(product, selectedSize, selectedColor || 'Standard', quantity || 1, activeVariant);
       }
     }, 150);
   };
 
   const handleAddBag = () => {
-    onAddToCart(product, selectedSize, selectedColor);
+    onAddToCart(product, selectedSize, selectedColor, activeVariant);
     setAddedNotice(true);
     setTimeout(() => setAddedNotice(false), 2000);
   };
@@ -299,48 +430,104 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         {/* Left Column: Gallery */}
         <div className="lg:col-span-6 space-y-4 sticky top-24">
           {/* Main Display Image */}
-          <div className="relative aspect-square w-full rounded-3xl overflow-hidden bg-neutral-100 border border-neutral-200/80 shadow-md flex items-center justify-center group">
-            {(!rawImageSrc || imageError) ? (
-              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-50">
-                <div className="w-16 h-16 rounded-2xl bg-[#0B8F63]/10 text-[#0B8F63] flex items-center justify-center mb-2">
-                  <ImageOff className="w-8 h-8" />
-                </div>
-                <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Product Image Coming Soon</span>
-                <span className="text-[10px] font-medium text-neutral-400">Marudhar Fashion Point</span>
-              </div>
-            ) : (
-              <img
-                src={displayImageSrc}
-                alt={product.name}
-                onError={() => setImageError(true)}
-                className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                referrerPolicy="no-referrer"
-              />
-            )}
+          {(() => {
+            const activeVarWithImages = product?.variants?.find(
+              (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+            );
+            const imageLabels = (activeVarWithImages as any)?.imageLabels || {};
+            const activeLabel = imageLabels[rawImageSrc] || '';
 
-            {product.discountPercent > 0 && (
-              <span className="absolute top-4 left-4 bg-red-600 text-white font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-lg">
-                SAVE {product.discountPercent}%
-              </span>
-            )}
-          </div>
+            return (
+              <div 
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                className="relative aspect-square w-full rounded-3xl overflow-hidden bg-neutral-100 border border-neutral-200/80 shadow-md flex items-center justify-center group cursor-zoom-in"
+              >
+                {(!rawImageSrc || imageError) ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-50">
+                    <div className="w-16 h-16 rounded-2xl bg-[#0B8F63]/10 text-[#0B8F63] flex items-center justify-center mb-2">
+                      <ImageOff className="w-8 h-8" />
+                    </div>
+                    <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Product Image Coming Soon</span>
+                    <span className="text-[10px] font-medium text-neutral-400">Marudhar Fashion Point</span>
+                  </div>
+                ) : (
+                  <img
+                    src={displayImageSrc}
+                    alt={product.name}
+                    onError={() => setImageError(true)}
+                    className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105 animate-in fade-in duration-300"
+                    referrerPolicy="no-referrer"
+                    onClick={() => setIsFullscreenOpen(true)}
+                  />
+                )}
+
+                {/* Perspective Tag Label */}
+                {activeLabel && (
+                  <span className="absolute top-4 right-4 bg-emerald-600 text-white font-extrabold text-[9px] uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md z-10">
+                    {activeLabel}
+                  </span>
+                )}
+
+                {/* Slide Counter */}
+                {displayImages.length > 1 && (
+                  <span className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-xs text-white font-mono font-bold text-[10px] px-2.5 py-1 rounded-lg z-10 select-none">
+                    {activeImageIndex + 1} / {displayImages.length}
+                  </span>
+                )}
+
+                {/* Zoom Trigger Button */}
+                {!(!rawImageSrc || imageError) && (
+                  <button
+                    onClick={() => setIsFullscreenOpen(true)}
+                    className="absolute bottom-4 left-4 bg-white/90 hover:bg-white text-neutral-800 p-2 rounded-lg shadow-sm z-10 transition-colors"
+                    title="Full Screen Gallery"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                    </svg>
+                  </button>
+                )}
+
+                {displayDiscountPercent > 0 && (
+                  <span className="absolute top-4 left-4 bg-red-600 text-white font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-lg">
+                    SAVE {displayDiscountPercent}%
+                  </span>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Thumbnails */}
-          {product.images.length > 1 && (
+          {displayImages.length > 1 && (
             <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
-              {product.images.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveImageIndex(idx)}
-                  className={`w-20 h-20 rounded-2xl overflow-hidden border-2 shrink-0 transition-all ${
-                    activeImageIndex === idx
-                      ? 'border-[#0B8F63] ring-2 ring-[#0B8F63]/20 scale-105 shadow-md'
-                      : 'border-white opacity-70 hover:opacity-100'
-                  }`}
-                >
-                  <img src={img} alt="Thumb" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                </button>
-              ))}
+              {displayImages.map((img, idx) => {
+                const activeVarWithImages = product?.variants?.find(
+                  (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+                );
+                const imageLabels = (activeVarWithImages as any)?.imageLabels || {};
+                const currentLabel = imageLabels[img] || '';
+
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`w-20 h-20 rounded-2xl overflow-hidden border-2 shrink-0 transition-all relative ${
+                      activeImageIndex === idx
+                        ? 'border-[#0B8F63] ring-2 ring-[#0B8F63]/20 scale-105 shadow-md'
+                        : 'border-neutral-200/80 opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} alt="Thumb" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    {currentLabel && (
+                      <span className="absolute top-1 left-1 bg-black/75 text-white font-extrabold text-[7px] uppercase px-1 rounded-sm">
+                        {currentLabel}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -377,8 +564,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <span className="bg-emerald-50 text-emerald-900 font-mono font-extrabold text-xs px-3 py-1 rounded-xl border border-emerald-200 flex items-center gap-1.5">
                 <span>Product ID / SKU:</span>
-                <span className="text-[#0B8F63]">{getProductSKU(product)}</span>
+                <span className="text-[#0B8F63]">{activeVariant && activeVariant.sku ? activeVariant.sku : getProductSKU(product)}</span>
               </span>
+
+              {activeVariant && activeVariant.barcode && (
+                <span className="bg-blue-50 text-blue-900 font-mono font-extrabold text-xs px-3 py-1 rounded-xl border border-blue-200 flex items-center gap-1.5">
+                  <span>Barcode:</span>
+                  <span className="text-blue-700">{activeVariant.barcode}</span>
+                </span>
+              )}
 
               {/* Permanent Share Link Copy Button */}
               <button
@@ -423,16 +617,16 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200/80 space-y-1">
             <div className="flex items-baseline gap-3">
               <span className="font-serif-heading font-extrabold text-3xl sm:text-4xl text-neutral-900">
-                ₹{product.price.toLocaleString('en-IN')}
+                ₹{displayPrice.toLocaleString('en-IN')}
               </span>
-              {product.originalPrice > product.price && (
+              {displayOriginalPrice > displayPrice && (
                 <span className="text-lg text-neutral-400 line-through">
-                  ₹{product.originalPrice.toLocaleString('en-IN')}
+                  ₹{displayOriginalPrice.toLocaleString('en-IN')}
                 </span>
               )}
-              {product.discountPercent > 0 && (
+              {displayDiscountPercent > 0 && (
                 <span className="text-xs font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-lg">
-                  {product.discountPercent}% OFF
+                  {displayDiscountPercent}% OFF
                 </span>
               )}
             </div>
@@ -457,13 +651,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           )}
 
           {/* Color Selection */}
-          {product.colors.length > 0 && (
+          {availableColors.length > 0 && (
             <div className="space-y-2">
               <label className="text-xs font-bold text-neutral-800 uppercase tracking-wider block">
                 Select Colour: <span className="text-[#0B8F63] font-extrabold">{selectedColor}</span>
               </label>
               <div className="flex items-center gap-3">
-                {product.colors.map((c, idx) => (
+                {availableColors.map((c, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedColor(c.name)}
@@ -561,14 +755,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <Truck className="w-4 h-4 text-emerald-400 shrink-0" />
                 <div>
                   <span className="font-extrabold text-emerald-300 block">
-                    {product.price >= (paymentSettings.freeShippingMinAmount || 999)
+                    {displayPrice >= (paymentSettings.freeShippingMinAmount || 999)
                       ? '🚚 FREE DELIVERY'
                       : `🚚 ₹${paymentSettings.flatShippingRate || 80} Delivery`}
                   </span>
                   <span className="text-[10px] text-neutral-300">
-                    {product.price >= (paymentSettings.freeShippingMinAmount || 999)
+                    {displayPrice >= (paymentSettings.freeShippingMinAmount || 999)
                       ? 'Eligible for Free Standard Delivery'
-                      : `Add ₹${((paymentSettings.freeShippingMinAmount || 999) - product.price).toLocaleString()} for Free Delivery`}
+                      : `Add ₹${((paymentSettings.freeShippingMinAmount || 999) - displayPrice).toLocaleString()} for Free Delivery`}
                   </span>
                 </div>
               </div>
@@ -712,6 +906,111 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Fullscreen Image Preview / Zoom Modal */}
+      {isFullscreenOpen && displayImages.length > 0 && (
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col">
+          {/* Header Controls */}
+          <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent absolute top-0 w-full z-10">
+            <span className="text-white/80 font-mono font-bold text-sm">
+              {activeImageIndex + 1} / {displayImages.length}
+            </span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setZoomScale(prev => Math.min(prev + 0.5, 3))}
+                className="bg-white/10 hover:bg-white/20 p-2 rounded-full text-white transition-colors"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setZoomScale(prev => Math.max(prev - 0.5, 1))}
+                className="bg-white/10 hover:bg-white/20 p-2 rounded-full text-white transition-colors"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => {
+                  setIsFullscreenOpen(false);
+                  setZoomScale(1);
+                }}
+                className="bg-white/10 hover:bg-white/20 p-2 rounded-full text-white transition-colors ml-2"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Zoomable Area */}
+          <div 
+            className="flex-1 flex items-center justify-center overflow-auto relative touch-pan-x touch-pan-y"
+            onClick={() => {
+              if (zoomScale > 1) setZoomScale(1);
+            }}
+          >
+            <div 
+              className="relative transition-transform duration-200 ease-out cursor-zoom-out flex items-center justify-center min-h-full min-w-full"
+              style={{ transform: `scale(${zoomScale})` }}
+            >
+              <img
+                src={displayImages[activeImageIndex]}
+                alt="Fullscreen Preview"
+                className="max-h-screen max-w-full object-contain pointer-events-none"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </div>
+
+          {/* Prev/Next Navigation (Desktop) */}
+          {displayImages.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveImageIndex(prev => prev > 0 ? prev - 1 : displayImages.length - 1);
+                  setZoomScale(1);
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-white/20 text-white rounded-full hidden md:block transition-colors"
+              >
+                <ChevronLeft className="w-8 h-8" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveImageIndex(prev => prev < displayImages.length - 1 ? prev + 1 : 0);
+                  setZoomScale(1);
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-white/20 text-white rounded-full hidden md:block transition-colors"
+              >
+                <ChevronRight className="w-8 h-8" />
+              </button>
+            </>
+          )}
+
+          {/* Thumbnails Footer */}
+          {displayImages.length > 1 && (
+            <div className="bg-black/80 p-4 overflow-x-auto flex items-center justify-center gap-3 w-full shrink-0">
+              {displayImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setActiveImageIndex(idx);
+                    setZoomScale(1);
+                  }}
+                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
+                    activeImageIndex === idx
+                      ? 'border-[#0B8F63] ring-2 ring-[#0B8F63]/50 scale-110 opacity-100 z-10'
+                      : 'border-white/20 opacity-40 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt="Thumb" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

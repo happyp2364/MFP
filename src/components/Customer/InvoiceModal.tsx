@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Printer, Download, CheckCircle2 } from 'lucide-react';
 import { CustomerOrder, StoreInfo } from '../../types';
+import { getProductPrice } from '../../utils/variantUtils';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -136,20 +137,23 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200 text-neutral-700">
-              {order.items.map((item, idx) => (
-                <tr key={idx} className="hover:bg-neutral-50">
-                  <td className="p-2.5 text-neutral-400 font-mono">{idx + 1}</td>
-                  <td className="p-2.5 font-medium text-neutral-900">{item.product.name}</td>
-                  <td className="p-2.5 text-neutral-600">
-                    Size: {item.selectedSize} | Color: {item.selectedColor}
-                  </td>
-                  <td className="p-2.5 text-center font-bold">{item.quantity}</td>
-                  <td className="p-2.5 text-right font-mono">₹{item.product.price.toLocaleString()}</td>
-                  <td className="p-2.5 text-right font-mono font-bold text-neutral-900">
-                    ₹{(item.product.price * item.quantity).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
+              {order.items.map((item, idx) => {
+                const itemPrice = getProductPrice(item.product, item.selectedSize, item.selectedColor);
+                return (
+                  <tr key={idx} className="hover:bg-neutral-50">
+                    <td className="p-2.5 text-neutral-400 font-mono">{idx + 1}</td>
+                    <td className="p-2.5 font-medium text-neutral-900">{item.product.name}</td>
+                    <td className="p-2.5 text-neutral-600">
+                      Size: {item.selectedSize} | Color: {item.selectedColor}
+                    </td>
+                    <td className="p-2.5 text-center font-bold">{item.quantity}</td>
+                    <td className="p-2.5 text-right font-mono">₹{itemPrice.toLocaleString()}</td>
+                    <td className="p-2.5 text-right font-mono font-bold text-neutral-900">
+                      ₹{(itemPrice * item.quantity).toLocaleString()}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 

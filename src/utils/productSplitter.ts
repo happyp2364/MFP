@@ -1,4 +1,4 @@
-import { Product, SizeStock, ProductColor } from '../types';
+import { Product, SizeStock, ProductColor, ProductVariant } from '../types';
 
 export interface SplitProductData {
   metadata: {
@@ -42,6 +42,7 @@ export interface SplitProductData {
     sizes: string[];
     sizeStocks?: SizeStock[];
     colors: ProductColor[];
+    variants?: ProductVariant[];
   };
   aiMetadata: {
     id: string;
@@ -120,6 +121,7 @@ export function splitProduct(p: Product): SplitProductData {
     sizes: p.sizes || [],
     sizeStocks: p.sizeStocks || [],
     colors: p.colors || [],
+    variants: p.variants || [],
   };
 
   const aiMetadata = {
@@ -217,6 +219,7 @@ export function stitchProduct(
   const description = (aiMetadata?.description !== undefined && aiMetadata.description !== '') ? aiMetadata.description : (metadata.description || '');
   const material = (aiMetadata?.material !== undefined && aiMetadata.material !== '') ? aiMetadata.material : (metadata.material || '');
   const collectionTags = (aiMetadata?.collectionTags && aiMetadata.collectionTags.length > 0) ? aiMetadata.collectionTags : (metadata.collectionTags || []);
+  const variantsList = variants?.variants || metadata.variants || [];
 
   return {
     ...metadata,
@@ -227,5 +230,6 @@ export function stitchProduct(
     description,
     material,
     collectionTags,
+    variants: variantsList,
   };
 }

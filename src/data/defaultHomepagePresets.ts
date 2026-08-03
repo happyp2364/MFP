@@ -83,6 +83,118 @@ export const FLOATING_SNEAKER_DEFAULT_SECTION: HomepageSection = {
   },
 };
 
+export const MBH_SHOE_CAROUSEL_DEFAULT_SECTION: HomepageSection = {
+  id: 'sec_mbh_shoe_carousel_hero',
+  type: 'mbh_shoe_carousel',
+  title: 'MBH Premium Shoe Carousel Showcase',
+  subtitle: '3D floating footwear showcase with glassmorphism cards, interactive slides, and live product controls',
+  enabled: true,
+  visibleDevices: ['desktop', 'tablet', 'mobile'],
+  styling: {
+    bgColor: '#FAF8F5',
+    bgGradient: 'from-[#FAF8F5] via-[#F4EFEA] to-[#EAE4DC]',
+    textColor: '#1C1917',
+    accentColor: '#D97706',
+    paddingTop: 36,
+    paddingBottom: 36,
+    borderRadius: 24,
+    shadow: '2xl',
+    animation: 'fade',
+    fullWidth: true,
+  },
+  contentData: {
+    // Brand Background Display Typography
+    backgroundWord: 'MBH',
+    bgWordOpacity: 0.08,
+    bgWordColor: '#1C1917',
+
+    // Section Header Tag
+    headerBadge: '✨ 2026 MBH ROYAL FOOTWEAR SHOWCASE',
+    heroTitle: 'MBH 3D LUXURY FOOTWEAR COLLECTION',
+
+    // Theme Mode: 'cream_white' | 'obsidian_dark' | 'royal_gold' | 'soft_grey'
+    themeMode: 'cream_white',
+
+    // Carousel Controls
+    autoPlay: true,
+    autoPlayInterval: 5,
+    loop: true,
+    transitionSpeed: 500,
+
+    // Animation Toggles
+    enableFloating: true,
+    enableSoftRotation: true,
+    enableHoverZoom: true,
+    enableGlassReflection: true,
+    enableSoftGlow: true,
+    enableGlassShine: true,
+
+    // Slides List
+    slides: [
+      {
+        id: 'slide_mbh_01',
+        productName: 'MBH Aura Glide 3D Flyknit',
+        collection: '2026 LUXURY RUNNER',
+        price: 2999,
+        originalPrice: 5999,
+        discountText: '50% OFF',
+        description: 'Engineered with responsive cloud cushioning, ultra-breathable flyknit weave, and signature brass heel counter accents.',
+        image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80',
+        buyNowText: '⚡ BUY NOW',
+        buyNowLink: '/products',
+        viewDetailsText: 'VIEW DETAILS',
+        showWishlist: true,
+        productId: 'mfp-m01',
+        floatingBadges: [
+          { title: 'Ultralight Flyknit', value: '280g' },
+          { title: 'Glass Air Cushion', value: 'Cloud Feel' },
+          { title: 'Open Box Guarantee', value: 'Try & Pay' },
+        ],
+      },
+      {
+        id: 'slide_mbh_02',
+        productName: 'MBH Royal Velvet Leather Loafer',
+        collection: 'ROYAL HERITAGE SERIES',
+        price: 3499,
+        originalPrice: 6999,
+        discountText: '50% OFF',
+        description: 'Handcrafted Rajasthan velvet leather loafer featuring ergonomic memory foam insoles and anti-skid grip sole.',
+        image: 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&w=1200&q=80',
+        buyNowText: '⚡ BUY NOW',
+        buyNowLink: '/products',
+        viewDetailsText: 'VIEW DETAILS',
+        showWishlist: true,
+        productId: 'mfp-m02',
+        floatingBadges: [
+          { title: 'Genuine Velvet Leather', value: 'Handmade' },
+          { title: 'Memory Foam Sole', value: 'Orthotic' },
+          { title: 'Pipar Workshop', value: 'Authentic' },
+        ],
+      },
+      {
+        id: 'slide_mbh_03',
+        productName: 'MBH Phantom Street Sneaker',
+        collection: 'URBAN SPEED EDITION',
+        price: 2499,
+        originalPrice: 4999,
+        discountText: '50% OFF',
+        description: 'Sleek dark obsidian streetwear sneaker with high-rebound TPR outer sole and all-day shock absorption.',
+        image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=1200&q=80',
+        buyNowText: '⚡ BUY NOW',
+        buyNowLink: '/products',
+        viewDetailsText: 'VIEW DETAILS',
+        showWishlist: true,
+        productId: 'mfp-m03',
+        floatingBadges: [
+          { title: 'High Rebound TPR', value: 'Shock Proof' },
+          { title: 'Breathable Upper', value: 'All Day' },
+          { title: 'Express Delivery', value: '24 Hrs' },
+        ],
+      },
+    ],
+  },
+};
+
 export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
   {
     id: 'sec_announcements',
@@ -469,6 +581,22 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
 
 export const HOMEPAGE_PRESETS: HomepagePreset[] = [
   {
+    id: 'preset_mbh_shoe_carousel',
+    name: '👟 MBH Premium Shoe Carousel',
+    description: '3D floating shoe showcase with smooth carousel slides, glassmorphism cards, customizable badges, and MBH luxury branding.',
+    previewColor: '#FAF8F5',
+    badge: 'NEW 3D HERO',
+    config: {
+      name: 'MBH Premium Shoe Carousel Showcase',
+      presetName: 'MBH Premium Shoe Carousel',
+      themeMode: 'glassmorphic',
+      sections: [
+        MBH_SHOE_CAROUSEL_DEFAULT_SECTION,
+        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner' && s.type !== 'floating_sneaker'),
+      ],
+    },
+  },
+  {
     id: 'preset_premium_marketplace_elite',
     name: '👑 Premium Marketplace Elite',
     description: 'Original luxury marketplace storefront inspired by modern international footwear UX. Clean off-white canvas, large whitespace, rounded cards, footwear category strip, collapsible filters, and luxury product cards.',
@@ -664,6 +792,14 @@ export const SECTION_CATALOG_ITEMS: {
   icon: string;
   defaultSection: HomepageSection;
 }[] = [
+  {
+    type: 'mbh_shoe_carousel',
+    title: 'MBH Premium Shoe Carousel',
+    category: 'Banners & Media',
+    description: '3D floating shoe showcase with smooth carousel slides, glassmorphic cards, customizable badges, and MBH luxury branding.',
+    icon: '👟',
+    defaultSection: MBH_SHOE_CAROUSEL_DEFAULT_SECTION,
+  },
   {
     type: 'floating_sneaker',
     title: 'Floating Sneaker Glass Hero',

@@ -2,10 +2,30 @@ import { HomepagePreset, HomepageSection } from '../types';
 import {
   DEFAULT_HOMEPAGE_SECTIONS,
   FLOATING_SNEAKER_DEFAULT_SECTION,
+  MBH_SHOE_CAROUSEL_DEFAULT_SECTION,
 } from './defaultHomepagePresets';
 
 export const MARKETPLACE_PRESETS: HomepagePreset[] = [
-  // 0. Premium Marketplace Elite
+  // 0. MBH Premium Shoe Carousel
+  {
+    id: 'mkt_mbh_shoe_carousel',
+    name: '👟 MBH Premium Shoe Carousel',
+    description: 'Ultra-luxurious 3D floating shoe carousel showcase with glassmorphic cards, customizable badges, interactive slides, and original MBH branding.',
+    previewColor: '#faf8f5',
+    badge: 'NEW 3D HERO',
+    category: 'Sneakers',
+    tags: ['Sneakers', '3D Showcase', 'Glassmorphism', 'MBH Luxury', 'Carousel'],
+    config: {
+      name: 'MBH Premium Shoe Carousel Showcase',
+      presetName: 'MBH Premium Shoe Carousel',
+      themeMode: 'glassmorphic',
+      sections: [
+        MBH_SHOE_CAROUSEL_DEFAULT_SECTION,
+        ...DEFAULT_HOMEPAGE_SECTIONS.filter((s) => s.type !== 'hero_banner' && s.type !== 'floating_sneaker' && s.type !== 'mbh_shoe_carousel'),
+      ],
+    },
+  },
+  // 1. Premium Marketplace Elite
   {
     id: 'mkt_premium_marketplace_elite',
     name: '👑 Premium Marketplace Elite',

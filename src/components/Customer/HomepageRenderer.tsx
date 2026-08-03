@@ -12,6 +12,9 @@ import {
   PhoneCall,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
   Tag,
   Gift,
   Zap,
@@ -21,6 +24,8 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { HomepageConfig, HomepageSection, Product } from '../../types';
 import { ProductCard } from '../Products/ProductCard';
+import { TrendingShoesSection } from '../Collections/TrendingShoesSection';
+import { PricePointCollectionSection } from '../Collections/PricePointCollectionSection';
 
 interface HomepageRendererProps {
   previewConfig?: HomepageConfig;
@@ -175,6 +180,24 @@ const SectionItem: React.FC<SectionItemProps> = ({
   const containerClass = styling.fullWidth ? 'w-full' : 'max-w-7xl mx-auto px-4 sm:px-6';
 
   switch (section.type) {
+    case 'mbh_shoe_carousel':
+      return (
+        <MBHShoeCarouselHeroSection
+          section={section}
+          products={products}
+          onSelectProduct={onSelectProduct}
+          onNavigateCategory={onNavigateCategory}
+        />
+      );
+
+    case 'trending_shoes':
+    case 'trending_shoes_collection':
+      return <TrendingShoesSection onQuickView={onSelectProduct} />;
+
+    case 'price_point_699':
+    case 'price_699_collection':
+      return <PricePointCollectionSection onQuickView={onSelectProduct} />;
+
     case 'floating_sneaker':
       return <FloatingSneakerHeroSection section={section} onNavigateCategory={onNavigateCategory} />;
 
@@ -859,6 +882,419 @@ const FloatingSneakerHeroSection: React.FC<{
 
           {floatingBadges[2] && (
             <div className="hidden sm:block absolute top-8 right-8 bg-neutral-900/80 backdrop-blur-md border border-white/20 p-2.5 px-3.5 rounded-2xl shadow-xl text-white">
+              <span className="block text-[9px] font-bold text-amber-400 uppercase tracking-wider">
+                {floatingBadges[2].title}
+              </span>
+              <span className="block text-xs font-bold">{floatingBadges[2].value}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MBHShoeCarouselHeroSection: React.FC<{
+  section: HomepageSection;
+  products?: Product[];
+  onSelectProduct?: (p: Product) => void;
+  onNavigateCategory?: (cat: string) => void;
+}> = ({ section, products = [], onSelectProduct, onNavigateCategory }) => {
+  const data = section.contentData || {};
+  const styling = section.styling || {};
+  const { showToast } = useStore();
+
+  const slides = Array.isArray(data.slides) && data.slides.length > 0
+    ? data.slides
+    : [
+        {
+          id: 'slide_1',
+          productName: 'MBH Aura Glide 3D Flyknit',
+          collection: '2026 LUXURY RUNNER',
+          price: 2999,
+          originalPrice: 5999,
+          discountText: '50% OFF',
+          description: 'Engineered with responsive cloud cushioning, ultra-breathable flyknit weave, and signature brass heel counter accents.',
+          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80',
+          buyNowText: '⚡ BUY NOW',
+          buyNowLink: '/products',
+          viewDetailsText: 'VIEW DETAILS',
+          showWishlist: true,
+          floatingBadges: [
+            { title: 'Ultralight Flyknit', value: '280g' },
+            { title: 'Glass Air Cushion', value: 'Cloud Feel' },
+            { title: 'Open Box Guarantee', value: 'Try & Pay' },
+          ],
+        },
+      ];
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState<Record<number, boolean>>({});
+
+  // Touch Gesture State
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
+  const activeSlide = slides[currentIndex] || slides[0];
+
+  // AutoPlay Effect
+  const autoPlay = data.autoPlay ?? true;
+  const autoPlayInterval = (data.autoPlayInterval || 5) * 1000;
+
+  useEffect(() => {
+    if (!autoPlay || isHovered || slides.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % slides.length);
+    }, autoPlayInterval);
+    return () => clearInterval(timer);
+  }, [autoPlay, autoPlayInterval, isHovered, slides.length]);
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % slides.length);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+    const distance = touchStartX - touchEndX;
+    const minSwipeDistance = 50;
+    if (distance > minSwipeDistance) {
+      handleNext();
+    } else if (distance < -minSwipeDistance) {
+      handlePrev();
+    }
+    setTouchStartX(null);
+    setTouchEndX(null);
+  };
+
+  const handleToggleWishlist = (idx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsWishlisted((prev) => {
+      const next = !prev[idx];
+      showToast(
+        next ? `Added "${activeSlide.productName}" to Wishlist` : `Removed from Wishlist`,
+        'success'
+      );
+      return { ...prev, [idx]: next };
+    });
+  };
+
+  const handleBuyNow = () => {
+    const linked = products.find(
+      (p) =>
+        p.id === activeSlide.productId ||
+        p.name.toLowerCase() === activeSlide.productName.toLowerCase()
+    );
+    if (linked && onSelectProduct) {
+      onSelectProduct(linked);
+    } else if (onNavigateCategory) {
+      onNavigateCategory('ALL');
+    }
+  };
+
+  const handleViewDetails = () => {
+    const linked = products.find(
+      (p) =>
+        p.id === activeSlide.productId ||
+        p.name.toLowerCase() === activeSlide.productName.toLowerCase()
+    );
+    if (linked && onSelectProduct) {
+      onSelectProduct(linked);
+    } else if (onNavigateCategory) {
+      onNavigateCategory('ALL');
+    }
+  };
+
+  // Animation Toggles
+  const enableFloating = data.enableFloating ?? true;
+  const enableSoftRotation = data.enableSoftRotation ?? true;
+  const enableHoverZoom = data.enableHoverZoom ?? true;
+  const enableGlassReflection = data.enableGlassReflection ?? true;
+  const enableSoftGlow = data.enableSoftGlow ?? true;
+
+  const bgWord = (data.backgroundWord || 'MBH').toUpperCase();
+  const themeMode = data.themeMode || 'cream_white';
+
+  const isDark = themeMode === 'obsidian_dark';
+  const isGold = themeMode === 'royal_gold';
+
+  const containerBg = isDark
+    ? 'bg-neutral-950 text-white'
+    : isGold
+    ? 'bg-gradient-to-br from-amber-950 via-neutral-900 to-amber-900 text-white'
+    : 'bg-[#FAF8F5] text-neutral-900';
+
+  const glassCardBg =
+    isDark || isGold
+      ? 'bg-neutral-900/60 backdrop-blur-xl border-white/10 text-white'
+      : 'bg-white/60 backdrop-blur-xl border-black/10 text-neutral-900';
+
+  const floatingBadges = activeSlide.floatingBadges || [
+    { title: 'Ultralight Cushioning', value: '280g' },
+    { title: 'Air Flow Soles', value: '98% Breathable' },
+    { title: 'Open Box Guarantee', value: 'Try & Pay' },
+  ];
+
+  return (
+    <div
+      className={`relative w-full rounded-3xl overflow-hidden my-4 shadow-2xl transition-all border border-black/10 select-none ${containerBg}`}
+      style={{
+        backgroundColor: styling.bgColor || undefined,
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Big Display Background Typography Word */}
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none z-0">
+        <span
+          className={`font-black text-[22vw] lg:text-[240px] tracking-widest uppercase leading-none select-none transition-transform duration-700 ${
+            isDark || isGold ? 'opacity-[0.06] text-amber-300' : 'opacity-[0.07] text-neutral-900'
+          }`}
+          style={{ transform: isHovered ? 'scale(1.06)' : 'scale(1)' }}
+        >
+          {bgWord}
+        </span>
+      </div>
+
+      {/* Top Glassmorphic Navigation Bar */}
+      <div
+        className={`relative z-20 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 border-b ${
+          isDark || isGold ? 'border-white/10 bg-black/40' : 'border-black/5 bg-white/40'
+        } backdrop-blur-md`}
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="w-8 h-8 rounded-xl bg-amber-500 text-black font-black text-xs flex items-center justify-center shadow-md">
+            MBH
+          </span>
+          <span className="text-xs font-black tracking-widest uppercase">
+            MARUDHAR FASHION POINT
+          </span>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-500">
+          <Sparkles className="w-4 h-4" />
+          <span>{data.headerBadge || '3D LUXURY SHOE SHOWCASE'}</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="px-3 py-1 bg-amber-400 text-neutral-950 font-black text-[10px] rounded-full uppercase tracking-wider shadow-sm">
+            {activeSlide.discountText || '50% OFF'}
+          </span>
+        </div>
+      </div>
+
+      {/* Main Showcase Grid */}
+      <div className="relative z-10 px-6 sm:px-12 py-8 lg:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-[520px]">
+        {/* LEFT COLUMN: Product Details & Controls */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[11px] font-extrabold rounded-full uppercase tracking-widest">
+            <Sparkles className="w-3.5 h-3.5" />
+            {activeSlide.collection || '2026 MBH FOOTWEAR'}
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-none uppercase">
+              {activeSlide.productName}
+            </h1>
+            <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed font-medium max-w-md">
+              {activeSlide.description}
+            </p>
+          </div>
+
+          {/* Pricing Block */}
+          <div className="flex items-baseline gap-3 pt-1">
+            <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+              ₹{activeSlide.price?.toLocaleString('en-IN')}
+            </span>
+            {activeSlide.originalPrice && (
+              <span className="text-sm font-bold text-neutral-400 line-through">
+                ₹{activeSlide.originalPrice?.toLocaleString('en-IN')}
+              </span>
+            )}
+            {activeSlide.originalPrice && activeSlide.price && (
+              <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-extrabold rounded-md border border-emerald-500/20">
+                SAVE {Math.round(((activeSlide.originalPrice - activeSlide.price) / activeSlide.originalPrice) * 100)}%
+              </span>
+            )}
+          </div>
+
+          {/* CTA & Actions Bar */}
+          <div className="pt-2 flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleBuyNow}
+              className="px-7 py-3.5 bg-amber-500 text-neutral-950 hover:bg-amber-400 text-xs sm:text-sm font-black uppercase tracking-wider rounded-2xl shadow-xl transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>{activeSlide.buyNowText || '⚡ BUY NOW'}</span>
+            </button>
+
+            <button
+              onClick={handleViewDetails}
+              className={`px-5 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-wider rounded-2xl border transition-all flex items-center gap-2 ${
+                isDark || isGold
+                  ? 'border-white/20 text-white hover:bg-white/10'
+                  : 'border-neutral-900/20 text-neutral-900 hover:bg-neutral-900/5'
+              }`}
+            >
+              <Eye className="w-4 h-4" />
+              <span>{activeSlide.viewDetailsText || 'VIEW DETAILS'}</span>
+            </button>
+
+            {activeSlide.showWishlist !== false && (
+              <button
+                onClick={(e) => handleToggleWishlist(currentIndex, e)}
+                className={`p-3.5 rounded-2xl border transition-all ${
+                  isWishlisted[currentIndex]
+                    ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-105'
+                    : isDark || isGold
+                    ? 'border-white/20 text-white hover:bg-white/10'
+                    : 'border-black/10 text-neutral-800 hover:bg-black/5'
+                }`}
+                title="Save to Wishlist"
+              >
+                <Heart className={`w-4 h-4 ${isWishlisted[currentIndex] ? 'fill-current' : ''}`} />
+              </button>
+            )}
+          </div>
+
+          {/* Carousel Slide Thumbnails */}
+          {slides.length > 1 && (
+            <div className="pt-4 border-t border-black/5 dark:border-white/10 space-y-2">
+              <span className="text-[10px] font-extrabold text-neutral-500 uppercase tracking-widest block">
+                CAROUSEL SHOE SLIDES ({currentIndex + 1} / {slides.length})
+              </span>
+              <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
+                {slides.map((slide: any, idx: number) => (
+                  <button
+                    key={slide.id || idx}
+                    onClick={() => setCurrentIndex(idx)}
+                    className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white shadow-xs ${
+                      currentIndex === idx
+                        ? 'border-amber-500 ring-2 ring-amber-400/50 scale-105'
+                        : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={slide.image}
+                      alt={slide.productName}
+                      className="w-full h-full object-contain p-1"
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* CENTER COLUMN: 3D Floating Shoe Visual */}
+        <div className="lg:col-span-7 relative flex flex-col items-center justify-center min-h-[380px] sm:min-h-[440px]">
+          {/* Soft Radial Ambient Glow */}
+          {enableSoftGlow && (
+            <div className="absolute w-[280px] sm:w-[380px] h-[280px] sm:h-[380px] bg-amber-500/20 rounded-full blur-3xl -z-10 animate-pulse pointer-events-none" />
+          )}
+
+          {/* Carousel Navigation Arrows */}
+          {slides.length > 1 && (
+            <>
+              <button
+                onClick={handlePrev}
+                className="absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/70 dark:bg-black/70 backdrop-blur-md border border-white/40 shadow-xl hover:scale-110 active:scale-95 transition-all text-neutral-900 dark:text-white"
+                aria-label="Previous Slide"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleNext}
+                className="absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/70 dark:bg-black/70 backdrop-blur-md border border-white/40 shadow-xl hover:scale-110 active:scale-95 transition-all text-neutral-900 dark:text-white"
+                aria-label="Next Slide"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
+
+          {/* Floating Shoe Image Container */}
+          <div
+            className={`relative transition-all duration-700 ease-out cursor-pointer ${
+              enableFloating ? 'animate-bounce' : ''
+            }`}
+            style={{
+              transform: `rotate(${enableSoftRotation ? -10 : 0}deg) scale(${
+                isHovered && enableHoverZoom ? 1.08 : 1.0
+              })`,
+            }}
+            onClick={handleViewDetails}
+          >
+            <img
+              key={activeSlide.image}
+              src={activeSlide.image}
+              alt={activeSlide.productName}
+              className="max-h-[290px] sm:max-h-[400px] w-auto object-contain filter drop-shadow-2xl transition-all duration-500"
+              loading="lazy"
+            />
+          </div>
+
+          {/* Floor Soft Shadow */}
+          <div
+            className="w-48 sm:w-64 h-5 bg-black/30 rounded-[100%] blur-md mt-4 transition-all duration-500 pointer-events-none"
+            style={{
+              transform: isHovered ? 'scale(0.85)' : 'scale(1)',
+              opacity: isHovered ? 0.3 : 0.6,
+            }}
+          />
+
+          {/* Floor Glass Reflection */}
+          {enableGlassReflection && (
+            <div className="w-64 sm:w-80 h-12 overflow-hidden opacity-15 pointer-events-none -mt-3 blur-[1px]">
+              <img
+                src={activeSlide.image}
+                alt="Reflection"
+                className="w-full object-contain transform scale-y-[-1] rotate-180"
+              />
+            </div>
+          )}
+
+          {/* Glassmorphic Floating Badges */}
+          {floatingBadges[0] && (
+            <div className={`absolute top-2 left-2 sm:left-6 ${glassCardBg} p-3 rounded-2xl shadow-xl space-y-0.5 border`}>
+              <span className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                {floatingBadges[0].title}
+              </span>
+              <span className="block text-xs font-black text-amber-500">
+                {floatingBadges[0].value}
+              </span>
+            </div>
+          )}
+
+          {floatingBadges[1] && (
+            <div className={`absolute bottom-12 right-2 sm:right-6 ${glassCardBg} p-3 rounded-2xl shadow-xl space-y-0.5 border`}>
+              <span className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                {floatingBadges[1].title}
+              </span>
+              <span className="block text-xs font-black text-amber-500">
+                {floatingBadges[1].value}
+              </span>
+            </div>
+          )}
+
+          {floatingBadges[2] && (
+            <div className="hidden sm:block absolute top-6 right-8 bg-neutral-900/80 backdrop-blur-md border border-white/20 p-2.5 px-3.5 rounded-2xl shadow-xl text-white">
               <span className="block text-[9px] font-bold text-amber-400 uppercase tracking-wider">
                 {floatingBadges[2].title}
               </span>

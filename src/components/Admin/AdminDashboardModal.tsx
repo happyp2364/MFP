@@ -52,6 +52,7 @@ import {
   MessageSquare,
   PartyPopper,
   Heart,
+  Flame,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { auth } from '../../lib/firebase';
@@ -82,6 +83,10 @@ import { HomepageBuilderTab } from './HomepageBuilder/HomepageBuilderTab';
 import { AdminErrorBoundary } from './AdminErrorBoundary';
 import { AboutUsSettingsView } from './AboutUsSettingsView';
 import { ProductFeedSettingsView } from './ProductFeedSettingsView';
+import { ProductCardDesignerSettingsView } from './ProductCardDesignerSettingsView';
+import { TrendingShoesSettingsView } from './TrendingShoesSettingsView';
+import { PricePointSettingsView } from './PricePointSettingsView';
+import { ButtonThemeSettingsView } from './ButtonThemeSettingsView';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -91,7 +96,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'button_theme';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -605,6 +610,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('product_card_designer')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'product_card_designer'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-emerald-500" />
+              <span>Product Card Designer</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('product_feed_settings')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'product_feed_settings'
@@ -614,6 +631,42 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             >
               <Sliders className="w-4 h-4 text-emerald-600" />
               <span>Product Feed Settings</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('trending_shoes')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'trending_shoes'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Flame className="w-4 h-4 text-[#0B8F63]" />
+              <span>🔥 Trending Shoes Manager</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('price_point_699')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'price_point_699'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Zap className="w-4 h-4 text-emerald-500" />
+              <span>🔥 ₹699 Collection Manager</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('button_theme')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'button_theme'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>💧 Global Liquid Button System</span>
             </button>
 
             <button
@@ -860,6 +913,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: CATEGORIES & HIGHLIGHTS ----------------- */}
             {activeTab === 'categories' && <CategoriesSettingsView />}
+
+            {/* ----------------- TAB: PRODUCT CARD DESIGNER ----------------- */}
+            {activeTab === 'product_card_designer' && <ProductCardDesignerSettingsView />}
 
             {/* ----------------- TAB: PRODUCT FEED SETTINGS ----------------- */}
             {activeTab === 'product_feed_settings' && <ProductFeedSettingsView />}
@@ -1358,6 +1414,27 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   setActiveTab('settings');
                 }}
               />
+            )}
+
+            {/* TAB: TRENDING SHOES COLLECTION MANAGER */}
+            {activeTab === 'trending_shoes' && (
+              <AdminErrorBoundary fallbackTitle="Trending Shoes Manager Error">
+                <TrendingShoesSettingsView />
+              </AdminErrorBoundary>
+            )}
+
+            {/* TAB: PRICE POINT 699 COLLECTION MANAGER */}
+            {activeTab === 'price_point_699' && (
+              <AdminErrorBoundary fallbackTitle="Price Point Collection Manager Error">
+                <PricePointSettingsView />
+              </AdminErrorBoundary>
+            )}
+
+            {/* TAB: GLOBAL LIQUID BUTTON SYSTEM MANAGER */}
+            {activeTab === 'button_theme' && (
+              <AdminErrorBoundary fallbackTitle="Global Liquid Button System Error">
+                <ButtonThemeSettingsView />
+              </AdminErrorBoundary>
             )}
 
             {/* TAB: AI HOMEPAGE BUILDER & STORE INFO */}

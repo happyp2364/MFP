@@ -8,6 +8,8 @@ import { CategorySection } from './components/Categories/CategorySection';
 import { ProductGrid } from './components/Products/ProductGrid';
 import { ProductCarousel } from './components/Carousels/ProductCarousel';
 import { TrendingCollections } from './components/Collections/TrendingCollections';
+import { TrendingShoesSection } from './components/Collections/TrendingShoesSection';
+import { PricePointCollectionSection } from './components/Collections/PricePointCollectionSection';
 import { ReviewsSection } from './components/Reviews/ReviewsSection';
 import { AboutSection } from './components/About/AboutSection';
 import { ContactSection } from './components/Contact/ContactSection';
@@ -623,6 +625,24 @@ function AppContent() {
               handleNavigateToSection('products');
             }, 100);
           }} />
+
+          {/* 3b. Trending Shoes Collection */}
+          <TrendingShoesSection
+            wishlistIds={wishlistIds}
+            onToggleWishlist={handleToggleWishlist}
+            onQuickView={(p) => setQuickViewProduct(p)}
+            onAddToCart={handleAddToCart}
+            onBuyNow={handleBuyNow}
+          />
+
+          {/* 3c. 🔥 ₹699 Shoe Collection Section */}
+          <PricePointCollectionSection
+            wishlistIds={wishlistIds}
+            onToggleWishlist={handleToggleWishlist}
+            onQuickView={(p) => setQuickViewProduct(p)}
+            onAddToCart={handleAddToCart}
+            onBuyNow={handleBuyNow}
+          />
 
           {/* 4. Family Category Cards */}
           <CategorySection

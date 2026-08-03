@@ -16,7 +16,10 @@ import {
   Grid,
 } from 'lucide-react';
 import { HomepageSection, HomepageSectionType } from '../../../types';
-import { FLOATING_SNEAKER_DEFAULT_SECTION } from '../../../data/defaultHomepagePresets';
+import {
+  FLOATING_SNEAKER_DEFAULT_SECTION,
+  MBH_SHOE_CAROUSEL_DEFAULT_SECTION,
+} from '../../../data/defaultHomepagePresets';
 
 interface SectionLibraryModalProps {
   isOpen: boolean;
@@ -34,6 +37,14 @@ interface SectionTemplate {
 }
 
 const SECTION_TEMPLATES: SectionTemplate[] = [
+  {
+    type: 'mbh_shoe_carousel',
+    category: 'banners',
+    title: '👟 MBH Premium Shoe Carousel',
+    description: '3D floating shoe showcase with smooth carousel slides, glassmorphic cards, customizable badges, and MBH luxury branding.',
+    icon: Sparkles,
+    defaultData: MBH_SHOE_CAROUSEL_DEFAULT_SECTION.contentData,
+  },
   {
     type: 'floating_sneaker',
     category: 'banners',

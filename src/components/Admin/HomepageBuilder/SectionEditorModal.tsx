@@ -560,6 +560,419 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                 </div>
               )}
 
+              {edited.type === 'mbh_shoe_carousel' && (
+                <div className="pt-2 space-y-4 border-t border-neutral-200">
+                  <h4 className="text-sm font-bold text-neutral-900 flex items-center gap-2 pt-2">
+                    <Sparkles className="w-4 h-4 text-amber-500" /> MBH Premium 3D Shoe Carousel Controls
+                  </h4>
+
+                  {/* Header Badge & Brand Typography Word */}
+                  <div className="p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-xl space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-amber-900 uppercase tracking-wider mb-1">
+                          Header Badge Line
+                        </label>
+                        <input
+                          type="text"
+                          value={edited.contentData?.headerBadge || '✨ 2026 MBH ROYAL FOOTWEAR SHOWCASE'}
+                          onChange={(e) =>
+                            setEdited({
+                              ...edited,
+                              contentData: { ...edited.contentData, headerBadge: e.target.value },
+                            })
+                          }
+                          className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-xs font-semibold bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-amber-900 uppercase tracking-wider mb-1">
+                          Background Typography Word
+                        </label>
+                        <input
+                          type="text"
+                          value={edited.contentData?.backgroundWord || 'MBH'}
+                          onChange={(e) =>
+                            setEdited({
+                              ...edited,
+                              contentData: { ...edited.contentData, backgroundWord: e.target.value.toUpperCase() },
+                            })
+                          }
+                          placeholder="MBH, MARUDHAR, LUXURY..."
+                          className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-xs font-mono font-bold uppercase bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {['MBH', 'MARUDHAR', 'LUXURY', 'SNEAKER', 'ROYAL', '2026', 'FOOTWEAR'].map((word) => (
+                        <button
+                          key={word}
+                          type="button"
+                          onClick={() =>
+                            setEdited({
+                              ...edited,
+                              contentData: { ...edited.contentData, backgroundWord: word },
+                            })
+                          }
+                          className={`px-2.5 py-1 text-[10px] font-bold rounded-md border transition-colors ${
+                            edited.contentData?.backgroundWord === word
+                              ? 'bg-amber-600 text-white border-amber-700'
+                              : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-100'
+                          }`}
+                        >
+                          {word}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Theme Mode & Carousel Settings */}
+                  <div className="p-3.5 bg-neutral-50 border border-neutral-200 rounded-xl space-y-3">
+                    <label className="block text-xs font-bold text-neutral-800 uppercase tracking-wider">
+                      Theme Mode & Carousel Timers
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-neutral-700 mb-1">Color Theme</label>
+                        <select
+                          value={edited.contentData?.themeMode || 'cream_white'}
+                          onChange={(e) =>
+                            setEdited({
+                              ...edited,
+                              contentData: { ...edited.contentData, themeMode: e.target.value },
+                            })
+                          }
+                          className="w-full px-3 py-1.5 border border-neutral-300 rounded-lg text-xs font-bold bg-white"
+                        >
+                          <option value="cream_white">Cream Luxury White</option>
+                          <option value="obsidian_dark">Obsidian Midnight Dark</option>
+                          <option value="royal_gold">Royal Gold Gradient</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-neutral-700 mb-1">Auto Play Interval</label>
+                        <select
+                          value={edited.contentData?.autoPlayInterval || 5}
+                          onChange={(e) =>
+                            setEdited({
+                              ...edited,
+                              contentData: { ...edited.contentData, autoPlayInterval: Number(e.target.value) },
+                            })
+                          }
+                          className="w-full px-3 py-1.5 border border-neutral-300 rounded-lg text-xs font-bold bg-white"
+                        >
+                          <option value={3}>3 Seconds</option>
+                          <option value={5}>5 Seconds</option>
+                          <option value={8}>8 Seconds</option>
+                          <option value={10}>10 Seconds</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center pt-5">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-neutral-800">
+                          <input
+                            type="checkbox"
+                            checked={edited.contentData?.autoPlay ?? true}
+                            onChange={(e) =>
+                              setEdited({
+                                ...edited,
+                                contentData: { ...edited.contentData, autoPlay: e.target.checked },
+                              })
+                            }
+                            className="w-4 h-4 text-amber-600 rounded"
+                          />
+                          <span>Enable Auto-Play</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Individual Animation Toggles */}
+                  <div className="p-3 bg-white border border-neutral-200 rounded-xl space-y-2">
+                    <label className="block text-xs font-bold text-neutral-800 uppercase tracking-wider mb-2">
+                      Individual Animation & FX Toggles
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                      {[
+                        { key: 'enableFloating', label: 'Floating Motion' },
+                        { key: 'enableSoftRotation', label: '3D Soft Rotation' },
+                        { key: 'enableHoverZoom', label: 'Hover Zoom' },
+                        { key: 'enableGlassReflection', label: 'Glass Reflection' },
+                        { key: 'enableSoftGlow', label: 'Radial Soft Glow' },
+                        { key: 'enableGlassShine', label: 'Glass Shine' },
+                      ].map((eff) => (
+                        <label key={eff.key} className="flex items-center gap-2 cursor-pointer p-2 bg-neutral-50 rounded-lg border border-neutral-200">
+                          <input
+                            type="checkbox"
+                            checked={edited.contentData?.[eff.key] ?? true}
+                            onChange={(e) =>
+                              setEdited({
+                                ...edited,
+                                contentData: { ...edited.contentData, [eff.key]: e.target.checked },
+                              })
+                            }
+                            className="w-4 h-4 text-amber-600 rounded"
+                          />
+                          <span className="font-semibold text-neutral-800">{eff.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Slides Manager */}
+                  <div className="space-y-3 pt-2 border-t border-neutral-200">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                        Carousel Shoe Slides ({edited.contentData?.slides?.length || 0})
+                      </h5>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentSlides = [...(edited.contentData?.slides || [])];
+                          const newSlide = {
+                            id: `slide_${Date.now()}`,
+                            productName: 'MBH New Luxury Shoe',
+                            collection: '2026 EDITION',
+                            price: 2999,
+                            originalPrice: 5999,
+                            discountText: '50% OFF',
+                            description: 'Handcrafted luxury shoe with ergonomic cushion sole.',
+                            image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80',
+                            buyNowText: '⚡ BUY NOW',
+                            buyNowLink: '/products',
+                            viewDetailsText: 'VIEW DETAILS',
+                            showWishlist: true,
+                            floatingBadges: [
+                              { title: 'Genuine Leather', value: '100% Original' },
+                              { title: 'Air Cushion', value: 'Comfort' },
+                              { title: 'Open Box Delivery', value: 'Inspect First' },
+                            ],
+                          };
+                          setEdited({
+                            ...edited,
+                            contentData: { ...edited.contentData, slides: [...currentSlides, newSlide] },
+                          });
+                        }}
+                        className="px-3 py-1.5 bg-amber-500 text-neutral-950 hover:bg-amber-400 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add New Shoe Slide
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {(edited.contentData?.slides || []).map((slide: any, sIdx: number) => (
+                        <div key={slide.id || sIdx} className="p-4 border border-neutral-200 rounded-xl bg-white shadow-xs space-y-3">
+                          <div className="flex items-center justify-between border-b pb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-amber-500 text-black text-xs font-black flex items-center justify-center">
+                                {sIdx + 1}
+                              </span>
+                              <span className="text-xs font-bold text-neutral-900">
+                                {slide.productName || `Slide #${sIdx + 1}`}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              {sIdx > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const list = [...edited.contentData.slides];
+                                    const temp = list[sIdx];
+                                    list[sIdx] = list[sIdx - 1];
+                                    list[sIdx - 1] = temp;
+                                    setEdited({
+                                      ...edited,
+                                      contentData: { ...edited.contentData, slides: list },
+                                    });
+                                  }}
+                                  className="px-2 py-1 text-[10px] bg-neutral-100 hover:bg-neutral-200 font-bold rounded"
+                                >
+                                  ↑ Move Up
+                                </button>
+                              )}
+                              {sIdx < (edited.contentData.slides.length - 1) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const list = [...edited.contentData.slides];
+                                    const temp = list[sIdx];
+                                    list[sIdx] = list[sIdx + 1];
+                                    list[sIdx + 1] = temp;
+                                    setEdited({
+                                      ...edited,
+                                      contentData: { ...edited.contentData, slides: list },
+                                    });
+                                  }}
+                                  className="px-2 py-1 text-[10px] bg-neutral-100 hover:bg-neutral-200 font-bold rounded"
+                                >
+                                  ↓ Move Down
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const list = edited.contentData.slides.filter((_: any, i: number) => i !== sIdx);
+                                  setEdited({
+                                    ...edited,
+                                    contentData: { ...edited.contentData, slides: list },
+                                  });
+                                }}
+                                className="p-1 text-rose-600 hover:bg-rose-50 rounded"
+                                title="Delete Slide"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Shoe Image Upload */}
+                          <AdminImageSelector
+                            value={slide.image || ''}
+                            onChange={(url) => {
+                              const list = [...edited.contentData.slides];
+                              list[sIdx] = { ...list[sIdx], image: url };
+                              setEdited({
+                                ...edited,
+                                contentData: { ...edited.contentData, slides: list },
+                              });
+                            }}
+                            label="Shoe Image (PNG / Transparent PNG / WEBP)"
+                            description="Supports upload, paste URL, camera capture, preset images, auto background removal & AI image generation."
+                          />
+
+                          {/* Slide Details */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-neutral-600 uppercase">Product Name</label>
+                              <input
+                                type="text"
+                                value={slide.productName || ''}
+                                onChange={(e) => {
+                                  const list = [...edited.contentData.slides];
+                                  list[sIdx] = { ...list[sIdx], productName: e.target.value };
+                                  setEdited({
+                                    ...edited,
+                                    contentData: { ...edited.contentData, slides: list },
+                                  });
+                                }}
+                                className="w-full p-1.5 border rounded text-xs font-bold"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-neutral-600 uppercase">Collection / Subtitle Tag</label>
+                              <input
+                                type="text"
+                                value={slide.collection || ''}
+                                onChange={(e) => {
+                                  const list = [...edited.contentData.slides];
+                                  list[sIdx] = { ...list[sIdx], collection: e.target.value };
+                                  setEdited({
+                                    ...edited,
+                                    contentData: { ...edited.contentData, slides: list },
+                                  });
+                                }}
+                                className="w-full p-1.5 border rounded text-xs"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-neutral-600 uppercase">Price (₹)</label>
+                              <input
+                                type="number"
+                                value={slide.price || ''}
+                                onChange={(e) => {
+                                  const list = [...edited.contentData.slides];
+                                  list[sIdx] = { ...list[sIdx], price: Number(e.target.value) };
+                                  setEdited({
+                                    ...edited,
+                                    contentData: { ...edited.contentData, slides: list },
+                                  });
+                                }}
+                                className="w-full p-1.5 border rounded text-xs font-bold"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-neutral-600 uppercase">Original Price (₹)</label>
+                              <input
+                                type="number"
+                                value={slide.originalPrice || ''}
+                                onChange={(e) => {
+                                  const list = [...edited.contentData.slides];
+                                  list[sIdx] = { ...list[sIdx], originalPrice: Number(e.target.value) };
+                                  setEdited({
+                                    ...edited,
+                                    contentData: { ...edited.contentData, slides: list },
+                                  });
+                                }}
+                                className="w-full p-1.5 border rounded text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-neutral-600 uppercase">Description Copy</label>
+                            <textarea
+                              rows={2}
+                              value={slide.description || ''}
+                              onChange={(e) => {
+                                const list = [...edited.contentData.slides];
+                                list[sIdx] = { ...list[sIdx], description: e.target.value };
+                                setEdited({
+                                  ...edited,
+                                  contentData: { ...edited.contentData, slides: list },
+                                });
+                              }}
+                              className="w-full p-1.5 border rounded text-xs"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-neutral-600 uppercase">Buy Now Button Text</label>
+                              <input
+                                type="text"
+                                value={slide.buyNowText || '⚡ BUY NOW'}
+                                onChange={(e) => {
+                                  const list = [...edited.contentData.slides];
+                                  list[sIdx] = { ...list[sIdx], buyNowText: e.target.value };
+                                  setEdited({
+                                    ...edited,
+                                    contentData: { ...edited.contentData, slides: list },
+                                  });
+                                }}
+                                className="w-full p-1.5 border rounded text-xs"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-neutral-600 uppercase">View Details Button Text</label>
+                              <input
+                                type="text"
+                                value={slide.viewDetailsText || 'VIEW DETAILS'}
+                                onChange={(e) => {
+                                  const list = [...edited.contentData.slides];
+                                  list[sIdx] = { ...list[sIdx], viewDetailsText: e.target.value };
+                                  setEdited({
+                                    ...edited,
+                                    contentData: { ...edited.contentData, slides: list },
+                                  });
+                                }}
+                                className="w-full p-1.5 border rounded text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {(edited.type === 'hero_banner' || edited.type === 'slider' || edited.type === 'image_carousel' || edited.type === 'offer_cards') && (
                 <div className="pt-2">
                   <div className="flex items-center justify-between mb-3">

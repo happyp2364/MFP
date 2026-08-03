@@ -24,7 +24,7 @@ import {
   FileText,
   Image as ImageIcon,
 } from 'lucide-react';
-import { Product, SizeStock, ProductColor } from '../../types';
+import { Product, SizeStock, ProductColor, ProductVariant } from '../../types';
 import {
   PRODUCT_FOR_OPTIONS,
   getSubcategoriesForProductFor,
@@ -37,6 +37,7 @@ import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { validateFileUpload } from '../../lib/security';
 import { QuickViewModal } from '../Products/QuickViewModal';
 import { AdminImageSelector } from '../Common/UniversalImageSystem';
+import { useStore } from '../../context/StoreContext';
 
 interface SmartProductFormModalProps {
   product: Product;
@@ -66,6 +67,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   onClose,
   onDuplicate,
 }) => {
+  const { showToast } = useStore();
   const [productState, setProductState] = useState<Product>(() => {
     return { ...initialProduct };
   });

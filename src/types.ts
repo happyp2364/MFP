@@ -1366,6 +1366,11 @@ export interface AdminLoginHistoryEntry {
 export type HomepageSectionType =
   | 'hero_banner'
   | 'floating_sneaker'
+  | 'mbh_shoe_carousel'
+  | 'trending_shoes'
+  | 'trending_shoes_collection'
+  | 'price_point_699'
+  | 'price_699_collection'
   | 'slider'
   | 'image_carousel'
   | 'video_banner'
@@ -1528,6 +1533,217 @@ export interface ProductFeedConfig {
   bestSellerPriority: number; // Priority 1-10
   recentlyAddedPriority: number; // Priority 1-10
 }
+
+export interface ProductCardDesignerConfig {
+  cardStyle: 'mbh_3d_glass' | 'luxury_elevated' | 'minimal_clean' | 'borderless_modern';
+  aspectRatio: 'aspect-square' | 'aspect-[4/5]' | 'aspect-[3/4]';
+  cornerRadius: 'rounded-xl' | 'rounded-2xl' | 'rounded-3xl' | 'rounded-full';
+  borderStyle: 'border-thin' | 'border-thick' | 'border-glass' | 'border-none';
+  shadowIntensity: 'shadow-sm' | 'shadow-md' | 'shadow-lg' | 'shadow-2xl';
+  backgroundTheme: 'bg-white' | 'bg-glass' | 'bg-dark' | 'bg-cream';
+  badgeStyle: 'solid' | 'outline' | 'glass' | 'pill';
+  fontFamily: 'sans' | 'serif' | 'mono';
+  animationSpeed: 'fast' | 'normal' | 'slow';
+
+  // Feature Toggles
+  showBrand: boolean;
+  showRating: boolean;
+  showDiscountTag: boolean;
+  showBadges: boolean;
+  showColorSwatches: boolean;
+  showSizeSelector: boolean;
+  showWishlist: boolean;
+  showQuickView: boolean;
+  showShareButton: boolean;
+  showCompareButton: boolean;
+  showBuyNow: boolean;
+  showAddToCart: boolean;
+  showStockStatus: boolean;
+
+  // Hover & FX Effects
+  enableLiftOnHover: boolean;
+  enableScaleOnHover: boolean;
+  enableShadowBoost: boolean;
+  enableImageZoom: boolean;
+  enableGlowEffect: boolean;
+  enableVariantSlideAnimation: boolean;
+
+  // Custom Buttons & Styling
+  buyNowColor?: string;
+  buyNowText?: string;
+  addToCartColor?: string;
+  addToCartText?: string;
+  whatsAppColor?: string;
+  whatsAppText?: string;
+}
+
+export const DEFAULT_PRODUCT_CARD_CONFIG: ProductCardDesignerConfig = {
+  cardStyle: 'mbh_3d_glass',
+  aspectRatio: 'aspect-square',
+  cornerRadius: 'rounded-2xl',
+  borderStyle: 'border-thin',
+  shadowIntensity: 'shadow-md',
+  backgroundTheme: 'bg-white',
+  badgeStyle: 'glass',
+  fontFamily: 'sans',
+  animationSpeed: 'normal',
+
+  showBrand: true,
+  showRating: true,
+  showDiscountTag: true,
+  showBadges: true,
+  showColorSwatches: true,
+  showSizeSelector: true,
+  showWishlist: true,
+  showQuickView: true,
+  showShareButton: true,
+  showCompareButton: true,
+  showBuyNow: true,
+  showAddToCart: true,
+  showStockStatus: true,
+
+  enableLiftOnHover: true,
+  enableScaleOnHover: true,
+  enableShadowBoost: true,
+  enableImageZoom: true,
+  enableGlowEffect: true,
+  enableVariantSlideAnimation: true,
+
+  buyNowColor: '#0B8F63',
+  buyNowText: '⚡ BUY NOW',
+  addToCartColor: '#171717',
+  addToCartText: 'ADD TO BAG',
+  whatsAppColor: '#25D366',
+  whatsAppText: 'WHATSAPP',
+};
+
+export type TrendingShoesSource = 
+  | 'newest'
+  | 'bestsellers'
+  | 'trending'
+  | 'featured'
+  | 'rating'
+  | 'manual'
+  | 'seasonal'
+  | 'ai_recommended';
+
+export interface TrendingShoesCollectionConfig {
+  id: string;
+  enabled: boolean;
+  sectionTitle: string;
+  subtitle: string;
+  source: TrendingShoesSource;
+  selectedProductIds: string[];
+  maxProducts: number;
+  enableAnimation: boolean;
+  transitionSpeed: 'fast' | 'normal' | 'smooth';
+  cardStyle: '3d_glass' | 'floating_showcase' | 'elevated_modern';
+  backgroundStyle: 'dark_glass' | 'premium_cream' | 'neon_emerald' | 'clean_white';
+  scheduleStart?: string;
+  scheduleEnd?: string;
+  badgeLabel?: string;
+  ctaText?: string;
+  updatedAt?: string;
+}
+
+export const DEFAULT_TRENDING_SHOES_CONFIG: TrendingShoesCollectionConfig = {
+  id: 'trending-shoes-section-01',
+  enabled: true,
+  sectionTitle: '🔥 Trending Shoes Collection',
+  subtitle: 'Discover our most popular college sports shoes.',
+  source: 'trending',
+  selectedProductIds: [],
+  maxProducts: 8,
+  enableAnimation: true,
+  transitionSpeed: 'normal',
+  cardStyle: 'floating_showcase',
+  backgroundStyle: 'dark_glass',
+  badgeLabel: 'COLLEGE FAVOURITES',
+  ctaText: 'View All Shoes',
+};
+
+export type PricePointSource =
+  | 'price_limit'
+  | 'manual'
+  | 'collection'
+  | 'featured'
+  | 'ai_recommended';
+
+export interface PricePointCollectionConfig {
+  id: string;
+  enabled: boolean;
+  sectionTitle: string;
+  subtitle: string;
+  priceLimit: number; // e.g. 699, 499, 999, 1499
+  source: PricePointSource;
+  selectedProductIds: string[];
+  maxProducts: number;
+  enableAnimation: boolean;
+  animationStyle: 'floating_airpods_flow' | 'orbit_3d_deck' | 'stagger_slide';
+  cardStyle: 'neon_glass' | 'minimalist_glow' | 'luxury_dark_gold';
+  backgroundStyle: 'obsidian_emerald' | 'midnight_purple' | 'cream_gold' | 'clean_white';
+  scheduleStart?: string;
+  scheduleEnd?: string;
+  badgeLabel?: string;
+  ctaText?: string;
+  excludeOutofStock?: boolean;
+  preventDuplicateHomepageItems?: boolean;
+  updatedAt?: string;
+}
+
+export const DEFAULT_PRICE_POINT_CONFIG: PricePointCollectionConfig = {
+  id: 'price-point-699-section-01',
+  enabled: true,
+  sectionTitle: '🔥 Starting at ₹699',
+  subtitle: 'Premium Shoes Under ₹699',
+  priceLimit: 699,
+  source: 'price_limit',
+  selectedProductIds: [],
+  maxProducts: 8,
+  enableAnimation: true,
+  animationStyle: 'floating_airpods_flow',
+  cardStyle: 'neon_glass',
+  backgroundStyle: 'obsidian_emerald',
+  badgeLabel: 'UNBEATABLE VALUE',
+  ctaText: 'Explore Under ₹699',
+  excludeOutofStock: true,
+  preventDuplicateHomepageItems: true,
+};
+
+export interface ButtonThemeConfig {
+  id: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  borderRadius: 'rounded-lg' | 'rounded-xl' | 'rounded-2xl' | 'rounded-3xl' | 'rounded-full';
+  glassOpacity: number;
+  borderStrength: 'none' | 'thin' | 'medium' | 'glow';
+  shadowStrength: 'none' | 'soft' | 'medium' | 'deep' | 'liquid_glow';
+  enableHoverAnimation: boolean;
+  enableRipple: boolean;
+  enableLiquidHighlight: boolean;
+  enableGlow: boolean;
+  animationSpeed: 'fast' | 'normal' | 'smooth';
+  updatedAt?: string;
+}
+
+export const DEFAULT_BUTTON_THEME_CONFIG: ButtonThemeConfig = {
+  id: 'global-liquid-button-theme',
+  primaryColor: '#0B8F63',
+  secondaryColor: '#0F172A',
+  accentColor: '#F59E0B',
+  borderRadius: 'rounded-2xl',
+  glassOpacity: 0.15,
+  borderStrength: 'thin',
+  shadowStrength: 'liquid_glow',
+  enableHoverAnimation: true,
+  enableRipple: true,
+  enableLiquidHighlight: true,
+  enableGlow: true,
+  animationSpeed: 'normal',
+};
+
+
 
 
 

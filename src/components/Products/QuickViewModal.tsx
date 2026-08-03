@@ -416,7 +416,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                   <button
                     onClick={handleBuyNow}
                     disabled={isBuyNowLoading}
-                    className="w-full text-white font-extrabold text-sm sm:text-base py-3.5 px-6 rounded-2xl shadow-lg shadow-[#0B8F63]/20 flex items-center justify-center gap-2.5 transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-75"
+                    className="btn-liquid-base btn-liquid-emerald w-full text-white font-extrabold text-sm sm:text-base py-3.5 px-6 rounded-2xl shadow-lg flex items-center justify-center gap-2.5 transition-all disabled:opacity-75 cursor-pointer"
                     style={{ backgroundColor: paymentSettings.buyNowButtonColor || '#0B8F63' }}
                   >
                     {isBuyNowLoading ? (
@@ -433,7 +433,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                   {paymentSettings.enableBuyWhatsApp !== false && (
                     <button
                       onClick={handleWhatsAppBuy}
-                      className="w-full text-white font-bold text-xs py-2.5 px-2 rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all hover:opacity-90"
+                      className="btn-liquid-base btn-liquid-emerald w-full text-white font-bold text-xs py-2.5 px-2 rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                       style={{ backgroundColor: paymentSettings.buyWhatsAppButtonColor || '#25D366' }}
                     >
                       <MessageCircle className="w-4 h-4 fill-current shrink-0" />
@@ -444,7 +444,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                   {paymentSettings.enableAddToCart !== false && (
                     <button
                       onClick={handleAddBag}
-                      className="w-full text-white font-bold text-xs py-2.5 px-2 rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all hover:opacity-90"
+                      className="btn-liquid-base btn-liquid-dark w-full text-white font-bold text-xs py-2.5 px-2 rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                       style={{ backgroundColor: paymentSettings.addToBagButtonColor || '#171717' }}
                     >
                       <ShoppingBag className="w-4 h-4 shrink-0" />
@@ -454,7 +454,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
                   <button
                     onClick={() => onToggleWishlist?.(product)}
-                    className={`w-full font-bold text-xs py-2.5 px-2 rounded-xl border flex items-center justify-center gap-1.5 transition-colors ${
+                    className={`btn-liquid-base btn-liquid-ghost w-full font-bold text-xs py-2.5 px-2 rounded-xl border flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                       isWishlisted
                         ? 'bg-rose-50 border-rose-200 text-rose-600'
                         : 'bg-white border-neutral-200 text-neutral-800 hover:bg-neutral-50'

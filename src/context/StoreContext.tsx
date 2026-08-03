@@ -54,6 +54,14 @@ import {
   AdminPermissionMatrix,
   AboutUsConfig,
   ProductFeedConfig,
+  ProductCardDesignerConfig,
+  DEFAULT_PRODUCT_CARD_CONFIG,
+  TrendingShoesCollectionConfig,
+  DEFAULT_TRENDING_SHOES_CONFIG,
+  PricePointCollectionConfig,
+  DEFAULT_PRICE_POINT_CONFIG,
+  ButtonThemeConfig,
+  DEFAULT_BUTTON_THEME_CONFIG,
 } from '../types';
 import { DEFAULT_ABOUT_US_CONFIG } from '../data/defaultAboutUs';
 import {
@@ -162,6 +170,10 @@ const STORAGE_KEYS = {
   OPEN_BOX_DELIVERY_CONFIG: 'mfp_open_box_delivery_config_live',
   ABOUT_US_CONFIG: 'mfp_about_us_config_live',
   PRODUCT_FEED_CONFIG: 'mfp_product_feed_config_live',
+  PRODUCT_CARD_CONFIG: 'mfp_product_card_config_live',
+  TRENDING_SHOES_CONFIG: 'mfp_trending_shoes_config_live',
+  PRICE_POINT_CONFIG: 'mfp_price_point_config_live',
+  BUTTON_THEME_CONFIG: 'mfp_button_theme_config_live',
   MEGA_MENU_CATEGORIES: 'mfp_mega_menu_categories_live',
 };
 
@@ -245,6 +257,18 @@ interface StoreContextType {
 
   productFeedConfig: ProductFeedConfig;
   updateProductFeedConfig: (updated: Partial<ProductFeedConfig>) => Promise<void>;
+
+  productCardConfig: ProductCardDesignerConfig;
+  updateProductCardConfig: (updated: Partial<ProductCardDesignerConfig>) => Promise<void>;
+
+  trendingShoesConfig: TrendingShoesCollectionConfig;
+  updateTrendingShoesConfig: (updated: Partial<TrendingShoesCollectionConfig>) => Promise<void>;
+
+  pricePointConfig: PricePointCollectionConfig;
+  updatePricePointConfig: (updated: Partial<PricePointCollectionConfig>) => Promise<void>;
+
+  buttonThemeConfig: ButtonThemeConfig;
+  updateButtonThemeConfig: (updated: Partial<ButtonThemeConfig>) => Promise<void>;
 
   placeOrderAndPay: (
     cartItems: CartItem[],
@@ -523,6 +547,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [productFeedConfig, setProductFeedConfig] = useState<ProductFeedConfig>(() =>
     safeGetLocalStorage<ProductFeedConfig>(STORAGE_KEYS.PRODUCT_FEED_CONFIG, DEFAULT_PRODUCT_FEED_CONFIG)
+  );
+
+  const [productCardConfig, setProductCardConfig] = useState<ProductCardDesignerConfig>(() =>
+    safeGetLocalStorage<ProductCardDesignerConfig>(STORAGE_KEYS.PRODUCT_CARD_CONFIG, DEFAULT_PRODUCT_CARD_CONFIG)
+  );
+
+  const [trendingShoesConfig, setTrendingShoesConfig] = useState<TrendingShoesCollectionConfig>(() =>
+    safeGetLocalStorage<TrendingShoesCollectionConfig>(STORAGE_KEYS.TRENDING_SHOES_CONFIG, DEFAULT_TRENDING_SHOES_CONFIG)
+  );
+
+  const [pricePointConfig, setPricePointConfig] = useState<PricePointCollectionConfig>(() =>
+    safeGetLocalStorage<PricePointCollectionConfig>(STORAGE_KEYS.PRICE_POINT_CONFIG, DEFAULT_PRICE_POINT_CONFIG)
+  );
+
+  const [buttonThemeConfig, setButtonThemeConfig] = useState<ButtonThemeConfig>(() =>
+    safeGetLocalStorage<ButtonThemeConfig>(STORAGE_KEYS.BUTTON_THEME_CONFIG, DEFAULT_BUTTON_THEME_CONFIG)
   );
 
 
@@ -1060,6 +1100,47 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }, (err) => console.warn('Live product feed config listener notice:', err))
       );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'productCard'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as ProductCardDesignerConfig;
+            setProductCardConfig((prev) => ({ ...DEFAULT_PRODUCT_CARD_CONFIG, ...prev, ...data }));
+            safeSetLocalStorage(STORAGE_KEYS.PRODUCT_CARD_CONFIG, { ...DEFAULT_PRODUCT_CARD_CONFIG, ...data });
+          }
+        }, (err) => console.warn('Live product card config listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'trendingShoes'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as TrendingShoesCollectionConfig;
+            setTrendingShoesConfig((prev) => ({ ...DEFAULT_TRENDING_SHOES_CONFIG, ...prev, ...data }));
+            safeSetLocalStorage(STORAGE_KEYS.TRENDING_SHOES_CONFIG, { ...DEFAULT_TRENDING_SHOES_CONFIG, ...data });
+          }
+        }, (err) => console.warn('Live trending shoes config listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'pricePointCollection'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as PricePointCollectionConfig;
+            setPricePointConfig((prev) => ({ ...DEFAULT_PRICE_POINT_CONFIG, ...prev, ...data }));
+            safeSetLocalStorage(STORAGE_KEYS.PRICE_POINT_CONFIG, { ...DEFAULT_PRICE_POINT_CONFIG, ...data });
+          }
+        }, (err) => console.warn('Live price point collection config listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'buttonTheme'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as ButtonThemeConfig;
+            setButtonThemeConfig((prev) => ({ ...DEFAULT_BUTTON_THEME_CONFIG, ...prev, ...data }));
+            safeSetLocalStorage(STORAGE_KEYS.BUTTON_THEME_CONFIG, { ...DEFAULT_BUTTON_THEME_CONFIG, ...data });
+          }
+        }, (err) => console.warn('Live button theme config listener notice:', err))
+      );
+
 
       unsubscribers.push(
         onSnapshot(collection(db, 'reviews'), (snap) => {
@@ -1640,6 +1721,63 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       showToast('Failed to save Product Feed config to Firestore', 'error');
     }
   };
+
+  const updateProductCardConfig = async (updated: Partial<ProductCardDesignerConfig>) => {
+    try {
+      const newCfg = { ...productCardConfig, ...updated };
+      setProductCardConfig(newCfg);
+      safeSetLocalStorage(STORAGE_KEYS.PRODUCT_CARD_CONFIG, newCfg);
+      await setDoc(doc(db, 'settings', 'productCard'), newCfg, { merge: true });
+      showToast('✨ Product Card Designer Settings Saved Live', 'success');
+      recordAuditLog('Product Card Designer Updated', 'SETTINGS', 'Updated product card layout, animations & buttons', 'SUCCESS');
+    } catch (err: any) {
+      console.error('Error updating Product Card config:', err);
+      showToast('Failed to save Product Card config to Firestore', 'error');
+    }
+  };
+
+  const updateTrendingShoesConfig = async (updated: Partial<TrendingShoesCollectionConfig>) => {
+    try {
+      const newCfg = { ...trendingShoesConfig, ...updated, updatedAt: new Date().toISOString() };
+      setTrendingShoesConfig(newCfg);
+      safeSetLocalStorage(STORAGE_KEYS.TRENDING_SHOES_CONFIG, newCfg);
+      await setDoc(doc(db, 'settings', 'trendingShoes'), newCfg, { merge: true });
+      showToast('🔥 Trending Shoes Collection Settings Saved Live', 'success');
+      recordAuditLog('Trending Shoes Collection Updated', 'SETTINGS', 'Updated trending shoes showcase title, source & animations', 'SUCCESS');
+    } catch (err: any) {
+      console.error('Error updating Trending Shoes config:', err);
+      showToast('Failed to save Trending Shoes config to Firestore', 'error');
+    }
+  };
+
+  const updatePricePointConfig = async (updated: Partial<PricePointCollectionConfig>) => {
+    try {
+      const newCfg = { ...pricePointConfig, ...updated, updatedAt: new Date().toISOString() };
+      setPricePointConfig(newCfg);
+      safeSetLocalStorage(STORAGE_KEYS.PRICE_POINT_CONFIG, newCfg);
+      await setDoc(doc(db, 'settings', 'pricePointCollection'), newCfg, { merge: true });
+      showToast('⚡ Price Point Collection Settings Saved Live', 'success');
+      recordAuditLog('Price Point Collection Updated', 'SETTINGS', 'Updated price point collection limits, sources & animations', 'SUCCESS');
+    } catch (err: any) {
+      console.error('Error updating Price Point config:', err);
+      showToast('Failed to save Price Point config to Firestore', 'error');
+    }
+  };
+
+  const updateButtonThemeConfig = async (updated: Partial<ButtonThemeConfig>) => {
+    try {
+      const newCfg = { ...buttonThemeConfig, ...updated, updatedAt: new Date().toISOString() };
+      setButtonThemeConfig(newCfg);
+      safeSetLocalStorage(STORAGE_KEYS.BUTTON_THEME_CONFIG, newCfg);
+      await setDoc(doc(db, 'settings', 'buttonTheme'), newCfg, { merge: true });
+      showToast('✨ Global Liquid Button Theme Saved Live', 'success');
+      recordAuditLog('Button Theme System Updated', 'SETTINGS', 'Updated global liquid button colors, glass opacity & animations', 'SUCCESS');
+    } catch (err: any) {
+      console.error('Error updating Button Theme config:', err);
+      showToast('Failed to save Button Theme config to Firestore', 'error');
+    }
+  };
+
 
   const recordSocialClick = async (platformId: string) => {
     try {
@@ -2591,6 +2729,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     productFeedConfig,
     updateProductFeedConfig,
+
+    productCardConfig,
+    updateProductCardConfig,
+
+    trendingShoesConfig,
+    updateTrendingShoesConfig,
+
+    pricePointConfig,
+    updatePricePointConfig,
+
+    buttonThemeConfig,
+    updateButtonThemeConfig,
 
     // Customer Engagement
     spinWheelConfig,

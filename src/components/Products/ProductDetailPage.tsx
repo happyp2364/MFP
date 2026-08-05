@@ -37,6 +37,8 @@ import {
 import { ProductCard } from './ProductCard';
 import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 import { useStore } from '../../context/StoreContext';
+import { SEOHead } from '../SEO/SEOHead';
+import { generateProductSchema, generateBreadcrumbSchema } from '../../utils/seo';
 
 interface ProductDetailPageProps {
   product: Product | null;
@@ -64,50 +66,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   onBuyNow,
 }) => {
   const { paymentSettings, playSiteSound, showToast } = useStore();
-
-  // Update SEO Open Graph & Title Meta Tags dynamically
-  useEffect(() => {
-    if (!product) {
-      document.title = 'Product Not Found - Marudhar Fashion Point';
-      return;
-    }
-
-    // Set page title
-    document.title = `${product.name} | Marudhar Fashion Point`;
-
-    // Helper to update or create meta tags
-    const updateMetaTag = (property: string, content: string) => {
-      let element = document.querySelector(`meta[property="${property}"]`);
-      if (!element) {
-        element = document.createElement('meta');
-        element.setAttribute('property', property);
-        document.head.appendChild(element);
-      }
-      element.setAttribute('content', content);
-    };
-
-    const productUrl = getProductUrl(product);
-    const mainImg = product.images?.[0] || 'https://marudharfashionpoint.com/og-image.jpg';
-    const desc = product.description || `Buy ${product.name} at Marudhar Fashion Point. Best price ₹${product.price}. Genuine quality & fast delivery.`;
-
-    updateMetaTag('og:title', `${product.name} - ₹${product.price}`);
-    updateMetaTag('og:description', desc);
-    updateMetaTag('og:image', mainImg);
-    updateMetaTag('og:url', productUrl);
-
-    // Canonical link
-    let canonical = document.querySelector('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.setAttribute('rel', 'canonical');
-      document.head.appendChild(canonical);
-    }
-    canonical.setAttribute('href', productUrl);
-
-    return () => {
-      document.title = 'Marudhar Fashion Point | Premium Footwear & Fashion';
-    };
-  }, [product]);
 
   // State for image gallery & selections
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -238,6 +196,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-12 animate-in fade-in duration-300">
+        <SEOHead 
+          title="Product Not Found - Marudhar Fashion Point" 
+          description="The product you are looking for could not be found."
+        />
         {/* Back Navigation */}
         <button
           onClick={onBackToHome}
@@ -406,6 +368,21 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 animate-in fade-in duration-300">
+      <SEOHead 
+        title={`${product.name} | Marudhar Fashion Point`}
+        description={product.description || `Buy ${product.name} at Marudhar Fashion Point. Best price ₹${product.price}. Genuine quality & fast delivery.`}
+        image={product.images?.[0]}
+        url={getProductUrl(product)}
+        type="product"
+        schemas={[
+          generateProductSchema(product),
+          generateBreadcrumbSchema([
+            { name: 'Home', item: '/' },
+            { name: product.category, item: `/?category=${product.category}` },
+            { name: product.name, item: `/product/${product.id}` }
+          ])
+        ]}
+      />
       {/* Breadcrumb Navigation & Back Button */}
       <div className="flex items-center justify-between border-b border-neutral-200/80 pb-4">
         <button

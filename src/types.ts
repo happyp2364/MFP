@@ -1806,3 +1806,52 @@ export interface MobileCategoryIcon {
 
 
 
+
+export interface SEOMetadataConfig {
+  globalTitleTemplate: string;
+  globalDescription: string;
+  defaultOgImage: string;
+  googleAnalyticsId: string;
+  googleSearchConsoleVerification: string;
+  googleBusinessProfileId: string;
+  robotsTxtContent: string;
+  
+  // Enterprise Local Business Identity
+  businessName?: string;
+  businessCategory?: string;
+  foundedYear?: string;
+  gstNumber?: string;
+  contactNumber?: string;
+  whatsappNumber?: string;
+  businessAddress?: string;
+  latitude?: string;
+  longitude?: string;
+  
+  // Google Business Profile Links
+  gbpUrl?: string;
+  reviewUrl?: string;
+  directionsUrl?: string;
+}
+
+export interface AIMarketingGrowthConfig {
+  aiCampaignsEnabled: boolean;
+  socialMediaTone: 'Professional' | 'Luxury' | 'Casual' | 'Festival' | 'Local' | 'Youth';
+  customerEngagement: {
+    wishlistReminders: boolean;
+    backInStockAlerts: boolean;
+    priceDropAlerts: boolean;
+    orderUpdates: boolean;
+    reviewRequests: boolean;
+    birthdayGreetings: boolean;
+    festivalWishes: boolean;
+  };
+  recommendationEngine: {
+    enabled: boolean;
+    suggestByRecentlyViewed: boolean;
+    suggestByBestSellers: boolean;
+    suggestByCategory: boolean;
+    suggestByPriceRange: boolean;
+    suggestByPurchaseHistory: boolean;
+    suggestByTrending: boolean;
+  };
+}

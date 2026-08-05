@@ -29,7 +29,7 @@ import { DEFAULT_ABOUT_US_CONFIG } from '../../data/defaultAboutUs';
 import { generateGeneralInquiryWhatsAppLink } from '../../utils/whatsapp';
 
 export const AboutSection: React.FC = () => {
-  const { aboutUsConfig: rawAboutConfig, storeInfo, products, orders, reviews } = useStore();
+  const { aboutUsConfig: rawAboutConfig, storeInfo, products, reviews } = useStore();
   const config = rawAboutConfig || DEFAULT_ABOUT_US_CONFIG;
 
   const [activeTab, setActiveTab] = useState<'story' | 'owners' | 'timeline' | 'achievements' | 'gallery'>('story');
@@ -43,11 +43,11 @@ export const AboutSection: React.FC = () => {
       case 'years':
         return config.experienceYears || '16+';
       case 'customers':
-        return Math.max(50000, orders.length * 15 + 48000).toLocaleString('en-IN');
+        return (50000).toLocaleString('en-IN');
       case 'products':
         return Math.max(1200, products.length * 8 + 1150).toLocaleString('en-IN');
       case 'orders':
-        return Math.max(100000, orders.length * 35 + 98000).toLocaleString('en-IN');
+        return (100000).toLocaleString('en-IN');
       case 'reviews':
         return reviews.length > 0
           ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)

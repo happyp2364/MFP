@@ -7,7 +7,7 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
   currentPath,
   cartSubtotal,
 }) => {
-  const { scratchWinConfig, coupons, orders, customerUser, triggerGlobalCelebration } = useStore();
+  const { scratchWinConfig, coupons, customerProfile, customerUser, triggerGlobalCelebration } = useStore();
 
   const [isVisible, setIsVisible] = useState(false);
   const [hasScratched, setHasScratched] = useState(false);
@@ -72,7 +72,7 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
     }
 
     // Customer segments checking
-    const userOrdersCount = orders ? orders.length : 0;
+    const userOrdersCount = customerProfile?.orderHistory?.length || 0;
 
     if (scratchWinConfig.newCustomerOnly && userOrdersCount > 0) return;
     if (scratchWinConfig.returningCustomerOnly && userOrdersCount === 0) return;
@@ -147,7 +147,7 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
       if (timerId) clearTimeout(timerId);
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [scratchWinConfig, currentPath, cartSubtotal, orders]);
+  }, [scratchWinConfig, currentPath, cartSubtotal, customerProfile]);
 
   // 2. Initialize Canvas Painting (Silver Scratch Layer)
   useEffect(() => {

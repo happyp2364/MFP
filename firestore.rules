@@ -166,9 +166,10 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Security Audit Logs Collection (Allow open read/write recursively)
+    // Security Audit Logs Collection
     match /auditLogs/{document=**} {
-      allow read, write: if true;
+      allow read: if isAdmin();
+      allow write: if true;
     }
 
     // Real-time Admin Notifications

@@ -147,7 +147,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
     setMapZoom(15);
   };
 
-  const API_KEY = process.env.GOOGLE_MAPS_PLATFORM_KEY || '';
+  const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_PLATFORM_KEY || '';
 
   if (!isOpen) return null;
 

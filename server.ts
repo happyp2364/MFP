@@ -1711,6 +1711,99 @@ ${customerMessage || 'Please confirm availability.'}`;
   app.get("/product/:slug", handleProductRoute);
   app.get("/products/:slug", handleProductRoute);
 
+  // =========================================================================
+  // DYNAMIC SEO LOCATION PAGES
+  // =========================================================================
+  app.get("/seo/:location", async (req, res, next) => {
+    try {
+      const location = req.params.location?.replace(/-/g, ' ');
+      const fs = await import("fs");
+      const indexHtmlPath = process.env.NODE_ENV === "production"
+        ? path.join(process.cwd(), "dist", "index.html")
+        : path.join(process.cwd(), "index.html");
+
+      if (fs.existsSync(indexHtmlPath)) {
+        let html = fs.readFileSync(indexHtmlPath, "utf-8");
+        
+        // Capitalize location
+        const capitalizedLocation = location.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        
+        const title = `Best Footwear Store in ${capitalizedLocation} | Shoes & Accessories`;
+        const desc = `Discover the best shoes, sneakers, and fashion accessories in ${capitalizedLocation}. Shop at Marudhar Fashion Point for premium quality footwear with exclusive local offers.`;
+        const imgUrl = 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80';
+        
+        const host = req.get("host") || "marudhar-fashion-point-1.vercel.app";
+        const protocol = req.protocol || "https";
+        const fullUrl = `${protocol}://${host}/seo/${req.params.location}`;
+
+        const ogTags = `
+    <!-- Dynamic SEO Location Metadata -->
+    <title>${title}</title>
+    <meta name="description" content="${desc}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Marudhar Fashion Point" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${desc}" />
+    <meta property="og:image" content="${imgUrl}" />
+    <meta property="og:url" content="${fullUrl}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${title}" />
+    <meta name="twitter:description" content="${desc}" />
+`;
+        html = html.replace("<head>", `<head>${ogTags}`);
+        return res.send(html);
+      }
+    } catch (err) {
+      console.warn("[SEO Route Note]:", err);
+    }
+    next();
+  });
+
+  // =========================================================================
+  // DYNAMIC SITEMAP AND ROBOTS.TXT
+  // =========================================================================
+  app.get("/robots.txt", (req, res) => {
+    const host = req.get("host") || "marudharfashionpoint.com";
+    const protocol = req.protocol || "https";
+    res.type('text/plain');
+    res.send(`User-agent: *\nAllow: /\nSitemap: ${protocol}://${host}/sitemap.xml`);
+  });
+
+  app.get("/sitemap.xml", (req, res) => {
+    const host = req.get("host") || "marudharfashionpoint.com";
+    const protocol = req.protocol || "https";
+    const baseUrl = `${protocol}://${host}`;
+    
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/store-locator</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+`;
+
+    // Add products
+    SERVER_PRODUCT_CATALOG.forEach(p => {
+      xml += `
+  <url>
+    <loc>${baseUrl}/product/${p.slug || p.id}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+    });
+
+    xml += `\n</urlset>`;
+    
+    res.type('application/xml');
+    res.send(xml);
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

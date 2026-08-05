@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { AnnouncementBar } from './components/Header/AnnouncementBar';
 import { Navbar } from './components/Header/Navbar';
@@ -27,6 +27,8 @@ import { AdminLoginModal } from './components/Admin/AdminLoginModal';
 import { AdminDashboardModal } from './components/Admin/AdminDashboardModal';
 import { AdminErrorBoundary } from './components/Admin/AdminErrorBoundary';
 import { FloatingAdminButton } from './components/Admin/FloatingAdminButton';
+import { SEOLiveScoreWidget } from './components/Admin/SEOLiveScoreWidget';
+import { SEOSchemaInjector } from './components/SEO/SEOSchemaInjector';
 import { CheckoutModal } from './components/Checkout/CheckoutModal';
 import { CustomerAccountModal } from './components/Customer/CustomerAccountModal';
 import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
@@ -40,15 +42,16 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ScratchCardPopup } from './components/Promo/ScratchCardPopup';
 import { SpinWheelPopup } from './components/Promo/SpinWheelPopup';
 import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebration';
-
 import { useStore } from './context/StoreContext';
 import { Product, FilterState, GenderCategory, CartItem, ProductVariant } from './types';
 import { findProductBySlugOrId, getProductSlug } from './utils/productUtils';
 import { deduplicateProducts, sortProductsWithSmartMix } from './utils/productFeedOptimizer';
 import { getCartItemPrice } from './utils/variantUtils';
+import { SEOHead } from './components/SEO/SEOHead';
+import { generateOrganizationSchema, generateLocalBusinessSchema, generateBreadcrumbSchema, generateFAQSchema } from './utils/seo';
 
 function AppContent() {
-  const { products, isAdmin, toastMessage, productFeedConfig } = useStore();
+  const { products, isAdmin, toastMessage, productFeedConfig, seoConfig } = useStore();
   const { backgroundGradientClass } = useTheme();
 
   // --- STATE ---
@@ -476,6 +479,12 @@ function AppContent() {
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
+      <SEOHead 
+        title={seoConfig?.globalTitleTemplate?.replace('%s', 'Home') || 'Marudhar Fashion Point'}
+        description={seoConfig?.globalDescription}
+        image={seoConfig?.defaultOgImage}
+        schemas={[generateOrganizationSchema()]}
+      />
       {/* 1. Announcement Bar */}
       <AnnouncementBar />
 
@@ -768,6 +777,9 @@ function AppContent() {
           }
         }}
       />
+
+      <SEOLiveScoreWidget />
+      <SEOSchemaInjector />
 
       {/* Interactive AI Pet Shoe Brand Mascot */}
       <AIPetShoeMascot />

@@ -88,7 +88,11 @@ import { TrendingShoesSettingsView } from './TrendingShoesSettingsView';
 import { PricePointSettingsView } from './PricePointSettingsView';
 import { ButtonThemeSettingsView } from './ButtonThemeSettingsView';
 import { StoreManagementAdmin } from './StoreManagementAdmin';
-import { MapPin } from 'lucide-react';
+import { SEOAuthorityCenterView } from './SEOAuthorityCenterView';
+import { AIMarketingGrowthView } from './AIMarketingGrowthView';
+import { CustomerIntelligenceCRMView } from './CustomerIntelligenceCRMView';
+import { SoundSettingsView } from './SoundSettingsView';
+import { MapPin, Users, Volume2 } from 'lucide-react';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -98,7 +102,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'button_theme' | 'store_management';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'button_theme' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -137,6 +141,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setAnnouncementsList,
     updateCategoryHighlight,
     updateTrendingCollection,
+    soundConfig,
+    updateSoundConfig,
     resetToDefaults,
     changeAdminPassword,
     toggleTwoFactor,
@@ -495,6 +501,30 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <Megaphone className="w-4 h-4 text-amber-600" />
               <span>Marketing & Campaigns</span>
             </button>
+            
+            <button
+              onClick={() => setActiveTab('ai_marketing_growth')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'ai_marketing_growth'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-indigo-600" />
+              <span>AI Marketing & Growth</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('customer_crm')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'customer_crm'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Users className="w-4 h-4 text-blue-600" />
+              <span>Customer CRM</span>
+            </button>
 
             <button
               onClick={() => setActiveTab('coupons')}
@@ -583,6 +613,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             >
               <MapPin className="w-4 h-4 text-emerald-500" />
               <span>📍 Nearby Stores & Outlets</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('seo_local_business')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'seo_local_business'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <Search className="w-4 h-4 text-emerald-500" />
+              <span>🔍 SEO & Local Business</span>
             </button>
 
             <button
@@ -849,6 +891,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <span>2FA & Security Settings</span>
             </button>
 
+            <button
+              onClick={() => setActiveTab('sound')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'sound'
+                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              <Volume2 className="w-4 h-4 text-blue-600" />
+              <span>Sound Settings</span>
+            </button>
+
             {!isGoogleUser && (
               <button
                 onClick={() => setActiveTab('password')}
@@ -880,6 +934,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* ----------------- TAB: STORE LOCATOR & OUTLETS ----------------- */}
             {activeTab === 'store_management' && <StoreManagementAdmin />}
 
+            {/* ----------------- TAB: SEO & LOCAL BUSINESS ----------------- */}
+            {activeTab === 'seo_local_business' && <SEOAuthorityCenterView />}
+
             {/* ----------------- TAB: ORDERS & TRACKING ----------------- */}
             {activeTab === 'orders' && <OrderManagementView />}
 
@@ -888,6 +945,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: MARKETING & ENGAGEMENT CENTER ----------------- */}
             {activeTab === 'marketing' && <MarketingCenterView />}
+
+            {/* ----------------- TAB: AI MARKETING & GROWTH ----------------- */}
+            {activeTab === 'ai_marketing_growth' && <AIMarketingGrowthView />}
+
+            {/* ----------------- TAB: CUSTOMER INTELLIGENCE & CRM ----------------- */}
+            {activeTab === 'customer_crm' && <CustomerIntelligenceCRMView />}
+
+            {/* ----------------- TAB: SOUND SETTINGS ----------------- */}
+            {activeTab === 'sound' && <SoundSettingsView config={soundConfig} onSave={updateSoundConfig} />}
 
             {/* ----------------- TAB: COUPON & PROMOTIONS ----------------- */}
             {activeTab === 'coupons' && <CouponManagementView />}

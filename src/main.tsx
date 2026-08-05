@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import { StoreProvider } from './context/StoreContext.tsx';
 import { initAutoContrastEngine } from './utils/autoContrastEngine.ts';
+import { HelmetProvider } from 'react-helmet-async';
 import './index.css';
 
 // Safely initialize the global WCAG Auto Contrast accessibility engine
@@ -16,9 +17,11 @@ const rootElement = document.getElementById('root');
 if (rootElement) {
   createRoot(rootElement).render(
     <StrictMode>
-      <StoreProvider>
-        <App />
-      </StoreProvider>
+      <HelmetProvider>
+        <StoreProvider>
+          <App />
+        </StoreProvider>
+      </HelmetProvider>
     </StrictMode>,
   );
 }

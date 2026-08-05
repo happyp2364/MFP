@@ -183,6 +183,56 @@ const STORAGE_KEYS = {
   MOBILE_CATEGORIES: 'mfp_mobile_categories_live',
 };
 
+import {
+  SEOMetadataConfig,
+  AIMarketingGrowthConfig,
+} from '../types';
+
+export const DEFAULT_SEO_CONFIG: SEOMetadataConfig = {
+  globalTitleTemplate: '%s | Marudhar Fashion Point',
+  globalDescription: 'Discover the finest collection of premium footwear at Marudhar Fashion Point. Shop latest trends in men, women, and kids shoes.',
+  defaultOgImage: '/logo.png',
+  googleAnalyticsId: '',
+  googleSearchConsoleVerification: '',
+  googleBusinessProfileId: '',
+  robotsTxtContent: 'User-agent: *\nAllow: /\nSitemap: /sitemap.xml',
+  businessName: 'Marudhar Fashion Point',
+  businessCategory: 'Shoe Store',
+  foundedYear: '2010',
+  gstNumber: '',
+  contactNumber: '+919782482250',
+  whatsappNumber: '+919782482250',
+  businessAddress: 'Pipar City, Rajasthan',
+  latitude: '26.3862',
+  longitude: '73.5414',
+  gbpUrl: '',
+  reviewUrl: '',
+  directionsUrl: '',
+};
+
+export const DEFAULT_AI_MARKETING_GROWTH_CONFIG: AIMarketingGrowthConfig = {
+  aiCampaignsEnabled: true,
+  socialMediaTone: 'Professional',
+  customerEngagement: {
+    wishlistReminders: true,
+    backInStockAlerts: true,
+    priceDropAlerts: true,
+    orderUpdates: true,
+    reviewRequests: true,
+    birthdayGreetings: false,
+    festivalWishes: true,
+  },
+  recommendationEngine: {
+    enabled: true,
+    suggestByRecentlyViewed: true,
+    suggestByBestSellers: true,
+    suggestByCategory: true,
+    suggestByPriceRange: true,
+    suggestByPurchaseHistory: true,
+    suggestByTrending: true,
+  },
+};
+
 export const DEFAULT_PRODUCT_FEED_CONFIG: ProductFeedConfig = {
   productsPerPage: 24,
   infiniteScroll: false,
@@ -239,6 +289,12 @@ interface StoreContextType {
   notifications: AdminNotification[];
   activeOrderNotification: AdminNotification | null;
   setActiveOrderNotification: (notif: AdminNotification | null) => void;
+
+  seoConfig: SEOMetadataConfig;
+  updateSEOConfig: (updated: Partial<SEOMetadataConfig>) => Promise<void>;
+  
+  aiMarketingGrowthConfig: AIMarketingGrowthConfig;
+  updateAIMarketingGrowthConfig: (updated: Partial<AIMarketingGrowthConfig>) => Promise<void>;
 
   petShoeConfig: PetShoeConfig;
   updatePetShoeConfig: (updated: Partial<PetShoeConfig>) => Promise<void>;
@@ -526,6 +582,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [publishedPaymentSettings, setPublishedPaymentSettings] = useState<PaymentSettings>(() =>
     safeGetLocalStorage<PaymentSettings>(STORAGE_KEYS.PAYMENT_SETTINGS, DEFAULT_PAYMENT_SETTINGS)
+  );
+
+  const [publishedSEOConfig, setPublishedSEOConfig] = useState<SEOMetadataConfig>(() => 
+    safeGetLocalStorage<SEOMetadataConfig>('mfp_seo_settings', DEFAULT_SEO_CONFIG)
+  );
+
+  const [publishedAIMarketingGrowthConfig, setPublishedAIMarketingGrowthConfig] = useState<AIMarketingGrowthConfig>(() => 
+    safeGetLocalStorage<AIMarketingGrowthConfig>('mfp_ai_marketing_settings', DEFAULT_AI_MARKETING_GROWTH_CONFIG)
   );
 
   const [publishedPetShoeConfig, setPublishedPetShoeConfig] = useState<PetShoeConfig>(() =>
@@ -919,7 +983,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     let unsubGalleryParts: any = null;
 
     try {
-      unsubProducts = onSnapshot(collection(db, 'products'), async (snapshot) => {
+      unsubProducts = onSnapshot(query(collection(db, 'products'), limit(500)), async (snapshot) => {
         if (!snapshot.empty) {
           const remote: any[] = [];
           snapshot.forEach((docSnap) => {
@@ -951,7 +1015,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         handleFirestoreError(err, OperationType.GET, 'products');
       });
 
-      unsubGallery = onSnapshot(collection(db, 'product_gallery'), (snapshot) => {
+      unsubGallery = onSnapshot(query(collection(db, 'product_gallery'), limit(500)), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
         setLiveGalleries(map);
@@ -959,7 +1023,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         handleFirestoreError(err, OperationType.GET, 'product_gallery');
       });
 
-      unsubVariants = onSnapshot(collection(db, 'product_variants'), (snapshot) => {
+      unsubVariants = onSnapshot(query(collection(db, 'product_variants'), limit(500)), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
         setLiveVariants(map);
@@ -967,7 +1031,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         handleFirestoreError(err, OperationType.GET, 'product_variants');
       });
 
-      unsubAiMetadata = onSnapshot(collection(db, 'product_ai_metadata'), (snapshot) => {
+      unsubAiMetadata = onSnapshot(query(collection(db, 'product_ai_metadata'), limit(500)), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
         setLiveAiMetadata(map);
@@ -975,7 +1039,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         handleFirestoreError(err, OperationType.GET, 'product_ai_metadata');
       });
 
-      unsubGalleryParts = onSnapshot(collection(db, 'product_gallery_parts'), (snapshot) => {
+      unsubGalleryParts = onSnapshot(query(collection(db, 'product_gallery_parts'), limit(2500)), (snapshot) => {
         const map: Record<string, any> = {};
         snapshot.forEach((docSnap) => { map[docSnap.id] = docSnap.data(); });
         setLiveGalleryParts(map);
@@ -1018,7 +1082,63 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [productsFetched, rawLiveProducts, liveGalleries, liveVariants, liveAiMetadata, liveGalleryParts]);
 
-  // 2. Real-Time Firestore Listeners for Live Store Settings
+  // 2. Real-Time Firestore Listeners for Admin-Only Data (Orders & Notifications)
+  useEffect(() => {
+    if (!isAdmin) {
+      setOrders([]);
+      setNotifications([]);
+      return;
+    }
+    const unsubscribers: (() => void)[] = [];
+    try {
+      let isFirstNotificationsLoad = true;
+      unsubscribers.push(
+        onSnapshot(
+          query(collection(db, 'notifications'), orderBy('timestamp', 'desc'), limit(300)),
+          (snap) => {
+            const list: AdminNotification[] = [];
+            snap.forEach((d) => {
+              list.push({ ...d.data(), id: d.id } as AdminNotification);
+            });
+            setNotifications(list);
+            if (isFirstNotificationsLoad) {
+              isFirstNotificationsLoad = false;
+            } else {
+              snap.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                  const newNotif = { ...change.doc.data(), id: change.doc.id } as AdminNotification;
+                  playSound('notification');
+                  setActiveOrderNotification(newNotif);
+                }
+              });
+            }
+          },
+          (err) => console.warn('Live notifications listener notice:', err)
+        )
+      );
+
+      unsubscribers.push(
+        onSnapshot(
+          query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(1000)),
+          (snap) => {
+            const list: CustomerOrder[] = [];
+            snap.forEach((d) => {
+              list.push({ ...d.data(), id: d.id } as CustomerOrder);
+            });
+            setOrders(list);
+          },
+          (err) => console.warn('Live orders listener notice:', err)
+        )
+      );
+    } catch (e) {
+      console.warn('Live admin snapshot setup warning:', e);
+    }
+    return () => {
+      unsubscribers.forEach((unsub) => unsub());
+    };
+  }, [isAdmin]);
+
+  // 3. Real-Time Firestore Listeners for Live Store Settings
   useEffect(() => {
     const unsubscribers: (() => void)[] = [];
 
@@ -1151,6 +1271,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             safeSetLocalStorage(STORAGE_KEYS.PAYMENT_SETTINGS, data);
           }
         }, (err) => console.warn('Live payment listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'seoConfig'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as SEOMetadataConfig;
+            setPublishedSEOConfig(data);
+            safeSetLocalStorage('mfp_seo_settings', data);
+          }
+        }, (err) => console.warn('Live SEO config listener notice:', err))
+      );
+
+      unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'aiMarketingGrowthConfig'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as AIMarketingGrowthConfig;
+            setPublishedAIMarketingGrowthConfig(data);
+            safeSetLocalStorage('mfp_ai_marketing_settings', data);
+          }
+        }, (err) => console.warn('Live AI Marketing config listener notice:', err))
       );
 
       unsubscribers.push(
@@ -1287,47 +1427,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
 
 
-      let isFirstNotificationsLoad = true;
-      unsubscribers.push(
-        onSnapshot(
-          query(collection(db, 'notifications'), orderBy('timestamp', 'desc')),
-          (snap) => {
-            const list: AdminNotification[] = [];
-            snap.forEach((d) => {
-              list.push({ ...d.data(), id: d.id } as AdminNotification);
-            });
-            setNotifications(list);
-
-            if (isFirstNotificationsLoad) {
-              isFirstNotificationsLoad = false;
-            } else {
-              snap.docChanges().forEach((change) => {
-                if (change.type === 'added') {
-                  const newNotif = { ...change.doc.data(), id: change.doc.id } as AdminNotification;
-                  playSound('notification');
-                  setActiveOrderNotification(newNotif);
-                }
-              });
-            }
-          },
-          (err) => console.warn('Live notifications listener notice:', err)
-        )
-      );
-
-      unsubscribers.push(
-        onSnapshot(
-          query(collection(db, 'orders'), orderBy('createdAt', 'desc')),
-          (snap) => {
-            const list: CustomerOrder[] = [];
-            snap.forEach((d) => {
-              list.push({ ...d.data(), id: d.id } as CustomerOrder);
-            });
-            setOrders(list);
-          },
-          (err) => console.warn('Live orders listener notice:', err)
-        )
-      );
-
       unsubscribers.push(
         onSnapshot(
           collection(db, 'coupons'),
@@ -1444,8 +1543,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isAdmin, handleUserActivity]);
 
   useEffect(() => {
-    refreshAuditLogs();
-  }, []);
+    if (isAdmin) {
+      refreshAuditLogs();
+    }
+  }, [isAdmin]);
 
   const refreshAuditLogs = async () => {
     try {
@@ -1791,6 +1892,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (err: any) {
       console.error('Error updating trending collection:', err);
       showToast('Failed to save trending collections to Firestore', 'error');
+    }
+  };
+
+  const updateSEOConfig = async (updated: Partial<SEOMetadataConfig>) => {
+    try {
+      const newCfg = { ...publishedSEOConfig, ...updated };
+      await setDoc(doc(db, 'settings', 'seoConfig'), newCfg, { merge: true });
+      showToast('💾 SEO Settings Saved Live', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error saving SEO Settings', 'error');
+    }
+  };
+
+  const updateAIMarketingGrowthConfig = async (updated: Partial<AIMarketingGrowthConfig>) => {
+    try {
+      const newCfg = { ...publishedAIMarketingGrowthConfig, ...updated };
+      await setDoc(doc(db, 'settings', 'aiMarketingGrowthConfig'), newCfg, { merge: true });
+      showToast('💾 AI Marketing Settings Saved', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error saving AI Marketing Settings', 'error');
     }
   };
 
@@ -2838,6 +2961,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     adminPermissions,
     hasPermission,
     canAccessTab,
+
+    seoConfig: publishedSEOConfig,
+    updateSEOConfig,
+    
+    aiMarketingGrowthConfig: publishedAIMarketingGrowthConfig,
+    updateAIMarketingGrowthConfig,
 
     petShoeConfig: publishedPetShoeConfig,
     updatePetShoeConfig,

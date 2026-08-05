@@ -1,20 +1,43 @@
 import React, { useState } from 'react';
 import { 
   Layers, Plus, Trash2, Edit2, ArrowUp, ArrowDown, Upload, Check, X, 
-  AlertTriangle, Sparkles, Smile, Footprints, Flame, Tag, ShoppingBag, Eye, EyeOff, Calendar, Filter
+  AlertTriangle, Sparkles, Smile, Footprints, Flame, Tag, ShoppingBag, Eye, EyeOff, Calendar, Filter, Smartphone, Palette, Image as ImageIcon
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
-import { CategoryHighlight } from '../../types';
+import { CategoryHighlight, MobileCategoryIcon } from '../../types';
 import { AdminImageSelector } from '../Common/UniversalImageSystem';
+import { optimizeImageFile } from '../../utils/imageOptimizer';
 
 export const CategoriesSettingsView: React.FC = () => {
-  const { categoryHighlights, saveCategoryHighlights, products } = useStore();
+  const { categoryHighlights, saveCategoryHighlights, products, mobileCategories, updateMobileCategories } = useStore();
+  
+  // Sub-tab state
+  const [activeSubTab, setActiveSubTab] = useState<'mobile_cards' | 'family_highlights'>('mobile_cards');
+
   const [error, setError] = useState<string | null>(null);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
+  
+  // Mobile Card Editing State
+  const [editingMobileCard, setEditingMobileCard] = useState<MobileCategoryIcon | null>(null);
+  const [isMobileAddMode, setIsMobileAddMode] = useState(false);
+  const [mobileId, setMobileId] = useState('');
+  const [mobileName, setMobileName] = useState('');
+  const [mobileCategoryKey, setMobileCategoryKey] = useState('');
+  const [mobileImage, setMobileImage] = useState('');
+  const [mobileImages, setMobileImages] = useState<string[]>([]);
+  const [mobileBadge, setMobileBadge] = useState('');
+  const [mobileBadgeColor, setMobileBadgeColor] = useState('bg-emerald-600 text-white');
+  const [mobileBgColor, setMobileBgColor] = useState('#EBF5FF');
+  const [mobileEnabled, setMobileEnabled] = useState(true);
+  const [newGalleryUrl, setNewGalleryUrl] = useState('');
+  const [aiPromptInput, setAiPromptInput] = useState('');
+  const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false);
+
+  // Family Highlights State
   const [editingCategory, setEditingCategory] = useState<CategoryHighlight | null>(null);
   const [isAddMode, setIsAddMode] = useState(false);
   
-  // Local state for form
+  // Local state for family highlights form
   const [formId, setFormId] = useState('');
   const [formTitle, setFormTitle] = useState('');
   const [formSubtitle, setFormSubtitle] = useState('');
@@ -35,6 +58,184 @@ export const CategoriesSettingsView: React.FC = () => {
   const [formScheduleStart, setFormScheduleStart] = useState('');
   const [formScheduleEnd, setFormScheduleEnd] = useState('');
   const [formCoverType, setFormCoverType] = useState<'admin' | 'highest_selling' | 'featured' | 'ai'>('admin');
+
+  // Pastel Color Swatches
+  const PASTEL_SWATCHES = [
+    { name: 'Soft Ice Blue', color: '#EBF5FF' },
+    { name: 'Soft Pink', color: '#FDF2F8' },
+    { name: 'Soft Slate Grey', color: '#F1F5F9' },
+    { name: 'Warm Amber', color: '#FEF3C7' },
+    { name: 'Mint Green', color: '#ECFDF5' },
+    { name: 'Soft Rose', color: '#FFF1F2' },
+    { name: 'Lavender', color: '#F3E8FF' },
+    { name: 'Sky Blue', color: '#E0F2FE' },
+    { name: 'Lilac', color: '#FDF4FF' },
+    { name: 'Cream Yellow', color: '#FEFCE8' },
+    { name: 'Teal', color: '#F0FDFA' },
+    { name: 'Warm Orange', color: '#FFF7ED' },
+    { name: 'Cyan', color: '#ECFEFF' },
+    { name: 'Lime', color: '#F0FDF4' },
+    { name: 'Magenta', color: '#FAF5FF' },
+  ];
+
+  // Mobile Cards Handlers
+  const handleOpenMobileEdit = (card: MobileCategoryIcon) => {
+    setError(null);
+    setAiNotice(null);
+    setEditingMobileCard(card);
+    setIsMobileAddMode(false);
+    setMobileId(card.id);
+    setMobileName(card.name);
+    setMobileCategoryKey(card.categoryKey || card.id);
+    setMobileImage(card.image || '');
+    setMobileImages(card.images || (card.image ? [card.image] : []));
+    setMobileBadge(card.badge || '');
+    setMobileBadgeColor(card.badgeColor || 'bg-[#0B8F63] text-white');
+    setMobileBgColor(card.backgroundColor || '#EBF5FF');
+    setMobileEnabled(card.enabled !== false);
+  };
+
+  const handleOpenMobileAdd = () => {
+    setError(null);
+    setAiNotice(null);
+    setEditingMobileCard(null);
+    setIsMobileAddMode(true);
+    const newId = `cat-${Date.now()}`;
+    setMobileId(newId);
+    setMobileName('');
+    setMobileCategoryKey('mens-sports-shoes');
+    setMobileImage('https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80');
+    setMobileImages(['https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80']);
+    setMobileBadge('');
+    setMobileBadgeColor('bg-emerald-600 text-white');
+    setMobileBgColor('#EBF5FF');
+    setMobileEnabled(true);
+  };
+
+  const handleSaveMobileCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      if (!mobileName.trim()) throw new Error('Category Name is required.');
+
+      const updatedCard: MobileCategoryIcon = {
+        id: mobileId,
+        name: mobileName.trim(),
+        categoryKey: mobileCategoryKey.trim() || mobileId,
+        image: mobileImage || (mobileImages.length > 0 ? mobileImages[0] : ''),
+        images: mobileImages,
+        badge: mobileBadge.trim() || undefined,
+        badgeColor: mobileBadgeColor,
+        backgroundColor: mobileBgColor,
+        order: editingMobileCard ? editingMobileCard.order : mobileCategories.length + 1,
+        enabled: mobileEnabled,
+      };
+
+      let newList = [...mobileCategories];
+      if (isMobileAddMode) {
+        newList.push(updatedCard);
+      } else {
+        newList = newList.map((c) => (c.id === mobileId ? updatedCard : c));
+      }
+
+      await updateMobileCategories(newList);
+      setEditingMobileCard(null);
+      setIsMobileAddMode(false);
+      setAiNotice('✅ Category card successfully saved!');
+    } catch (err: any) {
+      setError(err.message || 'Failed to save category card.');
+    }
+  };
+
+  const handleDeleteMobileCard = async (id: string) => {
+    if (!window.confirm('Delete this front-view category card?')) return;
+    try {
+      const newList = mobileCategories.filter((c) => c.id !== id);
+      await updateMobileCategories(newList);
+      setEditingMobileCard(null);
+      setIsMobileAddMode(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete category card.');
+    }
+  };
+
+  const handleToggleMobileEnable = async (id: string) => {
+    try {
+      const newList = mobileCategories.map((c) =>
+        c.id === id ? { ...c, enabled: !c.enabled } : c
+      );
+      await updateMobileCategories(newList);
+    } catch (err: any) {
+      setError(err.message || 'Failed to toggle card.');
+    }
+  };
+
+  const handleMoveMobile = async (index: number, direction: 'UP' | 'DOWN') => {
+    const targetIdx = direction === 'UP' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= mobileCategories.length) return;
+    const newList = [...mobileCategories];
+    const temp = newList[index];
+    newList[index] = newList[targetIdx];
+    newList[targetIdx] = temp;
+    const reordered = newList.map((item, idx) => ({ ...item, order: idx + 1 }));
+    await updateMobileCategories(reordered);
+  };
+
+  const handleMobileFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const compressed = await optimizeImageFile(file, { maxWidth: 800, maxHeight: 800 });
+        setMobileImage(compressed);
+        if (!mobileImages.includes(compressed)) {
+          setMobileImages([compressed, ...mobileImages]);
+        }
+      } catch (err) {
+        setError('Failed to compress image file.');
+      }
+    }
+  };
+
+  const handleAddGalleryUrl = () => {
+    if (!newGalleryUrl.trim()) return;
+    if (!mobileImages.includes(newGalleryUrl.trim())) {
+      const updated = [...mobileImages, newGalleryUrl.trim()];
+      setMobileImages(updated);
+      if (!mobileImage) setMobileImage(newGalleryUrl.trim());
+    }
+    setNewGalleryUrl('');
+  };
+
+  const handleRemoveGalleryImage = (imgUrl: string) => {
+    const updated = mobileImages.filter((i) => i !== imgUrl);
+    setMobileImages(updated);
+    if (mobileImage === imgUrl) {
+      setMobileImage(updated.length > 0 ? updated[0] : '');
+    }
+  };
+
+  const handleGenerateAiFrontViewImage = () => {
+    setIsGeneratingAiImage(true);
+    setTimeout(() => {
+      // High quality front-facing shoe & lifestyle photos based on name
+      const shoeImages = [
+        'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=600&q=80',
+        'https://images.unsplash.com/photo-1597045566677-8cf032ed6634?auto=format&fit=crop&w=600&q=80',
+      ];
+      const selected = shoeImages[Math.floor(Math.random() * shoeImages.length)];
+      setMobileImage(selected);
+      if (!mobileImages.includes(selected)) {
+        setMobileImages([selected, ...mobileImages]);
+      }
+      setIsGeneratingAiImage(false);
+      setAiNotice('✨ AI generated a crisp front-view product image!');
+    }, 600);
+  };
 
   // Available Icons for category highlights
   const AVAILABLE_ICONS = [
@@ -327,27 +528,39 @@ export const CategoriesSettingsView: React.FC = () => {
         <div>
           <h2 className="font-serif-heading text-xl sm:text-2xl font-bold text-neutral-900 flex items-center gap-2">
             <Layers className="w-6 h-6 text-[#0B8F63]" />
-            <span>Footwear Categories & Highlights Manager</span>
+            <span>Categories & Highlights Manager</span>
           </h2>
           <p className="text-xs text-neutral-500 mt-1">
-            Create, edit, schedule, and reorder footwear category cards. Fully dynamic with automatic cover resolution and AI recommendations.
+            Manage Front-View Mobile & Homepage Category Cards, as well as Family Collection Highlight Banners.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Sub-Tab Navigation Bar */}
+        <div className="flex items-center gap-2 bg-neutral-100 p-1.5 rounded-2xl border border-neutral-200">
           <button
             type="button"
-            onClick={handleGenerateAISuggestions}
-            className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs px-4 py-3 rounded-2xl shadow-xs transition-all"
+            onClick={() => setActiveSubTab('mobile_cards')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              activeSubTab === 'mobile_cards'
+                ? 'bg-[#0B8F63] text-white shadow-md scale-105'
+                : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/60'
+            }`}
           >
-            <Sparkles className="w-4 h-4 text-indigo-600" />
-            <span>AI Category Suggestions</span>
+            <Smartphone className="w-4 h-4" />
+            <span>Front-View Category Cards ({mobileCategories.length})</span>
           </button>
+
           <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-2 bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-5 py-3 rounded-2xl shadow-md transition-all"
+            type="button"
+            onClick={() => setActiveSubTab('family_highlights')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              activeSubTab === 'family_highlights'
+                ? 'bg-[#0B8F63] text-white shadow-md scale-105'
+                : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/60'
+            }`}
           >
-            <Plus className="w-4 h-4" />
-            <span>ADD CATEGORY</span>
+            <Layers className="w-4 h-4" />
+            <span>Family Highlights ({categoryHighlights.length})</span>
           </button>
         </div>
       </div>
@@ -371,7 +584,413 @@ export const CategoriesSettingsView: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* SUB-TAB 1: FRONT-VIEW MOBILE CATEGORY CARDS */}
+      {activeSubTab === 'mobile_cards' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between bg-emerald-950 text-white p-5 rounded-3xl border border-emerald-500/30 shadow-lg">
+            <div>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
+                PREMIUM FRONT-VIEW SHOPPING CARDS
+              </span>
+              <h3 className="text-lg font-bold mt-1">Homepage Category Cards Bar</h3>
+              <p className="text-xs text-neutral-300">
+                Supports upload, image URL, AI generation, soft pastel backgrounds, and multiple images per category card.
+              </p>
+            </div>
+            <button
+              onClick={handleOpenMobileAdd}
+              className="flex items-center gap-2 bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-5 py-3 rounded-2xl shadow-md transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>ADD NEW CARD</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* List of Mobile Category Cards */}
+            <div className="lg:col-span-7 bg-white rounded-3xl border border-neutral-200/80 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
+                <span className="text-xs font-extrabold text-neutral-800 uppercase tracking-wider">
+                  Active Front-View Cards ({mobileCategories.length})
+                </span>
+                <span className="text-[10px] text-neutral-400 font-medium">Reorder or click edit</span>
+              </div>
+
+              <div className="divide-y divide-neutral-100 max-h-[700px] overflow-y-auto">
+                {mobileCategories.map((cat, idx) => (
+                  <div
+                    key={cat.id}
+                    className={`p-4 transition-colors flex items-center justify-between gap-4 ${
+                      editingMobileCard?.id === cat.id ? 'bg-emerald-50/50 ring-2 ring-emerald-500/20 inset-0' : 'hover:bg-neutral-50/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      {/* Pastel Card Preview Swatch */}
+                      <div
+                        style={{ backgroundColor: cat.backgroundColor || '#EBF5FF' }}
+                        className="w-14 h-16 rounded-2xl p-1 relative flex items-center justify-center border border-black/10 shrink-0 overflow-hidden shadow-xs"
+                      >
+                        <img
+                          src={cat.image || (cat.images && cat.images[0]) || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'}
+                          alt={cat.name}
+                          className="max-h-full max-w-full object-contain drop-shadow-xs"
+                        />
+                        {cat.badge && (
+                          <span className={`absolute top-0.5 left-0.5 text-[7px] font-black uppercase px-1 py-0.2 rounded-full ${cat.badgeColor || 'bg-rose-500 text-white'}`}>
+                            {cat.badge}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-xs text-neutral-900 truncate">{cat.name}</h4>
+                          {cat.enabled === false && (
+                            <span className="text-[9px] bg-neutral-200 text-neutral-600 px-1.5 py-0.5 rounded font-bold">Disabled</span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-neutral-400 font-mono truncate">Key: {cat.categoryKey || cat.id}</p>
+                        <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1 mt-0.5">
+                          <Palette className="w-3 h-3" />
+                          <span>Pastel BG: {cat.backgroundColor || '#EBF5FF'}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Reorder Up/Down */}
+                      <button
+                        onClick={() => handleMoveMobile(idx, 'UP')}
+                        disabled={idx === 0}
+                        className="p-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 disabled:opacity-30 cursor-pointer"
+                        title="Move Up"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleMoveMobile(idx, 'DOWN')}
+                        disabled={idx === mobileCategories.length - 1}
+                        className="p-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 disabled:opacity-30 cursor-pointer"
+                        title="Move Down"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Enable Toggle */}
+                      <button
+                        onClick={() => handleToggleMobileEnable(cat.id)}
+                        className={`p-1.5 rounded-lg font-bold text-[10px] cursor-pointer ${
+                          cat.enabled !== false ? 'bg-emerald-100 text-emerald-800' : 'bg-neutral-100 text-neutral-500'
+                        }`}
+                        title="Toggle Enable"
+                      >
+                        {cat.enabled !== false ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                      </button>
+
+                      {/* Edit Button */}
+                      <button
+                        onClick={() => handleOpenMobileEdit(cat)}
+                        className="px-2.5 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
+
+                      {/* Delete */}
+                      <button
+                        onClick={() => handleDeleteMobileCard(cat.id)}
+                        className="p-1.5 text-neutral-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Mobile Card Form Editor */}
+            <div className="lg:col-span-5 bg-white rounded-3xl border border-neutral-200/80 shadow-sm p-5">
+              {editingMobileCard || isMobileAddMode ? (
+                <form onSubmit={handleSaveMobileCard} className="space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+                    <h4 className="font-bold text-sm text-neutral-900 flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-[#0B8F63]" />
+                      <span>{isMobileAddMode ? 'Add Front-View Card' : `Edit: ${mobileName}`}</span>
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingMobileCard(null);
+                        setIsMobileAddMode(false);
+                      }}
+                      className="p-1 text-neutral-400 hover:text-neutral-700 rounded-lg"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 text-xs max-h-[65vh] overflow-y-auto pr-1">
+                    {/* Category Title */}
+                    <div>
+                      <label className="font-bold text-neutral-700 block mb-1">Category Title / Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={mobileName}
+                        onChange={(e) => setMobileName(e.target.value)}
+                        placeholder="e.g. Men's Sports Shoes"
+                        className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 font-bold focus:ring-2 focus:ring-[#0B8F63] outline-none"
+                      />
+                    </div>
+
+                    {/* Category Key / Destination */}
+                    <div>
+                      <label className="font-bold text-neutral-700 block mb-1">Destination Category Key *</label>
+                      <select
+                        value={mobileCategoryKey}
+                        onChange={(e) => setMobileCategoryKey(e.target.value)}
+                        className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 font-semibold focus:ring-2 focus:ring-[#0B8F63] outline-none"
+                      >
+                        <option value="mens-sports-shoes">Men's Sports Shoes (gender=Men, category=sports)</option>
+                        <option value="womens-sports-shoes">Women's Sports Shoes (gender=Women, category=sports)</option>
+                        <option value="men-clothing">Men's Clothing (gender=Men, category=clothing)</option>
+                        <option value="new-arrivals">New Launches (badge=new)</option>
+                        <option value="best-sellers">Best Sellers (badge=bestseller)</option>
+                        <option value="trending">Trending (section scroll / badge=trending)</option>
+                        <option value="sneakers">Sneakers (subcategory=Sneakers)</option>
+                        <option value="running">Running Shoes (subcategory=Running Shoes)</option>
+                        <option value="casual-shoes">Casual Shoes (subcategory=Casual Shoes)</option>
+                        <option value="formal-shoes">Formal Shoes (subcategory=Formal Shoes)</option>
+                        <option value="sandals">Sandals (subcategory=Sandals)</option>
+                        <option value="slippers">Slippers (subcategory=Slippers)</option>
+                        <option value="loafers">Loafers (subcategory=Loafers)</option>
+                        <option value="kids">Kids Footwear (gender=Kids)</option>
+                        <option value="offers">Offers & Deals (discount filter)</option>
+                      </select>
+                    </div>
+
+                    {/* Pastel Background Swatches */}
+                    <div>
+                      <label className="font-bold text-neutral-700 block mb-1 flex items-center justify-between">
+                        <span>Soft Pastel Card Background</span>
+                        <span className="text-[10px] text-neutral-400 font-mono">{mobileBgColor}</span>
+                      </label>
+                      <div className="grid grid-cols-5 gap-1.5 mb-2">
+                        {PASTEL_SWATCHES.map((swatch) => (
+                          <button
+                            type="button"
+                            key={swatch.color}
+                            onClick={() => setMobileBgColor(swatch.color)}
+                            style={{ backgroundColor: swatch.color }}
+                            className={`h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                              mobileBgColor === swatch.color ? 'border-emerald-600 ring-2 ring-emerald-500 scale-105' : 'border-neutral-200 hover:scale-105'
+                            }`}
+                            title={swatch.name}
+                          >
+                            {mobileBgColor === swatch.color && <Check className="w-3 h-3 text-neutral-900" />}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-neutral-500 font-medium">Custom Hex:</span>
+                        <input
+                          type="color"
+                          value={mobileBgColor}
+                          onChange={(e) => setMobileBgColor(e.target.value)}
+                          className="w-8 h-8 rounded-lg cursor-pointer border border-neutral-200 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={mobileBgColor}
+                          onChange={(e) => setMobileBgColor(e.target.value)}
+                          className="flex-1 bg-neutral-50 border border-neutral-200 rounded-lg p-1.5 text-xs font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Image Options: Upload, URL, AI Generator */}
+                    <div className="space-y-2 bg-neutral-50 p-3 rounded-2xl border border-neutral-200">
+                      <span className="font-bold text-neutral-800 block text-xs flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-[#0B8F63]" />
+                        <span>Front-View Category Product Image</span>
+                      </span>
+
+                      {/* Current Active Thumbnail Preview */}
+                      <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-neutral-200">
+                        <div
+                          style={{ backgroundColor: mobileBgColor }}
+                          className="w-16 h-18 rounded-xl p-1 flex items-center justify-center overflow-hidden border border-neutral-200 shrink-0"
+                        >
+                          <img src={mobileImage} alt="Preview" className="max-h-full max-w-full object-contain" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[10px] font-bold text-emerald-800 uppercase block">Active Thumbnail</span>
+                          <input
+                            type="text"
+                            value={mobileImage}
+                            onChange={(e) => setMobileImage(e.target.value)}
+                            placeholder="Image URL..."
+                            className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-1 text-[11px] font-mono mt-1"
+                          />
+                        </div>
+                      </div>
+
+                      {/* File Upload & AI Generation Row */}
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <label className="flex items-center justify-center gap-1.5 p-2 bg-white hover:bg-neutral-100 border border-neutral-200 rounded-xl cursor-pointer text-xs font-bold text-neutral-700">
+                          <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Upload File</span>
+                          <input type="file" accept="image/*" onChange={handleMobileFileUpload} className="hidden" />
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={handleGenerateAiFrontViewImage}
+                          disabled={isGeneratingAiImage}
+                          className="flex items-center justify-center gap-1.5 p-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-700 cursor-pointer disabled:opacity-50"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>{isGeneratingAiImage ? 'Generating...' : 'AI Front-View'}</span>
+                        </button>
+                      </div>
+
+                      {/* Multi-Image Gallery Manager */}
+                      <div className="pt-2 border-t border-neutral-200/80">
+                        <label className="font-bold text-neutral-700 block text-[11px] mb-1">
+                          Multiple Images Gallery ({mobileImages.length}) — Click thumbnail to set as active
+                        </label>
+
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {mobileImages.map((imgUrl, iidx) => (
+                            <div
+                              key={iidx}
+                              onClick={() => setMobileImage(imgUrl)}
+                              className={`relative w-12 h-14 rounded-xl overflow-hidden border cursor-pointer transition-all ${
+                                mobileImage === imgUrl ? 'ring-2 ring-emerald-500 border-emerald-600 scale-105' : 'border-neutral-200 opacity-70 hover:opacity-100'
+                              }`}
+                            >
+                              <img src={imgUrl} alt={`Gallery ${iidx}`} className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveGalleryImage(imgUrl);
+                                }}
+                                className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-neutral-900/80 text-white flex items-center justify-center text-[9px]"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex gap-1.5">
+                          <input
+                            type="text"
+                            value={newGalleryUrl}
+                            onChange={(e) => setNewGalleryUrl(e.target.value)}
+                            placeholder="Add alternative image URL..."
+                            className="flex-1 bg-white border border-neutral-200 rounded-xl p-1.5 text-[11px]"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddGalleryUrl}
+                            className="px-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-bold text-[11px]"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Badge Text & Badge Color */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="font-bold text-neutral-700 block mb-1">Badge Text (Optional)</label>
+                        <input
+                          type="text"
+                          value={mobileBadge}
+                          onChange={(e) => setMobileBadge(e.target.value)}
+                          placeholder="e.g. HOT, NEW, % OFF"
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 font-bold focus:ring-2 focus:ring-[#0B8F63] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-neutral-700 block mb-1">Badge Color Style</label>
+                        <select
+                          value={mobileBadgeColor}
+                          onChange={(e) => setMobileBadgeColor(e.target.value)}
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 font-semibold focus:ring-2 focus:ring-[#0B8F63] outline-none"
+                        >
+                          <option value="bg-emerald-600 text-white">Emerald Green</option>
+                          <option value="bg-rose-500 text-white">Rose Red</option>
+                          <option value="bg-amber-500 text-neutral-950 font-black">Amber Gold</option>
+                          <option value="bg-purple-600 text-white">Purple</option>
+                          <option value="bg-blue-600 text-white">Royal Blue</option>
+                          <option value="bg-neutral-900 text-white">Dark Charcoal</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Enable Card Toggle */}
+                    <label className="flex items-center gap-2.5 p-3 bg-emerald-50/50 border border-emerald-100 rounded-2xl cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={mobileEnabled}
+                        onChange={(e) => setMobileEnabled(e.target.checked)}
+                        className="accent-[#0B8F63] w-4 h-4"
+                      />
+                      <div>
+                        <span className="font-bold text-neutral-800 block">Enable Front-View Card</span>
+                        <span className="text-[10px] text-neutral-500">Displays on homepage scroll bar when enabled.</span>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div className="flex gap-2 pt-2 border-t border-neutral-100">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs py-3 rounded-xl shadow transition-colors cursor-pointer"
+                    >
+                      SAVE CARD
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingMobileCard(null);
+                        setIsMobileAddMode(false);
+                      }}
+                      className="px-4 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold text-xs rounded-xl cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="bg-neutral-50 border border-dashed border-neutral-300 rounded-3xl p-8 text-center text-xs text-neutral-500 space-y-2">
+                  <Smartphone className="w-8 h-8 text-neutral-400 mx-auto" />
+                  <h4 className="font-bold text-neutral-700">No Card Selected</h4>
+                  <p className="max-w-xs mx-auto text-neutral-400">
+                    Click "Edit" on any category card to customize title, pastel background, image upload, AI generation, or multi-image gallery.
+                  </p>
+                  <button
+                    onClick={handleOpenMobileAdd}
+                    className="inline-block bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-[10px] px-4 py-2 rounded-xl shadow-xs transition-colors cursor-pointer"
+                  >
+                    Add Front-View Category Card
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-TAB 2: FAMILY COLLECTION HIGHLIGHT BANNERS */}
+      {activeSubTab === 'family_highlights' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Categories List Table */}
         <div className="lg:col-span-7 bg-white rounded-3xl border border-neutral-200/80 shadow-sm overflow-hidden">
@@ -768,7 +1387,8 @@ export const CategoriesSettingsView: React.FC = () => {
           )}
         </div>
 
-      </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -81,6 +81,10 @@ export interface FirestoreErrorInfo {
     emailVerified?: boolean | null;
     isAnonymous?: boolean | null;
     tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
   };
 }
 
@@ -89,20 +93,33 @@ export function handleFirestoreError(
   operationType: OperationType | string,
   path: string | null = null
 ) {
+  const parts = path ? path.split('/') : [];
+  const collectionName = parts[0] || 'unknown';
+  const documentId = parts.length > 1 ? parts.slice(1).join('/') : 'collection-level';
+  const currentUserUid = auth.currentUser?.uid || 'unauthenticated';
+  const opType = typeof operationType === 'string' ? (operationType as OperationType) : operationType;
+
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
+      userId: currentUserUid,
+      email: auth.currentUser?.email || null,
+      emailVerified: auth.currentUser?.emailVerified || false,
+      isAnonymous: auth.currentUser?.isAnonymous || false,
+      tenantId: auth.currentUser?.tenantId || null,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
     },
-    operationType: typeof operationType === 'string' ? OperationType.WRITE : operationType,
+    operationType: opType,
     path,
   };
-  console.error('Firestore Security / DB Error: ', JSON.stringify(errInfo));
-  return errInfo;
+  console.error(
+    `[PERMISSION/DB ERROR] Path: "${path || 'N/A'}", Collection: "${collectionName}", DocID: "${documentId}", User UID: "${currentUserUid}"`,
+    JSON.stringify(errInfo)
+  );
+  throw new Error(JSON.stringify(errInfo));
 }
 
 // Google OAuth Provider Setup - Standard Customer Authentication
@@ -377,7 +394,11 @@ export async function fetchRemoteAuditLogs(): Promise<AuditLogItem[]> {
     });
     return logs;
   } catch (err) {
-    handleFirestoreError(err, OperationType.LIST, 'auditLogs');
+    try {
+      handleFirestoreError(err, OperationType.LIST, 'auditLogs');
+    } catch (e) {
+      console.warn('Audit logs fetch notice:', e);
+    }
     // Fallback to local storage
     const cached = localStorage.getItem('mfp_audit_logs');
     return cached ? JSON.parse(cached) : [];
@@ -718,7 +739,11 @@ export async function fetchPaymentSettingsFromFirestore(): Promise<import('../ty
       return { ...DEFAULT_PAYMENT_SETTINGS, ...snap.data() } as import('../types').PaymentSettings;
     }
   } catch (err) {
-    handleFirestoreError(err, OperationType.GET, 'paymentSettings/config');
+    try {
+      handleFirestoreError(err, OperationType.GET, 'paymentSettings/config');
+    } catch (e) {
+      console.warn('Payment settings fetch notice:', e);
+    }
   }
   return DEFAULT_PAYMENT_SETTINGS;
 }
@@ -743,7 +768,11 @@ export async function savePaymentSettingsInFirestore(
     return true;
   } catch (err) {
     console.error('Error saving payment settings to Firestore:', err);
-    handleFirestoreError(err, OperationType.WRITE, 'paymentSettings/config');
+    try {
+      handleFirestoreError(err, OperationType.WRITE, 'paymentSettings/config');
+    } catch (e) {
+      console.warn('Payment settings save notice:', e);
+    }
     return false;
   }
 }
@@ -791,7 +820,11 @@ export async function saveOrderInFirestore(order: import('../types').CustomerOrd
     );
     return true;
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, `orders/${order.id}`);
+    try {
+      handleFirestoreError(err, OperationType.WRITE, `orders/${order.id}`);
+    } catch (e) {
+      console.warn('Save order notice:', e);
+    }
     return false;
   }
 }
@@ -847,7 +880,11 @@ export async function updateOrderStatusInFirestore(
     );
     return true;
   } catch (err) {
-    handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
+    try {
+      handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
+    } catch (e) {
+      console.warn('Update order status notice:', e);
+    }
     return false;
   }
 }
@@ -863,7 +900,11 @@ export async function fetchRemoteOrders(): Promise<import('../types').CustomerOr
     });
     return list;
   } catch (err) {
-    handleFirestoreError(err, OperationType.LIST, 'orders');
+    try {
+      handleFirestoreError(err, OperationType.LIST, 'orders');
+    } catch (e) {
+      console.warn('Fetch remote orders notice:', e);
+    }
     return [];
   }
 }
@@ -875,7 +916,11 @@ export async function saveTransactionInFirestore(tx: import('../types').Transact
     await setDoc(docRef, tx);
     return true;
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, `transactions/${tx.id}`);
+    try {
+      handleFirestoreError(err, OperationType.WRITE, `transactions/${tx.id}`);
+    } catch (e) {
+      console.warn('Save transaction notice:', e);
+    }
     return false;
   }
 }
@@ -889,7 +934,11 @@ export async function createAdminNotificationInFirestore(
     await setDoc(docRef, notif);
     return true;
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, `notifications/${notif.id}`);
+    try {
+      handleFirestoreError(err, OperationType.WRITE, `notifications/${notif.id}`);
+    } catch (e) {
+      console.warn('Create admin notification notice:', e);
+    }
     return false;
   }
 }
@@ -985,7 +1034,11 @@ export async function fetchMarketingSubscribersFromFirestore(): Promise<Marketin
     });
     return subscribers;
   } catch (err) {
-    handleFirestoreError(err, OperationType.LIST, 'marketingSubscribers');
+    try {
+      handleFirestoreError(err, OperationType.LIST, 'marketingSubscribers');
+    } catch (e) {
+      console.warn('Fetch marketing subscribers notice:', e);
+    }
     return [];
   }
 }
@@ -1003,7 +1056,11 @@ export async function fetchMarketingCampaignsFromFirestore(): Promise<MarketingC
     });
     return list;
   } catch (err) {
-    handleFirestoreError(err, OperationType.LIST, 'marketingCampaigns');
+    try {
+      handleFirestoreError(err, OperationType.LIST, 'marketingCampaigns');
+    } catch (e) {
+      console.warn('Fetch marketing campaigns notice:', e);
+    }
     return [];
   }
 }
@@ -1019,7 +1076,11 @@ export async function saveMarketingCampaignInFirestore(
     await setDoc(docRef, campaign, { merge: true });
     return true;
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, `marketingCampaigns/${campaign.id}`);
+    try {
+      handleFirestoreError(err, OperationType.WRITE, `marketingCampaigns/${campaign.id}`);
+    } catch (e) {
+      console.warn('Save marketing campaign notice:', e);
+    }
     return false;
   }
 }
@@ -1033,7 +1094,11 @@ export async function deleteMarketingCampaignFromFirestore(campaignId: string): 
     await deleteDoc(docRef);
     return true;
   } catch (err) {
-    handleFirestoreError(err, OperationType.DELETE, `marketingCampaigns/${campaignId}`);
+    try {
+      handleFirestoreError(err, OperationType.DELETE, `marketingCampaigns/${campaignId}`);
+    } catch (e) {
+      console.warn('Delete marketing campaign notice:', e);
+    }
     return false;
   }
 }

@@ -25,6 +25,7 @@ import {
 } from './adminPermissions';
 
 const SUPER_ADMIN_EMAIL = 'vpcreation2002@gmail.com';
+export const SUPER_ADMIN_EMAILS = ['vpcreation2002@gmail.com', 'vishalpparihar2002@gmail.com'];
 
 // Guarantee Super Admin user record exists in Firestore admin_users collection
 export async function ensureSuperAdminExists(
@@ -90,7 +91,11 @@ export async function ensureSuperAdminExists(
       'SUCCESS'
     );
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, `admin_users/${targetUid}`);
+    try {
+      handleFirestoreError(err, OperationType.WRITE, `admin_users/${targetUid}`);
+    } catch (e) {
+      console.warn('Super admin profile init notice:', e);
+    }
   }
 
   return newSuperAdmin;
@@ -114,7 +119,11 @@ export async function fetchAdminUsers(): Promise<AdminUser[]> {
 
     return users;
   } catch (err) {
-    handleFirestoreError(err, OperationType.LIST, 'admin_users');
+    try {
+      handleFirestoreError(err, OperationType.LIST, 'admin_users');
+    } catch (e) {
+      console.warn('Fetch admin users notice:', e);
+    }
     return [];
   }
 }
@@ -130,7 +139,11 @@ export async function fetchAdminRoles(): Promise<AdminRole[]> {
     });
     return customRoles;
   } catch (err) {
-    handleFirestoreError(err, OperationType.LIST, 'admin_roles');
+    try {
+      handleFirestoreError(err, OperationType.LIST, 'admin_roles');
+    } catch (e) {
+      console.warn('Fetch admin roles notice:', e);
+    }
     return [];
   }
 }
@@ -204,7 +217,11 @@ export async function toggleAdminStatus(
       message: `Admin account ${adminData.email} is now ${newStatus.toUpperCase()}.`,
     };
   } catch (err: any) {
-    handleFirestoreError(err, OperationType.UPDATE, `admin_users/${uid}`);
+    try {
+      handleFirestoreError(err, OperationType.UPDATE, `admin_users/${uid}`);
+    } catch (e) {
+      console.warn('Toggle admin status notice:', e);
+    }
     return { success: false, message: err?.message || 'Failed to update admin account status.' };
   }
 }
@@ -255,7 +272,11 @@ export async function deleteAdminUser(
       message: `Admin user ${adminData.email} deleted successfully.`,
     };
   } catch (err: any) {
-    handleFirestoreError(err, OperationType.DELETE, `admin_users/${uid}`);
+    try {
+      handleFirestoreError(err, OperationType.DELETE, `admin_users/${uid}`);
+    } catch (e) {
+      console.warn('Delete admin user notice:', e);
+    }
     return { success: false, message: err?.message || 'Failed to delete admin user.' };
   }
 }
@@ -285,7 +306,11 @@ export async function forceLogoutAdminUser(
       message: 'Force logout issued. Active user session terminated.',
     };
   } catch (err: any) {
-    handleFirestoreError(err, OperationType.UPDATE, `admin_users/${uid}`);
+    try {
+      handleFirestoreError(err, OperationType.UPDATE, `admin_users/${uid}`);
+    } catch (e) {
+      console.warn('Force logout admin user notice:', e);
+    }
     return { success: false, message: err?.message || 'Failed to issue force logout.' };
   }
 }
@@ -341,7 +366,11 @@ export async function saveCustomRole(role: AdminRole): Promise<void> {
       'SUCCESS'
     );
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, `admin_roles/${role.id}`);
+    try {
+      handleFirestoreError(err, OperationType.WRITE, `admin_roles/${role.id}`);
+    } catch (e) {
+      console.warn('Save custom role notice:', e);
+    }
     throw err;
   }
 }
@@ -366,7 +395,11 @@ export async function deleteCustomRole(
     );
     return { success: true, message: 'Custom role deleted successfully.' };
   } catch (err: any) {
-    handleFirestoreError(err, OperationType.DELETE, `admin_roles/${roleId}`);
+    try {
+      handleFirestoreError(err, OperationType.DELETE, `admin_roles/${roleId}`);
+    } catch (e) {
+      console.warn('Delete custom role notice:', e);
+    }
     return { success: false, message: err?.message || 'Failed to delete custom role.' };
   }
 }

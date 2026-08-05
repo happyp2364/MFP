@@ -17,6 +17,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   if (!isOpen) return null;
 
   const { loginAdmin, loginWithGoogleAdmin, isTwoFactorEnabled } = useStore();
+  const [adminEmailInput, setAdminEmailInput] = useState('vpcreation2002@gmail.com');
   const [password, setPassword] = useState('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [showTwoFactorInput, setShowTwoFactorInput] = useState(false);
@@ -36,7 +37,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     setIsAuthenticating(true);
 
     try {
-      const res = await loginAdmin(password, twoFactorCode);
+      const res = await loginAdmin(password, twoFactorCode, adminEmailInput);
 
       if (res.requires2FA) {
         setShowTwoFactorInput(true);
@@ -227,15 +228,17 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             )}
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-neutral-700 block">Admin Identity</label>
+              <label className="text-xs font-bold text-neutral-700 block">Admin Account Email</label>
               <div className="relative flex items-center">
-                <User className="absolute left-3.5 w-4 h-4 text-neutral-400" />
-                <input
-                  type="text"
-                  disabled
-                  value="vpcreation2002@gmail.com (Owner Admin)"
-                  className="w-full bg-neutral-100 border border-neutral-200 rounded-xl py-3 pl-10 pr-4 text-xs font-semibold text-neutral-600 outline-none cursor-not-allowed"
-                />
+                <User className="absolute left-3.5 w-4 h-4 text-neutral-400 z-10 pointer-events-none" />
+                <select
+                  value={adminEmailInput}
+                  onChange={(e) => setAdminEmailInput(e.target.value)}
+                  className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-4 text-xs font-semibold text-neutral-800 outline-none focus:ring-2 focus:ring-[#0B8F63]"
+                >
+                  <option value="vpcreation2002@gmail.com">vpcreation2002@gmail.com (Owner Super Admin)</option>
+                  <option value="vishalpparihar2002@gmail.com">vishalpparihar2002@gmail.com (Emergency Recovery Admin)</option>
+                </select>
               </div>
             </div>
 

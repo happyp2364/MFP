@@ -31,6 +31,47 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Enterprise Security Headers
+  app.use((req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; img-src 'self' https: data: blob:; font-src 'self' https: data:;"
+    );
+    next();
+  });
+
+  // Server-side IP Rate Limiting for API protection
+  const apiRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+  app.use("/api/", (req, res, next) => {
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "global_client";
+    const ipKey = Array.isArray(ip) ? ip[0] : String(ip);
+    const now = Date.now();
+    const windowMs = 60 * 1000; // 1 minute
+    const maxRequests = 120;
+
+    const entry = apiRateLimitMap.get(ipKey);
+    if (!entry || now > entry.resetAt) {
+      apiRateLimitMap.set(ipKey, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    entry.count += 1;
+    if (entry.count > maxRequests) {
+      return res.status(429).json({
+        error: "Too many requests. API rate limit exceeded.",
+        retryAfterSeconds: Math.ceil((entry.resetAt - now) / 1000),
+      });
+    }
+
+    next();
+  });
+
   // Support JSON payload up to 30MB for base64 image uploads
   app.use(express.json({ limit: "30mb" }));
   app.use(express.urlencoded({ extended: true, limit: "30mb" }));

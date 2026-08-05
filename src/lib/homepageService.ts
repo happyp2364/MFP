@@ -73,7 +73,11 @@ export async function fetchHomepageConfigFromFirestore(): Promise<HomepageConfig
       }
     }
   } catch (err) {
-    handleFirestoreError(err, OperationType.GET, `homepage_config/${ACTIVE_CONFIG_DOC}`);
+    try {
+      handleFirestoreError(err, OperationType.GET, `homepage_config/${ACTIVE_CONFIG_DOC}`);
+    } catch (e) {
+      console.warn('[Theme Logger] Firestore fetch notice, using fallback cache:', e);
+    }
   }
 
   // Fallback to local storage or DEFAULT_HOMEPAGE_CONFIG
@@ -198,7 +202,11 @@ export async function saveHomepageConfigToFirestore(
     return true;
   } catch (err) {
     console.error('[Theme Logger] Theme Save Failed:', err);
-    handleFirestoreError(err, OperationType.WRITE, `homepage_config/${ACTIVE_CONFIG_DOC}`);
+    try {
+      handleFirestoreError(err, OperationType.WRITE, `homepage_config/${ACTIVE_CONFIG_DOC}`);
+    } catch (e) {
+      console.warn('Handled Firestore write error:', e);
+    }
     return false;
   }
 }
@@ -216,7 +224,11 @@ export async function fetchHomepageVersionsFromFirestore(): Promise<HomepageVers
     });
     return versions;
   } catch (err) {
-    handleFirestoreError(err, OperationType.LIST, 'homepage_versions');
+    try {
+      handleFirestoreError(err, OperationType.LIST, 'homepage_versions');
+    } catch (e) {
+      console.warn('Homepage versions fetch notice:', e);
+    }
     return [];
   }
 }
@@ -242,7 +254,11 @@ export async function rollbackHomepageVersionInFirestore(
       );
     }
   } catch (err) {
-    handleFirestoreError(err, OperationType.GET, `homepage_versions/${versionId}`);
+    try {
+      handleFirestoreError(err, OperationType.GET, `homepage_versions/${versionId}`);
+    } catch (e) {
+      console.warn('Rollback version fetch notice:', e);
+    }
   }
   return false;
 }

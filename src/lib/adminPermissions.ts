@@ -188,7 +188,7 @@ export function getEffectivePermissions(
   }
 
   // Super Admin always gets 100% full permissions across all modules
-  if (user.roleId === 'super_admin' || user.email === 'vpcreation2002@gmail.com') {
+  if (user.roleId === 'super_admin' || user.email === 'vpcreation2002@gmail.com' || user.email === 'vishalpparihar2002@gmail.com') {
     return createFullPermissionMatrix();
   }
 

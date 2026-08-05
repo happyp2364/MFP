@@ -516,6 +516,19 @@ export const ReviewsSettingsView: React.FC = () => {
                               "{rev.comment}"
                             </p>
 
+                            {rev.productImage && (
+                              <div className="flex items-center gap-2 pt-1">
+                                <img
+                                  src={rev.productImage}
+                                  alt="Customer product attachment"
+                                  className="w-12 h-12 rounded-lg object-cover border border-neutral-200 shadow-sm"
+                                />
+                                <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                  📸 Photo Attached
+                                </span>
+                              </div>
+                            )}
+
                             {/* Pinned/Featured label indicator */}
                             <div className="flex gap-1.5 flex-wrap">
                               {rev.pinned && (

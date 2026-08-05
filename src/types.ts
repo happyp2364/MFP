@@ -84,6 +84,8 @@ export interface Review {
   pinned?: boolean;
   featured?: boolean;
   reply?: string;
+  helpfulCount?: number;
+  productImage?: string;
 }
 
 export interface FilterState {
@@ -1786,11 +1788,14 @@ export interface PhysicalStore {
 export interface MobileCategoryIcon {
   id: string;
   name: string;
-  iconName: string;
+  iconName?: string;
   image?: string;
-  categoryKey: string; // e.g. 'new-arrivals', 'sports-shoes', 'sneakers', 'running', 'formal-shoes', 'sandals', 'slippers', 'men-clothing', 'kids', 'offers', 'best-sellers', 'trending'
+  images?: string[];
+  categoryKey: string; // e.g. 'mens-sports-shoes', 'womens-sports-shoes', 'men-clothing', 'new-arrivals', 'best-sellers', 'trending', 'sneakers', 'running', 'casual-shoes', 'formal-shoes', 'sandals', 'slippers', 'loafers', 'kids', 'offers'
+  destinationUrl?: string;
   badge?: string;
   badgeColor?: string;
+  backgroundColor?: string;
   order: number;
   enabled: boolean;
 }

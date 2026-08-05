@@ -19,7 +19,9 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        request.auth.token.email == 'vpcreation2002@gmail.com'
+        exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) ||
+        request.auth.token.email == 'vpcreation2002@gmail.com' ||
+        request.auth.token.email == 'vishalpparihar2002@gmail.com'
       );
     }
 
@@ -231,7 +233,8 @@ service cloud.firestore {
     // Marketing Subscribers & Consent Preferences
     match /marketingSubscribers/{subscriberId} {
       allow create: if true;
-      allow read, update, delete: if isAdmin();
+      allow read, delete: if isAdmin();
+      allow update: if isAdmin() || (isSignedIn() && (resource == null || resource.data.email == request.auth.token.email)) || (!isSignedIn() && (resource == null || resource.data.email == request.resource.data.email));
     }
 
     // Flash Deals & Customer Engagement Analytics

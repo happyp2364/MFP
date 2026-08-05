@@ -108,13 +108,15 @@ export function runAutoContrastAudit() {
 
     const contrast = getContrastRatio(bgLuminance, textLuminance);
 
-    // WCAG AA threshold is 4.5:1 for body, 3.0:1 for headings
+    // WCAG AA threshold is 4.5:1 for body text, 3.0:1 for headings / large text (18pt+ or 14pt+ bold)
     const isHeading = !!el.tagName.match(/^H[1-6]$/);
-    const threshold = isHeading ? 3.0 : 4.0;
+    const fontSize = parseFloat(computed.fontSize || '14');
+    const isLargeText = isHeading || fontSize >= 18 || (fontSize >= 14 && computed.fontWeight && parseInt(computed.fontWeight, 10) >= 700);
+    const threshold = isLargeText ? 3.0 : 4.5;
 
     if (contrast < threshold) {
       // Contrast is too low! Override text color if not already applied
-      const targetColor = bgLuminance >= 0.5 ? '#111827' : '#ffffff';
+      const targetColor = bgLuminance >= 0.45 ? '#0f172a' : '#f8fafc';
       if (el.getAttribute('data-contrast-fixed') !== targetColor) {
         el.setAttribute('data-contrast-fixed', targetColor);
         el.style.setProperty('color', targetColor, 'important');

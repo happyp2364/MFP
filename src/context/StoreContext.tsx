@@ -384,7 +384,7 @@ interface StoreContextType {
   canAccessTab: (tab: string) => boolean;
 
   // Auth
-  loginAdmin: (password: string, twoFactorCode?: string) => Promise<{ success: boolean; requires2FA?: boolean; message?: string }>;
+  loginAdmin: (password: string, twoFactorCode?: string, customEmail?: string) => Promise<{ success: boolean; requires2FA?: boolean; message?: string }>;
   loginWithGoogleAdmin: () => Promise<{ success: boolean; error?: string }>;
   logoutAdmin: (reason?: string) => void;
   changeAdminPassword: (currentPass: string, newPass: string) => Promise<{ success: boolean; message: string }>;
@@ -401,6 +401,7 @@ interface StoreContextType {
   addReview: (r: Omit<Review, 'id'>) => Promise<void>;
   updateReview: (id: string, updated: Partial<Review>) => Promise<void>;
   deleteReview: (id: string) => Promise<void>;
+  voteHelpfulReview: (id: string) => Promise<void>;
 
   // Content Editors
   updateStoreInfo: (info: Partial<StoreInfo>) => Promise<void>;
@@ -884,7 +885,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const curEmail = currentAdminUser?.email.toLowerCase() || auth.currentUser?.email?.toLowerCase();
       if (
         currentAdminUser?.roleId === 'super_admin' ||
-        curEmail === 'vpcreation2002@gmail.com'
+        curEmail === 'vpcreation2002@gmail.com' ||
+        curEmail === 'vishalpparihar2002@gmail.com'
       ) {
         return true;
       }
@@ -899,7 +901,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const curEmail = currentAdminUser?.email.toLowerCase() || auth.currentUser?.email?.toLowerCase();
       if (
         currentAdminUser?.roleId === 'super_admin' ||
-        curEmail === 'vpcreation2002@gmail.com'
+        curEmail === 'vpcreation2002@gmail.com' ||
+        curEmail === 'vishalpparihar2002@gmail.com'
       ) {
         return true;
       }
@@ -1479,7 +1482,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setCustomerUser(user);
       setIsCustomerAuthLoading(false);
       if (user) {
-        setIsAdmin(user.email === 'vpcreation2002@gmail.com');
+        setIsAdmin(user.email === 'vpcreation2002@gmail.com' || user.email === 'vishalpparihar2002@gmail.com');
         try {
           const prof = await syncCustomerProfileInFirestore(user);
           if (isMounted) setCustomerProfile(prof);
@@ -1559,14 +1562,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Auth Methods
-  const loginAdmin = async (password: string, twoFactorCode?: string) => {
+  const loginAdmin = async (password: string, twoFactorCode?: string, customEmail?: string) => {
     if (securityRateLimiter.isRateLimited('admin_login_attempt', 5, 60000)) {
       const waitSec = securityRateLimiter.getRemainingWaitSeconds('admin_login_attempt', 60000);
       recordAuditLog('Admin Login Blocked', 'AUTH', `Rate limit triggered. Wait ${waitSec}s`, 'DANGER');
       return { success: false, message: `Too many login attempts. Please wait ${waitSec} seconds.` };
     }
 
-    const adminEmail = auth.currentUser?.email || 'vpcreation2002@gmail.com';
+    const adminEmail = customEmail?.trim() || auth.currentUser?.email || 'vpcreation2002@gmail.com';
 
     try {
       await signInWithEmailAndPassword(auth, adminEmail, password);
@@ -1798,6 +1801,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (err: any) {
       console.error('Error deleting review:', err);
       showToast('Failed to delete review', 'error');
+    }
+  };
+
+  const voteHelpfulReview = async (id: string) => {
+    try {
+      const targetReview = publishedReviews.find((r) => r.id === id);
+      const currentCount = targetReview?.helpfulCount || 0;
+      await setDoc(doc(db, 'reviews', id), { helpfulCount: currentCount + 1 }, { merge: true });
+      showToast('👍 Thank you! Marked review as helpful.', 'success');
+    } catch (err: any) {
+      console.error('Error voting helpful review:', err);
+      showToast('Failed to record vote', 'error');
     }
   };
 
@@ -2710,13 +2725,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       // 2. Also persist in marketingSubscribers collection
-      const subSuccess = await saveMarketingConsentInFirestore(payload, email, name, phone);
-      console.log('[DEBUG] Firestore Response (marketingSubscribers):', subSuccess);
+      let subSuccess = false;
+      try {
+        subSuccess = await saveMarketingConsentInFirestore(payload, email, name, phone);
+        console.log('[DEBUG] Firestore Response (marketingSubscribers):', subSuccess);
+      } catch (subErr: any) {
+        console.warn('[DEBUG] marketingSubscribers collection update warning (non-blocking if user doc succeeded):', subErr);
+      }
 
       showToast('Marketing Preferences Saved Successfully.', 'success');
       return true;
     } catch (err: any) {
       console.error('[DEBUG] Firestore Response (ERROR):', err);
+      const isPermErr = err?.code === 'permission-denied' || err?.message?.includes('permissions') || err?.message?.includes('Missing or insufficient');
+      if (isPermErr) {
+        const targetPath = uid ? `users/${uid}` : (email ? `marketingSubscribers/${email.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : 'marketingSubscribers');
+        const targetCollection = targetPath.split('/')[0];
+        const targetDocId = targetPath.split('/')[1] || 'none';
+        console.error(`[PERMISSION DENIED] Path: "${targetPath}", Collection: "${targetCollection}", DocID: "${targetDocId}", User UID: "${uid || 'unauthenticated'}"`, err);
+      }
       const errMsg = err?.message || 'Failed to update preferences';
       showToast(`Failed to save preferences: ${errMsg}`, 'error');
       return false;
@@ -3086,6 +3113,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addReview,
     updateReview,
     deleteReview,
+    voteHelpfulReview,
     updateStoreInfo,
     updateHeroContent,
     setAnnouncementsList,
@@ -3148,7 +3176,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateSubscriberConsent, refreshMarketingData, loginAdmin, loginWithGoogleAdmin,
     logoutAdmin, changeAdminPassword, toggleTwoFactor, verifyReAuthentication,
     addProduct, updateProduct, deleteProduct, toggleInStock, addReview, updateReview,
-    deleteReview, updateStoreInfo, updateHeroContent, setAnnouncementsList,
+    deleteReview, voteHelpfulReview, updateStoreInfo, updateHeroContent, setAnnouncementsList,
     updateCategoryHighlight, saveCategoryHighlights, updateTrendingCollection,
     refreshAuditLogs, createStoreBackup, restoreStoreBackup, resetToDefaults,
     addCoupon, updateCoupon, deleteCoupon, duplicateCoupon, validateCoupon, trackCouponUse,

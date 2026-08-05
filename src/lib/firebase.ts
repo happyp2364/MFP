@@ -32,6 +32,7 @@ import {
   query,
   orderBy,
   limit,
+  enableIndexedDbPersistence,
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { CustomerProfile, MarketingConsent, MarketingSubscriber, MarketingCampaign } from '../types';
@@ -46,14 +47,25 @@ setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.warn('Firebase persistence warning:', err);
 });
 
+// Enable Firestore offline persistence for resilience
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.warn('Firestore persistence notice: multiple tabs open');
+  } else if (err.code === 'unimplemented') {
+    console.warn('Firestore persistence not supported in this environment');
+  }
+});
+
 // Connection test on load
 async function testFirestoreConnection() {
   try {
-    await getDocFromServer(doc(db, '_connection_test_', 'test'));
+    await getDoc(doc(db, '_connection_test_', 'test'));
     console.log('Firestore connection verified');
   } catch (err: any) {
-    if (err.code === 'permission-denied') {
+    if (err?.code === 'permission-denied') {
       console.warn('Firestore connected (Security rules active)');
+    } else if (err?.code === 'unavailable' || err?.message?.includes('offline') || err?.message?.includes('Could not reach Cloud Firestore')) {
+      console.warn('Firestore operating in offline/cache mode');
     } else {
       console.log('Firestore initialized');
     }

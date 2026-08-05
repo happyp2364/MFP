@@ -1,77 +1,318 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, MessageCircle, Heart, X, Volume2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Sparkles, X, Minimize2 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface Rect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
 
 export const AIPetShoeMascot: React.FC = () => {
   const { petShoeConfig } = useStore();
 
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [targetPos, setTargetPos] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState<Point>({ x: 0, y: 0 });
   const [tiltDeg, setTiltDeg] = useState(0);
   const [isIdle, setIsIdle] = useState(true);
   const [speechBubble, setSpeechBubble] = useState<string | null>(null);
   const [animationState, setAnimationState] = useState<'hover' | 'bounce' | 'spin' | 'shine'>('hover');
   const [isMobile, setIsMobile] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [userManuallyMinimized, setUserManuallyMinimized] = useState(false);
 
   const requestRef = useRef<number | null>(null);
-  const posRef = useRef({ x: 0, y: 0 });
-  const targetRef = useRef({ x: 0, y: 0 });
-  const velocityRef = useRef({ vx: 0, vy: 0 });
+  const posRef = useRef<Point>({ x: 0, y: 0 });
+  const targetRef = useRef<Point>({ x: 0, y: 0 });
   const lastInteractionTimeRef = useRef<number>(Date.now());
   const sineTimeRef = useRef<number>(0);
+  const pagePositionsCache = useRef<Record<string, Point>>({});
+  const lastPathnameRef = useRef<string>(typeof window !== 'undefined' ? window.location.pathname : '');
 
-  // Default Position anchor calculations
-  const getAnchorPos = () => {
-    if (typeof window === 'undefined') return { x: 300, y: 500 };
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const margin = isMobile ? 20 : 60;
-    const size = (petShoeConfig?.sizePx || 130) * (isMobile ? 0.75 : 1);
+  const baseSize = petShoeConfig?.sizePx || 130;
+  const renderSize = isMobile ? baseSize * 0.75 : baseSize;
+  const margin = 20; // 16-24px required margin from screen edges
 
-    switch (petShoeConfig?.defaultPosition) {
-      case 'bottom-left':
-        return { x: margin + size / 2, y: h - margin - size / 2 - 80 };
-      case 'top-right':
-        return { x: w - margin - size / 2, y: margin + size / 2 + 100 };
-      case 'top-left':
-        return { x: margin + size / 2, y: margin + size / 2 + 100 };
-      case 'center-right':
-        return { x: w - margin - size / 2, y: h / 2 };
-      case 'bottom-right':
-      default:
-        return { x: w - margin - size / 2 - 10, y: h - margin - size / 2 - 90 };
-    }
-  };
+  // Gather bounding rects of interactive elements & modals to avoid collision
+  const getObstacleRects = useCallback((): { rects: Rect[]; hasModal: boolean } => {
+    if (typeof window === 'undefined') return { rects: [], hasModal: false };
 
-  // Resize Listener
+    const obstacles: Rect[] = [];
+    let hasModal = false;
+
+    // Detect modals / dialogs / drawers / popups
+    const modalElements = document.querySelectorAll(
+      '[role="dialog"], .modal, .dialog, #admin-modal, .checkout-modal, .cart-drawer, .fixed.inset-0'
+    );
+
+    modalElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      if (htmlEl.offsetParent !== null || window.getComputedStyle(htmlEl).display !== 'none') {
+        const rect = htmlEl.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          // If modal takes up significant screen portion (> 40% viewport)
+          if (rect.width * rect.height > (window.innerWidth * window.innerHeight) * 0.4) {
+            hasModal = true;
+          }
+          obstacles.push({
+            left: rect.left - margin,
+            top: rect.top - margin,
+            right: rect.right + margin,
+            bottom: rect.bottom + margin,
+          });
+        }
+      }
+    });
+
+    // Query interactive UI controls: buttons, inputs, forms, product cards, navs, floating hubs, toasts
+    const selector = [
+      'button:not(.ai-pet-shoe-mascot *)',
+      'input',
+      'select',
+      'textarea',
+      'form',
+      'a.btn',
+      'a[role="button"]',
+      '.product-card',
+      'nav',
+      'header',
+      'footer',
+      '#checkout',
+      '.floating-action-hub',
+      '.toast-container',
+      '.bottom-nav',
+      '[data-interactive="true"]',
+    ].join(', ');
+
+    const elements = document.querySelectorAll(selector);
+    elements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      // Skip element inside pet mascot itself
+      if (htmlEl.closest('.ai-pet-shoe-mascot')) return;
+
+      if (htmlEl.offsetParent !== null && window.getComputedStyle(htmlEl).visibility !== 'hidden') {
+        const rect = htmlEl.getBoundingClientRect();
+        // Ignore small/zero rects or non-visible elements
+        if (rect.width > 10 && rect.height > 10 && rect.bottom > 0 && rect.top < window.innerHeight) {
+          obstacles.push({
+            left: rect.left - 12,
+            top: rect.top - 12,
+            right: rect.right + 12,
+            bottom: rect.bottom + 12,
+          });
+        }
+      }
+    });
+
+    return { rects: obstacles, hasModal };
+  }, []);
+
+  // Check if a point (center of pet) with current size overlaps with any obstacle
+  const checkCollision = useCallback(
+    (point: Point, size: number, obstacles: Rect[]): boolean => {
+      const halfSize = size / 2;
+      const petRect: Rect = {
+        left: point.x - halfSize,
+        top: point.y - halfSize,
+        right: point.x + halfSize,
+        bottom: point.y + halfSize,
+      };
+
+      for (const obs of obstacles) {
+        const overlapX = petRect.left < obs.right && petRect.right > obs.left;
+        const overlapY = petRect.top < obs.bottom && petRect.bottom > obs.top;
+        if (overlapX && overlapY) {
+          return true;
+        }
+      }
+      return false;
+    },
+    []
+  );
+
+  // Find optimal safe collision-free position on screen
+  const findSafePosition = useCallback(
+    (preferredPoint?: Point): { position: Point; safeFound: boolean; shouldMinimize: boolean } => {
+      if (typeof window === 'undefined') {
+        return { position: { x: 300, y: 500 }, safeFound: true, shouldMinimize: false };
+      }
+
+      const w = window.innerWidth;
+      // Adjust height if mobile keyboard is visible
+      const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const h = Math.min(window.innerHeight, viewportHeight);
+
+      const size = renderSize;
+      const halfSize = size / 2;
+      const minX = margin + halfSize;
+      const maxX = w - margin - halfSize;
+      const minY = margin + halfSize + 60; // Top header clearance
+      const maxY = h - margin - halfSize - 40; // Bottom clearance
+
+      const { rects: obstacles, hasModal } = getObstacleRects();
+
+      if (hasModal) {
+        return { position: { x: maxX, y: maxY }, safeFound: false, shouldMinimize: true };
+      }
+
+      // Check current or preferred position first
+      if (preferredPoint) {
+        const boundedPref = {
+          x: Math.max(minX, Math.min(maxX, preferredPoint.x)),
+          y: Math.max(minY, Math.min(maxY, preferredPoint.y)),
+        };
+        if (!checkCollision(boundedPref, size, obstacles)) {
+          return { position: boundedPref, safeFound: true, shouldMinimize: false };
+        }
+      }
+
+      // Check stored page memory position
+      const pathname = window.location.pathname;
+      const storedPos = pagePositionsCache.current[pathname];
+      if (storedPos) {
+        const boundedStored = {
+          x: Math.max(minX, Math.min(maxX, storedPos.x)),
+          y: Math.max(minY, Math.min(maxY, storedPos.y)),
+        };
+        if (!checkCollision(boundedStored, size, obstacles)) {
+          return { position: boundedStored, safeFound: true, shouldMinimize: false };
+        }
+      }
+
+      // Generate grid of candidate safe positions across screen corners and edges
+      const candidatePoints: Point[] = [
+        // Standard anchors
+        { x: maxX, y: maxY - 60 }, // Bottom Right
+        { x: minX, y: maxY - 60 }, // Bottom Left
+        { x: maxX, y: minY + 40 }, // Top Right
+        { x: minX, y: minY + 40 }, // Top Left
+        { x: maxX, y: (minY + maxY) / 2 }, // Mid Right
+        { x: minX, y: (minY + maxY) / 2 }, // Mid Left
+        { x: (minX + maxX) / 2, y: maxY - 60 }, // Bottom Center
+        { x: (minX + maxX) / 2, y: minY + 40 }, // Top Center
+        // Intermediate Grid Points
+        { x: minX + (maxX - minX) * 0.75, y: maxY - 120 },
+        { x: minX + (maxX - minX) * 0.25, y: maxY - 120 },
+        { x: minX + (maxX - minX) * 0.75, y: minY + 120 },
+        { x: minX + (maxX - minX) * 0.25, y: minY + 120 },
+      ];
+
+      // Find first 100% collision-free candidate point
+      for (const pt of candidatePoints) {
+        const boundedPt = {
+          x: Math.max(minX, Math.min(maxX, pt.x)),
+          y: Math.max(minY, Math.min(maxY, pt.y)),
+        };
+        if (!checkCollision(boundedPt, size, obstacles)) {
+          pagePositionsCache.current[pathname] = boundedPt;
+          return { position: boundedPt, safeFound: true, shouldMinimize: false };
+        }
+      }
+
+      // If no candidate is completely collision-free, evaluate score (minimal overlap)
+      let bestPt = candidatePoints[0];
+      let minOverlapArea = Infinity;
+
+      for (const pt of candidatePoints) {
+        const boundedPt = {
+          x: Math.max(minX, Math.min(maxX, pt.x)),
+          y: Math.max(minY, Math.min(maxY, pt.y)),
+        };
+        let overlapSum = 0;
+        const petRect: Rect = {
+          left: boundedPt.x - halfSize,
+          top: boundedPt.y - halfSize,
+          right: boundedPt.x + halfSize,
+          bottom: boundedPt.y + halfSize,
+        };
+
+        for (const obs of obstacles) {
+          const xOverlap = Math.max(0, Math.min(petRect.right, obs.right) - Math.max(petRect.left, obs.left));
+          const yOverlap = Math.max(0, Math.min(petRect.bottom, obs.bottom) - Math.max(petRect.top, obs.top));
+          overlapSum += xOverlap * yOverlap;
+        }
+
+        if (overlapSum < minOverlapArea) {
+          minOverlapArea = overlapSum;
+          bestPt = boundedPt;
+        }
+      }
+
+      // If overlap area is significant (>15% of pet area), auto-minimize to prevent blocking
+      const petArea = size * size;
+      const shouldMinimize = minOverlapArea > petArea * 0.15;
+
+      pagePositionsCache.current[pathname] = bestPt;
+      return { position: bestPt, safeFound: false, shouldMinimize };
+    },
+    [renderSize, getObstacleRects, checkCollision]
+  );
+
+  // Recalculate & auto-reposition intelligently
+  const reevaluatePosition = useCallback(
+    (preferredPoint?: Point) => {
+      const result = findSafePosition(preferredPoint);
+
+      if (result.shouldMinimize && !userManuallyMinimized) {
+        setIsMinimized(true);
+      } else if (!result.shouldMinimize && !userManuallyMinimized) {
+        setIsMinimized(false);
+      }
+
+      targetRef.current = result.position;
+    },
+    [findSafePosition, userManuallyMinimized]
+  );
+
+  // Window Resize & Keyboard & Orientation Listener
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 640);
-      const anchor = getAnchorPos();
-      targetRef.current = anchor;
-      setTargetPos(anchor);
+      reevaluatePosition();
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [petShoeConfig?.defaultPosition, petShoeConfig?.sizePx]);
+    window.addEventListener('orientationchange', handleResize);
 
-  // Initial position mount
-  useEffect(() => {
-    const anchor = getAnchorPos();
-    posRef.current = anchor;
-    targetRef.current = anchor;
-    setPosition(anchor);
-    setTargetPos(anchor);
-  }, []);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    }
 
-  // Screen Click/Tap Listener for Smart Movement
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      }
+    };
+  }, [reevaluatePosition]);
+
+  // Initial Position & Page Path Change Detection
   useEffect(() => {
-    if (!petShoeConfig?.enabled || !petShoeConfig?.enableScrollFollowing) return;
+    const currentPath = window.location.pathname;
+    lastPathnameRef.current = currentPath;
+
+    const result = findSafePosition();
+    posRef.current = result.position;
+    targetRef.current = result.position;
+    setPosition(result.position);
+
+    if (result.shouldMinimize && !userManuallyMinimized) {
+      setIsMinimized(true);
+    }
+  }, [findSafePosition, userManuallyMinimized]);
+
+  // Screen Tap / Click for Intelligent Repositioning
+  useEffect(() => {
+    if (!petShoeConfig?.enabled) return;
 
     const handleScreenTap = (e: MouseEvent | TouchEvent) => {
-      // Don't trigger if user is clicking admin modal or form controls or pet itself
       const targetEl = e.target as HTMLElement;
       if (
         targetEl.closest('button') ||
@@ -79,7 +320,8 @@ export const AIPetShoeMascot: React.FC = () => {
         targetEl.closest('select') ||
         targetEl.closest('textarea') ||
         targetEl.closest('.ai-pet-shoe-mascot') ||
-        targetEl.closest('#admin-modal')
+        targetEl.closest('#admin-modal') ||
+        targetEl.closest('.modal')
       ) {
         return;
       }
@@ -95,41 +337,30 @@ export const AIPetShoeMascot: React.FC = () => {
       }
 
       if (clientX > 0 && clientY > 0) {
-        // Keep inside screen bounds with padding
-        const size = (petShoeConfig?.sizePx || 130) * (isMobile ? 0.75 : 1);
-        const padding = size / 2 + 20;
-        const boundedX = Math.max(padding, Math.min(window.innerWidth - padding, clientX));
-        const boundedY = Math.max(padding, Math.min(window.innerHeight - padding, clientY));
-
-        targetRef.current = { x: boundedX, y: boundedY };
-        setTargetPos({ x: boundedX, y: boundedY });
         lastInteractionTimeRef.current = Date.now();
         setIsIdle(false);
+        reevaluatePosition({ x: clientX, y: clientY });
       }
     };
 
     window.addEventListener('click', handleScreenTap, { passive: true });
     return () => window.removeEventListener('click', handleScreenTap);
-  }, [petShoeConfig?.enabled, petShoeConfig?.enableScrollFollowing, isMobile]);
+  }, [petShoeConfig?.enabled, reevaluatePosition]);
 
-  // Scroll Listener
+  // Scroll Listener with Debounced Collision Check
   useEffect(() => {
-    if (!petShoeConfig?.enabled || !petShoeConfig?.enableScrollFollowing) return;
+    if (!petShoeConfig?.enabled) return;
 
     let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
       lastInteractionTimeRef.current = Date.now();
       setIsIdle(false);
 
-      // Slightly shift vertical target during scroll
-      const anchor = getAnchorPos();
-      const scrollFactor = Math.sin(window.scrollY * 0.005) * 40;
-      targetRef.current = { x: anchor.x, y: anchor.y + scrollFactor };
-
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
+        reevaluatePosition();
         setIsIdle(true);
-      }, 1500);
+      }, 150);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -137,44 +368,55 @@ export const AIPetShoeMascot: React.FC = () => {
       window.removeEventListener('scroll', handleScroll);
       clearTimeout(scrollTimeout);
     };
-  }, [petShoeConfig?.enabled, petShoeConfig?.enableScrollFollowing, isMobile]);
+  }, [petShoeConfig?.enabled, reevaluatePosition]);
 
-  // Physics & Animation Loop (requestAnimationFrame for 60FPS Lerp Movement)
+  // MutationObserver to detect dynamic DOM changes (modals popping up, drawer opening)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const observer = new MutationObserver(() => {
+      reevaluatePosition();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style', 'hidden'],
+    });
+
+    return () => observer.disconnect();
+  }, [reevaluatePosition]);
+
+  // Physics & Smooth 60FPS Lerp Animation Loop
   useEffect(() => {
     if (!petShoeConfig?.enabled) return;
 
-    const lerpSpeed =
-      petShoeConfig?.movementSpeed === 'fast'
-        ? 0.12
-        : petShoeConfig?.movementSpeed === 'slow'
-        ? 0.04
-        : 0.07;
-
-    const hoverAmp =
-      petShoeConfig?.hoverAmplitude === 'dynamic'
-        ? 14
-        : petShoeConfig?.hoverAmplitude === 'gentle'
-        ? 6
-        : 10;
+    // Smooth lerp speed (300-500ms transition time equivalent)
+    const lerpSpeed = 0.08;
+    const hoverAmp = isMobile ? 6 : 10;
 
     const animate = () => {
       sineTimeRef.current += 0.04;
 
-      // Check if user has been idle for 2 seconds -> drift back to anchor
-      if (Date.now() - lastInteractionTimeRef.current > 2200) {
+      // Check if path changed
+      if (typeof window !== 'undefined' && window.location.pathname !== lastPathnameRef.current) {
+        lastPathnameRef.current = window.location.pathname;
+        reevaluatePosition();
+      }
+
+      // Floating idle orbit when quiet
+      if (Date.now() - lastInteractionTimeRef.current > 2000) {
         if (!isIdle) setIsIdle(true);
-        const anchor = getAnchorPos();
-        // Add smooth floating idle orbit
-        if (petShoeConfig?.enableIdleMovement !== false) {
-          const orbitX = Math.sin(sineTimeRef.current * 0.7) * (isMobile ? 15 : 35);
+        if (petShoeConfig?.enableIdleMovement !== false && !isMinimized) {
+          const orbitX = Math.sin(sineTimeRef.current * 0.7) * (isMobile ? 10 : 20);
           const orbitY = Math.cos(sineTimeRef.current * 0.9) * hoverAmp;
-          targetRef.current = { x: anchor.x + orbitX, y: anchor.y + orbitY };
-        } else {
-          targetRef.current = anchor;
+          const currentTarget = pagePositionsCache.current[window.location.pathname] || targetRef.current;
+          targetRef.current = {
+            x: currentTarget.x + orbitX,
+            y: currentTarget.y + orbitY,
+          };
         }
-      } else {
-        // Add gentle hover sine while following target
-        targetRef.current.y += Math.sin(sineTimeRef.current * 1.5) * 0.5;
       }
 
       // Physics Interpolation (Lerp)
@@ -184,8 +426,8 @@ export const AIPetShoeMascot: React.FC = () => {
       posRef.current.x += dx * lerpSpeed;
       posRef.current.y += dy * lerpSpeed;
 
-      // Bank/Tilt in movement direction
-      const currentTilt = Math.max(-18, Math.min(18, dx * 0.3));
+      // Banking/Tilting calculation based on lateral velocity
+      const currentTilt = Math.max(-18, Math.min(18, dx * 0.25));
 
       setPosition({ x: posRef.current.x, y: posRef.current.y });
       setTiltDeg(currentTilt);
@@ -199,21 +441,21 @@ export const AIPetShoeMascot: React.FC = () => {
     };
   }, [
     petShoeConfig?.enabled,
-    petShoeConfig?.movementSpeed,
-    petShoeConfig?.hoverAmplitude,
     petShoeConfig?.enableIdleMovement,
-    petShoeConfig?.defaultPosition,
     isMobile,
+    isMinimized,
+    reevaluatePosition,
+    isIdle,
   ]);
 
-  // Click on Pet Shoe Mascot Directly
+  // Mascot Click Handler
   const handlePetClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (petShoeConfig?.enableClickInteraction === false) return;
 
     lastInteractionTimeRef.current = Date.now();
 
-    // Random action
+    // Trigger random action animation
     const actions: ('bounce' | 'spin' | 'shine')[] = ['bounce', 'spin', 'shine'];
     const randomAction = actions[Math.floor(Math.random() * actions.length)];
     setAnimationState(randomAction);
@@ -222,7 +464,7 @@ export const AIPetShoeMascot: React.FC = () => {
       setAnimationState('hover');
     }, 1200);
 
-    // Speech bubble
+    // Trigger Speech Bubble
     if (petShoeConfig?.enableSpeechBubbles !== false) {
       const msgs = petShoeConfig?.speechMessages || [
         'Welcome to Marudhar Fashion Point! 👟✨',
@@ -241,13 +483,9 @@ export const AIPetShoeMascot: React.FC = () => {
 
   if (!petShoeConfig?.enabled) return null;
 
-  // Render sizing
-  const baseSize = petShoeConfig?.sizePx || 130;
-  const renderSize = isMobile ? baseSize * 0.75 : baseSize;
   const wingColor = petShoeConfig?.wingColor || '#F59E0B';
   const glowColor = petShoeConfig?.glowColor || '#F59E0B';
 
-  // Default Sneaker Image: High-Resolution Transparent Luxury Burgundy ONE8 Sneaker
   const shoeImgUrl =
     petShoeConfig?.imageUri && petShoeConfig.imageUri.trim() !== ''
       ? petShoeConfig.imageUri
@@ -260,6 +498,55 @@ export const AIPetShoeMascot: React.FC = () => {
       ? '1.8s'
       : '1.1s';
 
+  // Render Minimized Circular Floating Assistant Button
+  if (isMinimized) {
+    return (
+      <div
+        className="fixed z-40 pointer-events-none ai-pet-shoe-mascot transition-all duration-300 select-none"
+        style={{
+          left: 0,
+          top: 0,
+          transform: `translate3d(${position.x - 24}px, ${position.y - 24}px, 0)`,
+          opacity: petShoeConfig?.opacity ?? 0.95,
+        }}
+      >
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMinimized(false);
+            setUserManuallyMinimized(false);
+            reevaluatePosition();
+          }}
+          className="pointer-events-auto relative w-12 h-12 rounded-full bg-neutral-900 border border-amber-500/50 shadow-2xl flex items-center justify-center group hover:scale-110 active:scale-95 transition-all duration-300"
+          title="Expand AI Pet Assistant 👟✨"
+        >
+          {/* Outer Glow */}
+          <div
+            className="absolute inset-0 rounded-full blur-md opacity-70 animate-pulse pointer-events-none"
+            style={{ backgroundColor: glowColor }}
+          />
+
+          <img
+            src={shoeImgUrl}
+            alt="AI Pet Assistant"
+            className="w-7 h-7 object-contain relative z-10 filter drop-shadow-md"
+            referrerPolicy="no-referrer"
+          />
+
+          {/* Sparkle Badge */}
+          <div className="absolute -top-1 -right-1 p-0.5 bg-amber-500 rounded-full text-white shadow-xs">
+            <Sparkles className="w-2.5 h-2.5" />
+          </div>
+
+          <div className="absolute bottom-full mb-2 hidden group-hover:block bg-neutral-900/90 text-white text-[10px] font-semibold px-2 py-1 rounded-lg border border-amber-500/30 whitespace-nowrap shadow-md">
+            Click to expand AI Pet 👟
+          </div>
+        </button>
+      </div>
+    );
+  }
+
+  // Full Floating AI Pet Mascot Rendering
   return (
     <div
       className="fixed z-40 pointer-events-none ai-pet-shoe-mascot transition-opacity duration-300 select-none"
@@ -272,7 +559,7 @@ export const AIPetShoeMascot: React.FC = () => {
     >
       {/* Floating Shadow Below Mascot */}
       <div
-        className="absolute left-1/2 -bottom-6 -translate-x-1/2 rounded-full blur-md transition-all duration-300"
+        className="absolute left-1/2 -bottom-6 -translate-x-1/2 rounded-full blur-md transition-all duration-300 pointer-events-none"
         style={{
           width: `${renderSize * 0.7}px`,
           height: '14px',
@@ -280,6 +567,19 @@ export const AIPetShoeMascot: React.FC = () => {
           transform: `scale(${1 - Math.abs(tiltDeg) * 0.01})`,
         }}
       />
+
+      {/* Minimize Quick Toggle Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsMinimized(true);
+          setUserManuallyMinimized(true);
+        }}
+        className="absolute -top-2 -right-2 z-20 pointer-events-auto p-1 bg-neutral-900/80 hover:bg-neutral-800 text-amber-400 border border-amber-500/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-md"
+        title="Minimize AI Pet"
+      >
+        <Minimize2 className="w-3 h-3" />
+      </button>
 
       {/* Speech Bubble Above Mascot */}
       {speechBubble && (
@@ -326,7 +626,7 @@ export const AIPetShoeMascot: React.FC = () => {
           />
         )}
 
-        {/* ANGEL WINGS - Left & Right Vector Wings with Feather Layers */}
+        {/* ANGEL WINGS - Left & Right Vector Wings */}
         {petShoeConfig?.wingsEnabled !== false && (
           <>
             {/* Left Wing */}
@@ -399,7 +699,7 @@ export const AIPetShoeMascot: React.FC = () => {
           </>
         )}
 
-        {/* ULTRA REALISTIC TRANSPARENT SHOE OBJECT (NO CARD / NO POSTER FRAME) */}
+        {/* ULTRA REALISTIC TRANSPARENT SHOE OBJECT */}
         <div className="relative w-full h-full group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
           <img
             src={shoeImgUrl}
@@ -409,7 +709,7 @@ export const AIPetShoeMascot: React.FC = () => {
             loading="lazy"
           />
 
-          {/* Luxury Glossy Reflection Sweep Effect Masked Strictly to Shoe Body */}
+          {/* Glossy Reflection Sweep Effect */}
           {petShoeConfig?.shineEnabled !== false && (
             <div
               className="absolute inset-0 pointer-events-none overflow-hidden"
@@ -449,3 +749,4 @@ export const AIPetShoeMascot: React.FC = () => {
     </div>
   );
 };
+

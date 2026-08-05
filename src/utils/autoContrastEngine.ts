@@ -121,6 +121,10 @@ export function runAutoContrastAudit() {
         el.setAttribute('data-contrast-fixed', targetColor);
         el.style.setProperty('color', targetColor, 'important');
       }
+    } else if (el.hasAttribute('data-contrast-fixed')) {
+      // Restore natural computed style if contrast is now compliant
+      el.removeAttribute('data-contrast-fixed');
+      el.style.removeProperty('color');
     }
   });
 }

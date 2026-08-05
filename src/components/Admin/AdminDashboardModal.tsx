@@ -86,7 +86,6 @@ import { ProductFeedSettingsView } from './ProductFeedSettingsView';
 import { ProductCardDesignerSettingsView } from './ProductCardDesignerSettingsView';
 import { TrendingShoesSettingsView } from './TrendingShoesSettingsView';
 import { PricePointSettingsView } from './PricePointSettingsView';
-import { ButtonThemeSettingsView } from './ButtonThemeSettingsView';
 import { StoreManagementAdmin } from './StoreManagementAdmin';
 import { SEOAuthorityCenterView } from './SEOAuthorityCenterView';
 import { AIMarketingGrowthView } from './AIMarketingGrowthView';
@@ -102,7 +101,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'button_theme' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -711,18 +710,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             >
               <Zap className="w-4 h-4 text-emerald-500" />
               <span>🔥 ₹699 Collection Manager</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('button_theme')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'button_theme'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span>💧 Global Liquid Button System</span>
             </button>
 
             <button
@@ -1510,13 +1497,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {activeTab === 'price_point_699' && (
               <AdminErrorBoundary fallbackTitle="Price Point Collection Manager Error">
                 <PricePointSettingsView />
-              </AdminErrorBoundary>
-            )}
-
-            {/* TAB: GLOBAL LIQUID BUTTON SYSTEM MANAGER */}
-            {activeTab === 'button_theme' && (
-              <AdminErrorBoundary fallbackTitle="Global Liquid Button System Error">
-                <ButtonThemeSettingsView />
               </AdminErrorBoundary>
             )}
 

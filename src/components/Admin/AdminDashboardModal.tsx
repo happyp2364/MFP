@@ -87,6 +87,8 @@ import { ProductCardDesignerSettingsView } from './ProductCardDesignerSettingsVi
 import { TrendingShoesSettingsView } from './TrendingShoesSettingsView';
 import { PricePointSettingsView } from './PricePointSettingsView';
 import { ButtonThemeSettingsView } from './ButtonThemeSettingsView';
+import { StoreManagementAdmin } from './StoreManagementAdmin';
+import { MapPin } from 'lucide-react';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -96,7 +98,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'button_theme';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'button_theme' | 'store_management';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -572,6 +574,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             <div className="my-1 border-t border-neutral-200 hidden md:block" />
 
             <button
+              onClick={() => setActiveTab('store_management')}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                activeTab === 'store_management'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+            >
+              <MapPin className="w-4 h-4 text-emerald-500" />
+              <span>📍 Nearby Stores & Outlets</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('payment_settings')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
                 activeTab === 'payment_settings'
@@ -862,6 +876,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 onRefreshAuditLogs={refreshAuditLogs}
               />
             )}
+
+            {/* ----------------- TAB: STORE LOCATOR & OUTLETS ----------------- */}
+            {activeTab === 'store_management' && <StoreManagementAdmin />}
 
             {/* ----------------- TAB: ORDERS & TRACKING ----------------- */}
             {activeTab === 'orders' && <OrderManagementView />}

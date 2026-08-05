@@ -3,6 +3,7 @@ import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { AnnouncementBar } from './components/Header/AnnouncementBar';
 import { Navbar } from './components/Header/Navbar';
 import { HorizontalCategoryBar } from './components/Header/HorizontalCategoryBar';
+import { MobileScrollableCategories } from './components/Categories/MobileScrollableCategories';
 import { HeroSection } from './components/Hero/HeroSection';
 import { CategorySection } from './components/Categories/CategorySection';
 import { ProductGrid } from './components/Products/ProductGrid';
@@ -32,6 +33,7 @@ import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
 import { CalendarBookingModal } from './components/GoogleWorkspace/CalendarBookingModal';
 import { GmailInquiryModal } from './components/GoogleWorkspace/GmailInquiryModal';
 import { WorkspaceHubDrawer } from './components/GoogleWorkspace/WorkspaceHubDrawer';
+import { StoreLocatorPage } from './components/StoreLocator/StoreLocatorPage';
 import { ProductDetailPage } from './components/Products/ProductDetailPage';
 import { HomepageRenderer } from './components/Customer/HomepageRenderer';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -88,6 +90,7 @@ function AppContent() {
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [customerAccountOpen, setCustomerAccountOpen] = useState(false);
   const [soundSettingsOpen, setSoundSettingsOpen] = useState(false);
+  const [storeLocatorOpen, setStoreLocatorOpen] = useState(false);
 
   // Google Workspace Modals
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
@@ -479,6 +482,7 @@ function AppContent() {
       {/* 2. Navigation Header */}
       <Navbar
         onOpenSearch={() => setSearchModalOpen(true)}
+        onOpenStoreLocator={() => setStoreLocatorOpen(true)}
         onOpenOrderSheet={() => setOrderSheetOpen(true)}
         onOpenWishlist={() => setWishlistModalOpen(true)}
         onOpenAdmin={() => {
@@ -519,8 +523,18 @@ function AppContent() {
         onSelectSubcategory={handleSelectSubcategory}
       />
 
-      {/* Horizontal Category Slider Bar */}
+      {/* Mobile Category Slider & Desktop Horizontal Category Bar */}
       <div className="pt-[60px] sm:pt-[72px]">
+        <MobileScrollableCategories
+          activeCategory={activeCategory}
+          onSelectCategory={(cat) => {
+            if (cat === 'men' || cat === 'women' || cat === 'kids' || cat === 'all') {
+              handleSelectCategory(cat as GenderCategory);
+            } else {
+              setIsShopActive(true);
+            }
+          }}
+        />
         <HorizontalCategoryBar
           activeCategory={activeCategory}
           onSelectCategory={handleSelectCategory}
@@ -820,6 +834,7 @@ function AppContent() {
         onClose={() => setSearchModalOpen(false)}
         products={products}
         onSelectProduct={(p) => setQuickViewProduct(p)}
+        onOpenStoreLocator={() => setStoreLocatorOpen(true)}
         onSearchCategory={(catQuery) => {
           setFilterState((prev) => ({ ...prev, searchQuery: catQuery }));
           handleNavigateToSection('products');
@@ -869,6 +884,12 @@ function AppContent() {
         onClose={() => setWorkspaceHubOpen(false)}
         onOpenCalendarModal={() => setCalendarModalOpen(true)}
         onOpenGmailModal={() => setGmailModalOpen(true)}
+      />
+
+      {/* Nearby Stores Full-Screen Locator Page */}
+      <StoreLocatorPage
+        isOpen={storeLocatorOpen}
+        onClose={() => setStoreLocatorOpen(false)}
       />
 
       {/* Toast Notification Banner */}

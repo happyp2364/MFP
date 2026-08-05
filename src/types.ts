@@ -1743,6 +1743,59 @@ export const DEFAULT_BUTTON_THEME_CONFIG: ButtonThemeConfig = {
   animationSpeed: 'normal',
 };
 
+export type StoreGalleryPhotoCategory = 'exterior' | 'interior' | 'staff' | 'display';
+
+export interface StoreGalleryPhoto {
+  id?: string;
+  url: string;
+  title: string;
+  category: StoreGalleryPhotoCategory;
+  description?: string;
+}
+
+export interface PhysicalStore {
+  id: string;
+  name: string;
+  slug: string;
+  rating: number;
+  reviewsCount: number;
+  address: string;
+  area: string;
+  city: string;
+  state: string;
+  pincode: string;
+  latitude: number;
+  longitude: number;
+  phone: string;
+  whatsapp: string;
+  openingHoursToday: string;
+  openingHoursWeek: string;
+  isOpen: boolean;
+  images: string[]; // Interior, Exterior, Staff photos
+  galleryPhotos?: StoreGalleryPhoto[]; // Categorized photos (exterior, interior, staff, display)
+  services: string[]; // e.g. ['Open Box Delivery', 'Try Before Buy', 'Shoe Trial', 'Card Payment', 'Parking', 'Wheelchair Accessible']
+  managerName: string;
+  holidayTiming: string;
+  specialOffers: string;
+  googleMapsUrl: string;
+  isFeatured: boolean;
+  isEnabled: boolean;
+  updatedAt?: string;
+}
+
+export interface MobileCategoryIcon {
+  id: string;
+  name: string;
+  iconName: string;
+  image?: string;
+  categoryKey: string; // e.g. 'new-arrivals', 'sports-shoes', 'sneakers', 'running', 'formal-shoes', 'sandals', 'slippers', 'men-clothing', 'kids', 'offers', 'best-sellers', 'trending'
+  badge?: string;
+  badgeColor?: string;
+  order: number;
+  enabled: boolean;
+}
+
+
 
 
 

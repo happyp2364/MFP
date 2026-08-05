@@ -62,8 +62,12 @@ import {
   DEFAULT_PRICE_POINT_CONFIG,
   ButtonThemeConfig,
   DEFAULT_BUTTON_THEME_CONFIG,
+  PhysicalStore,
+  MobileCategoryIcon,
 } from '../types';
 import { DEFAULT_ABOUT_US_CONFIG } from '../data/defaultAboutUs';
+import { DEFAULT_PHYSICAL_STORES } from '../data/defaultStores';
+import { DEFAULT_MOBILE_CATEGORY_ICONS } from '../data/defaultMobileCategories';
 import {
   getEffectivePermissions,
   hasAdminPermission,
@@ -175,6 +179,8 @@ const STORAGE_KEYS = {
   PRICE_POINT_CONFIG: 'mfp_price_point_config_live',
   BUTTON_THEME_CONFIG: 'mfp_button_theme_config_live',
   MEGA_MENU_CATEGORIES: 'mfp_mega_menu_categories_live',
+  PHYSICAL_STORES: 'mfp_physical_stores_live',
+  MOBILE_CATEGORIES: 'mfp_mobile_categories_live',
 };
 
 export const DEFAULT_PRODUCT_FEED_CONFIG: ProductFeedConfig = {
@@ -269,6 +275,15 @@ interface StoreContextType {
 
   buttonThemeConfig: ButtonThemeConfig;
   updateButtonThemeConfig: (updated: Partial<ButtonThemeConfig>) => Promise<void>;
+
+  physicalStores: PhysicalStore[];
+  addPhysicalStore: (store: Omit<PhysicalStore, 'id'> | PhysicalStore) => Promise<boolean>;
+  updatePhysicalStore: (id: string, updated: Partial<PhysicalStore>) => Promise<boolean>;
+  deletePhysicalStore: (id: string) => Promise<boolean>;
+  togglePhysicalStoreStatus: (id: string, isEnabled: boolean) => Promise<boolean>;
+
+  mobileCategories: MobileCategoryIcon[];
+  updateMobileCategories: (items: MobileCategoryIcon[]) => Promise<boolean>;
 
   placeOrderAndPay: (
     cartItems: CartItem[],
@@ -565,9 +580,137 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     safeGetLocalStorage<ButtonThemeConfig>(STORAGE_KEYS.BUTTON_THEME_CONFIG, DEFAULT_BUTTON_THEME_CONFIG)
   );
 
+  const [physicalStores, setPhysicalStores] = useState<PhysicalStore[]>(() =>
+    safeGetLocalStorage<PhysicalStore[]>(STORAGE_KEYS.PHYSICAL_STORES, DEFAULT_PHYSICAL_STORES)
+  );
 
-  // Coupons state
+  const [mobileCategories, setMobileCategoriesState] = useState<MobileCategoryIcon[]>(() =>
+    safeGetLocalStorage<MobileCategoryIcon[]>(STORAGE_KEYS.MOBILE_CATEGORIES, DEFAULT_MOBILE_CATEGORY_ICONS)
+  );
+
   const [coupons, setCoupons] = useState<PromoCoupon[]>([]);
+
+  // Toast System
+  const [toastMessage, setToastMessage] = useState<ToastState | null>(null);
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = useCallback((text: string, type: 'success' | 'error' | 'info' = 'info') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage({ id: `toast-${Date.now()}`, text, type });
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), 4000);
+  }, []);
+
+
+  // Store management CRUD
+  const addPhysicalStore = useCallback(async (storeData: Omit<PhysicalStore, 'id'> | PhysicalStore): Promise<boolean> => {
+    try {
+      const newId = 'id' in storeData && storeData.id ? storeData.id : `store-${Date.now()}`;
+      const newStore: PhysicalStore = {
+        ...storeData,
+        id: newId,
+        updatedAt: new Date().toISOString(),
+      };
+      const updatedList = [newStore, ...physicalStores];
+      setPhysicalStores(updatedList);
+      safeSetLocalStorage(STORAGE_KEYS.PHYSICAL_STORES, updatedList);
+      try {
+        await setDoc(doc(db, 'stores', newId), newStore);
+      } catch (e) {
+        console.warn('Firestore store doc write fallback:', e);
+      }
+      showToast('New store added successfully!', 'success');
+      return true;
+    } catch (err) {
+      showToast('Failed to add store', 'error');
+      return false;
+    }
+  }, [physicalStores, showToast]);
+
+  const updatePhysicalStore = useCallback(async (id: string, updatedFields: Partial<PhysicalStore>): Promise<boolean> => {
+    try {
+      const updatedList = physicalStores.map((s) =>
+        s.id === id ? { ...s, ...updatedFields, updatedAt: new Date().toISOString() } : s
+      );
+      setPhysicalStores(updatedList);
+      safeSetLocalStorage(STORAGE_KEYS.PHYSICAL_STORES, updatedList);
+      try {
+        await updateDoc(doc(db, 'stores', id), { ...updatedFields, updatedAt: new Date().toISOString() });
+      } catch (e) {
+        console.warn('Firestore store update fallback:', e);
+      }
+      showToast('Store updated successfully!', 'success');
+      return true;
+    } catch (err) {
+      showToast('Failed to update store', 'error');
+      return false;
+    }
+  }, [physicalStores, showToast]);
+
+  const deletePhysicalStore = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const updatedList = physicalStores.filter((s) => s.id !== id);
+      setPhysicalStores(updatedList);
+      safeSetLocalStorage(STORAGE_KEYS.PHYSICAL_STORES, updatedList);
+      try {
+        await deleteDoc(doc(db, 'stores', id));
+      } catch (e) {
+        console.warn('Firestore store delete fallback:', e);
+      }
+      showToast('Store removed successfully', 'info');
+      return true;
+    } catch (err) {
+      showToast('Failed to delete store', 'error');
+      return false;
+    }
+  }, [physicalStores, showToast]);
+
+  const togglePhysicalStoreStatus = useCallback(async (id: string, isEnabled: boolean): Promise<boolean> => {
+    return updatePhysicalStore(id, { isEnabled });
+  }, [updatePhysicalStore]);
+
+  const updateMobileCategories = useCallback(async (items: MobileCategoryIcon[]): Promise<boolean> => {
+    try {
+      setMobileCategoriesState(items);
+      safeSetLocalStorage(STORAGE_KEYS.MOBILE_CATEGORIES, items);
+      try {
+        await setDoc(doc(db, 'settings', 'mobile_categories'), { items, updatedAt: new Date().toISOString() });
+      } catch (e) {
+        console.warn('Firestore mobile categories write fallback:', e);
+      }
+      showToast('Mobile category bar updated!', 'success');
+      return true;
+    } catch (err) {
+      showToast('Failed to update category bar', 'error');
+      return false;
+    }
+  }, [showToast]);
+
+  // Sync stores from Firestore on mount
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    try {
+      const q = collection(db, 'stores');
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const list: PhysicalStore[] = [];
+          snapshot.forEach((d) => {
+            list.push({ id: d.id, ...d.data() } as PhysicalStore);
+          });
+          if (list.length > 0) {
+            setPhysicalStores(list);
+            safeSetLocalStorage(STORAGE_KEYS.PHYSICAL_STORES, list);
+          }
+        }
+      }, (err) => {
+        console.warn('Firestore store listener error:', err);
+      });
+    } catch (e) {
+      console.warn('Store snapshot init error:', e);
+    }
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   // Raw Live Products & Split subcollection maps
   const [rawLiveProducts, setRawLiveProducts] = useState<any[]>([]);
@@ -701,16 +844,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     },
     [isAdmin, currentAdminUser, hasPermission]
   );
-
-  // Toast System
-  const [toastMessage, setToastMessage] = useState<ToastState | null>(null);
-  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const showToast = useCallback((text: string, type: 'success' | 'error' | 'info' = 'info') => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToastMessage({ id: `toast-${Date.now()}`, text, type });
-    toastTimerRef.current = setTimeout(() => setToastMessage(null), 4000);
-  }, []);
 
   // Customer Auth
   const [customerUser, setCustomerUser] = useState<FirebaseUser | null>(null);
@@ -2742,6 +2875,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     buttonThemeConfig,
     updateButtonThemeConfig,
 
+    physicalStores,
+    addPhysicalStore,
+    updatePhysicalStore,
+    deletePhysicalStore,
+    togglePhysicalStoreStatus,
+
+    mobileCategories,
+    updateMobileCategories,
+
     // Customer Engagement
     spinWheelConfig,
     updateSpinWheelConfig,
@@ -2862,7 +3004,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     orderCelebrationConfig, isCelebrating, customerUser, customerProfile,
     isCustomerAuthLoading, customerAuthError, toastMessage, campaigns, subscribers,
     coupons, whatsappTemplatesConfig, openBoxDeliveryConfig, homepageConfig, homepageVersions,
+    physicalStores, mobileCategories,
     // callbacks and functions
+    addPhysicalStore, updatePhysicalStore, deletePhysicalStore, togglePhysicalStoreStatus, updateMobileCategories,
     updatePetShoeConfig, updateInstagramConfig,
     updatePaymentSettings, updateSoundConfig, updateTopAnnouncementBarConfig,
     updateCustomerSoundSettings, playSiteSound, updateSocialMediaConfig,

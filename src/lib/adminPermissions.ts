@@ -36,6 +36,8 @@ export const ADMIN_MODULE_LIST: ModuleDefinition[] = [
   { key: 'whatsapp_templates', label: 'WhatsApp Templates', category: 'marketing', description: 'Automated WhatsApp messaging templates and options' },
   { key: 'google_drive_backup', label: 'Google Drive & Backups', category: 'security', description: 'Store backups, database snapshots, and restoration' },
   { key: 'admin_management', label: 'Admin Management & RBAC', category: 'security', description: 'Multi-admin creation, role assignment, permissions & activity logs' },
+  { key: 'website_configuration', label: 'Website Configuration', category: 'settings', description: 'White-label store identity, contact, address, social media, SEO, branding, emails, and legal policies' },
+  { key: 'super_admin_console', label: 'Super Admin Platform Control Center', category: 'security', description: 'Master control center for website buyer directory, tenant management, and emergency platform lock' },
 ];
 
 export const FULL_PERMISSIONS: AdminModulePermissions = {
@@ -272,6 +274,10 @@ export function mapTabToModule(tab: string): AdminModule {
       return 'google_drive_backup';
     case 'admin_management':
       return 'admin_management';
+    case 'website_configuration':
+      return 'website_configuration';
+    case 'super_admin_console':
+      return 'super_admin_console';
     default:
       return 'dashboard';
   }

@@ -64,10 +64,12 @@ import {
   DEFAULT_BUTTON_THEME_CONFIG,
   PhysicalStore,
   MobileCategoryIcon,
+  WebsiteConfig,
 } from '../types';
 import { DEFAULT_ABOUT_US_CONFIG } from '../data/defaultAboutUs';
 import { DEFAULT_PHYSICAL_STORES } from '../data/defaultStores';
 import { DEFAULT_MOBILE_CATEGORY_ICONS } from '../data/defaultMobileCategories';
+import { DEFAULT_WEBSITE_CONFIG } from '../data/defaultWebsiteConfig';
 import {
   getEffectivePermissions,
   hasAdminPermission,
@@ -181,6 +183,7 @@ const STORAGE_KEYS = {
   MEGA_MENU_CATEGORIES: 'mfp_mega_menu_categories_live',
   PHYSICAL_STORES: 'mfp_physical_stores_live',
   MOBILE_CATEGORIES: 'mfp_mobile_categories_live',
+  WEBSITE_CONFIG: 'mfp_website_config_live',
 };
 
 import {
@@ -340,6 +343,9 @@ interface StoreContextType {
 
   mobileCategories: MobileCategoryIcon[];
   updateMobileCategories: (items: MobileCategoryIcon[]) => Promise<boolean>;
+
+  websiteConfig: WebsiteConfig;
+  updateWebsiteConfig: (newConfig: WebsiteConfig) => Promise<boolean>;
 
   placeOrderAndPay: (
     cartItems: CartItem[],
@@ -651,6 +657,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [mobileCategories, setMobileCategoriesState] = useState<MobileCategoryIcon[]>(() =>
     safeGetLocalStorage<MobileCategoryIcon[]>(STORAGE_KEYS.MOBILE_CATEGORIES, DEFAULT_MOBILE_CATEGORY_ICONS)
+  );
+
+  const [publishedWebsiteConfig, setPublishedWebsiteConfig] = useState<WebsiteConfig>(() =>
+    safeGetLocalStorage<WebsiteConfig>(STORAGE_KEYS.WEBSITE_CONFIG, DEFAULT_WEBSITE_CONFIG)
   );
 
   const [coupons, setCoupons] = useState<PromoCoupon[]>([]);
@@ -1398,6 +1408,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
 
       unsubscribers.push(
+        onSnapshot(doc(db, 'settings', 'website_config'), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as WebsiteConfig;
+            setPublishedWebsiteConfig(data);
+            safeSetLocalStorage(STORAGE_KEYS.WEBSITE_CONFIG, data);
+          }
+        }, (err) => console.warn('Live website config listener notice:', err))
+      );
+
+      unsubscribers.push(
         onSnapshot(doc(db, 'settings', 'pricePointCollection'), (snap) => {
           if (snap.exists()) {
             const data = snap.data() as PricePointCollectionConfig;
@@ -1835,6 +1855,41 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       showToast('Failed to save store info to Firestore', 'error');
     }
   };
+
+  const updateWebsiteConfig = useCallback(async (newConfig: WebsiteConfig): Promise<boolean> => {
+    try {
+      setPublishedWebsiteConfig(newConfig);
+      safeSetLocalStorage(STORAGE_KEYS.WEBSITE_CONFIG, newConfig);
+
+      // Sync legacy storeInfo for backward compatibility
+      const updatedStoreInfo: StoreInfo = {
+        ...publishedStoreInfo,
+        name: newConfig.businessIdentity?.businessName || publishedStoreInfo.name,
+        tagline: newConfig.businessIdentity?.tagline || publishedStoreInfo.tagline,
+        phone: newConfig.contactDetails?.phone || publishedStoreInfo.phone,
+        email: newConfig.contactDetails?.email || publishedStoreInfo.email,
+        address: newConfig.address?.shopAddress || publishedStoreInfo.address,
+        businessHours: newConfig.storeSettings?.businessHours || publishedStoreInfo.businessHours,
+      };
+      setPublishedStoreInfo(updatedStoreInfo);
+      safeSetLocalStorage(STORAGE_KEYS.STORE_INFO, updatedStoreInfo);
+
+      try {
+        await setDoc(doc(db, 'settings', 'website_config'), newConfig);
+        await setDoc(doc(db, 'settings', 'storeInfo'), updatedStoreInfo);
+      } catch (e) {
+        console.warn('Firestore website config write fallback:', e);
+      }
+
+      recordAuditLog('Website Configuration Updated', 'SETTINGS', `Updated Website Configuration for "${newConfig.businessIdentity.businessName}"`, 'SUCCESS');
+      showToast('Website Configuration updated successfully!', 'success');
+      return true;
+    } catch (err) {
+      console.error('Failed to update website config:', err);
+      showToast('Failed to update website configuration', 'error');
+      return false;
+    }
+  }, [publishedStoreInfo, showToast]);
 
   const updateHeroContent = async (content: Partial<HeroContent>) => {
     try {
@@ -3150,6 +3205,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     rollbackHomepageVersion,
     homepageVersions,
     fetchHomepageVersionsList,
+
+    // Website Configuration
+    websiteConfig: publishedWebsiteConfig,
+    updateWebsiteConfig,
   }), [
     publishedProducts, publishedReviews, publishedStoreInfo, publishedHeroContent,
     publishedAnnouncements, publishedCategoryHighlights, publishedTrendingCollections,
@@ -3161,9 +3220,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     orderCelebrationConfig, isCelebrating, customerUser, customerProfile,
     isCustomerAuthLoading, customerAuthError, toastMessage, campaigns, subscribers,
     coupons, whatsappTemplatesConfig, openBoxDeliveryConfig, homepageConfig, homepageVersions,
-    physicalStores, mobileCategories,
+    physicalStores, mobileCategories, publishedWebsiteConfig,
     // callbacks and functions
     addPhysicalStore, updatePhysicalStore, deletePhysicalStore, togglePhysicalStoreStatus, updateMobileCategories,
+    updateWebsiteConfig,
     updatePetShoeConfig, updateInstagramConfig,
     updatePaymentSettings, updateSoundConfig, updateTopAnnouncementBarConfig,
     updateCustomerSoundSettings, playSiteSound, updateSocialMediaConfig,

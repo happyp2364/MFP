@@ -82,7 +82,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigateToSection,
   onSelectSubcategory,
 }) => {
-  const { storeInfo, isAdmin, customerSoundSettings, megaMenuCategories } = useStore();
+  const { storeInfo, websiteConfig, isAdmin, customerSoundSettings, megaMenuCategories } = useStore();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
@@ -165,16 +165,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div>
                     <div className="flex items-center gap-1">
                       <span className="font-serif-heading font-extrabold text-base sm:text-xl text-neutral-900 tracking-tight">
-                        {storeInfo?.headerLogoText || 'Marudhar'}
+                        {websiteConfig?.businessIdentity?.businessName || storeInfo?.name || 'Shop'}
                       </span>
-                      {(!storeInfo?.headerLogoText || storeInfo.headerLogoText === 'Marudhar') && (
-                        <span className="text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 rounded bg-[#0B8F63]/10 text-[#0B8F63] uppercase tracking-wider">
-                          Point
-                        </span>
-                      )}
                     </div>
                     <p className="text-[9px] sm:text-[10px] text-neutral-500 font-medium tracking-wide hidden xs:block">
-                      Fashion & Footwear
+                      {websiteConfig?.businessIdentity?.tagline || storeInfo?.tagline || 'Fashion & Footwear'}
                     </p>
                   </div>
                 </button>

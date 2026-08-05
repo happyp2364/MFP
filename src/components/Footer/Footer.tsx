@@ -11,7 +11,7 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
-  const { storeInfo, socialMediaConfig, recordSocialClick } = useStore();
+  const { storeInfo, websiteConfig, socialMediaConfig, recordSocialClick } = useStore();
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -98,10 +98,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
               </div>
               <div>
                 <span className="font-serif-heading font-extrabold text-xl text-white tracking-tight">
-                  {storeInfo.name}
+                  {websiteConfig?.businessIdentity?.businessName || storeInfo.name}
                 </span>
                 <p className="text-[10px] text-[#0B8F63] font-bold tracking-wide uppercase">
-                  {storeInfo.tagline}
+                  {websiteConfig?.businessIdentity?.tagline || storeInfo.tagline}
                 </p>
               </div>
             </div>
@@ -223,7 +223,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
         {/* Bottom Guarantees & Copyright Bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
           <div className="flex items-center gap-1 select-none cursor-pointer" onClick={handleCopyrightClick} onDoubleClick={onOpenAdmin}>
-            <span>© {new Date().getFullYear()} Marudhar Fashion Point. All rights reserved.</span>
+            <span>{websiteConfig?.footer?.copyrightText || `© ${new Date().getFullYear()} ${websiteConfig?.businessIdentity?.businessName || storeInfo.name}. All rights reserved.`}</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-[11px] text-neutral-400">

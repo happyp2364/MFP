@@ -217,6 +217,190 @@ export interface AboutUsConfig {
   updatedAt?: string;
 }
 
+export interface SocialLinkItem {
+  id: string;
+  platform: string;
+  title: string;
+  username: string;
+  url: string;
+  logoUrl?: string;
+  enabled: boolean;
+  openInNewTab: boolean;
+  displayOrder: number;
+}
+
+export interface WebsiteConfig {
+  // Section 1: Business Identity
+  businessIdentity: {
+    businessName: string;
+    displayName: string;
+    legalName: string;
+    brandName: string;
+    tagline: string;
+    shortDescription: string;
+    longDescription: string;
+    aboutBusiness: string;
+    businessStory: string;
+    establishedYear: string;
+    gstNumber: string;
+    panNumber: string;
+    cinNumber: string;
+    licenseNumbers: string;
+    ownerName: string;
+    coOwnerNames: string;
+    founderDetails: string;
+    logoUrl: string;
+    lightLogoUrl: string;
+    darkLogoUrl: string;
+    faviconUrl: string;
+    loadingLogoUrl: string;
+    splashLogoUrl: string;
+    emailSignatureLogoUrl: string;
+  };
+
+  // Section 2: Contact Details
+  contactDetails: {
+    phone: string;
+    altPhone: string;
+    whatsappNumber: string;
+    customerCareNumber: string;
+    tollFreeNumber: string;
+    email: string;
+    supportEmail: string;
+    salesEmail: string;
+    billingEmail: string;
+    websiteUrl: string;
+  };
+
+  // Section 3: Address
+  address: {
+    shopAddress: string;
+    billingAddress: string;
+    warehouseAddress: string;
+    returnAddress: string;
+    googleMapsLink: string;
+    latitude: number;
+    longitude: number;
+    landmark: string;
+    city: string;
+    district: string;
+    state: string;
+    country: string;
+    pinCode: string;
+  };
+
+  // Section 4: Social Media
+  socialMedia: {
+    links: SocialLinkItem[];
+  };
+
+  // Section 5: Store Settings
+  storeSettings: {
+    storeName: string;
+    storeStatus: 'open' | 'closed';
+    businessHours: string;
+    holidayCalendar: string;
+    emergencyNotice: string;
+    storeBannerUrl: string;
+    storePhotos: string[];
+    storeVideos: string[];
+  };
+
+  // Section 6: SEO
+  seo: {
+    websiteTitle: string;
+    metaTitle: string;
+    metaDescription: string;
+    keywords: string[];
+    canonicalUrl: string;
+    ogImageUrl: string;
+    twitterCard: 'summary' | 'summary_large_image';
+    structuredDataJson: string;
+    googleVerificationCode: string;
+    bingVerificationCode: string;
+  };
+
+  // Section 7: Branding
+  branding: {
+    primaryColor: string;
+    secondaryColor: string;
+    accentColor: string;
+    successColor: string;
+    warningColor: string;
+    errorColor: string;
+    fontFamily: string;
+    borderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'full';
+    buttonStyle: 'solid' | 'gradient' | 'outline' | 'pill';
+  };
+
+  // Section 8: Footer
+  footer: {
+    copyrightText: string;
+    footerLinks: { label: string; url: string; category?: string }[];
+    privacyPolicyLink: string;
+    termsLink: string;
+    refundPolicyLink: string;
+    shippingPolicyLink: string;
+    aboutLink: string;
+    contactLink: string;
+  };
+
+  // Section 9: Legal Documents
+  legal: {
+    privacyPolicy: string;
+    termsAndConditions: string;
+    refundPolicy: string;
+    shippingPolicy: string;
+    cancellationPolicy: string;
+    cookiePolicy: string;
+    disclaimer: string;
+  };
+
+  // Section 10: Emails
+  emails: {
+    emailHeader: string;
+    emailFooter: string;
+    emailSignature: string;
+    supportName: string;
+    supportEmail: string;
+  };
+
+  // Section 11: WhatsApp
+  whatsApp: {
+    greeting: string;
+    autoReply: string;
+    businessName: string;
+    supportNumber: string;
+  };
+
+  // Section 12: AI Pet
+  aiPet: {
+    customPrompts: string;
+    autoUseStoreInfo: boolean;
+  };
+
+  // Section 13: Invoices
+  invoices: {
+    logoUrl: string;
+    address: string;
+    gstNumber: string;
+    phone: string;
+    email: string;
+    website: string;
+    qrCodeUrl: string;
+    footerText: string;
+  };
+
+  // Section 14: Store Locator
+  storeLocator: {
+    stores: PhysicalStore[];
+  };
+
+  version?: number;
+  lastUpdated?: string;
+  updatedBy?: string;
+}
+
 export interface StoreInfo {
   name: string;
   tagline: string;
@@ -1316,7 +1500,9 @@ export type AdminModule =
   | 'marketing'
   | 'whatsapp_templates'
   | 'google_drive_backup'
-  | 'admin_management';
+  | 'admin_management'
+  | 'website_configuration'
+  | 'super_admin_console';
 
 export type AdminAction = 'read' | 'create' | 'edit' | 'delete' | 'export';
 

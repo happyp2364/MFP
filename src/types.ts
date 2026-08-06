@@ -530,6 +530,18 @@ export interface TrendingCollectionItem {
   count: string;
 }
 
+export interface Tenant {
+  id: string;
+  name: string;
+  domain: string;
+  ownerId: string;
+  ownerEmail: string;
+  status: 'active' | 'suspended' | 'provisioning';
+  plan: 'free' | 'pro' | 'enterprise';
+  createdAt: string;
+  databaseSize: number; // in MB
+}
+
 export interface AdminUser {
   uid: string;
   id?: string;

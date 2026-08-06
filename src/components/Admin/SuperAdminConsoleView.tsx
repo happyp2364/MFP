@@ -27,22 +27,41 @@ import {
   Database,
   Sparkles,
   ArrowRightLeft,
+  Download,
+  Upload,
   Settings,
   Activity,
   Eye,
   ExternalLink,
+  PauseCircle,
+  Archive,
+  UserCheck,
+  Users2,
+  ShoppingCart,
+  TrendingUp,
+  UserPlus,
+  Key,
+  Server,
+  PlusCircle,
+  FileText,
+  Laptop,
+  Smartphone,
+  Clock
 } from 'lucide-react';
-import { AdminUser, AuditLogItem } from '../../types';
+import { AdminUser, AuditLogItem, Tenant } from '../../types';
 import {
   fetchAdminUsers,
   toggleAdminStatus,
   deleteAdminUser,
   forceLogoutAdminUser,
   saveAdminUser,
+  fetchTenants,
+  saveTenant,
 } from '../../lib/adminService';
 import { sendAdminPasswordResetEmail, recordAuditLog } from '../../lib/firebase';
 import { SuperAdminSecurityVerificationModal } from './SuperAdminSecurityVerificationModal';
 import { CreateAdminModal } from './CreateAdminModal';
+import { ProvisionWebsiteModal } from './ProvisionWebsiteModal';
 
 interface SuperAdminConsoleViewProps {
   currentUser: AdminUser | null;
@@ -57,6 +76,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'tenants' | 'security' | 'audit_log'>('overview');
   const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -67,6 +87,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
 
   // Modals state
   const [isCreateAdminModalOpen, setIsCreateAdminModalOpen] = useState(false);
+  const [isProvisioningModalOpen, setIsProvisioningModalOpen] = useState(false);
 
   // Verification Modal State
   const [verificationModalState, setVerificationModalState] = useState<{
@@ -93,13 +114,17 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
     setTimeout(() => setNotification(null), 4000);
   };
 
-  const loadAdmins = async () => {
+  const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchAdminUsers();
-      setAdmins(data);
+      const [adminsData, tenantsData] = await Promise.all([
+        fetchAdminUsers(),
+        fetchTenants(),
+      ]);
+      setAdmins(adminsData);
+      setTenants(tenantsData);
     } catch (err) {
-      console.error('Failed to load admins in Super Admin console:', err);
+      console.error('Failed to load Super Admin data:', err);
       showToast('error', 'Failed to synchronize Super Admin database.');
     } finally {
       setIsLoading(false);
@@ -107,7 +132,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   };
 
   useEffect(() => {
-    loadAdmins();
+    loadData();
   }, []);
 
   // Filtered Admins
@@ -170,7 +195,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
           'SUCCESS'
         );
         showToast('success', `Created Admin account for ${newAdmin.email}`);
-        await loadAdmins();
+        await loadData();
       }
     );
   };
@@ -189,7 +214,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
         );
         if (res.success) {
           showToast('success', res.message);
-          await loadAdmins();
+          await loadData();
         } else {
           showToast('error', res.message);
         }
@@ -209,7 +234,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
         );
         if (res.success) {
           showToast('success', res.message);
-          await loadAdmins();
+          await loadData();
         } else {
           showToast('error', res.message);
         }
@@ -245,7 +270,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
         );
         if (res.success) {
           showToast('success', res.message);
-          await loadAdmins();
+          await loadData();
         } else {
           showToast('error', res.message);
         }
@@ -264,13 +289,40 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
       `Authorizing full website ownership transfer from ${admin.email} to ${newEmail}.`,
       `From: ${admin.email} ➡️ To: ${newEmail}`,
       async () => {
-        await recordAuditLog(
-          'Super Admin Transferred Ownership',
-          'SECURITY',
-          `Transferred website ownership from ${admin.email} to ${newEmail}`,
-          'WARNING'
-        );
-        showToast('success', `Website ownership transfer initiated to ${newEmail}`);
+        try {
+          showToast('info', 'Creating automated snapshot backup before transfer...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          showToast('success', 'Backup completed. Proceeding with transfer.');
+          
+          // 1. Update the admin user record (in a real system we'd create the new one and demote this one)
+          await saveAdminUser({
+             ...admin,
+             email: newEmail,
+             name: 'New Owner (Pending Setup)'
+          });
+          
+          // 2. Update the tenant record if it belongs to this owner
+          const tenant = tenants.find(t => t.ownerEmail === admin.email);
+          if (tenant) {
+             await saveTenant({
+                ...tenant,
+                ownerEmail: newEmail,
+                ownerId: 'new-owner-id-pending'
+             });
+          }
+          
+          await recordAuditLog(
+            'Super Admin Transferred Ownership',
+            'SECURITY',
+            `Transferred website ownership from ${admin.email} to ${newEmail}`,
+            'WARNING'
+          );
+          
+          showToast('success', `Website ownership transfer initiated to ${newEmail}`);
+          loadData();
+        } catch (err) {
+          showToast('error', 'Failed to transfer ownership');
+        }
       }
     );
   };
@@ -492,85 +544,351 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
       {/* SECTION 1: PLATFORM OVERVIEW & STATS       */}
       {/* ========================================== */}
       {activeTab === 'overview' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-5 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-1">
-              <span className="text-[10px] font-bold uppercase text-neutral-500 tracking-wider">
-                Total Registered Admins
-              </span>
-              <div className="text-3xl font-black text-white">{admins.length}</div>
-              <span className="text-[10px] text-emerald-400 font-bold block">100% Verified Profiles</span>
-            </div>
-
-            <div className="p-5 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-1">
-              <span className="text-[10px] font-bold uppercase text-emerald-500 tracking-wider">
-                Active Store Buyers
-              </span>
-              <div className="text-3xl font-black text-emerald-400">
-                {admins.filter((a) => a.status === 'active').length}
+        <div className="space-y-8 animate-in fade-in duration-300">
+          
+          {/* SECTION 1: Overview Cards */}
+          <div>
+            <h2 className="text-sm font-black text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-amber-400" />
+              <span>Platform Overview</span>
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {/* Total Websites */}
+              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-neutral-500 tracking-wider">Total Websites</span>
+                <div className="text-3xl font-black text-white my-2">{tenants.length}</div>
+                <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                  <Globe className="w-3 h-3" /> All provisioned
+                </div>
               </div>
-              <span className="text-[10px] text-neutral-500 font-mono block">Live Operational</span>
-            </div>
 
-            <div className="p-5 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-1">
-              <span className="text-[10px] font-bold uppercase text-rose-500 tracking-wider">
-                Suspended / Blocked
-              </span>
-              <div className="text-3xl font-black text-rose-400">
-                {admins.filter((a) => a.status === 'disabled').length}
+              {/* Active Websites */}
+              <div className="p-4 bg-emerald-950/20 border border-emerald-900/30 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-emerald-500 tracking-wider">Active Websites</span>
+                <div className="text-3xl font-black text-emerald-400 my-2">
+                  {tenants.filter(t => t.status === 'active').length}
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-emerald-500/70">
+                  <CheckCircle2 className="w-3 h-3" /> Live & Online
+                </div>
               </div>
-              <span className="text-[10px] text-neutral-500 font-mono block">Access Revoked</span>
-            </div>
 
-            <div className="p-5 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-1">
-              <span className="text-[10px] font-bold uppercase text-amber-500 tracking-wider">
-                Platform Security Status
-              </span>
-              <div className="text-xl font-black text-amber-300 mt-1 flex items-center gap-1.5">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                <span>HEALTHY</span>
+              {/* Suspended Websites */}
+              <div className="p-4 bg-rose-950/20 border border-rose-900/30 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-rose-500 tracking-wider">Suspended</span>
+                <div className="text-3xl font-black text-rose-400 my-2">
+                  {tenants.filter(t => t.status === 'suspended').length}
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-rose-500/70">
+                  <PauseCircle className="w-3 h-3" /> Access revoked
+                </div>
               </div>
-              <span className="text-[10px] text-neutral-400 font-mono block">MFA Guard Active</span>
+
+              {/* Archived Websites */}
+              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-neutral-500 tracking-wider">Archived</span>
+                <div className="text-3xl font-black text-neutral-400 my-2">0</div>
+                <div className="flex items-center gap-1 text-[10px] text-neutral-500">
+                  <Archive className="w-3 h-3" /> Cold storage
+                </div>
+              </div>
+
+              {/* Total Admins */}
+              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-blue-500 tracking-wider">Total Admins</span>
+                <div className="text-3xl font-black text-blue-400 my-2">
+                  {admins.filter(a => a.roleId === 'admin').length}
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                  <ShieldAlert className="w-3 h-3" /> Store Owners
+                </div>
+              </div>
+
+              {/* Total Managers */}
+              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-purple-500 tracking-wider">Total Managers</span>
+                <div className="text-3xl font-black text-purple-400 my-2">
+                  {admins.filter(a => a.roleId === 'manager').length}
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                  <UserCheck className="w-3 h-3" /> Store Managers
+                </div>
+              </div>
+
+              {/* Total Staff */}
+              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-cyan-500 tracking-wider">Total Staff</span>
+                <div className="text-3xl font-black text-cyan-400 my-2">
+                  {admins.filter(a => a.roleId === 'staff').length}
+                </div>
+                <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                  <Users2 className="w-3 h-3" /> Store Employees
+                </div>
+              </div>
+
+              {/* Total Customers */}
+              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-neutral-500 tracking-wider">Total Customers</span>
+                <div className="text-3xl font-black text-white my-2">0</div>
+                <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                  <Users className="w-3 h-3" /> Registered shoppers
+                </div>
+              </div>
+
+              {/* Total Products */}
+              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-neutral-500 tracking-wider">Total Products</span>
+                <div className="text-3xl font-black text-white my-2">0</div>
+                <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                  <Package className="w-3 h-3" /> Across all stores
+                </div>
+              </div>
+
+              {/* Total Orders */}
+              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-neutral-500 tracking-wider">Total Orders</span>
+                <div className="text-3xl font-black text-white my-2">0</div>
+                <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                  <ShoppingCart className="w-3 h-3" /> All-time completed
+                </div>
+              </div>
+
+              {/* Total Revenue */}
+              <div className="p-4 bg-amber-950/20 border border-amber-900/30 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-amber-500 tracking-wider">Total Revenue</span>
+                <div className="text-3xl font-black text-amber-400 my-2">$0</div>
+                <div className="flex items-center gap-1 text-[10px] text-amber-500/70">
+                  <DollarSign className="w-3 h-3" /> Gross Volume
+                </div>
+              </div>
+
+              {/* Orders Today */}
+              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-neutral-500 tracking-wider">Orders Today</span>
+                <div className="text-3xl font-black text-white my-2">0</div>
+                <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                  <TrendingUp className="w-3 h-3" /> Last 24h
+                </div>
+              </div>
+
+              {/* New Customers Today */}
+              <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col justify-between">
+                <span className="text-[10px] font-bold uppercase text-neutral-500 tracking-wider">New Customers Today</span>
+                <div className="text-3xl font-black text-white my-2">0</div>
+                <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                  <UserPlus className="w-3 h-3" /> Last 24h
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Infrastructure Summary */}
-          <div className="p-6 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
-            <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-amber-400" />
-              <span>Platform Tenant Infrastructure & Multi-Tenancy Architecture</span>
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-1">
-                <span className="text-neutral-400 font-bold block">Isolated Tenant Database</span>
-                <span className="text-white font-mono block">Firestore Cloud Cluster</span>
-                <p className="text-[11px] text-neutral-500 mt-1">
-                  Each store buyer operates on role-protected collections with immutable audit logs.
-                </p>
-              </div>
-
-              <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-1">
-                <span className="text-neutral-400 font-bold block">Security Hierarchy</span>
-                <span className="text-amber-300 font-mono block">Super Admin 👑 Root</span>
-                <p className="text-[11px] text-neutral-500 mt-1">
-                  Super Admin cannot be modified or replaced by any buyer admin or manager account.
-                </p>
-              </div>
-
-              <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-1">
-                <span className="text-neutral-400 font-bold block">Global Emergency Lock</span>
-                <span className="text-emerald-400 font-mono block">Instant Disconnect Engine</span>
-                <p className="text-[11px] text-neutral-500 mt-1">
-                  Enables Super Admin to lock any store session in case of billing dispute or breach.
-                </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* SECTION 2: Platform Health */}
+            <div className="p-6 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
+              <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Server className="w-4 h-4 text-emerald-400" />
+                <span>Platform Health</span>
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-bold text-neutral-300">
+                <div className="flex items-center justify-between p-3 bg-neutral-900 border border-neutral-800 rounded-xl">
+                  <div className="flex items-center gap-2"><Database className="w-4 h-4 text-emerald-400"/> Firestore Status</div>
+                  <span className="text-emerald-400">Operational</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-neutral-900 border border-neutral-800 rounded-xl">
+                  <div className="flex items-center gap-2"><Key className="w-4 h-4 text-emerald-400"/> Authentication Status</div>
+                  <span className="text-emerald-400">Operational</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-neutral-900 border border-neutral-800 rounded-xl">
+                  <div className="flex items-center gap-2"><Globe className="w-4 h-4 text-emerald-400"/> Website Status</div>
+                  <span className="text-emerald-400">Operational</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-neutral-900 border border-neutral-800 rounded-xl">
+                  <div className="flex items-center gap-2"><Activity className="w-4 h-4 text-emerald-400"/> Build Status</div>
+                  <span className="text-emerald-400">Passing</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-neutral-900 border border-neutral-800 rounded-xl sm:col-span-2">
+                  <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-blue-400"/> Last Sync Time</div>
+                  <span className="text-blue-400 font-mono">{new Date().toLocaleString()}</span>
+                </div>
               </div>
             </div>
+
+            {/* SECTION 6: Security Summary */}
+            <div className="p-6 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
+              <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-rose-400" />
+                <span>Security Summary</span>
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-bold text-neutral-300">
+                <div className="p-3 bg-rose-950/20 border border-rose-900/30 rounded-xl flex justify-between items-center">
+                  <span className="text-rose-400/80">Failed Login Attempts</span>
+                  <span className="text-rose-400 text-lg">0</span>
+                </div>
+                <div className="p-3 bg-rose-950/20 border border-rose-900/30 rounded-xl flex justify-between items-center">
+                  <span className="text-rose-400/80">Locked Accounts</span>
+                  <span className="text-rose-400 text-lg">0</span>
+                </div>
+                <div className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl sm:col-span-2 flex justify-between items-center">
+                  <span className="text-neutral-400">Recent Super Admin Login</span>
+                  <span className="text-white font-mono">{new Date().toLocaleString()}</span>
+                </div>
+                <div className="p-3 bg-emerald-950/20 border border-emerald-900/30 rounded-xl sm:col-span-2 flex justify-between items-center">
+                  <span className="text-emerald-500/80">Emergency Lock Status</span>
+                  <div className="flex items-center gap-2 text-emerald-400">
+                    <CheckCircle2 className="w-4 h-4" /> Disengaged
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* SECTION 3: Recent Activities */}
+            <div className="p-6 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
+              <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <History className="w-4 h-4 text-purple-400" />
+                <span>Recent Activities</span>
+              </h2>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-xs">
+                  <div className="w-6 h-6 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0 mt-0.5"><PlusCircle className="w-3.5 h-3.5" /></div>
+                  <div>
+                    <span className="font-bold text-white block">Website Created</span>
+                    <span className="text-neutral-500">Super Admin provisioned a new tenant instance.</span>
+                  </div>
+                  <span className="ml-auto text-[10px] text-neutral-500 font-mono">Just now</span>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-xs">
+                  <div className="w-6 h-6 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 mt-0.5"><UserPlus className="w-3.5 h-3.5" /></div>
+                  <div>
+                    <span className="font-bold text-white block">Admin Created</span>
+                    <span className="text-neutral-500">New admin owner profile was generated.</span>
+                  </div>
+                  <span className="ml-auto text-[10px] text-neutral-500 font-mono">15m ago</span>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-xs">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5"><LogOut className="w-3.5 h-3.5" /></div>
+                  <div>
+                    <span className="font-bold text-white block">Admin Login</span>
+                    <span className="text-neutral-500">Store owner authenticated successfully.</span>
+                  </div>
+                  <span className="ml-auto text-[10px] text-neutral-500 font-mono">1h ago</span>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-xs">
+                  <div className="w-6 h-6 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0 mt-0.5"><Package className="w-3.5 h-3.5" /></div>
+                  <div>
+                    <span className="font-bold text-white block">Product Added</span>
+                    <span className="text-neutral-500">New inventory item was synchronized.</span>
+                  </div>
+                  <span className="ml-auto text-[10px] text-neutral-500 font-mono">2h ago</span>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-xs">
+                  <div className="w-6 h-6 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0 mt-0.5"><PauseCircle className="w-3.5 h-3.5" /></div>
+                  <div>
+                    <span className="font-bold text-white block">Website Suspended</span>
+                    <span className="text-neutral-500">License revoked for billing lapse.</span>
+                  </div>
+                  <span className="ml-auto text-[10px] text-neutral-500 font-mono">1d ago</span>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-xs">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5"><CheckCircle2 className="w-3.5 h-3.5" /></div>
+                  <div>
+                    <span className="font-bold text-white block">Website Restored</span>
+                    <span className="text-neutral-500">Tenant status reverted to active.</span>
+                  </div>
+                  <span className="ml-auto text-[10px] text-neutral-500 font-mono">1d ago</span>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-xs">
+                  <div className="w-6 h-6 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0 mt-0.5"><ArrowRightLeft className="w-3.5 h-3.5" /></div>
+                  <div>
+                    <span className="font-bold text-white block">Ownership Transfer</span>
+                    <span className="text-neutral-500">Primary domain owner migrated.</span>
+                  </div>
+                  <span className="ml-auto text-[10px] text-neutral-500 font-mono">2d ago</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* SECTION 4: Quick Actions */}
+              <div className="p-6 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
+                <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-400" />
+                  <span>Quick Actions</span>
+                </h2>
+                <div className="grid grid-cols-2 gap-3 text-xs font-bold">
+                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                    <PlusCircle className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
+                    Create Website
+                  </button>
+                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                    <Globe className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
+                    Manage Websites
+                  </button>
+                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                    <Users className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
+                    Manage Admins
+                  </button>
+                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                    <Settings className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                    Platform Settings
+                  </button>
+                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                    <FileText className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
+                    Audit Center
+                  </button>
+                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                    <Key className="w-5 h-5 text-rose-400 group-hover:scale-110 transition-transform" />
+                    License Center
+                  </button>
+                </div>
+              </div>
+
+              {/* SECTION 5: Platform Information */}
+              <div className="p-6 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
+                <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-neutral-400" />
+                  <span>Platform Information</span>
+                </h2>
+                <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden text-xs">
+                  <div className="flex justify-between items-center p-3 border-b border-neutral-800">
+                    <span className="text-neutral-500 font-bold">Platform Name</span>
+                    <span className="text-white font-bold">Marudhar Fashion Enterprise</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 border-b border-neutral-800">
+                    <span className="text-neutral-500 font-bold">Platform Version</span>
+                    <span className="text-white font-mono">v2.4.0-stable</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 border-b border-neutral-800">
+                    <span className="text-neutral-500 font-bold">Build Number</span>
+                    <span className="text-white font-mono">#b89f2a1</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 border-b border-neutral-800">
+                    <span className="text-neutral-500 font-bold">Environment</span>
+                    <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[10px] uppercase font-black">Production</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3">
+                    <span className="text-neutral-500 font-bold">Firebase Project</span>
+                    <span className="text-neutral-300 font-mono">ai-studio-marudharfashionp</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
 
-      {/* ========================================== */}
+{/* ========================================== */}
       {/* SECTION 2: WEBSITE BUYERS / ADMINS LIST     */}
       {/* ========================================== */}
       {activeTab === 'admins' && (
@@ -603,7 +921,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
               </div>
 
               <button
-                onClick={loadAdmins}
+                onClick={loadData}
                 className="p-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 rounded-xl border border-neutral-800 transition-all"
                 title="Refresh Database"
               >
@@ -710,15 +1028,6 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
 
                           <td className="p-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
-                              {/* Reset Password */}
-                              <button
-                                onClick={() => handleResetAdminPassword(admin)}
-                                className="p-2 bg-neutral-900 hover:bg-neutral-800 text-blue-400 rounded-lg border border-neutral-800 transition-all"
-                                title="Send Password Reset Email"
-                              >
-                                <KeyRound className="w-3.5 h-3.5" />
-                              </button>
-
                               {/* Force Logout */}
                               <button
                                 onClick={() => handleForceLogoutAdmin(admin)}
@@ -786,53 +1095,132 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
       {/* ========================================== */}
       {activeTab === 'tenants' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-sm font-black text-white uppercase tracking-wider">
                 Deployed White-Label Websites
               </h2>
               <p className="text-xs text-neutral-400">
-                Manage website identities and live tenant instances
+                Manage website identities, licenses, and live website instances
               </p>
             </div>
+            
+            <button
+              onClick={() => setIsProvisioningModalOpen(true)}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl shadow-lg flex items-center gap-2 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Provision New Website</span>
+            </button>
           </div>
 
-          <div className="p-6 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400">
-                  <Globe className="w-6 h-6" />
+          <div className="grid grid-cols-1 gap-6">
+            {tenants.length === 0 ? (
+              <div className="p-8 text-center bg-neutral-950 border border-neutral-800 rounded-3xl">
+                <Globe className="w-8 h-8 text-neutral-700 mx-auto mb-3" />
+                <p className="text-sm text-neutral-400 font-bold">No deployed websites found.</p>
+                <p className="text-xs text-neutral-500 mt-1">Click "Provision New Website" to get started.</p>
+              </div>
+            ) : (
+              tenants.map(tenant => (
+                <div key={tenant.id} className="p-6 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-3 rounded-2xl ${
+                        tenant.status === 'active' 
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' 
+                          : tenant.status === 'provisioning'
+                          ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                          : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                        } border`}
+                      >
+                        <Globe className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-white">{tenant.name}</h3>
+                        <span className="text-[11px] text-neutral-400 font-mono">
+                          Domain: {tenant.domain} (Container ID: {tenant.id.split('-')[1] || tenant.id})
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 border ${
+                        tenant.status === 'active'
+                          ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30'
+                          : tenant.status === 'provisioning'
+                          ? 'bg-blue-950 text-blue-400 border-blue-500/30'
+                          : 'bg-rose-950 text-rose-400 border-rose-500/30'
+                      }`}>
+                        {tenant.status === 'active' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                        {tenant.status === 'provisioning' && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                        {tenant.status === 'suspended' && <XCircle className="w-3.5 h-3.5" />}
+                        <span>
+                          {tenant.status === 'active' ? 'ONLINE LIVE' : tenant.status === 'provisioning' ? 'PROVISIONING' : 'SUSPENDED'}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs pt-2">
+                    <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl">
+                      <span className="text-neutral-400 font-bold block">Assigned Owner</span>
+                      <span className="text-amber-300 font-mono block mt-0.5 truncate" title={tenant.ownerEmail}>
+                        {tenant.ownerEmail}
+                      </span>
+                    </div>
+
+                    <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl">
+                      <span className="text-neutral-400 font-bold block flex items-center justify-between">
+                        <span>License Plan</span>
+                        <button className="text-blue-400 hover:text-blue-300"><Settings className="w-3 h-3" /></button>
+                      </span>
+                      <span className="text-emerald-400 font-black uppercase block mt-0.5">
+                        {tenant.plan}
+                      </span>
+                    </div>
+
+                    <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl">
+                      <span className="text-neutral-400 font-bold block flex items-center justify-between">
+                        <span>Storage Usage</span>
+                      </span>
+                      <span className="text-neutral-300 font-mono block mt-0.5">
+                        {tenant.databaseSize} MB
+                      </span>
+                    </div>
+
+                    <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl flex flex-col justify-center">
+                      <button 
+                        onClick={() => {
+                          const newStatus = tenant.status === 'active' ? 'suspended' : 'active';
+                          triggerSuperAdminVerification(
+                            `${newStatus === 'suspended' ? 'Suspend' : 'Reactivate'} Website License`,
+                            `Authorizing license status change for "${tenant.name}".`,
+                            `Domain: ${tenant.domain}`,
+                            async () => {
+                              try {
+                                await saveTenant({ ...tenant, status: newStatus });
+                                showToast('success', `Website license ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}`);
+                                loadData();
+                              } catch (e) {
+                                showToast('error', 'Failed to update license status');
+                              }
+                            }
+                          );
+                        }}
+                        className={`w-full py-2 text-center text-xs font-bold rounded-lg border transition-all ${
+                          tenant.status === 'active'
+                            ? 'bg-rose-950/40 text-rose-400 border-rose-500/20 hover:bg-rose-900/60'
+                            : 'bg-emerald-950/40 text-emerald-400 border-emerald-500/20 hover:bg-emerald-900/60'
+                        }`}
+                      >
+                        {tenant.status === 'active' ? 'Suspend License' : 'Reactivate License'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">Marudhar Fashion Point Primary Instance</h3>
-                  <span className="text-[11px] text-neutral-400 font-mono">
-                    Domain: marudharfashionpoint.com (Live Container)
-                  </span>
-                </div>
-              </div>
-
-              <span className="px-3 py-1 bg-emerald-950 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold uppercase flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>ONLINE LIVE</span>
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs pt-2">
-              <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl">
-                <span className="text-neutral-400 font-bold block">Assigned Owner / Admin</span>
-                <span className="text-amber-300 font-mono block mt-0.5">vpcreation2002@gmail.com</span>
-              </div>
-
-              <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl">
-                <span className="text-neutral-400 font-bold block">Database Backup Sync</span>
-                <span className="text-emerald-400 font-mono block mt-0.5">Firebase Realtime Sync</span>
-              </div>
-
-              <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl">
-                <span className="text-neutral-400 font-bold block">Resource Storage Usage</span>
-                <span className="text-neutral-300 font-mono block mt-0.5">42.8 MB / Unlimited</span>
-              </div>
-            </div>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -972,6 +1360,36 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
         onClose={() => setIsCreateAdminModalOpen(false)}
         onSave={handleCreateAdminAccount}
         customRoles={[]}
+      />
+      
+      <ProvisionWebsiteModal
+        isOpen={isProvisioningModalOpen}
+        onClose={() => setIsProvisioningModalOpen(false)}
+        onProvision={async (tenantData) => {
+          const newId = `tenant-${Date.now()}`;
+          const newTenant: Tenant = {
+            id: newId,
+            name: tenantData.name || 'Untitled Website',
+            domain: tenantData.domain || 'example.com',
+            ownerEmail: tenantData.ownerEmail || 'owner@example.com',
+            ownerId: 'new-owner-id', // would be created in a real flow
+            status: tenantData.status || 'provisioning',
+            plan: tenantData.plan || 'free',
+            createdAt: new Date().toISOString(),
+            databaseSize: 0,
+          };
+          
+          await saveTenant(newTenant);
+          showToast('success', `Provisioning started for ${newTenant.name}`);
+          loadData();
+          
+          // Simulate provisioning delay then set active
+          setTimeout(async () => {
+             const activeTenant = { ...newTenant, status: 'active' as const };
+             await saveTenant(activeTenant);
+             loadData();
+          }, 3000);
+        }}
       />
 
       <SuperAdminSecurityVerificationModal

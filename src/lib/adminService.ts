@@ -17,6 +17,7 @@ import {
   AdminLoginHistoryEntry,
   AdminPermissionMatrix,
   BuiltInAdminRoleId,
+  Tenant,
 } from '../types';
 import {
   BUILTIN_ROLES,
@@ -125,6 +126,53 @@ export async function fetchAdminUsers(): Promise<AdminUser[]> {
       console.warn('Fetch admin users notice:', e);
     }
     return [];
+  }
+}
+
+// Fetch all deployed tenants
+export async function fetchTenants(): Promise<Tenant[]> {
+  try {
+    const colRef = collection(db, 'tenants');
+    const snap = await getDocs(colRef);
+    const tenants: Tenant[] = [];
+    snap.forEach((docSnap) => {
+      tenants.push({ ...(docSnap.data() as Tenant), id: docSnap.id });
+    });
+    
+    // Return mock data if none exist (since we don't have a provisioning flow setting up a tenant yet)
+    if (tenants.length === 0) {
+       return [{
+         id: 'tenant-default',
+         name: 'Marudhar Fashion Point Primary Instance',
+         domain: 'marudharfashionpoint.com',
+         ownerId: 'vpcreation2002',
+         ownerEmail: 'vpcreation2002@gmail.com',
+         status: 'active',
+         plan: 'enterprise',
+         createdAt: new Date().toISOString(),
+         databaseSize: 42.8
+       }];
+    }
+    return tenants;
+  } catch (err) {
+    console.warn('Fetch tenants notice:', err);
+    return [];
+  }
+}
+
+export async function saveTenant(tenant: Tenant): Promise<void> {
+  const tenantRef = doc(db, 'tenants', tenant.id);
+  try {
+    await setDoc(tenantRef, tenant, { merge: true });
+    recordAuditLog(
+      'Tenant Profile Updated',
+      'SECURITY',
+      `Updated profile for tenant: ${tenant.name}`,
+      'SUCCESS'
+    );
+  } catch (err) {
+    console.warn('Failed to save tenant:', err);
+    throw err;
   }
 }
 

@@ -3,7 +3,6 @@ import {
   X,
   UserPlus,
   Shield,
-  KeyRound,
   Check,
   AlertCircle,
   ChevronDown,
@@ -11,7 +10,6 @@ import {
   Mail,
   User,
   Phone,
-  Lock,
   Sparkles,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -33,7 +31,7 @@ import {
 interface CreateAdminModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (adminData: Partial<AdminUser>, password?: string) => Promise<void>;
+  onSave: (adminData: Partial<AdminUser>) => Promise<void>;
   customRoles?: AdminRole[];
 }
 
@@ -50,7 +48,6 @@ export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
   const [selectedRoleId, setSelectedRoleId] = useState<string>('admin');
   const [enableCustomOverrides, setEnableCustomOverrides] = useState(false);
   const [customPermissions, setCustomPermissions] = useState<Partial<AdminPermissionMatrix>>({});
@@ -101,7 +98,7 @@ export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
         customPermissions: enableCustomOverrides ? customPermissions : undefined,
       };
 
-      await onSave(newAdminData, password.trim() ? password.trim() : undefined);
+      await onSave(newAdminData);
       onClose();
     } catch (err: any) {
       setError(err?.message || 'Failed to create admin user.');
@@ -150,7 +147,7 @@ export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
               Account Identity
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
                   Admin Email Address <span className="text-rose-400">*</span>
@@ -196,22 +193,6 @@ export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="+91 98765 43210"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
-                  Initial Password (Optional)
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-3 text-neutral-500" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min 6 chars or leave for Google Login"
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-500 transition-all"
                   />
                 </div>

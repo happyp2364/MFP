@@ -185,10 +185,15 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
     hasPermission: (mod: any, act: any) => permission.checkPermission(auth.currentAdminUser, mod, act),
     canAccessTab: (tab: string) => {
       if (!auth.currentAdminUser) return false;
-      if (
+      const isSuper = Boolean(
         auth.currentAdminUser.roleId === 'super_admin' ||
-        auth.currentAdminUser.email?.toLowerCase() === 'vpcreation2002@gmail.com'
-      ) {
+        auth.currentAdminUser.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+        auth.currentAdminUser.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+      );
+      if (tab === 'super_admin_console') {
+        return isSuper;
+      }
+      if (isSuper) {
         return true;
       }
       const module = mapTabToModule(tab);

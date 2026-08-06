@@ -147,6 +147,9 @@
   --background: #ffffff;
   --surface: #f8fafc;
   --card: #ffffff;
+  --surface-primary: #ffffff;
+  --surface-secondary: #f8fafc;
+  --surface-elevated: #ffffff;
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
@@ -177,6 +180,9 @@
   --background: #0f172a;
   --surface: #1e293b;
   --card: #1e293b;
+  --surface-primary: #0f172a;
+  --surface-secondary: #1e293b;
+  --surface-elevated: #1e293b;
   --text-primary: #f8fafc;
   --text-secondary: #e2e8f0;
   --text-muted: #94a3b8;
@@ -201,6 +207,26 @@
   --color-warning: var(--warning);
   --color-danger: var(--error);
   --color-accent: var(--primary);
+}
+
+/* WCAG AA Contrast Enforcement across all text utility classes */
+.dark .text-gray-300, .dark .text-neutral-300, .dark .text-slate-300, .dark .text-zinc-300 {
+  color: #f1f5f9 !important;
+}
+.dark .text-gray-400, .dark .text-neutral-400, .dark .text-slate-400, .dark .text-zinc-400 {
+  color: #cbd5e1 !important;
+}
+.dark .text-gray-500, .dark .text-neutral-500, .dark .text-slate-500, .dark .text-zinc-500 {
+  color: #94a3b8 !important;
+}
+.text-gray-300, .text-neutral-300, .text-slate-300, .text-zinc-300 {
+  color: #475569 !important;
+}
+.text-gray-400, .text-neutral-400, .text-slate-400, .text-zinc-400 {
+  color: #334155 !important;
+}
+.text-gray-500, .text-neutral-500, .text-slate-500, .text-zinc-500 {
+  color: #1e293b !important;
 }
 
 /* 1. SELECTION & CURSOR */

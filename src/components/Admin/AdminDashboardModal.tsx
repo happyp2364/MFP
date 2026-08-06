@@ -470,7 +470,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-2.5 sm:p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto scrollbar-none touch-pan-x">
             
             {/* Super Admin Exclusive Console */}
-            {(currentAdminUser?.roleId === 'super_admin' || currentAdminUser?.email === 'vpcreation2002@gmail.com' || currentAdminUser?.email === 'vishalpparihar2002@gmail.com' || !currentAdminUser) && (
+            {(currentAdminUser?.roleId === 'super_admin' || currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com') && (
               <button
                 onClick={() => setActiveTab('super_admin_console')}
                 className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap text-left border ${

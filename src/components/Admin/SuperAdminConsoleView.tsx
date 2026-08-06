@@ -827,27 +827,45 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
                   <span>Quick Actions</span>
                 </h2>
                 <div className="grid grid-cols-2 gap-3 text-xs font-bold">
-                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                  <button
+                    onClick={() => setIsProvisioningModalOpen(true)}
+                    className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group"
+                  >
                     <PlusCircle className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
                     Create Website
                   </button>
-                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                  <button
+                    onClick={() => setActiveTab('tenants')}
+                    className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group"
+                  >
                     <Globe className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
                     Manage Websites
                   </button>
-                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                  <button
+                    onClick={() => setActiveTab('admins')}
+                    className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group"
+                  >
                     <Users className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
                     Manage Admins
                   </button>
-                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                  <button
+                    onClick={() => setActiveTab('security')}
+                    className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group"
+                  >
                     <Settings className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
                     Platform Settings
                   </button>
-                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                  <button
+                    onClick={() => setActiveTab('audit_log')}
+                    className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group"
+                  >
                     <FileText className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
                     Audit Center
                   </button>
-                  <button className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group">
+                  <button
+                    onClick={() => setActiveTab('tenants')}
+                    className="p-4 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-neutral-300 transition-all group"
+                  >
                     <Key className="w-5 h-5 text-rose-400 group-hover:scale-110 transition-transform" />
                     License Center
                   </button>

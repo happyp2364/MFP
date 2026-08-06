@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { AdminUser, CustomerProfile } from '../types';
 import {
   auth,
+  db,
   signInWithGoogle,
   logoutUser,
   onUserAuthChange,
@@ -9,11 +10,13 @@ import {
   syncCustomerProfileInFirestore,
   recordAuditLog,
 } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential, User as FirebaseUser } from 'firebase/auth';
 import { recordAdminLoginHistory } from '../lib/adminService';
 
 interface AuthContextType {
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   currentAdminUser: AdminUser | null;
   customerUser: FirebaseUser | null;
   customerProfile: CustomerProfile | null;
@@ -42,6 +45,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [customerAuthError, setCustomerAuthError] = useState<string | null>(null);
   const [isTwoFactorEnabled, setIsTwoFactorEnabled] = useState<boolean>(false);
 
+  const isSuperAdmin = Boolean(
+    currentAdminUser?.roleId === 'super_admin' ||
+    currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com'
+  );
+
   useEffect(() => {
     const unsub = onUserAuthChange(async (user) => {
       setCustomerUser(user);
@@ -56,8 +64,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           createdAt: new Date().toISOString(),
           lastLogin: new Date().toISOString(),
         });
+
+        // Task 3: Lookup admin_users/{uid} on auth init
+        try {
+          const adminDocRef = doc(db, 'admin_users', user.uid);
+          const adminSnap = await getDoc(adminDocRef);
+          if (adminSnap.exists()) {
+            const adminData = adminSnap.data() as AdminUser;
+            setCurrentAdminUser(adminData);
+            setIsAdmin(true);
+          } else if (user.email === 'vpcreation2002@gmail.com') {
+            const superAdminUser: AdminUser = {
+              uid: user.uid,
+              id: user.uid,
+              email: user.email,
+              name: user.displayName || 'Super Admin',
+              roleId: 'super_admin',
+              roleName: 'Super Admin',
+              status: 'active',
+              createdAt: new Date().toISOString(),
+              createdBy: 'system',
+            };
+            setCurrentAdminUser(superAdminUser);
+            setIsAdmin(true);
+          }
+        } catch (err) {
+          console.warn('Failed to lookup admin user on auth change', err);
+        }
       } else {
         setCustomerProfile(null);
+        setCurrentAdminUser(null);
+        setIsAdmin(false);
       }
     });
     return () => unsub();
@@ -172,6 +209,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider
       value={{
         isAdmin,
+        isSuperAdmin,
         currentAdminUser,
         customerUser,
         customerProfile,

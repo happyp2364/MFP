@@ -1,4 +1,6 @@
 import React, { createContext, useContext, ReactNode } from 'react';
+import { recordAuditLog } from '../lib/firebase';
+import { mapTabToModule } from '../lib/adminPermissions';
 
 // Import domain sub-providers & hooks
 import { AppConfigProvider, useAppConfig } from './AppConfigContext';
@@ -172,12 +174,26 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
     // Audit Logs
     auditLogs: audit.auditLogs,
     refreshAuditLogs: audit.refreshAuditLogs,
+    recordAuditLog: recordAuditLog,
 
     // RBAC & Permissions
     adminUsersList: permission.adminUsers,
+    adminUsers: permission.adminUsers,
     adminRolesList: permission.adminRoles,
+    adminRoles: permission.adminRoles,
     checkPermission: permission.checkPermission,
     hasPermission: (mod: any, act: any) => permission.checkPermission(auth.currentAdminUser, mod, act),
+    canAccessTab: (tab: string) => {
+      if (!auth.currentAdminUser) return false;
+      if (
+        auth.currentAdminUser.roleId === 'super_admin' ||
+        auth.currentAdminUser.email?.toLowerCase() === 'vpcreation2002@gmail.com'
+      ) {
+        return true;
+      }
+      const module = mapTabToModule(tab);
+      return permission.checkPermission(auth.currentAdminUser, module, 'read');
+    },
 
     // Website Identity
     websiteConfig: websiteIdentity.websiteConfig,
@@ -237,6 +253,7 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
 
     // Auth
     isAdmin: auth.isAdmin,
+    isSuperAdmin: auth.isSuperAdmin,
     currentAdminUser: auth.currentAdminUser,
     customerUser: auth.customerUser,
     customerProfile: auth.customerProfile,

@@ -62,6 +62,7 @@ import { sendAdminPasswordResetEmail, recordAuditLog } from '../../lib/firebase'
 import { SuperAdminSecurityVerificationModal } from './SuperAdminSecurityVerificationModal';
 import { CreateAdminModal } from './CreateAdminModal';
 import { ProvisionWebsiteModal } from './ProvisionWebsiteModal';
+import { WebsiteDirectoryManager } from './WebsiteDirectoryManager';
 
 interface SuperAdminConsoleViewProps {
   currentUser: AdminUser | null;
@@ -1094,135 +1095,16 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
       {/* SECTION 3: WEBSITES & TENANTS DEPLOYMENTS  */}
       {/* ========================================== */}
       {activeTab === 'tenants' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-sm font-black text-white uppercase tracking-wider">
-                Deployed White-Label Websites
-              </h2>
-              <p className="text-xs text-neutral-400">
-                Manage website identities, licenses, and live website instances
-              </p>
-            </div>
-            
-            <button
-              onClick={() => setIsProvisioningModalOpen(true)}
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl shadow-lg flex items-center gap-2 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Provision New Website</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6">
-            {tenants.length === 0 ? (
-              <div className="p-8 text-center bg-neutral-950 border border-neutral-800 rounded-3xl">
-                <Globe className="w-8 h-8 text-neutral-700 mx-auto mb-3" />
-                <p className="text-sm text-neutral-400 font-bold">No deployed websites found.</p>
-                <p className="text-xs text-neutral-500 mt-1">Click "Provision New Website" to get started.</p>
-              </div>
-            ) : (
-              tenants.map(tenant => (
-                <div key={tenant.id} className="p-6 bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
-                  <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-3 rounded-2xl ${
-                        tenant.status === 'active' 
-                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' 
-                          : tenant.status === 'provisioning'
-                          ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                          : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                        } border`}
-                      >
-                        <Globe className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-bold text-white">{tenant.name}</h3>
-                        <span className="text-[11px] text-neutral-400 font-mono">
-                          Domain: {tenant.domain} (Container ID: {tenant.id.split('-')[1] || tenant.id})
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 border ${
-                        tenant.status === 'active'
-                          ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30'
-                          : tenant.status === 'provisioning'
-                          ? 'bg-blue-950 text-blue-400 border-blue-500/30'
-                          : 'bg-rose-950 text-rose-400 border-rose-500/30'
-                      }`}>
-                        {tenant.status === 'active' && <CheckCircle2 className="w-3.5 h-3.5" />}
-                        {tenant.status === 'provisioning' && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                        {tenant.status === 'suspended' && <XCircle className="w-3.5 h-3.5" />}
-                        <span>
-                          {tenant.status === 'active' ? 'ONLINE LIVE' : tenant.status === 'provisioning' ? 'PROVISIONING' : 'SUSPENDED'}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs pt-2">
-                    <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl">
-                      <span className="text-neutral-400 font-bold block">Assigned Owner</span>
-                      <span className="text-amber-300 font-mono block mt-0.5 truncate" title={tenant.ownerEmail}>
-                        {tenant.ownerEmail}
-                      </span>
-                    </div>
-
-                    <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl">
-                      <span className="text-neutral-400 font-bold block flex items-center justify-between">
-                        <span>License Plan</span>
-                        <button className="text-blue-400 hover:text-blue-300"><Settings className="w-3 h-3" /></button>
-                      </span>
-                      <span className="text-emerald-400 font-black uppercase block mt-0.5">
-                        {tenant.plan}
-                      </span>
-                    </div>
-
-                    <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl">
-                      <span className="text-neutral-400 font-bold block flex items-center justify-between">
-                        <span>Storage Usage</span>
-                      </span>
-                      <span className="text-neutral-300 font-mono block mt-0.5">
-                        {tenant.databaseSize} MB
-                      </span>
-                    </div>
-
-                    <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl flex flex-col justify-center">
-                      <button 
-                        onClick={() => {
-                          const newStatus = tenant.status === 'active' ? 'suspended' : 'active';
-                          triggerSuperAdminVerification(
-                            `${newStatus === 'suspended' ? 'Suspend' : 'Reactivate'} Website License`,
-                            `Authorizing license status change for "${tenant.name}".`,
-                            `Domain: ${tenant.domain}`,
-                            async () => {
-                              try {
-                                await saveTenant({ ...tenant, status: newStatus });
-                                showToast('success', `Website license ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}`);
-                                loadData();
-                              } catch (e) {
-                                showToast('error', 'Failed to update license status');
-                              }
-                            }
-                          );
-                        }}
-                        className={`w-full py-2 text-center text-xs font-bold rounded-lg border transition-all ${
-                          tenant.status === 'active'
-                            ? 'bg-rose-950/40 text-rose-400 border-rose-500/20 hover:bg-rose-900/60'
-                            : 'bg-emerald-950/40 text-emerald-400 border-emerald-500/20 hover:bg-emerald-900/60'
-                        }`}
-                      >
-                        {tenant.status === 'active' ? 'Suspend License' : 'Reactivate License'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        <WebsiteDirectoryManager
+          tenants={tenants}
+          currentUser={currentUser}
+          onUpdateTenant={async (t) => {
+            await saveTenant(t);
+            await loadData();
+          }}
+          showToast={showToast}
+          triggerSuperAdminVerification={triggerSuperAdminVerification}
+        />
       )}
 
       {/* ========================================== */}

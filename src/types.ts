@@ -536,10 +536,33 @@ export interface Tenant {
   domain: string;
   ownerId: string;
   ownerEmail: string;
-  status: 'active' | 'suspended' | 'provisioning';
+  status: 'active' | 'suspended' | 'provisioning' | 'draft' | 'maintenance' | 'archived';
   plan: 'free' | 'pro' | 'enterprise';
   createdAt: string;
   databaseSize: number; // in MB
+  logoUrl?: string;
+  businessCategory?: string;
+  ownerName?: string;
+  adminGoogleEmail?: string;
+  adminLoginStatus?: 'active' | 'pending_activation';
+  lastLogin?: string;
+  version?: string;
+  healthStatus?: 'Operational' | 'Degraded' | 'Passing' | 'Maintenance';
+  enabledFeatures?: string[];
+  currentTheme?: string;
+  language?: string;
+  contactInfo?: {
+    phone?: string;
+    email?: string;
+    address?: string;
+  };
+  physicalStoreCount?: number;
+  statistics?: {
+    totalProducts?: number;
+    totalOrders?: number;
+    totalRevenue?: number;
+    totalCustomers?: number;
+  };
 }
 
 export interface AdminUser {

@@ -325,9 +325,9 @@ export const StoreManagementAdmin: React.FC = () => {
                   className="px-3 py-2.5 text-xs sm:text-sm border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500 bg-neutral-50 font-medium"
                 >
                   <option value="all">All Cities</option>
-                  {cities.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
+                  {cities.map((city: any) => (
+                    <option key={String(city)} value={String(city)}>
+                      {String(city)}
                     </option>
                   ))}
                 </select>

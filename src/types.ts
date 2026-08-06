@@ -101,6 +101,7 @@ export interface FilterState {
 }
 
 export interface CartItem {
+  id?: string;
   product: Product;
   selectedSize: string;
   selectedColor: string;
@@ -531,6 +532,7 @@ export interface TrendingCollectionItem {
 
 export interface AdminUser {
   uid: string;
+  id?: string;
   email: string;
   name: string;
   roleId: string; // e.g. 'super_admin', 'admin', 'inventory_manager', etc.
@@ -719,6 +721,8 @@ export interface AdminNotification {
   message?: string;
   timestamp: string;
   read: boolean;
+  isRead?: boolean;
+  type?: string;
 }
 
 export interface MarketingConsent {
@@ -1172,6 +1176,8 @@ export interface SocialMediaCenterConfig {
 }
 
 export interface SocialAnalyticsLog {
+  totalClicks?: number;
+  clicksByPlatform?: Record<string, number>;
   clickCount: Record<string, number>;
   lastClickTimestamp: Record<string, string>;
   dailyClicks: Record<string, number>; // date string "YYYY-MM-DD" -> click count

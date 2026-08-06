@@ -845,6 +845,8 @@ export async function saveOrderInFirestore(order: import('../types').CustomerOrd
 export async function updateOrderStatusInFirestore(
   orderId: string,
   newStatus: import('../types').OrderStatus,
+  trackingNumber?: string,
+  courierName?: string,
   note?: string
 ): Promise<boolean> {
   try {
@@ -863,6 +865,8 @@ export async function updateOrderStatusInFirestore(
       orderStatus: newStatus,
       updatedAt: now,
       statusHistory: updatedHistory,
+      ...(trackingNumber ? { trackingNumber } : {}),
+      ...(courierName ? { courierName } : {}),
     };
 
     await setDoc(docRef, updatePayload, { merge: true });

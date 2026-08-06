@@ -1,0 +1,188 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+  SpinWheelConfig,
+  ScratchWinConfig,
+  EngagementAnalytics,
+  OrderCelebrationConfig,
+  WheelSection,
+  ScratchReward,
+} from '../types';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+
+interface FeatureFlagContextType {
+  spinWheelConfig: SpinWheelConfig;
+  updateSpinWheelConfig: (newConfig: SpinWheelConfig) => Promise<void>;
+  scratchWinConfig: ScratchWinConfig;
+  updateScratchWinConfig: (newConfig: ScratchWinConfig) => Promise<void>;
+  engagementAnalytics: EngagementAnalytics;
+  recordEngagementMetric: (metric: keyof EngagementAnalytics) => void;
+  orderCelebrationConfig: OrderCelebrationConfig;
+  updateOrderCelebrationConfig: (newConfig: OrderCelebrationConfig) => Promise<void>;
+  isCelebrating: boolean;
+  setIsCelebrating: (val: boolean) => void;
+  triggerGlobalCelebration: () => void;
+}
+
+const DEFAULT_SPIN_WHEEL_CONFIG: SpinWheelConfig = {
+  enabled: true,
+  sectionsCount: 5,
+  soundEnabled: true,
+  celebrationEnabled: true,
+  autoApplyCoupon: true,
+  canSpinAgainDays: 30,
+  minCartValue: 0,
+  sections: [
+    { id: '1', title: '10% OFF', type: 'PERCENTAGE', value: 10, probability: 30, couponCode: 'SPIN10', color: '#4F46E5' },
+    { id: '2', title: 'Better Luck Next Time', type: 'BETTER_LUCK', value: 0, probability: 20, couponCode: '', color: '#6B7280' },
+    { id: '3', title: '₹100 OFF', type: 'FLAT', value: 100, probability: 25, couponCode: 'SPIN100', color: '#059669' },
+    { id: '4', title: '15% OFF', type: 'PERCENTAGE', value: 15, probability: 15, couponCode: 'SPIN15', color: '#D97706' },
+    { id: '5', title: 'Free Shipping', type: 'FREE_SHIPPING', value: 0, probability: 10, couponCode: 'FREESHIP', color: '#DC2626' },
+  ],
+};
+
+const DEFAULT_SCRATCH_WIN_CONFIG: ScratchWinConfig = {
+  enabled: true,
+  permanentlyDisabled: false,
+  showOnHomepage: true,
+  showOnProductPage: true,
+  showOnCheckout: false,
+  showOnOrderSuccess: true,
+  firstVisitOnly: false,
+  firstOrderOnly: false,
+  returningCustomerOnly: false,
+  newCustomerOnly: false,
+  festivalOnly: false,
+  dailyLimit: 1,
+  perCustomerLimit: 3,
+  globalUsageLimit: 1000,
+  minCartValue: 0,
+  rewards: [
+    { id: 'r1', name: 'Flat ₹200 OFF', type: 'FLAT', value: 200, probability: 40, usageLimit: 100, usageCount: 0, perCustomerLimit: 1, couponCode: 'SCRATCH200' },
+    { id: 'r2', name: '20% OFF Everything', type: 'PERCENTAGE', value: 20, probability: 30, usageLimit: 100, usageCount: 0, perCustomerLimit: 1, couponCode: 'SUPER20' },
+    { id: 'r3', name: 'Free Delivery', type: 'FREE_SHIPPING', value: 0, probability: 30, usageLimit: 100, usageCount: 0, perCustomerLimit: 1, couponCode: 'EXPRESSFREE' },
+  ],
+};
+
+const DEFAULT_ENGAGEMENT_ANALYTICS: EngagementAnalytics = {
+  luckyBoxOpens: 0,
+  wheelSpins: 0,
+  couponsWon: 0,
+  couponsUsed: 0,
+  flashDealClicks: 0,
+  flashDealConversions: 0,
+  revenueGenerated: 0,
+};
+
+const DEFAULT_ORDER_CELEBRATION_CONFIG: OrderCelebrationConfig = {
+  enabled: true,
+  confetti: true,
+  sparkles: true,
+  balloons: true,
+  sound: true,
+  successAnimation: true,
+  duration: 5,
+  speed: 'medium',
+  mobileOnly: false,
+  desktopOnly: false,
+};
+
+const FeatureFlagContext = createContext<FeatureFlagContextType | undefined>(undefined);
+
+export const FeatureFlagProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(DEFAULT_SPIN_WHEEL_CONFIG);
+  const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(DEFAULT_SCRATCH_WIN_CONFIG);
+  const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(DEFAULT_ENGAGEMENT_ANALYTICS);
+  const [orderCelebrationConfig, setOrderCelebrationConfig] = useState<OrderCelebrationConfig>(DEFAULT_ORDER_CELEBRATION_CONFIG);
+  const [isCelebrating, setIsCelebrating] = useState<boolean>(false);
+
+  useEffect(() => {
+    const unsubSpin = onSnapshot(doc(db, 'settings', 'spin_wheel'), (snapshot) => {
+      if (snapshot.exists()) setSpinWheelConfig(snapshot.data() as SpinWheelConfig);
+    }, () => {});
+
+    const unsubScratch = onSnapshot(doc(db, 'settings', 'scratch_win'), (snapshot) => {
+      if (snapshot.exists()) setScratchWinConfig(snapshot.data() as ScratchWinConfig);
+    }, () => {});
+
+    const unsubCelebration = onSnapshot(doc(db, 'settings', 'order_celebration'), (snapshot) => {
+      if (snapshot.exists()) setOrderCelebrationConfig(snapshot.data() as OrderCelebrationConfig);
+    }, () => {});
+
+    return () => {
+      unsubSpin();
+      unsubScratch();
+      unsubCelebration();
+    };
+  }, []);
+
+  const updateSpinWheelConfig = async (newConfig: SpinWheelConfig) => {
+    setSpinWheelConfig(newConfig);
+    try {
+      await setDoc(doc(db, 'settings', 'spin_wheel'), newConfig, { merge: true });
+    } catch (e) {
+      console.warn('Firestore spin wheel sync failed', e);
+    }
+  };
+
+  const updateScratchWinConfig = async (newConfig: ScratchWinConfig) => {
+    setScratchWinConfig(newConfig);
+    try {
+      await setDoc(doc(db, 'settings', 'scratch_win'), newConfig, { merge: true });
+    } catch (e) {
+      console.warn('Firestore scratch win sync failed', e);
+    }
+  };
+
+  const recordEngagementMetric = (metric: keyof EngagementAnalytics) => {
+    setEngagementAnalytics((prev) => {
+      const currentVal = prev[metric];
+      if (typeof currentVal === 'number') {
+        return {
+          ...prev,
+          [metric]: currentVal + 1,
+        };
+      }
+      return prev;
+    });
+  };
+
+  const updateOrderCelebrationConfig = async (newConfig: OrderCelebrationConfig) => {
+    setOrderCelebrationConfig(newConfig);
+    try {
+      await setDoc(doc(db, 'settings', 'order_celebration'), newConfig, { merge: true });
+    } catch (e) {
+      console.warn('Firestore order celebration sync failed', e);
+    }
+  };
+
+  const triggerGlobalCelebration = () => {
+    setIsCelebrating(true);
+  };
+
+  return (
+    <FeatureFlagContext.Provider
+      value={{
+        spinWheelConfig,
+        updateSpinWheelConfig,
+        scratchWinConfig,
+        updateScratchWinConfig,
+        engagementAnalytics,
+        recordEngagementMetric,
+        orderCelebrationConfig,
+        updateOrderCelebrationConfig,
+        isCelebrating,
+        setIsCelebrating,
+        triggerGlobalCelebration,
+      }}
+    >
+      {children}
+    </FeatureFlagContext.Provider>
+  );
+};
+
+export const useFeatureFlags = () => {
+  const context = useContext(FeatureFlagContext);
+  if (!context) throw new Error('useFeatureFlags must be used within FeatureFlagProvider');
+  return context;
+};

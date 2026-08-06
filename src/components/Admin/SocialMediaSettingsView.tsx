@@ -805,7 +805,7 @@ export const SocialMediaSettingsView: React.FC = () => {
               </div>
               <div>
                 <span className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-wider block">Total Click Engagements</span>
-                <span className="text-2xl font-black text-neutral-800">{totalClicks}</span>
+                <span className="text-2xl font-black text-neutral-800">{String(totalClicks)}</span>
                 <span className="text-[10px] text-emerald-600 block font-semibold mt-0.5">↑ 18.5% from last week</span>
               </div>
             </div>

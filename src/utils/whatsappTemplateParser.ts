@@ -48,7 +48,7 @@ export interface WhatsAppPayloadData {
 
 export function getStoredWhatsAppConfig(): WhatsAppTemplatesConfig {
   try {
-    const raw = localStorage.getItem('mfp_whatsapp_templates_config');
+    const raw = localStorage.getItem('nwd_whatsapp_templates_config');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.templates) && parsed.activeCategoryMap) {
@@ -88,7 +88,7 @@ export function getActiveTemplateForCategory(
 
 export function getActiveStorePhone(): string {
   try {
-    const saved = localStorage.getItem('mfp_store_info_live');
+    const saved = localStorage.getItem('nwd_store_info_live');
     if (saved) {
       const parsed = JSON.parse(saved);
       const phone = parsed.whatsappNumber || parsed.phone;
@@ -132,7 +132,7 @@ export function renderWhatsAppMessageText(
     '{city}': payload.city || 'Jodhpur',
     '{state}': payload.state || 'Rajasthan',
     '{pincode}': payload.pincode || '342001',
-    '{orderId}': payload.orderId || `MFP-${Date.now().toString().slice(-6)}`,
+    '{orderId}': payload.orderId || `NWD-${Date.now().toString().slice(-6)}`,
     '{date}': payload.date || new Date().toLocaleDateString('en-IN'),
     '{time}': payload.time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
     '{shopName}': shopName,
@@ -215,7 +215,7 @@ export function buildSamplePayloadForPreview(category: WhatsAppTemplateActionCat
     city: 'Jodhpur',
     state: 'Rajasthan',
     pincode: '342001',
-    orderId: 'MFP-892410',
+    orderId: 'NWD-892410',
     date: new Date().toLocaleDateString('en-IN'),
     time: '03:30 PM',
     shopName: 'Footwear Store',

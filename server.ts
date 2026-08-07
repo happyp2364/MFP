@@ -198,11 +198,11 @@ Respond strictly with valid JSON:
       const { productName, category, brand, features, targetAudience } = req.body || {};
       if (!productName) return res.status(400).json({ error: "productName is required" });
 
-      const prompt = `You are a luxury footwear copywriter for Marudhar Fashion Point (Pipar City, Rajasthan).
+      const prompt = `You are a luxury footwear copywriter for NWD Platform (Pipar City, Rajasthan).
 Write an engaging, SEO-rich product description for:
 Name: ${productName}
 Category: ${category || 'Footwear'}
-Brand: ${brand || 'Marudhar'}
+Brand: ${brand || 'NWD'}
 Features: ${features || 'Premium comfort, durable sole, stylish finish'}
 Target Audience: ${targetAudience || 'Fashion-conscious buyers'}
 
@@ -232,15 +232,15 @@ Respond ONLY with valid JSON with fields:
       return res.json({
         success: true,
         result: {
-          shortDescription: `Step into royal elegance with ${productName}. Designed for supreme comfort and lasting craftsmanship at Marudhar Fashion Point.`,
+          shortDescription: `Step into royal elegance with ${productName}. Designed for supreme comfort and lasting craftsmanship at NWD Platform.`,
           bulletPoints: [
             "Handcrafted precision with high-grade breathable materials",
             "Ergonomic cushioned sole for all-day effortless stride",
             "Versatile styling perfect for festive celebrations & everyday wear",
             "Direct delivery from Pipar City, Rajasthan"
           ],
-          fullDescription: `${productName} combines authentic craftsmanship with modern aesthetics. Engineered to provide maximum arch support and durability, this pair elevates your outfit effortlessly.\n\nCrafted with care at Marudhar Fashion Point, each pair undergoes rigorous quality checks to ensure long-lasting wear and unmatched satisfaction.`,
-          seoTags: [productName, category || "Footwear", brand || "Marudhar", "Pipar City Footwear", "Marudhar Fashion"]
+          fullDescription: `${productName} combines authentic craftsmanship with modern aesthetics. Engineered to provide maximum arch support and durability, this pair elevates your outfit effortlessly.\n\nCrafted with care at NWD Platform, each pair undergoes rigorous quality checks to ensure long-lasting wear and unmatched satisfaction.`,
+          seoTags: [productName, category || "Footwear", brand || "NWD", "Pipar City Footwear", "NWD Fashion"]
         }
       });
     } catch (err: any) {
@@ -254,8 +254,8 @@ Respond ONLY with valid JSON with fields:
   app.post("/api/ai/seo-suggestions", async (req, res) => {
     try {
       const { title, description, category } = req.body || {};
-      const prompt = `Generate SEO metadata and schema suggestions for Marudhar Fashion Point e-commerce store page:
-Title: ${title || 'Marudhar Fashion Point'}
+      const prompt = `Generate SEO metadata and schema suggestions for NWD Platform e-commerce store page:
+Title: ${title || 'NWD Platform'}
 Category: ${category || 'Footwear'}
 Respond ONLY with valid JSON:
 {
@@ -283,9 +283,9 @@ Respond ONLY with valid JSON:
       return res.json({
         success: true,
         result: {
-          metaTitle: "Marudhar Fashion Point | Premium Shoes & Footwear Pipar City",
-          metaDescription: "Explore royal footwear at Marudhar Fashion Point, Pipar City. Shop handcrafted juttis, sneakers, loafers & sports shoes with fast shipping.",
-          primaryKeywords: ["Marudhar Fashion Point", "Pipar City Shoes", "Handcrafted Juttis", "Sports Sneakers", "Leather Loafers", "Rajasthan Footwear"],
+          metaTitle: "NWD Platform | Premium Shoes & Footwear Pipar City",
+          metaDescription: "Explore royal footwear at NWD Platform, Pipar City. Shop handcrafted juttis, sneakers, loafers & sports shoes with fast shipping.",
+          primaryKeywords: ["NWD Platform", "Pipar City Shoes", "Handcrafted Juttis", "Sports Sneakers", "Leather Loafers", "Rajasthan Footwear"],
           searchIntent: "commercial"
         }
       });
@@ -312,7 +312,7 @@ Respond ONLY with valid JSON:
 
       if (process.env.GEMINI_API_KEY && q.length >= 2) {
         try {
-          const prompt = `User typed search query: "${q}" in footwear store Marudhar Fashion Point.
+          const prompt = `User typed search query: "${q}" in footwear store NWD Platform.
 Respond ONLY with valid JSON:
 {
   "correctedQuery": "corrected spelling or original",
@@ -375,7 +375,7 @@ Respond ONLY with valid JSON:
       const { action, platform, context } = req.body || {};
       if (!action) return res.status(400).json({ error: "action parameter is required" });
 
-      let systemPrompt = `You are a social media branding expert and footwear copywriter for Marudhar Fashion Point (located in Pipar City, Rajasthan).
+      let systemPrompt = `You are a social media branding expert and footwear copywriter for NWD Platform (located in Pipar City, Rajasthan).
 We sell high-grade sports shoes, royal leather loafers, mirror-work Kolhapuris, and men's apparel.
 Help with the action: "${action}" for platform: "${platform || 'All'}". Context: ${typeof context === 'object' ? JSON.stringify(context) : (context || 'N/A')}.`;
 
@@ -435,7 +435,7 @@ Respond strictly in valid JSON format:
     "Share on Instagram Reels at 7 PM IST",
     "Pin this with a high-quality photo of Jodhpuri Jutis"
   ],
-  "hashtags": ["#marudharfashion", "#footwear", "#piparcity", "#jodhpurishoes"],
+  "hashtags": ["#nwdfashion", "#footwear", "#piparcity", "#jodhpurishoes"],
   "reasoning": "Using local storytelling about artisanal shoe crafting builds local brand authority and customer trust."
 }`;
       }
@@ -457,7 +457,7 @@ Respond strictly in valid JSON format:
 
       // Default static fallback values if API key is missing or model fails
       let fallbackResult: any = {
-        title: "Marudhar AI Social Strategy Draft",
+        title: "NWD AI Social Strategy Draft",
         suggestions: [
           "Place a WhatsApp Support floating button on Product details pages to answer sizing inquiries instantly.",
           "Display Instagram story highlights right on the homepage to showcase live customer testimonials in Pipar City.",
@@ -495,31 +495,31 @@ Respond strictly in valid JSON format:
           title: "Footwear Showcase Caption",
           caption: `👑 Step into absolute royalty directly from Pipar City! Our handcrafted wedding leather Mojaris are designed with premium leather, cushioned insoles, and beautiful traditional mirror-work to keep you comfortable all day long. 👞✨\n\nPerfect for groom-wear, festivals, and royal family gatherings. Available now in sizes 6 to 11. Drop us a message on WhatsApp for customized sizing advice!`,
           suggestions: ["Post on Instagram Reels during evening peak traffic.", "Add 3 close-up shoe photos showing hand-stitch details."],
-          hashtags: ["#marudharfashion", "#royalmojari", "#weddingfootwear", "#piparcity", "#jodhpurishoes"],
+          hashtags: ["#nwdfashion", "#royalmojari", "#weddingfootwear", "#piparcity", "#jodhpurishoes"],
           reasoning: "Capturing wedding season excitement Jodhpur style increases engagement among families."
         };
       } else if (action === 'generate_promotional') {
         fallbackResult = {
           title: "Promo Offer Copywriter",
-          caption: `⚡ FLASH SALE: Grab the most durable sports sneakers in Pipar City at up to 15% OFF! 👟🔥\n\nMarudhar Fashion Point brings you double-soled, breathable training shoes built for maximum speed and longevity. Whether running or walking, experience the ultimate comfort.\n\n🎁 Message us today and mention 'MARUDHAR15' to get an instant discount with free doorstep delivery!`,
+          caption: `⚡ FLASH SALE: Grab the most durable sports sneakers in Pipar City at up to 15% OFF! 👟🔥\n\nNWD Platform brings you double-soled, breathable training shoes built for maximum speed and longevity. Whether running or walking, experience the ultimate comfort.\n\n🎁 Message us today and mention 'NWD15' to get an instant discount with free doorstep delivery!`,
           suggestions: ["Share to local WhatsApp Broadcast lists.", "Embed as a popup announcement on the storefront."],
-          hashtags: ["#sneakerhead", "#marudharfashion", "#shoesale", "#piparcity"],
+          hashtags: ["#sneakerhead", "#nwdfashion", "#shoesale", "#piparcity"],
           reasoning: "Creating immediate FOMO combined with direct local delivery hooks buyers."
         };
       } else if (action === 'generate_festival') {
         fallbackResult = {
           title: "Festive Celebration Copywriter",
-          caption: `✨ Shubh Tyohar! From the entire family of Marudhar Fashion Point, we wish you a prosperous festive season! 🪔🌸\n\nCelebrate in premium style with our special Royal Loafers and traditional Juttis. Specially curated for wedding celebrations and prayer events. Each pair represents heritage and pride.\n\n📞 Click the WhatsApp bubble to secure your festive sizing today!`,
+          caption: `✨ Shubh Tyohar! From the entire family of NWD Platform, we wish you a prosperous festive season! 🪔🌸\n\nCelebrate in premium style with our special Royal Loafers and traditional Juttis. Specially curated for wedding celebrations and prayer events. Each pair represents heritage and pride.\n\n📞 Click the WhatsApp bubble to secure your festive sizing today!`,
           suggestions: ["Publish as a greeting post on Google Business Profile.", "Pin at the top of the Facebook page."],
-          hashtags: ["#festiveshoes", "#traditionaljuttis", "#shubhtyohar", "#marudharfashion"],
+          hashtags: ["#festiveshoes", "#traditionaljuttis", "#shubhtyohar", "#nwdfashion"],
           reasoning: "Combining warm greetings with product collections establishes visual connection and community warmth."
         };
       } else if (action === 'generate_product_launch') {
         fallbackResult = {
           title: "New Product Launch Alert",
-          caption: `🚀 THE WAIT IS OVER: Introducing the Midnight Stealth Sneaker Series! 👟🖤\n\nEngineered with an ultra-responsive flex-sole, water-resistant knit-upper, and modern reflective laces. Exclusive to Marudhar Fashion Point, Jodhpur.\n\nBe the first in Pipar City to own these. Extremely limited stock! Sizing help is available live on WhatsApp.`,
+          caption: `🚀 THE WAIT IS OVER: Introducing the Midnight Stealth Sneaker Series! 👟🖤\n\nEngineered with an ultra-responsive flex-sole, water-resistant knit-upper, and modern reflective laces. Exclusive to NWD Platform, Jodhpur.\n\nBe the first in Pipar City to own these. Extremely limited stock! Sizing help is available live on WhatsApp.`,
           suggestions: ["Launch an Instagram Reel showing shoe flexibility.", "Update your WhatsApp status to capture early orders."],
-          hashtags: ["#newlaunch", "#stealthsneakers", "#marudharfashion", "#piparcity"],
+          hashtags: ["#newlaunch", "#stealthsneakers", "#nwdfashion", "#piparcity"],
           reasoning: "Pre-launch hype combined with limited availability alerts sneakers collectors to act fast."
         };
       }
@@ -539,7 +539,7 @@ Respond strictly in valid JSON format:
 
       if (process.env.GEMINI_API_KEY) {
         try {
-          const prompt = `Analyze store metrics for Marudhar Fashion Point:
+          const prompt = `Analyze store metrics for NWD Platform:
 Total Orders: ${totalOrders}
 Revenue: ₹${revenue}
 Top Category: ${topCategory}
@@ -567,7 +567,7 @@ Respond ONLY with valid JSON:
       return res.json({
         success: true,
         analytics: {
-          summary: `Marudhar Fashion Point generated ₹${revenue.toLocaleString('en-IN')} across ${totalOrders} orders, led by high demand in ${topCategory}.`,
+          summary: `NWD Platform generated ₹${revenue.toLocaleString('en-IN')} across ${totalOrders} orders, led by high demand in ${topCategory}.`,
           growthTips: [
             "Promote ONE 8 Burgundy Leather Sneakers during upcoming festival sales",
             "Introduce bundle discounts on Kids School Shoes & Sports Wear",
@@ -589,7 +589,7 @@ Respond ONLY with valid JSON:
       const { prompt = "", currentTheme = "light" } = req.body || {};
       if (!prompt) return res.status(400).json({ error: "Prompt is required" });
 
-      const systemPrompt = `You are an expert e-commerce UI designer & UX conversion architect for Marudhar Fashion Point (Pipar City, Rajasthan).
+      const systemPrompt = `You are an expert e-commerce UI designer & UX conversion architect for NWD Platform (Pipar City, Rajasthan).
 The user requested a homepage layout design with prompt: "${prompt}".
 
 Generate a complete, highly structured HomepageConfig JSON with an array of section objects.
@@ -762,7 +762,7 @@ Ensure 6 to 10 sections are included to form a rich, realistic homepage! Include
     try {
       const { sectionType = "hero_banner", prompt = "Make it persuasive and regal" } = req.body || {};
 
-      const aiPrompt = `You are a high-converting e-commerce copywriter for footwear brand Marudhar Fashion Point.
+      const aiPrompt = `You are a high-converting e-commerce copywriter for footwear brand NWD Platform.
 Write engaging copy for homepage section "${sectionType}" with directive: "${prompt}".
 Respond strictly with valid JSON:
 {
@@ -807,7 +807,7 @@ Respond strictly with valid JSON:
     try {
       const { type = "story", prompt = "Enhance story with royal Rajasthani heritage and quality footwear craftsmanship", currentText = "" } = req.body || {};
 
-      const aiPrompt = `You are a world-class luxury brand storytelling copywriter for "Marudhar Fashion Point", Pipar City's top footwear destination.
+      const aiPrompt = `You are a world-class luxury brand storytelling copywriter for "NWD Platform", Pipar City's top footwear destination.
 Task: Write compelling content of type "${type}".
 User Instruction: "${prompt}"
 Existing context (if any): "${currentText}"
@@ -861,7 +861,7 @@ Respond strictly with valid JSON in format:
       return res.json({
         success: true,
         result: {
-          content: "Founded in 2010 by Viju Bhai, Marudhar Fashion Point has grown from Pipar City's trusted local shoe store into Rajasthan's beloved multi-category family footwear landmark. Driven by relentless quality inspection and personal service, we ensure every step you take radiates royal comfort."
+          content: "Founded in 2010 by Viju Bhai, NWD Platform has grown from Pipar City's trusted local shoe store into Rajasthan's beloved multi-category family footwear landmark. Driven by relentless quality inspection and personal service, we ensure every step you take radiates royal comfort."
         }
       });
     } catch (err: any) {
@@ -876,7 +876,7 @@ Respond strictly with valid JSON in format:
     return res.json({
       success: true,
       store: {
-        name: "Marudhar Fashion Point",
+        name: "NWD Platform",
         address: "Main Market, Near Railway Station Road, Pipar City, Jodhpur, Rajasthan 342601",
         city: "Pipar City",
         district: "Jodhpur",
@@ -885,7 +885,7 @@ Respond strictly with valid JSON in format:
         coordinates: { lat: 26.3912, lng: 73.6631 },
         phone: "+91 98290 12345",
         whatsapp: "+91 98290 12345",
-        email: "contact@marudharfashionpoint.com",
+        email: "contact@nwd-phi.vercel.app",
         hours: "Mon - Sun: 9:00 AM - 9:00 PM",
         googleMapsUrl: "https://maps.google.com/?q=Pipar+City+Rajasthan",
         googleMapsEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3575.523091!2d73.6631!3d26.3912!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjbCsDIzJzI4LjMiTiA3M8KwMzknNDcuMiJF!5e0!3m2!1sen!2sin!4v1620000000000"
@@ -912,8 +912,8 @@ Respond strictly with valid JSON in format:
   // =========================================================================
   let inMemoryInstagramToken = process.env.INSTAGRAM_ACCESS_TOKEN || "";
   let inMemoryInstagramConfig = {
-    username: "marudhar_fashion_point",
-    displayName: "Marudhar Fashion Point",
+    username: "nwd_platform",
+    displayName: "NWD Platform",
     postLimit: 8,
     layout: "grid",
     showBio: true,
@@ -928,10 +928,10 @@ Respond strictly with valid JSON in format:
   let instagramCache: CacheEntry | null = null;
   const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes cache
 
-  // Default live profile data for @marudhar_fashion_point
+  // Default live profile data for @nwd_platform
   const DEFAULT_PROFILE = {
-    username: "marudhar_fashion_point",
-    displayName: "Marudhar Fashion Point",
+    username: "nwd_platform",
+    displayName: "NWD Platform",
     profilePictureUrl: "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=400&q=80",
     followersCount: "18.5K",
     followingCount: "412",
@@ -944,10 +944,10 @@ Respond strictly with valid JSON in format:
   const DEFAULT_POSTS = [
     {
       id: "ig_post_1",
-      permalink: "https://www.instagram.com/marudhar_fashion_point/",
+      permalink: "https://www.instagram.com/nwd_platform/",
       mediaUrl: "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80",
       mediaType: "IMAGE",
-      caption: "Step into royal elegance with our latest ONE 8 Burgundy Leather Edition! 👟✨ Exclusive drop at Pipar City. #MarudharFashionPoint #Piparcity",
+      caption: "Step into royal elegance with our latest ONE 8 Burgundy Leather Edition! 👟✨ Exclusive drop at Pipar City. #NWDFashionPoint #Piparcity",
       timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
       likeCount: 1240,
       commentsCount: 84,
@@ -955,7 +955,7 @@ Respond strictly with valid JSON in format:
     },
     {
       id: "ig_post_2",
-      permalink: "https://www.instagram.com/marudhar_fashion_point/",
+      permalink: "https://www.instagram.com/nwd_platform/",
       mediaUrl: "https://images.unsplash.com/photo-1520639888713-7851133b1ed0?auto=format&fit=crop&w=800&q=80",
       mediaType: "IMAGE",
       caption: "Men's Genuine Handcrafted Leather Loafers. Designed for extreme durability, softness & royal posture. 👞🔥",
@@ -966,7 +966,7 @@ Respond strictly with valid JSON in format:
     },
     {
       id: "ig_post_3",
-      permalink: "https://www.instagram.com/marudhar_fashion_point/",
+      permalink: "https://www.instagram.com/nwd_platform/",
       mediaUrl: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=800&q=80",
       mediaType: "IMAGE",
       caption: "Women's High-Performance Sports & Running Shoes! Cloud-foam soles for effortless stride. 👟💖",
@@ -977,7 +977,7 @@ Respond strictly with valid JSON in format:
     },
     {
       id: "ig_post_4",
-      permalink: "https://www.instagram.com/marudhar_fashion_point/",
+      permalink: "https://www.instagram.com/nwd_platform/",
       mediaUrl: "https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=800&q=80",
       mediaType: "IMAGE",
       caption: "Light-up LED & Flexible Cushion Sports Shoes for Kids! Durable, orthopedic support & fun designs. 🧒⚡",
@@ -988,7 +988,7 @@ Respond strictly with valid JSON in format:
     },
     {
       id: "ig_post_5",
-      permalink: "https://www.instagram.com/marudhar_fashion_point/",
+      permalink: "https://www.instagram.com/nwd_platform/",
       mediaUrl: "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&w=800&q=80",
       mediaType: "IMAGE",
       caption: "Rajasthani Handcrafted Zari Juttis for Wedding & Festival Season. Pure royal heritage vibes! 👑✨",
@@ -999,10 +999,10 @@ Respond strictly with valid JSON in format:
     },
     {
       id: "ig_post_6",
-      permalink: "https://www.instagram.com/marudhar_fashion_point/",
+      permalink: "https://www.instagram.com/nwd_platform/",
       mediaUrl: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80",
       mediaType: "IMAGE",
-      caption: "Fresh Batch of Ultra-Breathable Mesh Athletic Shoes arrived at Marudhar Fashion Point! 🏃‍♂️⚡",
+      caption: "Fresh Batch of Ultra-Breathable Mesh Athletic Shoes arrived at NWD Platform! 🏃‍♂️⚡",
       timestamp: new Date(Date.now() - 96 * 3600 * 1000).toISOString(),
       likeCount: 1430,
       commentsCount: 98,
@@ -1010,7 +1010,7 @@ Respond strictly with valid JSON in format:
     },
     {
       id: "ig_post_7",
-      permalink: "https://www.instagram.com/marudhar_fashion_point/",
+      permalink: "https://www.instagram.com/nwd_platform/",
       mediaUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
       mediaType: "IMAGE",
       caption: "Red Flame Edition Running Sneakers! Lightweight, impact-absorbing air cushion heel. 👟🔥",
@@ -1021,7 +1021,7 @@ Respond strictly with valid JSON in format:
     },
     {
       id: "ig_post_8",
-      permalink: "https://www.instagram.com/marudhar_fashion_point/",
+      permalink: "https://www.instagram.com/nwd_platform/",
       mediaUrl: "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=800&q=80",
       mediaType: "IMAGE",
       caption: "Classic Unisex Canvas Low-Tops in Cream White. Timeless street style for everyday wear. 👟✨",
@@ -1080,8 +1080,8 @@ Respond strictly with valid JSON in format:
       const mediaData = await mediaRes.json();
 
       const profile = {
-        username: profileData.username || "marudhar_fashion_point",
-        displayName: "Marudhar Fashion Point",
+        username: profileData.username || "nwd_platform",
+        displayName: "NWD Platform",
         profilePictureUrl: profileData.profile_picture_url || DEFAULT_PROFILE.profilePictureUrl,
         followersCount: profileData.followers_count ? `${(profileData.followers_count / 1000).toFixed(1)}K` : DEFAULT_PROFILE.followersCount,
         followingCount: "412",
@@ -1097,7 +1097,7 @@ Respond strictly with valid JSON in format:
         mediaUrl: item.media_url || item.thumbnail_url || DEFAULT_POSTS[idx % DEFAULT_POSTS.length].mediaUrl,
         mediaType: item.media_type || "IMAGE",
         thumbnailUrl: item.thumbnail_url,
-        caption: item.caption || "Marudhar Fashion Point Exclusive Footwear #MarudharFashionPoint",
+        caption: item.caption || "NWD Platform Exclusive Footwear #NWDFashionPoint",
         timestamp: item.timestamp || new Date().toISOString(),
         likeCount: item.like_count || Math.floor(800 + Math.random() * 1200),
         commentsCount: item.comments_count || Math.floor(40 + Math.random() * 100),
@@ -1252,8 +1252,8 @@ Respond strictly with valid JSON in format:
         return res.status(400).json({ success: false, message: "Valid payable amount in INR required" });
       }
 
-      const effectiveKeyId = keyId?.trim() || process.env.RAZORPAY_KEY_ID || "rzp_test_marudhar123";
-      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "test_secret_marudhar123";
+      const effectiveKeyId = keyId?.trim() || process.env.RAZORPAY_KEY_ID || "rzp_test_nwd123";
+      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "test_secret_nwd123";
       const amountInPaisa = Math.round(amount * 100);
       const orderReceipt = receipt || `order_rcpt_${Date.now()}`;
 
@@ -1262,7 +1262,7 @@ Respond strictly with valid JSON in format:
         effectiveKeyId &&
         effectiveKeySecret &&
         effectiveKeyId.startsWith("rzp_") &&
-        !effectiveKeyId.includes("marudhar123")
+        !effectiveKeyId.includes("nwd123")
       ) {
         try {
           const razorpay = new Razorpay({
@@ -1275,7 +1275,7 @@ Respond strictly with valid JSON in format:
             currency,
             receipt: orderReceipt,
             notes: {
-              store: "Marudhar Fashion Point",
+              store: "NWD Platform",
               customerName: customerName || "Customer",
               ...notes,
             },
@@ -1349,8 +1349,8 @@ Respond strictly with valid JSON in format:
         });
       }
 
-      const effectiveKeyId = keyId?.trim() || process.env.RAZORPAY_KEY_ID || "rzp_test_marudhar123";
-      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "test_secret_marudhar123";
+      const effectiveKeyId = keyId?.trim() || process.env.RAZORPAY_KEY_ID || "rzp_test_nwd123";
+      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "test_secret_nwd123";
 
       let isSignatureValid = false;
 
@@ -1366,7 +1366,7 @@ Respond strictly with valid JSON in format:
         } else {
           // Fallback check against default test secret
           const testGenSig = crypto
-            .createHmac("sha256", "test_secret_marudhar123")
+            .createHmac("sha256", "test_secret_nwd123")
             .update(`${razorpay_order_id}|${razorpay_payment_id}`)
             .digest("hex");
           if (testGenSig === razorpay_signature) {
@@ -1389,7 +1389,7 @@ Respond strictly with valid JSON in format:
         effectiveKeyId &&
         effectiveKeySecret &&
         effectiveKeyId.startsWith("rzp_") &&
-        !effectiveKeyId.includes("marudhar123")
+        !effectiveKeyId.includes("nwd123")
       ) {
         try {
           const razorpay = new Razorpay({
@@ -1466,8 +1466,8 @@ Respond strictly with valid JSON in format:
         return res.status(400).json({ success: false, message: "Payment ID required for refund" });
       }
 
-      const effectiveKeyId = keyId?.trim() || process.env.RAZORPAY_KEY_ID || "rzp_test_marudhar123";
-      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "test_secret_marudhar123";
+      const effectiveKeyId = keyId?.trim() || process.env.RAZORPAY_KEY_ID || "rzp_test_nwd123";
+      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "test_secret_nwd123";
 
       let refundId = `rfnd_${crypto.randomBytes(8).toString("hex")}`;
 
@@ -1475,7 +1475,7 @@ Respond strictly with valid JSON in format:
         effectiveKeyId &&
         effectiveKeySecret &&
         effectiveKeyId.startsWith("rzp_") &&
-        !effectiveKeyId.includes("marudhar123")
+        !effectiveKeyId.includes("nwd123")
       ) {
         try {
           const razorpay = new Razorpay({
@@ -1549,7 +1549,7 @@ Respond strictly with valid JSON in format:
       const token = process.env.WHATSAPP_CLOUD_API_TOKEN;
       const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
-      const messageText = `🛍️ *Hello Marudhar Fashion Point*,
+      const messageText = `🛍️ *Hello NWD Platform*,
 
 I want to order this product.
 
@@ -1649,17 +1649,17 @@ ${customerMessage || 'Please confirm availability.'}`;
   // =========================================================================
   const SERVER_PRODUCT_CATALOG: any[] = [
     {
-      id: 'mfp-m01',
-      sku: 'MFP-M01-RUN',
-      slug: 'marudhar-airglide-knit-running-shoes',
-      name: 'Marudhar AirGlide Knit Running Shoes',
+      id: 'nwd-m01',
+      sku: 'NWD-M01-RUN',
+      slug: 'nwd-airglide-knit-running-shoes',
+      name: 'NWD AirGlide Knit Running Shoes',
       price: 1499,
       images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80'],
       description: 'Ultra-breathable flyknit mesh running shoes engineered for maximum cushioning and responsive shock absorption.',
     },
     {
-      id: 'mfp-m02',
-      sku: 'MFP-M02-LOAF',
+      id: 'nwd-m02',
+      sku: 'NWD-M02-LOAF',
       slug: 'royal-heritage-handcrafted-leather-loafers',
       name: 'Royal Heritage Handcrafted Leather Loafers',
       price: 2299,
@@ -1667,19 +1667,19 @@ ${customerMessage || 'Please confirm availability.'}`;
       description: 'Luxurious burnished genuine leather loafers featuring memory foam insoles and anti-slip rubber outsoles.',
     },
     {
-      id: 'mfp-w01',
-      sku: 'MFP-W01-SPT',
-      slug: 'marudhar-women-progrip-cushioned-sports-shoes',
-      name: 'Marudhar Women ProGrip Cushioned Sports Shoes',
+      id: 'nwd-w01',
+      sku: 'NWD-W01-SPT',
+      slug: 'nwd-women-progrip-cushioned-sports-shoes',
+      name: 'NWD Women ProGrip Cushioned Sports Shoes',
       price: 1699,
       images: ['https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=1200&q=80'],
       description: 'Ultra-comfortable athletic sports shoes designed for women with memory foam cushioning.',
     },
     {
-      id: 'mfp-k01',
-      sku: 'MFP-K01-SCH',
-      slug: 'marudhar-junior-flex-light-up-sports-shoes',
-      name: 'Marudhar Junior Flex Light-Up Sports Shoes',
+      id: 'nwd-k01',
+      sku: 'NWD-K01-SCH',
+      slug: 'nwd-junior-flex-light-up-sports-shoes',
+      name: 'NWD Junior Flex Light-Up Sports Shoes',
       price: 899,
       images: ['https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=1200&q=80'],
       description: 'Durable, lightweight children sneakers with easy velcro closure and fun LED heel lights.',
@@ -1712,7 +1712,7 @@ ${customerMessage || 'Please confirm availability.'}`;
           const host = req.get("host") || "nwd-phi.vercel.app";
           const protocol = req.protocol || "https";
           const fullUrl = `${protocol}://${host}/product/${foundProduct.id || foundProduct.slug}`;
-          const title = `${foundProduct.name} | Marudhar Fashion Point`;
+          const title = `${foundProduct.name} | NWD Platform`;
           const desc = `Buy ${foundProduct.name} (SKU: ${foundProduct.sku || foundProduct.id}) for ₹${foundProduct.price.toLocaleString('en-IN')}. ${foundProduct.description}`;
           const imgUrl = foundProduct.images?.[0] || 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80';
 
@@ -1721,7 +1721,7 @@ ${customerMessage || 'Please confirm availability.'}`;
     <title>${title}</title>
     <meta name="description" content="${desc}" />
     <meta property="og:type" content="product" />
-    <meta property="og:site_name" content="Marudhar Fashion Point" />
+    <meta property="og:site_name" content="NWD Platform" />
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${desc}" />
     <meta property="og:image" content="${imgUrl}" />
@@ -1770,7 +1770,7 @@ ${customerMessage || 'Please confirm availability.'}`;
         const capitalizedLocation = location.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         
         const title = `Best Footwear Store in ${capitalizedLocation} | Shoes & Accessories`;
-        const desc = `Discover the best shoes, sneakers, and fashion accessories in ${capitalizedLocation}. Shop at Marudhar Fashion Point for premium quality footwear with exclusive local offers.`;
+        const desc = `Discover the best shoes, sneakers, and fashion accessories in ${capitalizedLocation}. Shop at NWD Platform for premium quality footwear with exclusive local offers.`;
         const imgUrl = 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80';
         
         const host = req.get("host") || "nwd-phi.vercel.app";
@@ -1782,7 +1782,7 @@ ${customerMessage || 'Please confirm availability.'}`;
     <title>${title}</title>
     <meta name="description" content="${desc}" />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Marudhar Fashion Point" />
+    <meta property="og:site_name" content="NWD Platform" />
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${desc}" />
     <meta property="og:image" content="${imgUrl}" />

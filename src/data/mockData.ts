@@ -384,8 +384,8 @@ export const CATEGORY_HIGHLIGHTS: CategoryHighlight[] = [
 export const PRODUCTS_DATA: Product[] = [
   // --- MEN FOOTWEAR & CLOTHING ---
   {
-    id: 'mfp-m01',
-    sku: 'MFP-M01-RUN',
+    id: 'nwd-m01',
+    sku: 'NWD-M01-RUN',
     slug: 'apex-airglide-knit-running-shoes',
     name: 'Apex AirGlide Knit Running Shoes',
     brand: 'Apex Active',
@@ -415,11 +415,11 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-m02',
-    sku: 'MFP-M02-LOAF',
+    id: 'nwd-m02',
+    sku: 'NWD-M02-LOAF',
     slug: 'royal-heritage-handcrafted-leather-loafers',
     name: 'Royal Heritage Handcrafted Leather Loafers',
-    brand: 'MFP Premium Craft',
+    brand: 'NWD Premium Craft',
     category: 'men',
     subcategory: 'Loafers',
     price: 2299,
@@ -443,11 +443,11 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-m03',
-    sku: 'MFP-M03-SNK',
+    id: 'nwd-m03',
+    sku: 'NWD-M03-SNK',
     slug: 'urban-streetwear-minimalist-white-sneakers',
     name: 'Urban Streetwear Minimalist White Sneakers',
-    brand: 'MFP Studio',
+    brand: 'NWD Studio',
     category: 'men',
     subcategory: 'Sneakers',
     price: 1799,
@@ -472,8 +472,8 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-m04',
-    sku: 'MFP-M04-ETH',
+    id: 'nwd-m04',
+    sku: 'NWD-M04-ETH',
     slug: 'royal-imperial-jutti-nagra-shoes',
     name: 'Royal Imperial Jutti & Nagra Shoes',
     brand: 'Royal Ethnic',
@@ -502,11 +502,11 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-m05',
-    sku: 'MFP-M05-FRM',
+    id: 'nwd-m05',
+    sku: 'NWD-M05-FRM',
     slug: 'oxford-executive-formal-derby-leather-shoes',
     name: 'Oxford Executive Formal Derby Leather Shoes',
-    brand: 'MFP Formal Elite',
+    brand: 'NWD Formal Elite',
     category: 'men',
     subcategory: 'Formal Shoes',
     price: 2499,
@@ -528,7 +528,7 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-m06',
+    id: 'nwd-m06',
     name: 'Apex Comfort Leather Comfort Sandals',
     brand: 'Apex Casual',
     category: 'men',
@@ -552,9 +552,9 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-m07',
+    id: 'nwd-m07',
     name: 'Heavy-Duty Waterproof Leather Trekking Boots',
-    brand: 'MFP Outdoor',
+    brand: 'NWD Outdoor',
     category: 'men',
     subcategory: 'Boots',
     price: 2899,
@@ -577,9 +577,9 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-m08',
+    id: 'nwd-m08',
     name: 'Premium Cotton Slub Casual Shirt',
-    brand: 'MFP Apparel',
+    brand: 'NWD Apparel',
     category: 'men',
     subcategory: 'Shirts',
     price: 899,
@@ -604,7 +604,7 @@ export const PRODUCTS_DATA: Product[] = [
 
   // --- WOMEN SPORTS SHOES ONLY ---
   {
-    id: 'mfp-w01',
+    id: 'nwd-w01',
     name: 'Apex Women ProGrip Cushioned Sports Shoes',
     brand: 'Apex Active',
     category: 'women',
@@ -632,7 +632,7 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-w02',
+    id: 'nwd-w02',
     name: 'Apex Women Ultra-Flyknit Running Shoes',
     brand: 'Apex Active',
     category: 'women',
@@ -660,9 +660,9 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-w03',
+    id: 'nwd-w03',
     name: 'Pastel Cloud Women Athleisure Sports Shoes',
-    brand: 'MFP Active Women',
+    brand: 'NWD Active Women',
     category: 'women',
     subcategory: 'Sports Shoes',
     price: 1599,
@@ -688,9 +688,9 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-w04',
+    id: 'nwd-w04',
     name: 'Apex Women AirCushion Walking Sports Shoes',
-    brand: 'MFP Active Women',
+    brand: 'NWD Active Women',
     category: 'women',
     subcategory: 'Sports Shoes',
     price: 1299,
@@ -714,7 +714,7 @@ export const PRODUCTS_DATA: Product[] = [
 
   // --- KIDS FOOTWEAR ---
   {
-    id: 'mfp-k01',
+    id: 'nwd-k01',
     name: 'Apex Junior Flex Light-Up Sports Shoes',
     brand: 'Apex Kids',
     category: 'kids',
@@ -742,7 +742,7 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-k02',
+    id: 'nwd-k02',
     name: 'Apex Official Toughened School Shoes',
     brand: 'Apex School Elite',
     category: 'kids',
@@ -767,7 +767,7 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-k03',
+    id: 'nwd-k03',
     name: 'Little Prince & Princess Glitter Party Shoes',
     brand: 'Apex Kids',
     category: 'kids',
@@ -792,7 +792,7 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-k04',
+    id: 'nwd-k04',
     name: 'Kids Bio-Grip Cushion Sandals',
     brand: 'Apex Kids',
     category: 'kids',
@@ -816,7 +816,7 @@ export const PRODUCTS_DATA: Product[] = [
     inStock: true,
   },
   {
-    id: 'mfp-k05',
+    id: 'nwd-k05',
     name: 'Apex Kids Anti-Skid Soft Slippers & Slides',
     brand: 'Apex Kids',
     category: 'kids',

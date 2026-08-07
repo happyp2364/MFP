@@ -206,7 +206,7 @@ export const PaymentSettingsView: React.FC = () => {
       cleanAndSanitizeUPIId(upiId) || 'store@upi',
       merchantName || platform.platformDisplayName,
       2499,
-      'MFP1025'
+      'NWD1025'
     );
   }, [upiId, merchantName]);
 
@@ -1304,7 +1304,7 @@ export const PaymentSettingsView: React.FC = () => {
             <div className="p-3.5 bg-neutral-800/80 rounded-xl space-y-2 text-[11px] text-neutral-300 border border-neutral-700/60">
               <div className="flex justify-between">
                 <span>Sample Order ID:</span>
-                <span className="font-mono font-bold text-white">#MFP1025</span>
+                <span className="font-mono font-bold text-white">#NWD1025</span>
               </div>
               <div className="flex justify-between">
                 <span>Sample Amount:</span>

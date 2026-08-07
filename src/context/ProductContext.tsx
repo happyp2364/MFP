@@ -19,8 +19,8 @@ interface ProductContextType {
 }
 
 const STORAGE_KEYS = {
-  PRODUCTS: 'mfp_products_catalog_live',
-  REVIEWS: 'mfp_reviews_live',
+  PRODUCTS: 'nwd_products_catalog_live',
+  REVIEWS: 'nwd_reviews_live',
 };
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);

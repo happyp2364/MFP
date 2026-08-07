@@ -141,15 +141,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setCouponCodeInput('');
     
     // Clear any potential stored flags just in case
-    localStorage.removeItem('mfp_checkout_stale_success');
-    localStorage.removeItem('mfp_last_order_id');
-    localStorage.removeItem('mfp_payment_success');
-    localStorage.removeItem('mfp_checkout_session');
+    localStorage.removeItem('nwd_checkout_stale_success');
+    localStorage.removeItem('nwd_last_order_id');
+    localStorage.removeItem('nwd_payment_success');
+    localStorage.removeItem('nwd_checkout_session');
     
-    sessionStorage.removeItem('mfp_checkout_stale_success');
-    sessionStorage.removeItem('mfp_last_order_id');
-    sessionStorage.removeItem('mfp_payment_success');
-    sessionStorage.removeItem('mfp_checkout_session');
+    sessionStorage.removeItem('nwd_checkout_stale_success');
+    sessionStorage.removeItem('nwd_last_order_id');
+    sessionStorage.removeItem('nwd_payment_success');
+    sessionStorage.removeItem('nwd_checkout_session');
   };
 
   // Perform full validation check
@@ -371,12 +371,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   useEffect(() => {
     if (isOpen && coupons && coupons.length > 0 && !appliedCoupon) {
       // Prioritize scratched coupon code if found in local storage
-      const scratchedCode = localStorage.getItem('mfp_scratched_coupon');
+      const scratchedCode = localStorage.getItem('nwd_scratched_coupon');
       if (scratchedCode) {
         const valResult = validateCoupon(scratchedCode, cartItems);
         if (valResult.valid) {
           handleApplyCoupon(scratchedCode);
-          localStorage.removeItem('mfp_scratched_coupon');
+          localStorage.removeItem('nwd_scratched_coupon');
           return;
         }
       }
@@ -421,7 +421,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const totalAmount = Math.max(0, subtotal - discountAmount + shippingFee + taxAmount + convenienceFee);
 
   // Dynamic UPI Link & QR Image
-  const dynamicOrderId = completedOrderId || `MFP${1025 + Math.floor(Math.random() * 8000)}`;
+  const dynamicOrderId = completedOrderId || `NWD${1025 + Math.floor(Math.random() * 8000)}`;
   const sanitizedUpiId = cleanAndSanitizeUPIId(paymentSettings.upiId);
   const isUpiValid = isValidUPIIdFormat(sanitizedUpiId);
 
@@ -638,7 +638,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         // Find newly created order object for invoice & WhatsApp
         const matchedOrder = orders.find((o) => o.id === res.orderId) || {
           id: res.orderId,
-          orderNumber: parseInt(res.orderId.replace('#MFP', ''), 10) || 1025,
+          orderNumber: parseInt(res.orderId.replace('#NWD', ''), 10) || 1025,
           userId: customerProfile?.uid,
           customerName: shippingInfo.name,
           customerPhone: shippingInfo.phone,

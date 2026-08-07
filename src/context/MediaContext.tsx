@@ -18,9 +18,9 @@ interface MediaContextType {
 }
 
 const STORAGE_KEYS = {
-  INSTAGRAM_CONFIG: 'mfp_instagram_config_live',
-  SOCIAL_MEDIA_CONFIG: 'mfp_social_media_config_live_v2',
-  SOCIAL_ANALYTICS: 'mfp_social_analytics_live_v2',
+  INSTAGRAM_CONFIG: 'nwd_instagram_config_live',
+  SOCIAL_MEDIA_CONFIG: 'nwd_social_media_config_live_v2',
+  SOCIAL_ANALYTICS: 'nwd_social_analytics_live_v2',
 };
 
 const MediaContext = createContext<MediaContextType | undefined>(undefined);

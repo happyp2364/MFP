@@ -44,10 +44,10 @@ interface AppConfigContextType {
 const AppConfigContext = createContext<AppConfigContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  PRODUCT_FEED_CONFIG: 'mfp_product_feed_config_live',
-  BUTTON_THEME_CONFIG: 'mfp_button_theme_config_live',
-  PAYMENT_SETTINGS: 'mfp_payment_settings_live',
-  OPEN_BOX_DELIVERY_CONFIG: 'mfp_open_box_delivery_config_live',
+  PRODUCT_FEED_CONFIG: 'nwd_product_feed_config_live',
+  BUTTON_THEME_CONFIG: 'nwd_button_theme_config_live',
+  PAYMENT_SETTINGS: 'nwd_payment_settings_live',
+  OPEN_BOX_DELIVERY_CONFIG: 'nwd_open_box_delivery_config_live',
 };
 
 export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

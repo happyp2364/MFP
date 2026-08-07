@@ -70,7 +70,7 @@ function AppContent() {
     sortBy: 'featured',
   });
 
-  const [wishlistIds, setWishlistIds] = useState<string[]>(['mfp-m01', 'mfp-w01']);
+  const [wishlistIds, setWishlistIds] = useState<string[]>(['nwd-m01', 'nwd-w01']);
   const [cartItems, setCartItems] = useState<CartItem[]>(() => 
     products.length > 0 ? [
       {

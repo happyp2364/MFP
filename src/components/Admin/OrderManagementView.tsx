@@ -71,7 +71,7 @@ export const OrderManagementView: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by Order ID (#MFP1025), Name, Phone, Email..."
+              placeholder="Search by Order ID (#NWD1025), Name, Phone, Email..."
               className="w-full pl-9 pr-3 py-2 border border-neutral-300 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
             />
           </div>

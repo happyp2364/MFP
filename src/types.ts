@@ -35,7 +35,7 @@ export interface SizeStock {
 
 export interface Product {
   id: string;
-  sku?: string;               // Unique Product ID / Stock Keeping Unit (e.g. MFP-M01-RUN)
+  sku?: string;               // Unique Product ID / Stock Keeping Unit (e.g. NWD-M01-RUN)
   slug?: string;              // Unique public URL slug (e.g. apex-airglide-knit-running-shoes)
   metaTitle?: string;         // Open Graph / WhatsApp preview custom title
   metaDescription?: string;   // Open Graph / WhatsApp preview custom description
@@ -740,7 +740,7 @@ export interface ShippingAddressInfo {
 }
 
 export interface CustomerOrder {
-  id: string; // e.g. #MFP1025
+  id: string; // e.g. #NWD1025
   orderNumber: number;
   websiteId?: string;
   tenantId?: string;

@@ -41,7 +41,7 @@ export function sendBrowserWebPushNotification(payload: PushNotificationPayload)
       body: payload.body,
       icon: payload.icon || '/icon.png',
       badge: payload.badge || '/icon.png',
-      tag: payload.tag || `mfp-push-${Date.now()}`,
+      tag: payload.tag || `nwd-push-${Date.now()}`,
     });
 
     if (payload.url) {

@@ -292,11 +292,11 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                           contentData: { ...edited.contentData, backgroundWord: e.target.value.toUpperCase() },
                         })
                       }
-                      placeholder="e.g. SPORT, NIKE, MFP, STYLE, LUXURY"
+                      placeholder="e.g. SPORT, NIKE, NWD, STYLE, LUXURY"
                       className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm font-mono uppercase bg-white"
                     />
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {['NIKE', 'SPORT', 'STYLE', 'MFP', 'PREMIUM', 'APEX', 'SALE', 'NEW', 'LUXURY'].map((word) => (
+                      {['NIKE', 'SPORT', 'STYLE', 'NWD', 'PREMIUM', 'APEX', 'SALE', 'NEW', 'LUXURY'].map((word) => (
                         <button
                           key={word}
                           type="button"

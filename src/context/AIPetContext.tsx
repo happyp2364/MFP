@@ -10,7 +10,7 @@ interface AIPetContextType {
 }
 
 const STORAGE_KEYS = {
-  PET_SHOE_CONFIG: 'mfp_pet_shoe_config_live',
+  PET_SHOE_CONFIG: 'nwd_pet_shoe_config_live',
 };
 
 const AIPetContext = createContext<AIPetContextType | undefined>(undefined);

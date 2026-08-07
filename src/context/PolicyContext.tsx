@@ -10,7 +10,7 @@ interface PolicyContextType {
 }
 
 const STORAGE_KEYS = {
-  ABOUT_US_CONFIG: 'mfp_about_us_config_live',
+  ABOUT_US_CONFIG: 'nwd_about_us_config_live',
 };
 
 const PolicyContext = createContext<PolicyContextType | undefined>(undefined);

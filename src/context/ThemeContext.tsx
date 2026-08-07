@@ -13,7 +13,7 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'mfp_theme_mode_pref';
+const LOCAL_STORAGE_KEY = 'nwd_theme_mode_pref';
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {

@@ -10,7 +10,7 @@ interface WebsiteIdentityContextType {
 }
 
 const STORAGE_KEYS = {
-  WEBSITE_CONFIG: 'mfp_website_config_live',
+  WEBSITE_CONFIG: 'nwd_website_config_live',
 };
 
 const WebsiteIdentityContext = createContext<WebsiteIdentityContextType | undefined>(undefined);

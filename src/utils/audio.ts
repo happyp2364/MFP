@@ -21,7 +21,7 @@ let activeCustomerSettings: CustomerSoundSettings = { ...DEFAULT_CUSTOMER_SOUND_
 
 // Load customer settings from localStorage if available
 try {
-  const savedCustomerSettings = localStorage.getItem('mfp_customer_sound_settings');
+  const savedCustomerSettings = localStorage.getItem('nwd_customer_sound_settings');
   if (savedCustomerSettings) {
     activeCustomerSettings = { ...DEFAULT_CUSTOMER_SOUND_SETTINGS, ...JSON.parse(savedCustomerSettings) };
   }
@@ -31,7 +31,7 @@ try {
 
 // Load sound config from localStorage if available
 try {
-  const savedSoundConfig = localStorage.getItem('mfp_sound_config');
+  const savedSoundConfig = localStorage.getItem('nwd_sound_config');
   if (savedSoundConfig) {
     activeSoundConfig = { ...DEFAULT_SOUND_CONFIG, ...JSON.parse(savedSoundConfig) };
   }
@@ -84,14 +84,14 @@ function isThrottled(key: string, limitMs: number): boolean {
 export function setSoundConfig(config: SoundConfig) {
   activeSoundConfig = { ...config };
   try {
-    localStorage.setItem('mfp_sound_config', JSON.stringify(config));
+    localStorage.setItem('nwd_sound_config', JSON.stringify(config));
   } catch (e) {}
 }
 
 export function setCustomerSoundSettings(settings: CustomerSoundSettings) {
   activeCustomerSettings = { ...settings };
   try {
-    localStorage.setItem('mfp_customer_sound_settings', JSON.stringify(settings));
+    localStorage.setItem('nwd_customer_sound_settings', JSON.stringify(settings));
   } catch (e) {}
 }
 

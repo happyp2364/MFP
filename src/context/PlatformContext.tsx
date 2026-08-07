@@ -26,7 +26,7 @@ interface PlatformContextType {
 const PlatformContext = createContext<PlatformContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  STORE_INFO: 'mfp_store_info_live',
+  STORE_INFO: 'nwd_store_info_live',
 };
 
 export const PlatformProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

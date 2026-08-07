@@ -1,6 +1,6 @@
 import { buildWebsiteUrl, buildAdminLoginUrl } from './platformConfig';
 
-export const DEFAULT_TENANT_ID = 'mfp_store_001';
+export const DEFAULT_TENANT_ID = 'nwd_store_001';
 
 /**
  * Clean & Sanitize Website Slug: Lowercase, letters, numbers, and single hyphens only
@@ -78,7 +78,7 @@ export function resolveCurrentWebsiteFromUrl(tenants?: { id: string; slug?: stri
       );
       if (matched) {
         localStorage.setItem(
-          'mfp_website_config_live',
+          'nwd_website_config_live',
           JSON.stringify({ websiteId: matched.id, slug: matched.slug })
         );
         return matched.id;
@@ -87,7 +87,7 @@ export function resolveCurrentWebsiteFromUrl(tenants?: { id: string; slug?: stri
 
     if (targetIdentifier) {
       localStorage.setItem(
-        'mfp_website_config_live',
+        'nwd_website_config_live',
         JSON.stringify({ websiteId: targetIdentifier, slug: targetIdentifier })
       );
       return targetIdentifier;
@@ -104,7 +104,7 @@ export function resolveCurrentWebsiteFromUrl(tenants?: { id: string; slug?: stri
  */
 export function getCurrentTenantId(): string {
   try {
-    const saved = localStorage.getItem('mfp_website_config_live');
+    const saved = localStorage.getItem('nwd_website_config_live');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed?.websiteId) return parsed.websiteId;
@@ -121,7 +121,7 @@ export function getCurrentTenantId(): string {
  */
 export function getCurrentTenantSlug(): string | null {
   try {
-    const saved = localStorage.getItem('mfp_website_config_live');
+    const saved = localStorage.getItem('nwd_website_config_live');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed?.slug) return parsed.slug;

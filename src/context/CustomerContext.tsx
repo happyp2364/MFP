@@ -14,7 +14,7 @@ interface CustomerContextType {
 }
 
 const STORAGE_KEYS = {
-  SOUND_CONFIG: 'mfp_sound_config_live',
+  SOUND_CONFIG: 'nwd_sound_config_live',
 };
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);

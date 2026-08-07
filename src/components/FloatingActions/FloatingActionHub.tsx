@@ -38,7 +38,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
 
   // Predefined custom WhatsApp details
   const waMessage = socialMediaConfig?.whatsappPredefinedMessage || '';
-  const waSupportName = socialMediaConfig?.whatsappSupportName || 'MFP Support';
+  const waSupportName = socialMediaConfig?.whatsappSupportName || 'NWD Support';
   const waSupportRole = socialMediaConfig?.whatsappSupportRole || 'Live Agent';
   const waSupportAvatar = socialMediaConfig?.whatsappSupportAvatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=64&q=80';
   const waUrl = generateGeneralInquiryWhatsAppLink(waMessage);

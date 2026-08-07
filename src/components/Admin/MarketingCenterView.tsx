@@ -706,7 +706,7 @@ export const MarketingCenterView: React.FC = () => {
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   <span>Opt-In Policy Compliance: Active</span>
                 </div>
-                <div className="text-[11px] text-emerald-200/60">WABA Account ID: 84582-MFP-WABA</div>
+                <div className="text-[11px] text-emerald-200/60">WABA Account ID: 84582-NWD-WABA</div>
               </div>
             </div>
           </div>

@@ -144,7 +144,7 @@ export const MBH_SHOE_CAROUSEL_DEFAULT_SECTION: HomepageSection = {
         buyNowLink: '/products',
         viewDetailsText: 'VIEW DETAILS',
         showWishlist: true,
-        productId: 'mfp-m01',
+        productId: 'nwd-m01',
         floatingBadges: [
           { title: 'Ultralight Flyknit', value: '280g' },
           { title: 'Glass Air Cushion', value: 'Cloud Feel' },
@@ -164,7 +164,7 @@ export const MBH_SHOE_CAROUSEL_DEFAULT_SECTION: HomepageSection = {
         buyNowLink: '/products',
         viewDetailsText: 'VIEW DETAILS',
         showWishlist: true,
-        productId: 'mfp-m02',
+        productId: 'nwd-m02',
         floatingBadges: [
           { title: 'Genuine Velvet Leather', value: 'Handmade' },
           { title: 'Memory Foam Sole', value: 'Orthotic' },
@@ -184,7 +184,7 @@ export const MBH_SHOE_CAROUSEL_DEFAULT_SECTION: HomepageSection = {
         buyNowLink: '/products',
         viewDetailsText: 'VIEW DETAILS',
         showWishlist: true,
-        productId: 'mfp-m03',
+        productId: 'nwd-m03',
         floatingBadges: [
           { title: 'High Rebound TPR', value: 'Shock Proof' },
           { title: 'Breathable Upper', value: 'All Day' },

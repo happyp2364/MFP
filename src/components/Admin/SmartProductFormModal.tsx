@@ -48,7 +48,7 @@ interface SmartProductFormModalProps {
   onDuplicate?: (product: Product) => void;
 }
 
-const DRAFT_STORAGE_KEY = 'mfp_admin_product_draft_v2';
+const DRAFT_STORAGE_KEY = 'nwd_admin_product_draft_v2';
 
 const POPULAR_BRANDS = [
   'House Brand',
@@ -131,7 +131,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
           });
         } else {
           const varId = `${productState.id || 'prod'}_${col.name.replace(/\s+/g, '')}_${sz}`;
-          const autoSku = generateAutoSKU(productState.name || 'MFP', col.name, sz);
+          const autoSku = generateAutoSKU(productState.name || 'NWD', col.name, sz);
           const autoBarcode = generateAutoBarcode(productState.id || '101', col.name, sz);
           
           const siblingImages = (productState.variants || [])
@@ -416,7 +416,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     // Auto-generate technical fields in background
     const autoSku = productState.sku && productState.sku.trim().length > 0
       ? productState.sku
-      : `MFP-${catCode}${randomSuffix}-${subCode}`;
+      : `NWD-${catCode}${randomSuffix}-${subCode}`;
 
     const slugBase = cleanName
       .toLowerCase()

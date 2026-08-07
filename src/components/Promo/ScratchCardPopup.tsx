@@ -24,7 +24,7 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
     if (!scratchWinConfig || !scratchWinConfig.enabled) return;
 
     // Permanently Disabled Check
-    if (localStorage.getItem('mfp_scratch_permanently_disabled') === 'true') return;
+    if (localStorage.getItem('nwd_scratch_permanently_disabled') === 'true') return;
 
     // Daily Hour Check (Daily Active Hours)
     if (scratchWinConfig.dailyActiveHoursStart && scratchWinConfig.dailyActiveHoursEnd) {
@@ -78,16 +78,16 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
     if (scratchWinConfig.returningCustomerOnly && userOrdersCount === 0) return;
 
     if (scratchWinConfig.firstVisitOnly) {
-      const visitFlag = localStorage.getItem('mfp_scratch_visited');
+      const visitFlag = localStorage.getItem('nwd_scratch_visited');
       if (visitFlag) return;
     }
 
     if (scratchWinConfig.firstOrderOnly && userOrdersCount > 0) return;
 
     // Track page views counter
-    let pageViews = parseInt(sessionStorage.getItem('mfp_scratch_pageviews') || '0', 10);
+    let pageViews = parseInt(sessionStorage.getItem('nwd_scratch_pageviews') || '0', 10);
     pageViews += 1;
-    sessionStorage.setItem('mfp_scratch_pageviews', pageViews.toString());
+    sessionStorage.setItem('nwd_scratch_pageviews', pageViews.toString());
 
     if (scratchWinConfig.showAfterPageViews && pageViews < scratchWinConfig.showAfterPageViews) {
       return;
@@ -118,12 +118,12 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
     let timerId: NodeJS.Timeout | null = null;
     const showPopup = () => {
       // Avoid duplicate triggers in same session
-      const alreadyShownThisSession = sessionStorage.getItem('mfp_scratch_shown_session') === 'true';
+      const alreadyShownThisSession = sessionStorage.getItem('nwd_scratch_shown_session') === 'true';
       if (!alreadyShownThisSession) {
         setIsVisible(true);
-        sessionStorage.setItem('mfp_scratch_shown_session', 'true');
+        sessionStorage.setItem('nwd_scratch_shown_session', 'true');
         if (scratchWinConfig.firstVisitOnly) {
-          localStorage.setItem('mfp_scratch_visited', 'true');
+          localStorage.setItem('nwd_scratch_visited', 'true');
         }
       }
     };
@@ -221,7 +221,7 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
 
   const triggerSuccessReveal = () => {
     if (selectedReward && selectedReward.couponCode) {
-      localStorage.setItem('mfp_scratched_coupon', selectedReward.couponCode.toUpperCase());
+      localStorage.setItem('nwd_scratched_coupon', selectedReward.couponCode.toUpperCase());
     }
     triggerGlobalCelebration();
   };
@@ -301,7 +301,7 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
   };
 
   const handlePermanentlyDisable = () => {
-    localStorage.setItem('mfp_scratch_permanently_disabled', 'true');
+    localStorage.setItem('nwd_scratch_permanently_disabled', 'true');
     setIsVisible(false);
   };
 

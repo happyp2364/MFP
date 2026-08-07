@@ -13,7 +13,7 @@ interface StoreLocatorContextType {
 }
 
 const STORAGE_KEYS = {
-  PHYSICAL_STORES: 'mfp_physical_stores_live',
+  PHYSICAL_STORES: 'nwd_physical_stores_live',
 };
 
 const StoreLocatorContext = createContext<StoreLocatorContextType | undefined>(undefined);

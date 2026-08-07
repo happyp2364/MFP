@@ -269,7 +269,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   // Duplicate Product Handler
   const handleDuplicateProduct = (p: Product) => {
     const randomSuffix = Math.floor(Math.random() * 1000);
-    const newSku = `${p.sku || 'MFP'}-COPY-${randomSuffix}`;
+    const newSku = `${p.sku || 'NWD'}-COPY-${randomSuffix}`;
     const newSlug = `${p.slug || 'product'}-copy-${randomSuffix}`;
     const duplicatedProduct: Product = {
       ...p,
@@ -1444,7 +1444,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 space-y-2">
                       <div className="font-bold">2FA Status: ACTIVE</div>
                       <p className="text-[11px]">
-                        Authenticator Secret Key: <code className="bg-white px-2 py-0.5 rounded border border-emerald-300 font-mono font-bold">MFP-ADMIN-SEC-2026-X9</code>
+                        Authenticator Secret Key: <code className="bg-white px-2 py-0.5 rounded border border-emerald-300 font-mono font-bold">NWD-ADMIN-SEC-2026-X9</code>
                       </p>
                       <p className="text-[10px] text-emerald-700">Backup codes have been recorded in audit history.</p>
                     </div>

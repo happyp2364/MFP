@@ -21,7 +21,7 @@ export const SpinWheelPopup: React.FC<SpinWheelPopupProps> = ({ currentPath }) =
   useEffect(() => {
     if (!spinWheelConfig?.enabled) return;
 
-    const lastSpun = localStorage.getItem('mfp_wheel_last_spun');
+    const lastSpun = localStorage.getItem('nwd_wheel_last_spun');
     if (lastSpun) {
       const daysSince = (Date.now() - parseInt(lastSpun)) / (1000 * 60 * 60 * 24);
       if (daysSince < (spinWheelConfig.canSpinAgainDays || 7)) return;
@@ -65,9 +65,9 @@ export const SpinWheelPopup: React.FC<SpinWheelPopupProps> = ({ currentPath }) =
       setResult(winner);
       setIsSpinning(false);
       setHasSpun(true);
-      localStorage.setItem('mfp_wheel_last_spun', Date.now().toString());
+      localStorage.setItem('nwd_wheel_last_spun', Date.now().toString());
       if (winner.couponCode) {
-        localStorage.setItem('mfp_active_coupon', winner.couponCode);
+        localStorage.setItem('nwd_active_coupon', winner.couponCode);
         recordEngagementMetric('couponsWon');
       }
       if (spinWheelConfig.celebrationEnabled) {

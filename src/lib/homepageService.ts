@@ -81,7 +81,7 @@ export async function fetchHomepageConfigFromFirestore(): Promise<HomepageConfig
   }
 
   // Fallback to local storage or DEFAULT_HOMEPAGE_CONFIG
-  const local = localStorage.getItem('mfp_homepage_config');
+  const local = localStorage.getItem('nwd_homepage_config');
   if (local) {
     try {
       const parsed = JSON.parse(local);
@@ -120,7 +120,7 @@ export function subscribeToHomepageConfig(onUpdate: (config: HomepageConfig) => 
       if (snap.exists()) {
         const data = snap.data() as HomepageConfig;
         if (data && Array.isArray(data.sections) && data.sections.length > 0) {
-          localStorage.setItem('mfp_homepage_config', JSON.stringify(data));
+          localStorage.setItem('nwd_homepage_config', JSON.stringify(data));
           console.log('[Theme Logger] Theme Sync Success:', data.presetName || data.name);
           onUpdate(data);
         }
@@ -176,8 +176,8 @@ export async function saveHomepageConfigToFirestore(
     await setDoc(themeRef, activeThemeDoc);
 
     // Save to local storage for immediate cache
-    localStorage.setItem('mfp_homepage_config', JSON.stringify(updatedConfig));
-    localStorage.setItem('mfp_active_theme', JSON.stringify(activeThemeDoc));
+    localStorage.setItem('nwd_homepage_config', JSON.stringify(updatedConfig));
+    localStorage.setItem('nwd_active_theme', JSON.stringify(activeThemeDoc));
 
     // 3. Save version history snapshot
     const versionId = `ver_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;

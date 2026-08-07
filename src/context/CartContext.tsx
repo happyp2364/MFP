@@ -11,7 +11,7 @@ interface CartContextType {
   cartCount: number;
 }
 
-const STORAGE_KEY = 'mfp_cart_items';
+const STORAGE_KEY = 'nwd_cart_items';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 

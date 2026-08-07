@@ -155,7 +155,7 @@ googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.file');
 googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.metadata.readonly');
 
 // In-memory token store for Google Workspace API calls
-let cachedAccessToken: string | null = localStorage.getItem('mfp_google_access_token');
+let cachedAccessToken: string | null = localStorage.getItem('nwd_google_access_token');
 
 export function getCachedAccessToken(): string | null {
   return cachedAccessToken;
@@ -164,9 +164,9 @@ export function getCachedAccessToken(): string | null {
 export function setCachedAccessToken(token: string | null) {
   cachedAccessToken = token;
   if (token) {
-    localStorage.setItem('mfp_google_access_token', token);
+    localStorage.setItem('nwd_google_access_token', token);
   } else {
-    localStorage.removeItem('mfp_google_access_token');
+    localStorage.removeItem('nwd_google_access_token');
   }
 }
 
@@ -379,10 +379,10 @@ export async function recordAuditLog(
 
   // 1. Save to local storage cache for instant UI rendering
   try {
-    const cached = localStorage.getItem('mfp_audit_logs');
+    const cached = localStorage.getItem('nwd_audit_logs');
     const logs: AuditLogItem[] = cached ? JSON.parse(cached) : [];
     logs.unshift(logItem);
-    localStorage.setItem('mfp_audit_logs', JSON.stringify(logs.slice(0, 100)));
+    localStorage.setItem('nwd_audit_logs', JSON.stringify(logs.slice(0, 100)));
   } catch (e) {
     console.warn('Could not cache audit log in localStorage:', e);
   }
@@ -413,7 +413,7 @@ export async function fetchRemoteAuditLogs(): Promise<AuditLogItem[]> {
       console.warn('Audit logs fetch notice:', e);
     }
     // Fallback to local storage
-    const cached = localStorage.getItem('mfp_audit_logs');
+    const cached = localStorage.getItem('nwd_audit_logs');
     return cached ? JSON.parse(cached) : [];
   }
 }

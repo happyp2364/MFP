@@ -19,7 +19,7 @@ export function slugify(text: string): string {
 
 /**
  * Ensures every product has a valid, unique Product ID (SKU).
- * Fallback format: MFP-{CATEGORY_LETTER}-{PRODUCT_ID_SHORT}
+ * Fallback format: NWD-{CATEGORY_LETTER}-{PRODUCT_ID_SHORT}
  */
 export function getProductSKU(product: Product): string {
   if (product.sku && product.sku.trim()) {
@@ -27,7 +27,7 @@ export function getProductSKU(product: Product): string {
   }
   const categoryCode = (product.category || 'M').charAt(0).toUpperCase();
   const cleanId = (product.id || '01').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-  return `MFP-${categoryCode}-${cleanId}`;
+  return `NWD-${categoryCode}-${cleanId}`;
 }
 
 /**

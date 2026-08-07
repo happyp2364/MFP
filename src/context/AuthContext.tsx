@@ -12,7 +12,7 @@ import {
 } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential, User as FirebaseUser } from 'firebase/auth';
-import { recordAdminLoginHistory } from '../lib/adminService';
+import { recordAdminLoginHistory, fetchAdminUsers, saveAdminUser } from '../lib/adminService';
 
 interface AuthContextType {
   isAdmin: boolean;
@@ -37,7 +37,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [currentAdminUser, setCurrentAdminUser] = useState<AdminUser | null>(null);
   const [customerUser, setCustomerUser] = useState<FirebaseUser | null>(null);
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
@@ -47,8 +46,77 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const isSuperAdmin = Boolean(
     currentAdminUser?.roleId === 'super_admin' ||
-    currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com'
+    currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+    currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
   );
+
+  const isAdmin = Boolean(
+    currentAdminUser &&
+    currentAdminUser.status !== 'disabled' &&
+    (currentAdminUser.roleId === 'admin' ||
+     currentAdminUser.roleId === 'super_admin' ||
+     currentAdminUser.roleId === 'manager' ||
+     currentAdminUser.roleId === 'staff' ||
+     Boolean(currentAdminUser.roleId))
+  );
+
+  const resolveAdminUser = async (firebaseUser: FirebaseUser): Promise<AdminUser | null> => {
+    const userEmailLower = (firebaseUser.email || '').toLowerCase();
+
+    // 1. Try exact match by document ID (user.uid)
+    try {
+      const adminDocRef = doc(db, 'admin_users', firebaseUser.uid);
+      const adminSnap = await getDoc(adminDocRef);
+      if (adminSnap.exists()) {
+        const adminData = adminSnap.data() as AdminUser;
+        if (adminData.status === 'disabled') return null;
+        return {
+          ...adminData,
+          uid: firebaseUser.uid,
+          email: adminData.email || firebaseUser.email || '',
+        };
+      }
+    } catch (err) {
+      console.warn('Error reading admin_users by UID:', err);
+    }
+
+    // 2. Try email match in admin_users collection
+    try {
+      const allAdmins = await fetchAdminUsers();
+      const matched = allAdmins.find(
+        (a) => a.email?.toLowerCase() === userEmailLower && a.status !== 'disabled'
+      );
+      if (matched) {
+        const updatedAdminUser: AdminUser = {
+          ...matched,
+          uid: firebaseUser.uid,
+          email: matched.email || firebaseUser.email || '',
+        };
+        // Persist matched UID in background
+        saveAdminUser(updatedAdminUser).catch((e) => console.warn('Sync admin UID error:', e));
+        return updatedAdminUser;
+      }
+    } catch (err) {
+      console.warn('Error matching admin_users by email:', err);
+    }
+
+    // 3. Super Admin email fallback
+    if (userEmailLower === 'vpcreation2002@gmail.com' || userEmailLower === 'vishalpparihar2002@gmail.com') {
+      return {
+        uid: firebaseUser.uid,
+        id: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        name: firebaseUser.displayName || 'Super Admin',
+        roleId: 'super_admin',
+        roleName: 'Super Admin',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        createdBy: 'system',
+      };
+    }
+
+    return null;
+  };
 
   useEffect(() => {
     const unsub = onUserAuthChange(async (user) => {
@@ -65,36 +133,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           lastLogin: new Date().toISOString(),
         });
 
-        // Task 3: Lookup admin_users/{uid} on auth init
         try {
-          const adminDocRef = doc(db, 'admin_users', user.uid);
-          const adminSnap = await getDoc(adminDocRef);
-          if (adminSnap.exists()) {
-            const adminData = adminSnap.data() as AdminUser;
-            setCurrentAdminUser(adminData);
-            setIsAdmin(true);
-          } else if (user.email === 'vpcreation2002@gmail.com') {
-            const superAdminUser: AdminUser = {
-              uid: user.uid,
-              id: user.uid,
-              email: user.email,
-              name: user.displayName || 'Super Admin',
-              roleId: 'super_admin',
-              roleName: 'Super Admin',
-              status: 'active',
-              createdAt: new Date().toISOString(),
-              createdBy: 'system',
-            };
-            setCurrentAdminUser(superAdminUser);
-            setIsAdmin(true);
+          const adminUser = await resolveAdminUser(user);
+          if (adminUser) {
+            setCurrentAdminUser(adminUser);
+          } else {
+            setCurrentAdminUser(null);
           }
         } catch (err) {
-          console.warn('Failed to lookup admin user on auth change', err);
+          console.warn('Failed to resolve admin user on auth state change:', err);
+          setCurrentAdminUser(null);
         }
       } else {
         setCustomerProfile(null);
         setCurrentAdminUser(null);
-        setIsAdmin(false);
       }
     });
     return () => unsub();
@@ -104,18 +156,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const res = await signInWithEmailAndPassword(auth, email, pass);
       if (res.user) {
-        setIsAdmin(true);
-        const adminData: AdminUser = {
-          uid: res.user.uid,
-          id: res.user.uid,
-          email: res.user.email || email,
-          name: res.user.displayName || 'Admin User',
-          roleId: email === 'vpcreation2002@gmail.com' ? 'super_admin' : 'admin',
-          status: 'active',
-          createdAt: new Date().toISOString(),
-          createdBy: 'system',
-        };
-        setCurrentAdminUser(adminData);
+        let adminUser = await resolveAdminUser(res.user);
+        if (!adminUser) {
+          const emailLower = email.toLowerCase();
+          const isSuper = emailLower === 'vpcreation2002@gmail.com' || emailLower === 'vishalpparihar2002@gmail.com';
+          adminUser = {
+            uid: res.user.uid,
+            id: res.user.uid,
+            email: res.user.email || email,
+            name: res.user.displayName || (isSuper ? 'Super Admin' : 'Website Administrator'),
+            roleId: isSuper ? 'super_admin' : 'admin',
+            roleName: isSuper ? 'Super Admin' : 'Administrator',
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            createdBy: 'system',
+          };
+          await saveAdminUser(adminUser);
+        }
+        setCurrentAdminUser(adminUser);
         await recordAdminLoginHistory(res.user.uid, res.user.email || email, 'password', 'success');
         return true;
       }
@@ -130,18 +188,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const result = await signInWithGoogle();
       if (result && result.user) {
-        setIsAdmin(true);
-        const adminData: AdminUser = {
-          uid: result.user.uid,
-          id: result.user.uid,
-          email: result.user.email || '',
-          name: result.user.displayName || 'Admin User',
-          roleId: result.user.email === 'vpcreation2002@gmail.com' ? 'super_admin' : 'admin',
-          status: 'active',
-          createdAt: new Date().toISOString(),
-          createdBy: 'system',
-        };
-        setCurrentAdminUser(adminData);
+        let adminUser = await resolveAdminUser(result.user);
+        if (!adminUser) {
+          const emailLower = (result.user.email || '').toLowerCase();
+          const isSuper = emailLower === 'vpcreation2002@gmail.com' || emailLower === 'vishalpparihar2002@gmail.com';
+          adminUser = {
+            uid: result.user.uid,
+            id: result.user.uid,
+            email: result.user.email || '',
+            name: result.user.displayName || (isSuper ? 'Super Admin' : 'Website Administrator'),
+            roleId: isSuper ? 'super_admin' : 'admin',
+            roleName: isSuper ? 'Super Admin' : 'Administrator',
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            createdBy: 'system',
+          };
+          await saveAdminUser(adminUser);
+        }
+        setCurrentAdminUser(adminUser);
         await recordAdminLoginHistory(result.user.uid, result.user.email || '', 'google', 'success');
         return true;
       }
@@ -153,7 +217,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logoutAdmin = async () => {
-    setIsAdmin(false);
     setCurrentAdminUser(null);
     await logoutUser();
   };

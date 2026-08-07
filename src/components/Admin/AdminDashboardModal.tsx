@@ -154,8 +154,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   } = store;
 
   const canAccessTab = store.canAccessTab || ((tab: string) => {
-    if (tab === 'admin_management' || tab === 'super_admin_console') {
-      return Boolean(store.isSuperAdmin || currentAdminUser?.roleId === 'super_admin' || currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com');
+    if (tab === 'super_admin_console') {
+      return Boolean(store.isSuperAdmin || currentAdminUser?.roleId === 'super_admin' || currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com');
+    }
+    if (tab === 'admin_management') {
+      return Boolean(
+        store.isSuperAdmin ||
+        currentAdminUser?.roleId === 'super_admin' ||
+        currentAdminUser?.roleId === 'admin' ||
+        currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+        currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+      );
     }
     return true;
   });

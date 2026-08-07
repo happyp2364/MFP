@@ -63,6 +63,7 @@ import { SuperAdminSecurityVerificationModal } from './SuperAdminSecurityVerific
 import { CreateAdminModal } from './CreateAdminModal';
 import { ProvisionWebsiteModal } from './ProvisionWebsiteModal';
 import { WebsiteDirectoryManager } from './WebsiteDirectoryManager';
+import { TenantSecurityVerificationView } from './TenantSecurityVerificationView';
 
 interface SuperAdminConsoleViewProps {
   currentUser: AdminUser | null;
@@ -75,12 +76,28 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   auditLogs = [],
   onRefreshAuditLogs,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'tenants' | 'security' | 'audit_log'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'tenants' | 'security' | 'audit_log' | 'verification'>('overview');
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const isSuperAdmin = currentUser?.roleId === 'super_admin' || currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="p-12 text-center bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
+        <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-center mx-auto text-rose-400">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-black text-white">Access Denied: Super Admin Restricted</h2>
+        <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed">
+          The Platform Control Center is restricted exclusively to Super Administrator profiles. Website Administrators cannot view or modify platform-wide settings, tenant directories, or emergency controls.
+        </p>
+      </div>
+    );
+  }
 
   // Emergency Lock state
   const [isEmergencyLocked, setIsEmergencyLocked] = useState(false);
@@ -539,7 +556,28 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
           <History className="w-4 h-4" />
           <span>Platform Audit Trail ({auditLogs.length})</span>
         </button>
+
+        <button
+          onClick={() => setActiveTab('verification')}
+          className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+            activeTab === 'verification'
+              ? 'border-emerald-500 text-emerald-400 font-extrabold'
+              : 'border-transparent text-neutral-400 hover:text-white'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <span>Tenant Isolation & Security Suite</span>
+        </button>
       </div>
+
+      {/* ========================================== */}
+      {/* SECTION 0: SECURITY VERIFICATION SUITE     */}
+      {/* ========================================== */}
+      {activeTab === 'verification' && (
+        <div className="animate-in fade-in duration-300">
+          <TenantSecurityVerificationView />
+        </div>
+      )}
 
       {/* ========================================== */}
       {/* SECTION 1: PLATFORM OVERVIEW & STATS       */}

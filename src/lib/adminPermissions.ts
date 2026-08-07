@@ -92,11 +92,12 @@ export const BUILTIN_ROLES: AdminRole[] = [
   {
     id: 'admin',
     name: 'Administrator',
-    description: 'Full operational access to store catalog, orders, settings, and reports. Restricted from deleting Super Admins.',
+    description: 'Full operational access to store catalog, orders, settings, and reports. Restricted from deleting Super Admins and accessing Super Admin modules.',
     isSystemPreset: true,
     permissions: (() => {
       const p = createFullPermissionMatrix();
-      p.admin_management = { read: true, create: true, edit: true, delete: false, export: true };
+      p.super_admin_console = { ...NO_PERMISSIONS };
+      p.admin_management = { ...NO_PERMISSIONS };
       return p;
     })(),
   },

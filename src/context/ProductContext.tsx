@@ -3,6 +3,7 @@ import { Product, Review } from '../types';
 import { PRODUCTS_DATA, REVIEWS_DATA } from '../data/mockData';
 import { db } from '../lib/firebase';
 import { collection, limit, onSnapshot, query, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { scopeDoc, getCurrentTenantId, filterDocsByTenant } from '../lib/tenantIsolation';
 
 interface ProductContextType {
   products: Product[];
@@ -50,7 +51,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
         snapshot.forEach((docSnap) => {
           loaded.push({ id: docSnap.id, ...docSnap.data() } as Product);
         });
-        setProducts(loaded);
+        setProducts(filterDocsByTenant(loaded, getCurrentTenantId()));
       }
     }, () => {});
 
@@ -60,7 +61,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
         snapshot.forEach((docSnap) => {
           loaded.push({ id: docSnap.id, ...docSnap.data() } as Review);
         });
-        setReviews(loaded);
+        setReviews(filterDocsByTenant(loaded, getCurrentTenantId()));
       }
     }, () => {});
 
@@ -71,12 +72,13 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, []);
 
   const addProduct = async (p: Omit<Product, 'id'>) => {
-    const newProduct: Product = { ...p, id: `prod_${Date.now()}` };
+    const scopedPayload = scopeDoc({ ...p, id: `prod_${Date.now()}` });
+    const newProduct: Product = scopedPayload;
     const updated = [newProduct, ...products];
     setProducts(updated);
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
     try {
-      await setDoc(doc(db, 'products', newProduct.id), newProduct);
+      await setDoc(doc(db, 'products', newProduct.id), scopedPayload);
     } catch (e) {
       console.warn('Firestore add product failed', e);
     }
@@ -112,17 +114,18 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const addReview = async (r: Omit<Review, 'id' | 'date'>) => {
-    const newReview: Review = {
+    const scopedPayload = scopeDoc({
       ...r,
       id: `rev_${Date.now()}`,
       date: new Date().toISOString(),
       helpfulCount: 0,
-    };
+    });
+    const newReview: Review = scopedPayload;
     const updated = [newReview, ...reviews];
     setReviews(updated);
     localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
     try {
-      await setDoc(doc(db, 'reviews', newReview.id), newReview);
+      await setDoc(doc(db, 'reviews', newReview.id), scopedPayload);
     } catch (e) {
       console.warn('Firestore add review failed', e);
     }

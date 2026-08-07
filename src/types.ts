@@ -66,6 +66,8 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   variants?: ProductVariant[];
+  websiteId?: string;
+  tenantId?: string;
 }
 
 export interface Review {
@@ -86,6 +88,8 @@ export interface Review {
   reply?: string;
   helpfulCount?: number;
   productImage?: string;
+  websiteId?: string;
+  tenantId?: string;
 }
 
 export interface FilterState {
@@ -231,6 +235,8 @@ export interface SocialLinkItem {
 }
 
 export interface WebsiteConfig {
+  websiteId?: string;
+  tenantId?: string;
   // Section 1: Business Identity
   businessIdentity: {
     businessName: string;
@@ -534,6 +540,9 @@ export interface Tenant {
   id: string;
   name: string;
   domain: string;
+  customDomain?: string;
+  websiteUrl?: string;
+  adminLoginUrl?: string;
   ownerId: string;
   ownerEmail: string;
   status: 'active' | 'suspended' | 'provisioning' | 'draft' | 'maintenance' | 'archived';
@@ -583,6 +592,8 @@ export interface AdminUser {
   phoneNumber?: string;
   username?: string;
   isLoggedIn?: boolean;
+  websiteId?: string;
+  tenantId?: string;
 }
 
 // Enterprise Security Types
@@ -595,6 +606,8 @@ export interface AuditLogItem {
   userEmail: string;
   status: 'SUCCESS' | 'WARNING' | 'DANGER';
   ipAddress?: string;
+  websiteId?: string;
+  tenantId?: string;
 }
 
 export interface SavedAddress {
@@ -702,6 +715,8 @@ export interface ShippingAddressInfo {
 export interface CustomerOrder {
   id: string; // e.g. #MFP1025
   orderNumber: number;
+  websiteId?: string;
+  tenantId?: string;
   userId?: string;
   customerName: string;
   customerPhone: string;

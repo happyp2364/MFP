@@ -190,7 +190,7 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
         auth.currentAdminUser.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
         auth.currentAdminUser.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
       );
-      if (tab === 'super_admin_console') {
+      if (tab === 'super_admin_console' || tab === 'admin_management') {
         return isSuper;
       }
       if (isSuper) {

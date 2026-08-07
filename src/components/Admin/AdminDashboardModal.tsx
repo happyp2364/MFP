@@ -92,6 +92,7 @@ import { AIMarketingGrowthView } from './AIMarketingGrowthView';
 import { CustomerIntelligenceCRMView } from './CustomerIntelligenceCRMView';
 import { SoundSettingsView } from './SoundSettingsView';
 import { WebsiteConfigurationView } from './WebsiteConfigurationView';
+import { WebsiteManagementView } from './WebsiteManagementView';
 import { SuperAdminConsoleView } from './SuperAdminConsoleView';
 import { MapPin, Users, Volume2, Crown } from 'lucide-react';
 import { validateFileUpload } from '../../lib/security';
@@ -103,7 +104,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'super_admin_console';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'website_management' | 'super_admin_console';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -153,21 +154,22 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     restoreStoreBackup,
   } = store;
 
-  const canAccessTab = store.canAccessTab || ((tab: string) => {
-    if (tab === 'super_admin_console') {
-      return Boolean(store.isSuperAdmin || currentAdminUser?.roleId === 'super_admin' || currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com');
+  const isSuperAdminUser = Boolean(
+    store.isSuperAdmin ||
+    currentAdminUser?.roleId === 'super_admin' ||
+    currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+    currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+  );
+
+  const canAccessTab = (tab: string) => {
+    if (tab === 'super_admin_console' || tab === 'admin_management') {
+      return isSuperAdminUser;
     }
-    if (tab === 'admin_management') {
-      return Boolean(
-        store.isSuperAdmin ||
-        currentAdminUser?.roleId === 'super_admin' ||
-        currentAdminUser?.roleId === 'admin' ||
-        currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
-        currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
-      );
+    if (store.canAccessTab) {
+      return store.canAccessTab(tab);
     }
     return true;
-  });
+  };
 
   const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'orders');
 
@@ -494,15 +496,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             )}
 
             <button
-              onClick={() => setActiveTab('website_configuration')}
+              onClick={() => setActiveTab('website_management')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left border ${
-                activeTab === 'website_configuration'
+                activeTab === 'website_management' || activeTab === 'website_configuration'
                   ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-md shadow-amber-500/20'
                   : 'bg-amber-500/10 text-amber-900 border-amber-500/30 hover:bg-amber-500/20'
               }`}
             >
               <Globe className="w-4 h-4 text-amber-600 stroke-[2.5]" />
-              <span>🏢 WEBSITE CONFIGURATION</span>
+              <span>🏢 WEBSITE MANAGEMENT</span>
             </button>
             
             <button
@@ -980,10 +982,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* ----------------- TAB: SEO & LOCAL BUSINESS ----------------- */}
             {activeTab === 'seo_local_business' && <SEOAuthorityCenterView />}
 
-            {/* ----------------- TAB: WEBSITE CONFIGURATION ----------------- */}
-            {activeTab === 'website_configuration' && (
+            {/* ----------------- TAB: WEBSITE MANAGEMENT ----------------- */}
+            {(activeTab === 'website_management' || activeTab === 'website_configuration') && (
               <AdminErrorBoundary>
-                <WebsiteConfigurationView />
+                <WebsiteManagementView />
               </AdminErrorBoundary>
             )}
 

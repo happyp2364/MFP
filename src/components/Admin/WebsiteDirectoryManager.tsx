@@ -30,14 +30,21 @@ import {
   ChevronRight,
   Mail,
   Edit3,
-  Activity
+  Activity,
+  Copy,
+  Share2,
+  Link2,
+  UserPlus,
+  Power
 } from 'lucide-react';
 import { Tenant, AdminUser } from '../../types';
+import { getWebsiteUrl, getAdminLoginUrl } from '../../lib/tenantIsolation';
 
 interface WebsiteDirectoryManagerProps {
   tenants: Tenant[];
   currentUser: AdminUser | null;
   onUpdateTenant: (tenant: Tenant) => Promise<void>;
+  onDeleteTenant?: (tenantId: string) => Promise<void>;
   showToast: (type: 'success' | 'error' | 'info' | 'warning', message: string) => void;
   triggerSuperAdminVerification: (title: string, desc: string, details: string, callback: () => void) => void;
 }
@@ -46,6 +53,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
   tenants,
   currentUser,
   onUpdateTenant,
+  onDeleteTenant,
   showToast,
   triggerSuperAdminVerification,
 }) => {
@@ -58,13 +66,27 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Google Admin Assignment Modal
+  // Google Admin / Owner Assignment Modal
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [assigningTenant, setAssigningTenant] = useState<Tenant | null>(null);
   const [googleEmailInput, setGoogleEmailInput] = useState('');
+  const [ownerNameInput, setOwnerNameInput] = useState('');
+  const [ownerEmailInput, setOwnerEmailInput] = useState('');
+
+  // Generate / Edit Website URL Modal
+  const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
+  const [urlTenant, setUrlTenant] = useState<Tenant | null>(null);
+  const [customDomainInput, setCustomDomainInput] = useState('');
+
+  // Share Modal
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [sharingTenant, setSharingTenant] = useState<Tenant | null>(null);
 
   // Security Check: Normal Admin cannot view Website Directory
-  const isSuperAdmin = currentUser?.roleId === 'super_admin' || currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com';
+  const isSuperAdmin =
+    currentUser?.roleId === 'super_admin' ||
+    currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+    currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
 
   if (!isSuperAdmin) {
     return (
@@ -74,7 +96,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
         </div>
         <h2 className="text-lg font-black text-white">Access Denied: Super Admin Restricted</h2>
         <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed">
-          The Website Directory & Google Admin Assignment console is restricted exclusively to Super Administrator profiles. Normal store administrators cannot view website directories or assign root Google emails.
+          The Website Directory & Ownership Management console is restricted exclusively to Super Administrator profiles. Normal store administrators cannot view website directories, manage ownership, or inspect external URLs.
         </p>
       </div>
     );
@@ -88,6 +110,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
         tenant.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         tenant.domain.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (tenant.ownerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (tenant.ownerEmail || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (tenant.adminGoogleEmail || '').toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchStatus = statusFilter === 'all' || tenant.status === statusFilter;
@@ -102,39 +125,137 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
     return filteredTenants.slice(start, start + itemsPerPage);
   }, [filteredTenants, currentPage]);
 
-  // Handle Google Admin Assignment submission
-  const handleSaveGoogleEmail = async () => {
-    if (!assigningTenant) return;
-    if (googleEmailInput && !googleemailValid(googleEmailInput)) {
-      showToast('error', 'Please enter a valid Google email address.');
-      return;
+  // Helper to copy text with feedback
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    showToast('success', `${label} copied to clipboard!`);
+  };
+
+  // Share functionality
+  const handleShareWebsite = async (tenant: Tenant) => {
+    const webUrl = getWebsiteUrl(tenant);
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: tenant.name,
+          text: `Check out ${tenant.name} on Marudhar Fashion Point Platform`,
+          url: webUrl,
+        });
+        showToast('success', 'Shared successfully!');
+      } catch (err) {
+        // Fallback to share modal
+        setSharingTenant(tenant);
+        setIsShareModalOpen(true);
+      }
+    } else {
+      setSharingTenant(tenant);
+      setIsShareModalOpen(true);
     }
+  };
+
+  // Handle Owner & Google Admin Change Submission
+  const handleSaveOwnership = async () => {
+    if (!assigningTenant) return;
 
     const updatedTenant: Tenant = {
       ...assigningTenant,
+      ownerName: ownerNameInput.trim() || assigningTenant.ownerName,
+      ownerEmail: ownerEmailInput.trim() || assigningTenant.ownerEmail,
       adminGoogleEmail: googleEmailInput.trim() || undefined,
       adminLoginStatus: googleEmailInput.trim() ? 'pending_activation' : undefined,
     };
 
     triggerSuperAdminVerification(
-      'Assign Google Admin Email',
-      `Assigning Google Workspace email to website "${assigningTenant.name}"`,
-      `Email: ${googleEmailInput || 'None (Removed)'}`,
+      'Update Website Ownership',
+      `Updating owner & admin details for "${assigningTenant.name}"`,
+      `Owner: ${ownerNameInput} (${ownerEmailInput}) | Admin: ${googleEmailInput}`,
       async () => {
         try {
           await onUpdateTenant(updatedTenant);
-          showToast('success', `Google admin email successfully updated for ${assigningTenant.name}`);
+          showToast('success', `Ownership successfully updated for ${assigningTenant.name}`);
           setIsAssignModalOpen(false);
           setAssigningTenant(null);
         } catch (err) {
-          showToast('error', 'Failed to update Google admin assignment');
+          showToast('error', 'Failed to update website ownership');
         }
       }
     );
   };
 
-  const googleemailValid = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  // Handle URL & Custom Domain Update
+  const handleSaveDomain = async () => {
+    if (!urlTenant) return;
+
+    const cleanDomain = customDomainInput.trim().replace(/^https?:\/\//, '');
+    const updatedTenant: Tenant = {
+      ...urlTenant,
+      customDomain: cleanDomain || undefined,
+      websiteUrl: cleanDomain ? `https://${cleanDomain}` : undefined,
+      adminLoginUrl: cleanDomain ? `https://${cleanDomain}/admin` : undefined,
+    };
+
+    triggerSuperAdminVerification(
+      'Generate / Update Website Domain URL',
+      `Configuring dynamic domain URL for "${urlTenant.name}"`,
+      `Custom Domain: ${cleanDomain || 'Default Dynamic URL'}`,
+      async () => {
+        try {
+          await onUpdateTenant(updatedTenant);
+          showToast('success', `Website URL configuration updated for ${urlTenant.name}`);
+          setIsUrlModalOpen(false);
+          setUrlTenant(null);
+        } catch (err) {
+          showToast('error', 'Failed to update website URL');
+        }
+      }
+    );
+  };
+
+  // Handle Website Status Actions
+  const handleStatusChange = (tenant: Tenant, newStatus: Tenant['status']) => {
+    const actionLabel =
+      newStatus === 'suspended'
+        ? 'Suspend'
+        : newStatus === 'archived'
+        ? 'Archive'
+        : newStatus === 'active'
+        ? 'Activate'
+        : 'Update Status';
+
+    triggerSuperAdminVerification(
+      `${actionLabel} Website`,
+      `Are you sure you want to change status to "${newStatus}" for website "${tenant.name}"?`,
+      `Website ID: ${tenant.id} | Target Status: ${newStatus}`,
+      async () => {
+        try {
+          await onUpdateTenant({ ...tenant, status: newStatus });
+          showToast('success', `Website status updated to ${newStatus}`);
+        } catch (err) {
+          showToast('error', 'Failed to update website status');
+        }
+      }
+    );
+  };
+
+  // Handle Permanent Delete
+  const handleDeleteWebsite = (tenant: Tenant) => {
+    triggerSuperAdminVerification(
+      'DELETE WEBSITE PERMANENTLY',
+      `CRITICAL ACTION: Permanently delete website "${tenant.name}" (${tenant.id})`,
+      'This will revoke all domain configurations and remove tenant access.',
+      async () => {
+        try {
+          if (onDeleteTenant) {
+            await onDeleteTenant(tenant.id);
+          } else {
+            await onUpdateTenant({ ...tenant, status: 'archived' });
+          }
+          showToast('success', `Website ${tenant.name} archived / deleted successfully`);
+        } catch (err) {
+          showToast('error', 'Failed to delete website');
+        }
+      }
+    );
   };
 
   return (
@@ -145,10 +266,10 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
         <div>
           <h2 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
             <Globe className="w-5 h-5 text-amber-400" />
-            <span>Website Directory & Google Admin Assignment</span>
+            <span>Website Directory & Ownership Console</span>
           </h2>
           <p className="text-xs text-neutral-400 mt-1">
-            Enterprise multi-tenant website governance, status controls, and Google Workspace admin binding.
+            Enterprise multi-tenant website governance, dynamic URL management, and owner bindings.
           </p>
         </div>
 
@@ -158,7 +279,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
             <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search business, ID, email, owner..."
+              placeholder="Search ID, name, domain, owner..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -196,199 +317,201 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
           <table className="w-full text-left text-xs">
             <thead className="bg-neutral-900/80 border-b border-neutral-800 text-neutral-400 font-bold uppercase tracking-wider text-[10px]">
               <tr>
-                <th className="p-4">Website Logo</th>
-                <th className="p-4">Business Name</th>
-                <th className="p-4">Website ID</th>
-                <th className="p-4">Category</th>
-                <th className="p-4">Owner Name</th>
-                <th className="p-4">Admin Google Email</th>
+                <th className="p-4">Logo</th>
+                <th className="p-4">Website Name & ID</th>
+                <th className="p-4">Owner Name & Email</th>
+                <th className="p-4">Website URL (Dynamic)</th>
+                <th className="p-4">Admin Login URL</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Created Date</th>
-                <th className="p-4">Last Login</th>
-                <th className="p-4">Version</th>
-                <th className="p-4">Health</th>
-                <th className="p-4 text-right">Quick Actions</th>
+                <th className="p-4 text-right">Super Admin Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800/60">
               {paginatedTenants.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="p-12 text-center text-neutral-500 font-bold">
+                  <td colSpan={8} className="p-12 text-center text-neutral-500 font-bold">
                     No websites match your search or filter criteria.
                   </td>
                 </tr>
               ) : (
-                paginatedTenants.map((tenant) => (
-                  <tr key={tenant.id} className="hover:bg-neutral-900/40 transition-colors">
-                    {/* Website Logo */}
-                    <td className="p-4">
-                      <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center overflow-hidden shrink-0">
-                        {tenant.logoUrl ? (
-                          <img src={tenant.logoUrl} alt={tenant.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <Globe className="w-5 h-5 text-amber-400" />
-                        )}
-                      </div>
-                    </td>
+                paginatedTenants.map((tenant) => {
+                  const webUrl = getWebsiteUrl(tenant);
+                  const adminUrl = getAdminLoginUrl(tenant);
 
-                    {/* Business Name */}
-                    <td className="p-4">
-                      <span className="font-bold text-white block max-w-[180px] truncate" title={tenant.name}>
-                        {tenant.name}
-                      </span>
-                      <span className="text-[10px] text-neutral-400 font-mono block truncate" title={tenant.domain}>
-                        {tenant.domain}
-                      </span>
-                    </td>
-
-                    {/* Website ID */}
-                    <td className="p-4 font-mono text-[11px] text-neutral-300">
-                      {tenant.id}
-                    </td>
-
-                    {/* Business Category */}
-                    <td className="p-4">
-                      <span className="px-2 py-0.5 bg-neutral-900 border border-neutral-800 rounded text-neutral-300 text-[10px] font-semibold">
-                        {tenant.businessCategory || 'E-Commerce / Retail'}
-                      </span>
-                    </td>
-
-                    {/* Owner Name */}
-                    <td className="p-4 font-bold text-neutral-200">
-                      {tenant.ownerName || 'Primary Admin'}
-                    </td>
-
-                    {/* Admin Google Email */}
-                    <td className="p-4">
-                      {tenant.adminGoogleEmail ? (
-                        <div className="space-y-0.5">
-                          <span className="font-mono text-[11px] text-amber-300 block truncate max-w-[170px]" title={tenant.adminGoogleEmail}>
-                            {tenant.adminGoogleEmail}
-                          </span>
-                          <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
-                            tenant.adminLoginStatus === 'active'
-                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-amber-950 text-amber-400 border border-amber-500/30'
-                          }`}>
-                            {tenant.adminLoginStatus === 'active' ? 'Active' : 'Pending Activation'}
-                          </span>
+                  return (
+                    <tr key={tenant.id} className="hover:bg-neutral-900/40 transition-colors">
+                      {/* Logo */}
+                      <td className="p-4">
+                        <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center overflow-hidden shrink-0">
+                          {tenant.logoUrl ? (
+                            <img src={tenant.logoUrl} alt={tenant.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Globe className="w-5 h-5 text-amber-400" />
+                          )}
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setAssigningTenant(tenant);
-                            setGoogleEmailInput('');
-                            setIsAssignModalOpen(true);
-                          }}
-                          className="px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-[10px] font-bold flex items-center gap-1"
-                        >
-                          <Mail className="w-3 h-3" /> Assign Email
-                        </button>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* Status */}
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase inline-flex items-center gap-1 border ${
-                        tenant.status === 'active'
-                          ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30'
-                          : tenant.status === 'draft'
-                          ? 'bg-neutral-900 text-neutral-400 border-neutral-800'
-                          : tenant.status === 'maintenance'
-                          ? 'bg-amber-950 text-amber-400 border-amber-500/30'
-                          : tenant.status === 'suspended'
-                          ? 'bg-rose-950 text-rose-400 border-rose-500/30'
-                          : 'bg-purple-950 text-purple-400 border-purple-500/30'
-                      }`}>
-                        {tenant.status}
-                      </span>
-                    </td>
+                      {/* Business Name & ID */}
+                      <td className="p-4">
+                        <span className="font-bold text-white block max-w-[180px] truncate" title={tenant.name}>
+                          {tenant.name}
+                        </span>
+                        <span className="text-[10px] text-amber-400 font-mono block truncate">
+                          ID: {tenant.id}
+                        </span>
+                      </td>
 
-                    {/* Created Date */}
-                    <td className="p-4 text-neutral-400 font-mono text-[11px]">
-                      {new Date(tenant.createdAt || Date.now()).toLocaleDateString()}
-                    </td>
+                      {/* Owner Name & Email */}
+                      <td className="p-4">
+                        <span className="font-bold text-neutral-200 block">
+                          {tenant.ownerName || 'Primary Admin'}
+                        </span>
+                        <span className="text-[10px] text-neutral-400 font-mono block truncate max-w-[160px]" title={tenant.ownerEmail}>
+                          {tenant.ownerEmail || tenant.adminGoogleEmail || 'No email assigned'}
+                        </span>
+                      </td>
 
-                    {/* Last Login */}
-                    <td className="p-4 text-neutral-400 font-mono text-[11px]">
-                      {tenant.lastLogin ? new Date(tenant.lastLogin).toLocaleDateString() : 'Never'}
-                    </td>
+                      {/* Website URL */}
+                      <td className="p-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-[11px] text-sky-400 truncate max-w-[180px]" title={webUrl}>
+                            {webUrl}
+                          </span>
+                          <button
+                            onClick={() => copyToClipboard(webUrl, 'Website URL')}
+                            title="Copy Website URL"
+                            className="p-1 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded border border-neutral-800 transition"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
 
-                    {/* Version */}
-                    <td className="p-4 font-mono text-neutral-300 text-[11px]">
-                      {tenant.version || 'v2.4.0'}
-                    </td>
+                      {/* Admin Login URL */}
+                      <td className="p-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-[11px] text-emerald-400 truncate max-w-[180px]" title={adminUrl}>
+                            {adminUrl}
+                          </span>
+                          <button
+                            onClick={() => copyToClipboard(adminUrl, 'Admin Login URL')}
+                            title="Copy Admin Login URL"
+                            className="p-1 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded border border-neutral-800 transition"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
 
-                    {/* Health Status */}
-                    <td className="p-4">
-                      <span className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px]">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        {tenant.healthStatus || 'Operational'}
-                      </span>
-                    </td>
+                      {/* Status */}
+                      <td className="p-4">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase inline-flex items-center gap-1 border ${
+                          tenant.status === 'active'
+                            ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30'
+                            : tenant.status === 'draft'
+                            ? 'bg-neutral-900 text-neutral-400 border-neutral-800'
+                            : tenant.status === 'maintenance'
+                            ? 'bg-amber-950 text-amber-400 border-amber-500/30'
+                            : tenant.status === 'suspended'
+                            ? 'bg-rose-950 text-rose-400 border-rose-500/30'
+                            : 'bg-purple-950 text-purple-400 border-purple-500/30'
+                        }`}>
+                          {tenant.status}
+                        </span>
+                      </td>
 
-                    {/* Quick Actions */}
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => window.open(`https://${tenant.domain}`, '_blank')}
-                          title="Open Website"
-                          className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 rounded-lg transition-all"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedTenant(tenant);
-                            setIsDrawerOpen(true);
-                          }}
-                          title="View Details"
-                          className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-blue-400 border border-neutral-800 rounded-lg transition-all"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setAssigningTenant(tenant);
-                            setGoogleEmailInput(tenant.adminGoogleEmail || '');
-                            setIsAssignModalOpen(true);
-                          }}
-                          title="Assign Admin Google Email"
-                          className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-amber-400 border border-neutral-800 rounded-lg transition-all"
-                        >
-                          <Mail className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            const nextStatus = tenant.status === 'active' ? 'suspended' : 'active';
-                            triggerSuperAdminVerification(
-                              `${nextStatus === 'suspended' ? 'Suspend' : 'Restore'} Website`,
-                              `Updating status for ${tenant.name}`,
-                              `Domain: ${tenant.domain}`,
-                              async () => {
-                                await onUpdateTenant({ ...tenant, status: nextStatus });
-                                showToast('success', `Website status updated to ${nextStatus}`);
-                              }
-                            );
-                          }}
-                          title="Suspend / Restore"
-                          className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-rose-400 border border-neutral-800 rounded-lg transition-all"
-                        >
-                          {tenant.status === 'active' ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={() => {
-                            showToast('info', `Archive/Delete action simulated for ${tenant.name} (Non-destructive UI stub).`);
-                          }}
-                          title="Archive / Delete"
-                          className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-500 border border-neutral-800 rounded-lg transition-all"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      {/* Created Date */}
+                      <td className="p-4 text-neutral-400 font-mono text-[11px]">
+                        {new Date(tenant.createdAt || Date.now()).toLocaleDateString()}
+                      </td>
+
+                      {/* Quick Actions (Super Admin Only) */}
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Open Website */}
+                          <button
+                            onClick={() => window.open(webUrl, '_blank')}
+                            title="Open Website"
+                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-sky-400 border border-neutral-800 rounded-lg transition-all"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Share Website */}
+                          <button
+                            onClick={() => handleShareWebsite(tenant)}
+                            title="Share Website URL"
+                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-purple-400 border border-neutral-800 rounded-lg transition-all"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Configure URL / Domain */}
+                          <button
+                            onClick={() => {
+                              setUrlTenant(tenant);
+                              setCustomDomainInput(tenant.customDomain || '');
+                              setIsUrlModalOpen(true);
+                            }}
+                            title="Generate / Edit Custom Domain URL"
+                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-emerald-400 border border-neutral-800 rounded-lg transition-all"
+                          >
+                            <Link2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* View Details */}
+                          <button
+                            onClick={() => {
+                              setSelectedTenant(tenant);
+                              setIsDrawerOpen(true);
+                            }}
+                            title="View Full Website Details"
+                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-blue-400 border border-neutral-800 rounded-lg transition-all"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Change / Assign Owner */}
+                          <button
+                            onClick={() => {
+                              setAssigningTenant(tenant);
+                              setOwnerNameInput(tenant.ownerName || '');
+                              setOwnerEmailInput(tenant.ownerEmail || '');
+                              setGoogleEmailInput(tenant.adminGoogleEmail || '');
+                              setIsAssignModalOpen(true);
+                            }}
+                            title="Assign or Change Owner"
+                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-amber-400 border border-neutral-800 rounded-lg transition-all"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Suspend / Restore */}
+                          <button
+                            onClick={() => {
+                              const nextStatus = tenant.status === 'active' ? 'suspended' : 'active';
+                              handleStatusChange(tenant, nextStatus);
+                            }}
+                            title={tenant.status === 'active' ? 'Suspend Website' : 'Activate Website'}
+                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-rose-400 border border-neutral-800 rounded-lg transition-all"
+                          >
+                            <Power className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Archive / Delete */}
+                          <button
+                            onClick={() => handleDeleteWebsite(tenant)}
+                            title="Archive or Delete Website"
+                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-500 hover:text-rose-400 border border-neutral-800 rounded-lg transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -420,7 +543,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
       </div>
 
       {/* ========================================== */}
-      {/* SECTION 3: WEBSITE DETAILS DRAWER          */}
+      {/* SECTION 1: WEBSITE DETAILS DRAWER          */}
       {/* ========================================== */}
       {isDrawerOpen && selectedTenant && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
@@ -433,7 +556,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-white">{selectedTenant.name}</h3>
-                  <span className="text-xs text-neutral-400 font-mono">{selectedTenant.domain} (ID: {selectedTenant.id})</span>
+                  <span className="text-xs text-neutral-400 font-mono">Website ID: {selectedTenant.id}</span>
                 </div>
               </div>
               <button
@@ -448,6 +571,41 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
             </div>
 
             <div className="space-y-6 text-xs">
+
+              {/* Website URL & Dynamic Links */}
+              <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-3">
+                <h4 className="font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-sky-400" />
+                  <span>Website URL & Login Links</span>
+                </h4>
+                <div className="space-y-2">
+                  <div className="p-3 bg-neutral-950 rounded-xl flex items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] text-neutral-500 block font-bold">Public Website URL</span>
+                      <span className="font-mono text-sky-400 font-bold">{getWebsiteUrl(selectedTenant)}</span>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(getWebsiteUrl(selectedTenant), 'Website URL')}
+                      className="px-2.5 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg border border-neutral-800 transition flex items-center gap-1 font-bold text-[10px]"
+                    >
+                      <Copy className="w-3 h-3" /> Copy
+                    </button>
+                  </div>
+
+                  <div className="p-3 bg-neutral-950 rounded-xl flex items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] text-neutral-500 block font-bold">Admin Login URL</span>
+                      <span className="font-mono text-emerald-400 font-bold">{getAdminLoginUrl(selectedTenant)}</span>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(getAdminLoginUrl(selectedTenant), 'Admin Login URL')}
+                      className="px-2.5 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg border border-neutral-800 transition flex items-center gap-1 font-bold text-[10px]"
+                    >
+                      <Copy className="w-3 h-3" /> Copy
+                    </button>
+                  </div>
+                </div>
+              </div>
               
               {/* Business Information */}
               <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-3">
@@ -482,15 +640,15 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
                   <span>Owner & Admin Information</span>
                 </h4>
                 <div className="space-y-2 text-neutral-300">
-                  <div className="flex justify-between p-2 bg-neutral-950 rounded-xl">
+                  <div className="flex justify-between p-2.5 bg-neutral-950 rounded-xl">
                     <span className="text-neutral-500">Owner Name</span>
                     <span className="font-bold text-white">{selectedTenant.ownerName || 'Primary Owner'}</span>
                   </div>
-                  <div className="flex justify-between p-2 bg-neutral-950 rounded-xl">
+                  <div className="flex justify-between p-2.5 bg-neutral-950 rounded-xl">
                     <span className="text-neutral-500">Owner Email</span>
                     <span className="font-bold text-amber-300 font-mono">{selectedTenant.ownerEmail}</span>
                   </div>
-                  <div className="flex justify-between p-2 bg-neutral-950 rounded-xl">
+                  <div className="flex justify-between p-2.5 bg-neutral-950 rounded-xl">
                     <span className="text-neutral-500">Google Admin Email</span>
                     <span className="font-bold text-emerald-400 font-mono">{selectedTenant.adminGoogleEmail || 'Not Assigned'}</span>
                   </div>
@@ -523,57 +681,13 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
                 </div>
               </div>
 
-              {/* Enabled Features & Theme */}
-              <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-3">
-                <h4 className="font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-cyan-400" />
-                  <span>Configuration & Features</span>
-                </h4>
-                <div className="space-y-2 text-neutral-300">
-                  <div className="flex justify-between p-2 bg-neutral-950 rounded-xl">
-                    <span className="text-neutral-500">Current Theme</span>
-                    <span className="font-bold text-white">{selectedTenant.currentTheme || 'MBH 3D Glass Luxury'}</span>
-                  </div>
-                  <div className="flex justify-between p-2 bg-neutral-950 rounded-xl">
-                    <span className="text-neutral-500">Language</span>
-                    <span className="font-bold text-white">{selectedTenant.language || 'English (IN)'}</span>
-                  </div>
-                  <div className="flex justify-between p-2 bg-neutral-950 rounded-xl">
-                    <span className="text-neutral-500">Physical Store Count</span>
-                    <span className="font-bold text-white">{selectedTenant.physicalStoreCount || 2} Outlets</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Information */}
-              <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-3">
-                <h4 className="font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-rose-400" />
-                  <span>Contact Information</span>
-                </h4>
-                <div className="space-y-2 text-neutral-300">
-                  <div className="flex justify-between p-2 bg-neutral-950 rounded-xl">
-                    <span className="text-neutral-500">Support Phone</span>
-                    <span className="font-mono text-white">{selectedTenant.contactInfo?.phone || '+91 98765 43210'}</span>
-                  </div>
-                  <div className="flex justify-between p-2 bg-neutral-950 rounded-xl">
-                    <span className="text-neutral-500">Support Email</span>
-                    <span className="font-mono text-white">{selectedTenant.contactInfo?.email || selectedTenant.ownerEmail}</span>
-                  </div>
-                  <div className="flex justify-between p-2 bg-neutral-950 rounded-xl">
-                    <span className="text-neutral-500">Headquarters</span>
-                    <span className="text-white text-right max-w-[240px]">{selectedTenant.contactInfo?.address || 'Marudhar Complex, Jodhpur, Rajasthan'}</span>
-                  </div>
-                </div>
-              </div>
-
             </div>
           </div>
         </div>
       )}
 
       {/* ========================================== */}
-      {/* SECTION 4: GOOGLE ADMIN ASSIGNMENT MODAL   */}
+      {/* SECTION 2: ASSIGN / CHANGE OWNER MODAL     */}
       {/* ========================================== */}
       {isAssignModalOpen && assigningTenant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -581,10 +695,10 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
             <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
-                  <Mail className="w-6 h-6" />
+                  <Edit3 className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Google Admin Assignment</h3>
+                  <h3 className="text-base font-bold text-white">Website Ownership & Admin Setup</h3>
                   <span className="text-xs text-neutral-400">Website: {assigningTenant.name}</span>
                 </div>
               </div>
@@ -597,12 +711,30 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
             </div>
 
             <div className="space-y-4 text-xs">
-              <p className="text-neutral-300 leading-relaxed">
-                Super Admins can assign or change the authorized Google Workspace email for this tenant. Password authentication is disabled; admins must authenticate via Google Single Sign-On (SSO).
-              </p>
+              <div className="space-y-2">
+                <label className="text-neutral-400 font-bold uppercase tracking-wider block">Owner Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Vishal Parihar"
+                  value={ownerNameInput}
+                  onChange={(e) => setOwnerNameInput(e.target.value)}
+                  className="w-full px-4 py-3 bg-neutral-900 border border-neutral-800 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
 
               <div className="space-y-2">
-                <label className="text-neutral-400 font-bold uppercase tracking-wider block">Google Email Address</label>
+                <label className="text-neutral-400 font-bold uppercase tracking-wider block">Owner Email Address</label>
+                <input
+                  type="email"
+                  placeholder="owner@store.com"
+                  value={ownerEmailInput}
+                  onChange={(e) => setOwnerEmailInput(e.target.value)}
+                  className="w-full px-4 py-3 bg-neutral-900 border border-neutral-800 rounded-xl text-white font-mono focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-neutral-400 font-bold uppercase tracking-wider block">Google Admin Email (SSO)</label>
                 <input
                   type="email"
                   placeholder="admin.store@gmail.com"
@@ -610,13 +742,6 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
                   onChange={(e) => setGoogleEmailInput(e.target.value)}
                   className="w-full px-4 py-3 bg-neutral-900 border border-neutral-800 rounded-xl text-white font-mono focus:outline-none focus:border-amber-500"
                 />
-              </div>
-
-              <div className="p-4 bg-amber-950/20 border border-amber-900/30 rounded-2xl text-amber-400/90 space-y-1">
-                <span className="font-bold block">Security Rule Notice:</span>
-                <p className="text-[11px] text-amber-400/80">
-                  If the assigned email has never logged into this website instance, its status will be automatically set to <span className="font-bold underline">Pending Activation</span> until first Google SSO authentication.
-                </p>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-2">
@@ -627,10 +752,153 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
                   Cancel
                 </button>
                 <button
-                  onClick={handleSaveGoogleEmail}
+                  onClick={handleSaveOwnership}
                   className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-lg transition-all"
                 >
-                  Save Google Admin
+                  Save Ownership Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* SECTION 3: GENERATE / CUSTOM DOMAIN MODAL  */}
+      {/* ========================================== */}
+      {isUrlModalOpen && urlTenant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-neutral-950 border border-neutral-800 rounded-3xl p-6 space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-400">
+                  <Link2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Generate Website URL & Domain</h3>
+                  <span className="text-xs text-neutral-400">Website: {urlTenant.name}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsUrlModalOpen(false)}
+                className="p-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <p className="text-neutral-300 leading-relaxed">
+                Configure a custom domain or rely on dynamic runtime URL generation. Future-ready architecture allows attaching custom domains without database migrations.
+              </p>
+
+              <div className="space-y-2">
+                <label className="text-neutral-400 font-bold uppercase tracking-wider block">Custom Domain (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. store.marudharfashionpoint.com"
+                  value={customDomainInput}
+                  onChange={(e) => setCustomDomainInput(e.target.value)}
+                  className="w-full px-4 py-3 bg-neutral-900 border border-neutral-800 rounded-xl text-white font-mono focus:outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div className="p-4 bg-sky-950/20 border border-sky-900/30 rounded-2xl text-sky-300 space-y-1">
+                <span className="font-bold block">Generated URLs Preview:</span>
+                <p className="font-mono text-[11px] text-sky-400">
+                  Public URL: {customDomainInput ? `https://${customDomainInput.trim()}` : `${typeof window !== 'undefined' ? window.location.origin : ''}?websiteId=${urlTenant.id}`}
+                </p>
+                <p className="font-mono text-[11px] text-emerald-400">
+                  Admin Login URL: {customDomainInput ? `https://${customDomainInput.trim()}/admin` : `${typeof window !== 'undefined' ? window.location.origin : ''}?admin=true&websiteId=${urlTenant.id}`}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setIsUrlModalOpen(false)}
+                  className="px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 font-bold rounded-xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveDomain}
+                  className="px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-black rounded-xl shadow-lg transition-all"
+                >
+                  Save URL Config
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* SECTION 4: SHARE WEBSITE MODAL             */}
+      {/* ========================================== */}
+      {isShareModalOpen && sharingTenant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-neutral-950 border border-neutral-800 rounded-3xl p-6 space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-400">
+                  <Share2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Share Website</h3>
+                  <span className="text-xs text-neutral-400">{sharingTenant.name}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsShareModalOpen(false)}
+                className="p-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="space-y-2">
+                <label className="text-neutral-400 font-bold uppercase tracking-wider block">Website Public URL</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={getWebsiteUrl(sharingTenant)}
+                    className="w-full px-4 py-3 bg-neutral-900 border border-neutral-800 rounded-xl text-sky-400 font-mono text-xs focus:outline-none"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(getWebsiteUrl(sharingTenant), 'Website URL')}
+                    className="px-4 py-3 bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold rounded-xl transition shrink-0"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-neutral-400 font-bold uppercase tracking-wider block">Admin Login URL</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={getAdminLoginUrl(sharingTenant)}
+                    className="w-full px-4 py-3 bg-neutral-900 border border-neutral-800 rounded-xl text-emerald-400 font-mono text-xs focus:outline-none"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(getAdminLoginUrl(sharingTenant), 'Admin Login URL')}
+                    className="px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl transition shrink-0"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={() => setIsShareModalOpen(false)}
+                  className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-xl"
+                >
+                  Close
                 </button>
               </div>
             </div>

@@ -73,6 +73,22 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  const isSuperAdmin = currentUser?.roleId === 'super_admin' || currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="p-12 text-center bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
+        <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-center mx-auto text-rose-400">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-black text-white">Access Denied: Super Admin Restricted</h2>
+        <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed">
+          Multi Admin Management & RBAC Role console is restricted exclusively to Super Administrator profiles. Website Administrators cannot view or manage platform administrators or role templates.
+        </p>
+      </div>
+    );
+  }
+
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);

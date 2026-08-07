@@ -10,7 +10,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { User as FirebaseUser } from 'firebase/auth';
-import { db, auth, recordAuditLog, OperationType, handleFirestoreError } from './firebase';
+import { db, auth, recordAuditLog, OperationType, handleFirestoreError, createAdminNotificationInFirestore } from './firebase';
 import {
   AdminUser,
   AdminRole,
@@ -18,6 +18,7 @@ import {
   AdminPermissionMatrix,
   BuiltInAdminRoleId,
   Tenant,
+  AdminNotification,
 } from '../types';
 import {
   BUILTIN_ROLES,
@@ -174,6 +175,53 @@ export async function saveTenant(tenant: Tenant): Promise<void> {
     console.warn('Failed to save tenant:', err);
     throw err;
   }
+}
+
+// Securely transfer tenant ownership, update Firestore, create notification & audit log
+export async function transferTenantOwnership(
+  tenant: Tenant,
+  newOwner: {
+    ownerName: string;
+    ownerEmail: string;
+    adminGoogleEmail?: string;
+    ownerPhone?: string;
+    transferReason?: string;
+  }
+): Promise<Tenant> {
+  const previousOwner = tenant.ownerEmail || 'Unassigned';
+  const updatedTenant: Tenant = {
+    ...tenant,
+    ownerName: newOwner.ownerName,
+    ownerEmail: newOwner.ownerEmail,
+    adminGoogleEmail: newOwner.adminGoogleEmail || newOwner.ownerEmail,
+    adminLoginStatus: newOwner.adminGoogleEmail ? 'pending_activation' : tenant.adminLoginStatus,
+    updatedAt: new Date().toISOString(),
+  };
+
+  // 1. Update Firestore tenant record
+  await saveTenant(updatedTenant);
+
+  // 2. Create persistent Admin Notification in Firestore
+  const notifId = `notif-transfer-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+  const notification: AdminNotification = {
+    id: notifId,
+    message: `👑 Website Ownership Transferred: Primary ownership of "${tenant.name}" was transferred from ${previousOwner} to ${newOwner.ownerName} (${newOwner.ownerEmail}).${newOwner.transferReason ? ` Reason: ${newOwner.transferReason}` : ''}`,
+    timestamp: new Date().toISOString(),
+    read: false,
+    isRead: false,
+    type: 'OWNERSHIP_TRANSFER',
+  };
+  await createAdminNotificationInFirestore(notification);
+
+  // 3. Log Audit Trail
+  recordAuditLog(
+    'Website Ownership Transferred',
+    'SECURITY',
+    `Transferred ownership of website "${tenant.name}" (${tenant.id}) from ${previousOwner} to ${newOwner.ownerName} (${newOwner.ownerEmail}). Reason: ${newOwner.transferReason || 'Super Admin Manual Transfer'}`,
+    'SUCCESS'
+  );
+
+  return updatedTenant;
 }
 
 // Fetch all custom defined admin roles

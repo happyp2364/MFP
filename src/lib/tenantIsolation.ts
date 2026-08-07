@@ -1,6 +1,103 @@
 export const DEFAULT_TENANT_ID = 'mfp_store_001';
 
 /**
+ * Clean & Sanitize Website Slug: Lowercase, letters, numbers, and single hyphens only
+ */
+export function sanitizeSlug(input: string): string {
+  if (!input) return '';
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Validates website slug rules:
+ * - Lowercase letters, numbers, hyphens only
+ * - Length between 3 and 50 chars
+ * - Not a reserved system path
+ */
+export function isValidSlug(slug: string): { valid: boolean; error?: string } {
+  if (!slug) return { valid: false, error: 'Website slug is required' };
+  const clean = sanitizeSlug(slug);
+  if (clean.length < 3) return { valid: false, error: 'Slug must be at least 3 characters long' };
+  if (clean.length > 50) return { valid: false, error: 'Slug cannot exceed 50 characters' };
+  const regex = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+  if (!regex.test(clean)) {
+    return { valid: false, error: 'Slug must contain only lowercase letters, numbers, and hyphens' };
+  }
+  const reservedPaths = ['admin', 'api', 'assets', 'static', 'login', 'dashboard', 'auth', 'settings', 'store-locator', 'product'];
+  if (reservedPaths.includes(clean)) {
+    return { valid: false, error: `"${clean}" is a reserved system path name` };
+  }
+  return { valid: true };
+}
+
+/**
+ * Checks platform-wide uniqueness of a website slug
+ */
+export function isSlugAvailable(
+  slug: string,
+  existingTenants: { id: string; slug?: string }[],
+  currentTenantId?: string
+): boolean {
+  const clean = sanitizeSlug(slug);
+  if (!clean) return false;
+  const validation = isValidSlug(clean);
+  if (!validation.valid) return false;
+
+  return !existingTenants.some(
+    (t) => t.id !== currentTenantId && (t.slug === clean || t.id === clean)
+  );
+}
+
+/**
+ * Dynamically resolves current websiteId from URL path or search query param
+ * E.g. https://nwdstore.in/abc-shoes -> resolves to tenant with slug "abc-shoes"
+ */
+export function resolveCurrentWebsiteFromUrl(tenants?: { id: string; slug?: string }[]): string {
+  if (typeof window === 'undefined') return getCurrentTenantId();
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const queryWebsiteId = params.get('websiteId') || params.get('slug') || params.get('tenantId');
+    const pathSegments = window.location.pathname.split('/').filter(Boolean);
+    const rawPathSlug = pathSegments.length > 0 ? pathSegments[0].toLowerCase() : null;
+    const reserved = ['admin', 'api', 'assets', 'static', 'login', 'dashboard', 'auth', 'settings', 'store-locator', 'product'];
+    const pathSlug = rawPathSlug && !reserved.includes(rawPathSlug) ? rawPathSlug : null;
+
+    const targetIdentifier = queryWebsiteId || pathSlug;
+
+    if (targetIdentifier && tenants && tenants.length > 0) {
+      const matched = tenants.find(
+        (t) => t.slug === targetIdentifier || t.id === targetIdentifier
+      );
+      if (matched) {
+        localStorage.setItem(
+          'mfp_website_config_live',
+          JSON.stringify({ websiteId: matched.id, slug: matched.slug })
+        );
+        return matched.id;
+      }
+    }
+
+    if (targetIdentifier) {
+      localStorage.setItem(
+        'mfp_website_config_live',
+        JSON.stringify({ websiteId: targetIdentifier, slug: targetIdentifier })
+      );
+      return targetIdentifier;
+    }
+  } catch {
+    // Fallback on error
+  }
+
+  return getCurrentTenantId();
+}
+
+/**
  * Returns the currently active websiteId (tenantId) from localStorage or default
  */
 export function getCurrentTenantId(): string {
@@ -15,6 +112,22 @@ export function getCurrentTenantId(): string {
     // Fallback to default tenant
   }
   return DEFAULT_TENANT_ID;
+}
+
+/**
+ * Returns the currently active website slug from localStorage if available
+ */
+export function getCurrentTenantSlug(): string | null {
+  try {
+    const saved = localStorage.getItem('mfp_website_config_live');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed?.slug) return parsed.slug;
+    }
+  } catch {
+    // Fallback
+  }
+  return null;
 }
 
 /**
@@ -88,20 +201,27 @@ export function validateTenantAccess(
 
 /**
  * Dynamically constructs the Website Public URL based on tenant config & current runtime host
+ * Generates: https://<main-domain>/<website-slug> e.g. https://nwdstore.in/abc-shoes
  */
-export function getWebsiteUrl(tenant: { id: string; domain?: string; customDomain?: string; websiteUrl?: string }): string {
+export function getWebsiteUrl(tenant: { id: string; slug?: string; domain?: string; customDomain?: string; websiteUrl?: string }): string {
   if (tenant.websiteUrl) return tenant.websiteUrl;
   if (tenant.customDomain) return `https://${tenant.customDomain}`;
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://marudharfashionpoint.com';
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nwdstore.in';
+  if (tenant.slug) {
+    return `${origin}/${tenant.slug}`;
+  }
   return `${origin}?websiteId=${tenant.id}`;
 }
 
 /**
  * Dynamically constructs the Website Admin Login URL based on tenant config & current runtime host
  */
-export function getAdminLoginUrl(tenant: { id: string; domain?: string; customDomain?: string; adminLoginUrl?: string }): string {
+export function getAdminLoginUrl(tenant: { id: string; slug?: string; domain?: string; customDomain?: string; adminLoginUrl?: string }): string {
   if (tenant.adminLoginUrl) return tenant.adminLoginUrl;
   if (tenant.customDomain) return `https://${tenant.customDomain}/admin`;
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://marudharfashionpoint.com';
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nwdstore.in';
+  if (tenant.slug) {
+    return `${origin}/${tenant.slug}?admin=true`;
+  }
   return `${origin}?admin=true&websiteId=${tenant.id}`;
 }

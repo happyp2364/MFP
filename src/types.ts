@@ -538,6 +538,7 @@ export interface TrendingCollectionItem {
 
 export interface Tenant {
   id: string;
+  slug?: string; // Platform-wide unique website slug e.g. "abc-shoes", "raj-footwear"
   name: string;
   domain: string;
   customDomain?: string;
@@ -548,6 +549,7 @@ export interface Tenant {
   status: 'active' | 'suspended' | 'provisioning' | 'draft' | 'maintenance' | 'archived';
   plan: 'free' | 'pro' | 'enterprise';
   createdAt: string;
+  updatedAt?: string;
   databaseSize: number; // in MB
   logoUrl?: string;
   businessCategory?: string;

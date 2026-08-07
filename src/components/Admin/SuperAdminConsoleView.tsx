@@ -1303,14 +1303,20 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
       <ProvisionWebsiteModal
         isOpen={isProvisioningModalOpen}
         onClose={() => setIsProvisioningModalOpen(false)}
+        existingTenants={tenants}
         onProvision={async (tenantData) => {
-          const newId = `tenant-${Date.now()}`;
+          const newId = tenantData.slug ? `tenant-${tenantData.slug}` : `tenant-${Date.now()}`;
           const newTenant: Tenant = {
             id: newId,
+            slug: tenantData.slug,
             name: tenantData.name || 'Untitled Website',
-            domain: tenantData.domain || 'example.com',
+            domain: tenantData.domain || `${tenantData.slug || newId}.nwdstore.in`,
+            websiteUrl: tenantData.websiteUrl,
+            adminLoginUrl: tenantData.adminLoginUrl,
             ownerEmail: tenantData.ownerEmail || 'owner@example.com',
-            ownerId: 'new-owner-id', // would be created in a real flow
+            adminGoogleEmail: tenantData.adminGoogleEmail || tenantData.ownerEmail || 'owner@example.com',
+            ownerName: tenantData.name ? `${tenantData.name} Owner` : 'Store Owner',
+            ownerId: `owner-${Date.now()}`,
             status: tenantData.status || 'provisioning',
             plan: tenantData.plan || 'free',
             createdAt: new Date().toISOString(),
@@ -1318,7 +1324,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
           };
           
           await saveTenant(newTenant);
-          showToast('success', `Provisioning started for ${newTenant.name}`);
+          showToast('success', `Provisioning started for ${newTenant.name} (${newTenant.slug ? `/${newTenant.slug}` : newTenant.id})`);
           loadData();
           
           // Simulate provisioning delay then set active

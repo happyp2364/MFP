@@ -35,10 +35,15 @@ import {
   Share2,
   Link2,
   UserPlus,
-  Power
+  Power,
+  Crown,
+  ArrowRightLeft,
+  ShieldCheck,
 } from 'lucide-react';
 import { Tenant, AdminUser } from '../../types';
-import { getWebsiteUrl, getAdminLoginUrl } from '../../lib/tenantIsolation';
+import { getWebsiteUrl, getAdminLoginUrl, sanitizeSlug, isValidSlug, isSlugAvailable } from '../../lib/tenantIsolation';
+import { transferTenantOwnership } from '../../lib/adminService';
+import { ProvisionWebsiteModal } from './ProvisionWebsiteModal';
 
 interface WebsiteDirectoryManagerProps {
   tenants: Tenant[];
@@ -73,14 +78,29 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
   const [ownerNameInput, setOwnerNameInput] = useState('');
   const [ownerEmailInput, setOwnerEmailInput] = useState('');
 
+  // Provision Website Modal (Super Admin)
+  const [isProvisionModalOpen, setIsProvisionModalOpen] = useState(false);
+
   // Generate / Edit Website URL Modal
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
   const [urlTenant, setUrlTenant] = useState<Tenant | null>(null);
+  const [slugInput, setSlugInput] = useState('');
   const [customDomainInput, setCustomDomainInput] = useState('');
 
   // Share Modal
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [sharingTenant, setSharingTenant] = useState<Tenant | null>(null);
+
+  // Dedicated Secure Transfer Ownership Modal State
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [transferTenant, setTransferTenant] = useState<Tenant | null>(null);
+  const [transferNewOwnerName, setTransferNewOwnerName] = useState('');
+  const [transferNewOwnerEmail, setTransferNewOwnerEmail] = useState('');
+  const [transferNewOwnerGoogleEmail, setTransferNewOwnerGoogleEmail] = useState('');
+  const [transferNewOwnerPhone, setTransferNewOwnerPhone] = useState('');
+  const [transferReason, setTransferReason] = useState('');
+  const [transferDisclaimerChecked, setTransferDisclaimerChecked] = useState(false);
+  const [isSubmittingTransfer, setIsSubmittingTransfer] = useState(false);
 
   // Security Check: Normal Admin cannot view Website Directory
   const isSuperAdmin =
@@ -182,26 +202,100 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
     );
   };
 
+  // Open Transfer Ownership Modal
+  const openTransferModal = (tenant: Tenant) => {
+    setTransferTenant(tenant);
+    setTransferNewOwnerName(tenant.ownerName || '');
+    setTransferNewOwnerEmail(tenant.ownerEmail || '');
+    setTransferNewOwnerGoogleEmail(tenant.adminGoogleEmail || tenant.ownerEmail || '');
+    setTransferNewOwnerPhone('');
+    setTransferReason('');
+    setTransferDisclaimerChecked(false);
+    setIsTransferModalOpen(true);
+  };
+
+  // Execute Transfer Ownership with Firestore update & Notification trigger
+  const handleExecuteTransferOwnership = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transferTenant) return;
+    if (!transferNewOwnerName.trim() || !transferNewOwnerEmail.trim()) {
+      showToast('error', 'New Owner Name and Email address are required');
+      return;
+    }
+    if (!transferDisclaimerChecked) {
+      showToast('warning', 'Please check the disclaimer to authorize legal ownership transfer');
+      return;
+    }
+
+    triggerSuperAdminVerification(
+      'Transfer Website Ownership',
+      `Transferring primary legal ownership and admin access for website "${transferTenant.name}"`,
+      `Target Owner: ${transferNewOwnerName} (${transferNewOwnerEmail})`,
+      async () => {
+        setIsSubmittingTransfer(true);
+        try {
+          const updated = await transferTenantOwnership(transferTenant, {
+            ownerName: transferNewOwnerName.trim(),
+            ownerEmail: transferNewOwnerEmail.trim(),
+            adminGoogleEmail: transferNewOwnerGoogleEmail.trim() || transferNewOwnerEmail.trim(),
+            ownerPhone: transferNewOwnerPhone.trim(),
+            transferReason: transferReason.trim(),
+          });
+          await onUpdateTenant(updated);
+          showToast('success', `Ownership of "${transferTenant.name}" successfully transferred to ${transferNewOwnerName}! Notification dispatched.`);
+          setIsTransferModalOpen(false);
+          setTransferTenant(null);
+          setTransferReason('');
+          setTransferDisclaimerChecked(false);
+        } catch (err) {
+          console.error('Transfer ownership error:', err);
+          showToast('error', 'Failed to transfer website ownership.');
+        } finally {
+          setIsSubmittingTransfer(false);
+        }
+      }
+    );
+  };
+
   // Handle URL & Custom Domain Update
   const handleSaveDomain = async () => {
     if (!urlTenant) return;
 
+    const cleanSlug = sanitizeSlug(slugInput);
+    if (cleanSlug) {
+      const valid = isValidSlug(cleanSlug);
+      if (!valid.valid) {
+        showToast('error', valid.error || 'Invalid Website Slug format');
+        return;
+      }
+      const avail = isSlugAvailable(cleanSlug, tenants, urlTenant.id);
+      if (!avail) {
+        showToast('error', `Website Slug "${cleanSlug}" is already taken by another store`);
+        return;
+      }
+    }
+
     const cleanDomain = customDomainInput.trim().replace(/^https?:\/\//, '');
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nwdstore.in';
+    const webUrl = cleanDomain ? `https://${cleanDomain}` : cleanSlug ? `${origin}/${cleanSlug}` : undefined;
+    const adminUrl = cleanDomain ? `https://${cleanDomain}/admin` : cleanSlug ? `${origin}/${cleanSlug}?admin=true` : undefined;
+
     const updatedTenant: Tenant = {
       ...urlTenant,
+      slug: cleanSlug || urlTenant.slug,
       customDomain: cleanDomain || undefined,
-      websiteUrl: cleanDomain ? `https://${cleanDomain}` : undefined,
-      adminLoginUrl: cleanDomain ? `https://${cleanDomain}/admin` : undefined,
+      websiteUrl: webUrl,
+      adminLoginUrl: adminUrl,
     };
 
     triggerSuperAdminVerification(
-      'Generate / Update Website Domain URL',
-      `Configuring dynamic domain URL for "${urlTenant.name}"`,
-      `Custom Domain: ${cleanDomain || 'Default Dynamic URL'}`,
+      'Generate / Update Website URL & Slug',
+      `Configuring dynamic URL for "${urlTenant.name}"`,
+      `Slug: /${cleanSlug || urlTenant.slug || 'none'} | Domain: ${cleanDomain || 'Default Dynamic URL'}`,
       async () => {
         try {
           await onUpdateTenant(updatedTenant);
-          showToast('success', `Website URL configuration updated for ${urlTenant.name}`);
+          showToast('success', `Website URL & Slug updated for ${urlTenant.name}`);
           setIsUrlModalOpen(false);
           setUrlTenant(null);
         } catch (err) {
@@ -279,7 +373,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
             <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search ID, name, domain, owner..."
+              placeholder="Search ID, name, slug, domain, owner..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -308,6 +402,17 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
               </button>
             ))}
           </div>
+
+          {/* Create Website URL Button (Super Admin Only) */}
+          {isSuperAdmin && (
+            <button
+              onClick={() => setIsProvisionModalOpen(true)}
+              className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center gap-1.5 transition-all shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Website URL</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -451,13 +556,23 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
                           <button
                             onClick={() => {
                               setUrlTenant(tenant);
+                              setSlugInput(tenant.slug || sanitizeSlug(tenant.name));
                               setCustomDomainInput(tenant.customDomain || '');
                               setIsUrlModalOpen(true);
                             }}
-                            title="Generate / Edit Custom Domain URL"
+                            title="Generate / Edit Custom Domain & Website Slug URL"
                             className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-emerald-400 border border-neutral-800 rounded-lg transition-all"
                           >
                             <Link2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Transfer Ownership */}
+                          <button
+                            onClick={() => openTransferModal(tenant)}
+                            title="Transfer Primary Website Ownership"
+                            className="p-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg transition-all"
+                          >
+                            <Crown className="w-3.5 h-3.5 text-amber-400" />
                           </button>
 
                           {/* View Details */}
@@ -635,10 +750,19 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
 
               {/* Owner & Admin Information */}
               <div className="p-5 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-3">
-                <h4 className="font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-blue-400" />
-                  <span>Owner & Admin Information</span>
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-blue-400" />
+                    <span>Owner & Admin Information</span>
+                  </h4>
+                  <button
+                    onClick={() => openTransferModal(selectedTenant)}
+                    className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl font-extrabold text-[11px] transition-all flex items-center gap-1.5"
+                  >
+                    <Crown className="w-3.5 h-3.5" />
+                    <span>Transfer Ownership</span>
+                  </button>
+                </div>
                 <div className="space-y-2 text-neutral-300">
                   <div className="flex justify-between p-2.5 bg-neutral-950 rounded-xl">
                     <span className="text-neutral-500">Owner Name</span>
@@ -793,10 +917,24 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
               </p>
 
               <div className="space-y-2">
+                <label className="text-neutral-400 font-bold uppercase tracking-wider block">Website Slug (URL Path)</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-3.5 text-neutral-500 font-mono text-xs">/</span>
+                  <input
+                    type="text"
+                    placeholder="e.g. abc-shoes"
+                    value={slugInput}
+                    onChange={(e) => setSlugInput(sanitizeSlug(e.target.value))}
+                    className="w-full pl-8 pr-4 py-3 bg-neutral-900 border border-neutral-800 rounded-xl text-amber-300 font-mono text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <label className="text-neutral-400 font-bold uppercase tracking-wider block">Custom Domain (Optional)</label>
                 <input
                   type="text"
-                  placeholder="e.g. store.marudharfashionpoint.com"
+                  placeholder="e.g. store.abcshoes.com"
                   value={customDomainInput}
                   onChange={(e) => setCustomDomainInput(e.target.value)}
                   className="w-full px-4 py-3 bg-neutral-900 border border-neutral-800 rounded-xl text-white font-mono focus:outline-none focus:border-sky-500"
@@ -805,11 +943,11 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
 
               <div className="p-4 bg-sky-950/20 border border-sky-900/30 rounded-2xl text-sky-300 space-y-1">
                 <span className="font-bold block">Generated URLs Preview:</span>
-                <p className="font-mono text-[11px] text-sky-400">
-                  Public URL: {customDomainInput ? `https://${customDomainInput.trim()}` : `${typeof window !== 'undefined' ? window.location.origin : ''}?websiteId=${urlTenant.id}`}
+                <p className="font-mono text-[11px] text-sky-400 truncate">
+                  Public URL: {customDomainInput ? `https://${customDomainInput.trim()}` : slugInput ? `${typeof window !== 'undefined' ? window.location.origin : ''}/${slugInput.trim()}` : `${typeof window !== 'undefined' ? window.location.origin : ''}?websiteId=${urlTenant.id}`}
                 </p>
-                <p className="font-mono text-[11px] text-emerald-400">
-                  Admin Login URL: {customDomainInput ? `https://${customDomainInput.trim()}/admin` : `${typeof window !== 'undefined' ? window.location.origin : ''}?admin=true&websiteId=${urlTenant.id}`}
+                <p className="font-mono text-[11px] text-emerald-400 truncate">
+                  Admin Login URL: {customDomainInput ? `https://${customDomainInput.trim()}/admin` : slugInput ? `${typeof window !== 'undefined' ? window.location.origin : ''}/${slugInput.trim()}?admin=true` : `${typeof window !== 'undefined' ? window.location.origin : ''}?admin=true&websiteId=${urlTenant.id}`}
                 </p>
               </div>
 
@@ -905,6 +1043,194 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
           </div>
         </div>
       )}
+
+      {/* ========================================== */}
+      {/* SECTION 5: SECURE TRANSFER OWNERSHIP MODAL */}
+      {/* ========================================== */}
+      {isTransferModalOpen && transferTenant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-xl bg-neutral-950 border border-amber-500/40 rounded-3xl p-6 space-y-5 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600" />
+            
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                  <Crown className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                    <span>Transfer Website Ownership</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase font-black">
+                      Super Admin
+                    </span>
+                  </h3>
+                  <span className="text-xs text-neutral-400">Target Website: <strong className="text-amber-300">{transferTenant.name}</strong></span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsTransferModalOpen(false)}
+                className="p-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleExecuteTransferOwnership} className="space-y-4 text-xs">
+              
+              {/* Current Owner Banner */}
+              <div className="p-3 bg-neutral-900 border border-neutral-800 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-neutral-500 uppercase font-bold block">Current Owner</span>
+                  <span className="font-bold text-white">{transferTenant.ownerName || 'Unassigned Owner'}</span>
+                </div>
+                <span className="font-mono text-amber-400 text-[11px] font-bold">{transferTenant.ownerEmail || 'No email registered'}</span>
+              </div>
+
+              {/* Form Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-neutral-400 font-bold uppercase tracking-wider block text-[11px]">New Owner Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Ramesh Sharma"
+                    value={transferNewOwnerName}
+                    onChange={(e) => setTransferNewOwnerName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-white outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-neutral-400 font-bold uppercase tracking-wider block text-[11px]">New Owner Email *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="newowner@example.com"
+                    value={transferNewOwnerEmail}
+                    onChange={(e) => setTransferNewOwnerEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-white font-mono outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-neutral-400 font-bold uppercase tracking-wider block text-[11px]">Google Admin Email (SSO)</label>
+                  <input
+                    type="email"
+                    placeholder="newowner.admin@gmail.com"
+                    value={transferNewOwnerGoogleEmail}
+                    onChange={(e) => setTransferNewOwnerGoogleEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-white font-mono outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-neutral-400 font-bold uppercase tracking-wider block text-[11px]">New Owner Phone (Optional)</label>
+                  <input
+                    type="tel"
+                    placeholder="+91 98765 43210"
+                    value={transferNewOwnerPhone}
+                    onChange={(e) => setTransferNewOwnerPhone(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-white outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              {/* Reason / Notes */}
+              <div className="space-y-1.5">
+                <label className="text-neutral-400 font-bold uppercase tracking-wider block text-[11px]">Transfer Reason / Authorization Notes</label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Official acquisition, business restructuring, or legal ownership transfer request..."
+                  value={transferReason}
+                  onChange={(e) => setTransferReason(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-white outline-none focus:border-amber-500"
+                />
+              </div>
+
+              {/* Legal Disclaimer Checkbox */}
+              <label className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  required
+                  checked={transferDisclaimerChecked}
+                  onChange={(e) => setTransferDisclaimerChecked(e.target.checked)}
+                  className="mt-0.5 rounded border-amber-500/50 bg-neutral-950 text-amber-500 focus:ring-amber-500"
+                />
+                <span className="text-[11px] text-amber-200 leading-snug">
+                  I confirm that I am authorized as Super Administrator to execute this legal ownership transfer for <strong>{transferTenant.name}</strong>. Firestore database records and system notifications will be updated immediately.
+                </span>
+              </label>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-neutral-800">
+                <button
+                  type="button"
+                  onClick={() => setIsTransferModalOpen(false)}
+                  className="px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 font-bold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingTransfer}
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-lg flex items-center gap-2"
+                >
+                  {isSubmittingTransfer ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Transferring...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Crown className="w-4 h-4" />
+                      <span>Authorize & Transfer Ownership</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Provision Website / URL Modal */}
+      <ProvisionWebsiteModal
+        isOpen={isProvisionModalOpen}
+        onClose={() => setIsProvisionModalOpen(false)}
+        existingTenants={tenants}
+        onProvision={async (tenantData) => {
+          const newId = tenantData.slug ? `tenant-${tenantData.slug}` : `tenant-${Date.now()}`;
+          const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nwdstore.in';
+          const webUrl = tenantData.websiteUrl || (tenantData.slug ? `${origin}/${tenantData.slug}` : undefined);
+          const adminUrl = tenantData.adminLoginUrl || (tenantData.slug ? `${origin}/${tenantData.slug}?admin=true` : undefined);
+
+          const newTenant: Tenant = {
+            id: newId,
+            slug: tenantData.slug,
+            name: tenantData.name || 'Untitled Website',
+            domain: tenantData.domain || `${tenantData.slug || newId}.nwdstore.in`,
+            websiteUrl: webUrl,
+            adminLoginUrl: adminUrl,
+            ownerEmail: tenantData.ownerEmail || 'owner@example.com',
+            adminGoogleEmail: tenantData.adminGoogleEmail || tenantData.ownerEmail || 'owner@example.com',
+            ownerName: tenantData.name ? `${tenantData.name} Owner` : 'Store Owner',
+            ownerId: `owner-${Date.now()}`,
+            status: tenantData.status || 'active',
+            plan: tenantData.plan || 'free',
+            createdAt: new Date().toISOString(),
+            databaseSize: 0,
+          };
+
+          try {
+            await onUpdateTenant(newTenant);
+            showToast('success', `Website URL created for "${newTenant.name}" (https://nwdstore.in/${newTenant.slug || newTenant.id})`);
+            setIsProvisionModalOpen(false);
+          } catch (err) {
+            showToast('error', 'Failed to provision website');
+          }
+        }}
+      />
 
     </div>
   );

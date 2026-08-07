@@ -180,7 +180,7 @@ export const AboutSection: React.FC = () => {
               <div className="py-6 space-y-6">
                 <div>
                   <h3 className="text-lg font-bold text-amber-300 mb-2 font-serif-heading">
-                    The Marudhar Legacy in Pipar City
+                    The Store Legacy
                   </h3>
                   <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">
                     {config.businessStory}
@@ -265,7 +265,7 @@ export const AboutSection: React.FC = () => {
 
                         {member.socialLinks?.whatsapp && (
                           <a
-                            href={`https://wa.me/${member.socialLinks.whatsapp}?text=${encodeURIComponent(`Hello ${member.fullName}, I am inquiring about Marudhar Fashion Point collections.`)}`}
+                            href={`https://wa.me/${member.socialLinks.whatsapp}?text=${encodeURIComponent(`Hello ${member.fullName}, I am inquiring about your store collections.`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-[11px] font-bold rounded-lg border border-emerald-500/30 flex items-center gap-1 transition-colors"
@@ -395,7 +395,7 @@ export const AboutSection: React.FC = () => {
               </div>
 
               <a
-                href={generateGeneralInquiryWhatsAppLink(`Hello Viju Bhai, I am viewing Marudhar Fashion Point About Us section and would like to ask a question.`)}
+                href={generateGeneralInquiryWhatsAppLink(`Hello, I am viewing your About Us section and would like to ask a question.`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all shrink-0"

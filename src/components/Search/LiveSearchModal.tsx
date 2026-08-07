@@ -181,7 +181,7 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
           <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 animate-pulse">
             <Sparkles className="w-5 h-5 text-emerald-600 animate-spin" />
             <span className="text-xs font-bold text-emerald-900">
-              Analyzing photo using Marudhar AI Vision... Matching shoe patterns!
+              Analyzing photo using AI Vision... Matching shoe patterns!
             </span>
           </div>
         )}

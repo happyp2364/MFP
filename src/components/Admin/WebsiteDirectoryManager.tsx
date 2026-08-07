@@ -44,6 +44,7 @@ import { Tenant, AdminUser } from '../../types';
 import { getWebsiteUrl, getAdminLoginUrl, sanitizeSlug, isValidSlug, isSlugAvailable } from '../../lib/tenantIsolation';
 import { transferTenantOwnership } from '../../lib/adminService';
 import { ProvisionWebsiteModal } from './ProvisionWebsiteModal';
+import { buildWebsiteUrl, buildAdminLoginUrl, getPlatformConfig } from '../../lib/platformConfig';
 
 interface WebsiteDirectoryManagerProps {
   tenants: Tenant[];
@@ -158,7 +159,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
       try {
         await navigator.share({
           title: tenant.name,
-          text: `Check out ${tenant.name} on Marudhar Fashion Point Platform`,
+          text: `Check out ${tenant.name}`,
           url: webUrl,
         });
         showToast('success', 'Shared successfully!');
@@ -276,9 +277,8 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
     }
 
     const cleanDomain = customDomainInput.trim().replace(/^https?:\/\//, '');
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nwdstore.in';
-    const webUrl = cleanDomain ? `https://${cleanDomain}` : cleanSlug ? `${origin}/${cleanSlug}` : undefined;
-    const adminUrl = cleanDomain ? `https://${cleanDomain}/admin` : cleanSlug ? `${origin}/${cleanSlug}?admin=true` : undefined;
+    const webUrl = cleanDomain ? `https://${cleanDomain}` : cleanSlug ? buildWebsiteUrl(cleanSlug) : undefined;
+    const adminUrl = cleanDomain ? `https://${cleanDomain}?admin=true` : cleanSlug ? buildAdminLoginUrl(cleanSlug) : undefined;
 
     const updatedTenant: Tenant = {
       ...urlTenant,
@@ -1201,15 +1201,18 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
         existingTenants={tenants}
         onProvision={async (tenantData) => {
           const newId = tenantData.slug ? `tenant-${tenantData.slug}` : `tenant-${Date.now()}`;
-          const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nwdstore.in';
-          const webUrl = tenantData.websiteUrl || (tenantData.slug ? `${origin}/${tenantData.slug}` : undefined);
-          const adminUrl = tenantData.adminLoginUrl || (tenantData.slug ? `${origin}/${tenantData.slug}?admin=true` : undefined);
+          const webUrl = tenantData.websiteUrl || (tenantData.slug ? buildWebsiteUrl(tenantData.slug) : undefined);
+          const adminUrl = tenantData.adminLoginUrl || (tenantData.slug ? buildAdminLoginUrl(tenantData.slug) : undefined);
+          const config = getPlatformConfig();
+          const platformHost = (() => {
+            try { return new URL(config.platformBaseUrl).hostname; } catch { return 'platform.app'; }
+          })();
 
           const newTenant: Tenant = {
             id: newId,
             slug: tenantData.slug,
             name: tenantData.name || 'Untitled Website',
-            domain: tenantData.domain || `${tenantData.slug || newId}.nwdstore.in`,
+            domain: tenantData.domain || `${tenantData.slug || newId}.${platformHost}`,
             websiteUrl: webUrl,
             adminLoginUrl: adminUrl,
             ownerEmail: tenantData.ownerEmail || 'owner@example.com',
@@ -1224,7 +1227,8 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
 
           try {
             await onUpdateTenant(newTenant);
-            showToast('success', `Website URL created for "${newTenant.name}" (https://nwdstore.in/${newTenant.slug || newTenant.id})`);
+            const generatedUrl = buildWebsiteUrl(newTenant.slug || newTenant.id);
+            showToast('success', `Website URL created for "${newTenant.name}" (${generatedUrl})`);
             setIsProvisionModalOpen(false);
           } catch (err) {
             showToast('error', 'Failed to provision website');

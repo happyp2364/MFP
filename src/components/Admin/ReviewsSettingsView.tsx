@@ -253,7 +253,7 @@ export const ReviewsSettingsView: React.FC = () => {
         comment: newComment,
         date: new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }),
         verified: true,
-        productBought: newProduct || 'Marudhar Footwear',
+        productBought: newProduct || 'Footwear',
         approved: true,
       });
       setIsAddMode(false);

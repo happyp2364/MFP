@@ -13,7 +13,7 @@ export interface ReviewsSectionProps {
 export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
   productId,
   title = "Loved by 15,000+ Families",
-  subtitle = "Real reviews from real customers who trust Marudhar Fashion Point for wedding footwear, school shoes, and daily fashion."
+  subtitle = "Real reviews from real customers who trust our store for wedding footwear, school shoes, and daily fashion."
 }) => {
   const {
     reviews,
@@ -206,7 +206,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
     const finalProductName =
       selectedProduct === 'custom'
         ? customProduct
-        : selectedProduct || 'Marudhar Footwear';
+        : selectedProduct || 'Footwear';
 
     setIsSubmitting(true);
     try {
@@ -576,7 +576,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                 </div>
                 <h3 className="font-bold text-xl text-neutral-900">Thank You for Your Review!</h3>
                 <p className="text-xs text-neutral-600 max-w-xs mx-auto">
-                  Your feedback has been published as a verified customer review for Marudhar Fashion Point.
+                  Your feedback has been published as a verified customer review.
                 </p>
               </div>
             ) : (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getPlatformConfig } from '../../lib/platformConfig';
 import {
   Globe,
   Building2,
@@ -179,8 +180,8 @@ export const WebsiteManagementView: React.FC = () => {
   // Primary Current Tenant Info (from config or mock)
   const currentTenantObj = {
     id: 'tenant-default',
-    name: websiteConfig?.businessIdentity?.businessName || 'Marudhar Fashion Point Primary Instance',
-    domain: 'marudharfashionpoint.com',
+    name: websiteConfig?.businessIdentity?.businessName || getPlatformConfig().platformDisplayName,
+    domain: getPlatformConfig().platformBaseUrl,
     ownerName: websiteConfig?.businessIdentity?.legalEntityName || 'Vishal Parihar',
     ownerEmail: websiteConfig?.contactDetails?.primaryEmail || 'vpcreation2002@gmail.com',
     adminGoogleEmail: currentAdminUser?.email || 'vpcreation2002@gmail.com',
@@ -290,7 +291,7 @@ export const WebsiteManagementView: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-lg font-black text-white">
-                    {websiteConfig?.businessIdentity?.businessName || 'Marudhar Fashion Point'}
+                    {websiteConfig?.businessIdentity?.businessName || getPlatformConfig().platformDisplayName}
                   </h2>
                   <p className="text-xs text-neutral-400 mt-0.5">
                     {websiteConfig?.businessIdentity?.tagline || 'Premium Quality Fashion & Footwear'}
@@ -425,7 +426,7 @@ export const WebsiteManagementView: React.FC = () => {
                   <p><strong className="text-neutral-500">Business Hours:</strong> {websiteConfig?.storeSettings?.operatingHours || '10:00 AM - 9:00 PM'}</p>
                   <p><strong className="text-neutral-500">Open Days:</strong> {websiteConfig?.storeSettings?.workingDays || 'Monday - Sunday'}</p>
                   <p className="text-neutral-400 text-[11px] mt-1 bg-slate-900 p-2 rounded-lg border border-slate-800">
-                    Notice: {websiteConfig?.storeSettings?.topNoticeBanner || 'Welcome to Marudhar Fashion Point!'}
+                    Notice: {websiteConfig?.storeSettings?.topNoticeBanner || `Welcome to ${getPlatformConfig().platformDisplayName}!`}
                   </p>
                 </div>
               </div>

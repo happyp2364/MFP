@@ -296,7 +296,7 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                       className="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm font-mono uppercase bg-white"
                     />
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {['NIKE', 'SPORT', 'STYLE', 'MFP', 'PREMIUM', 'MARUDHAR', 'SALE', 'NEW', 'LUXURY'].map((word) => (
+                      {['NIKE', 'SPORT', 'STYLE', 'MFP', 'PREMIUM', 'APEX', 'SALE', 'NEW', 'LUXURY'].map((word) => (
                         <button
                           key={word}
                           type="button"
@@ -598,14 +598,14 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                               contentData: { ...edited.contentData, backgroundWord: e.target.value.toUpperCase() },
                             })
                           }
-                          placeholder="MBH, MARUDHAR, LUXURY..."
+                          placeholder="MBH, APEX, LUXURY..."
                           className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-xs font-mono font-bold uppercase bg-white"
                         />
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {['MBH', 'MARUDHAR', 'LUXURY', 'SNEAKER', 'ROYAL', '2026', 'FOOTWEAR'].map((word) => (
+                      {['MBH', 'APEX', 'LUXURY', 'SNEAKER', 'ROYAL', '2026', 'FOOTWEAR'].map((word) => (
                         <button
                           key={word}
                           type="button"

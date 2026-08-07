@@ -56,7 +56,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           <div className="flex justify-between items-start border-b border-neutral-200 pb-6">
             <div>
               <h1 className="text-xl font-serif font-bold text-amber-950 uppercase tracking-wide">
-                {storeInfo.name || 'Marudhar Fashion Point'}
+                {storeInfo.name || 'Official Store'}
               </h1>
               <p className="text-neutral-500 text-[11px] mt-0.5 max-w-xs">
                 {storeInfo.address || 'Bhilwara, Rajasthan, India'}
@@ -197,7 +197,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               Store Policy: ❌ No Return | ❌ No Exchange
             </p>
             <p className="font-bold text-neutral-700">
-              Thank you for shopping with Marudhar Fashion Point!
+              Thank you for shopping with {storeInfo.name || 'our store'}!
             </p>
             <p>
               This is a computer-generated tax invoice. Customer verified agreement to store terms prior to payment. For assistance, contact +91 {storeInfo.phone}

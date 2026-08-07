@@ -71,7 +71,7 @@ export const AboutUsSettingsView: React.FC = () => {
   };
 
   const handleResetDefault = () => {
-    if (window.confirm('Reset About Us section to default template for Marudhar Fashion Point? All custom edits will be restored to original settings.')) {
+    if (window.confirm('Reset About Us section to default template? All custom edits will be restored to original settings.')) {
       setFormData(DEFAULT_ABOUT_US_CONFIG);
     }
   };
@@ -270,7 +270,7 @@ export const AboutUsSettingsView: React.FC = () => {
               About Us Manager <span className="text-xs font-semibold px-2.5 py-0.5 bg-amber-500/30 text-amber-300 rounded-full border border-amber-400/30">Admin Studio</span>
             </h2>
             <p className="text-xs text-neutral-300 mt-0.5">
-              Customize Marudhar Fashion Point's business story, owners, timeline, achievements & store photos.
+              Customize your business story, owners, timeline, achievements & store photos.
             </p>
           </div>
         </div>
@@ -946,7 +946,7 @@ export const AboutUsSettingsView: React.FC = () => {
                 type="text"
                 value={formData.socialLinks?.instagram || ''}
                 onChange={(e) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, instagram: e.target.value } }))}
-                placeholder="https://instagram.com/marudhar_fashion_point"
+                placeholder="https://instagram.com/official_store"
                 className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
               />
             </div>
@@ -968,7 +968,7 @@ export const AboutUsSettingsView: React.FC = () => {
                 type="text"
                 value={formData.socialLinks?.facebook || ''}
                 onChange={(e) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, facebook: e.target.value } }))}
-                placeholder="https://facebook.com/marudharfashionpoint"
+                placeholder="https://facebook.com/official_store"
                 className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
               />
             </div>
@@ -979,7 +979,7 @@ export const AboutUsSettingsView: React.FC = () => {
                 type="text"
                 value={formData.socialLinks?.youtube || ''}
                 onChange={(e) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, youtube: e.target.value } }))}
-                placeholder="https://youtube.com/@marudharfashionpoint"
+                placeholder="https://youtube.com/@official_store"
                 className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
               />
             </div>

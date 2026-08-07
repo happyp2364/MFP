@@ -3,6 +3,7 @@ import { X, Calendar, Mail, Database, ShieldCheck, ExternalLink, RefreshCw, Plus
 import { auth, signInWithGoogle, logoutUser, getCachedAccessToken } from '../../lib/firebase';
 import { listGoogleCalendarEvents, CalendarEventResult } from '../../lib/googleWorkspace';
 import { User as FirebaseUser } from 'firebase/auth';
+import { getPlatformConfig } from '../../lib/platformConfig';
 
 interface WorkspaceHubDrawerProps {
   isOpen: boolean;
@@ -267,7 +268,7 @@ export const WorkspaceHubDrawer: React.FC<WorkspaceHubDrawerProps> = ({
                   <span className="font-bold text-xs text-red-900">Direct Store Email Service</span>
                 </div>
                 <p className="text-[11px] text-red-700 leading-relaxed">
-                  Send emails directly from your Gmail address (<span className="font-bold">{user?.email || 'Your Gmail'}</span>) to Marudhar Fashion Point managers.
+                  Send emails directly from your Gmail address (<span className="font-bold">{user?.email || 'Your Gmail'}</span>) to our store managers.
                 </p>
                 <button
                   onClick={() => { onClose(); onOpenGmailModal(); }}
@@ -355,7 +356,7 @@ export const WorkspaceHubDrawer: React.FC<WorkspaceHubDrawerProps> = ({
 
         {/* Footer */}
         <div className="p-4 bg-neutral-50 border-t border-neutral-200 text-center text-[10px] text-neutral-500">
-          Marudhar Fashion Point • Official Google Calendar & Gmail Integration
+          {getPlatformConfig().platformDisplayName} • Official Google Calendar & Gmail Integration
         </div>
 
       </div>

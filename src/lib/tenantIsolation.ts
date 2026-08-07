@@ -1,3 +1,5 @@
+import { buildWebsiteUrl, buildAdminLoginUrl } from './platformConfig';
+
 export const DEFAULT_TENANT_ID = 'mfp_store_001';
 
 /**
@@ -200,28 +202,20 @@ export function validateTenantAccess(
 }
 
 /**
- * Dynamically constructs the Website Public URL based on tenant config & current runtime host
- * Generates: https://<main-domain>/<website-slug> e.g. https://nwdstore.in/abc-shoes
+ * Dynamically constructs the Website Public URL based on tenant config & platform base URL
+ * Format: platformBaseUrl + "/" + websiteSlug
  */
 export function getWebsiteUrl(tenant: { id: string; slug?: string; domain?: string; customDomain?: string; websiteUrl?: string }): string {
-  if (tenant.websiteUrl) return tenant.websiteUrl;
   if (tenant.customDomain) return `https://${tenant.customDomain}`;
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nwdstore.in';
-  if (tenant.slug) {
-    return `${origin}/${tenant.slug}`;
-  }
-  return `${origin}?websiteId=${tenant.id}`;
+  const slug = tenant.slug || tenant.id;
+  return buildWebsiteUrl(slug);
 }
 
 /**
- * Dynamically constructs the Website Admin Login URL based on tenant config & current runtime host
+ * Dynamically constructs the Website Admin Login URL based on tenant config & platform base URL
  */
 export function getAdminLoginUrl(tenant: { id: string; slug?: string; domain?: string; customDomain?: string; adminLoginUrl?: string }): string {
-  if (tenant.adminLoginUrl) return tenant.adminLoginUrl;
-  if (tenant.customDomain) return `https://${tenant.customDomain}/admin`;
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nwdstore.in';
-  if (tenant.slug) {
-    return `${origin}/${tenant.slug}?admin=true`;
-  }
-  return `${origin}?admin=true&websiteId=${tenant.id}`;
+  if (tenant.customDomain) return `https://${tenant.customDomain}?admin=true`;
+  const slug = tenant.slug || tenant.id;
+  return buildAdminLoginUrl(slug);
 }

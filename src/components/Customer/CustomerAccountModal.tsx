@@ -477,7 +477,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                     <h3 className="text-sm font-serif font-bold text-amber-100">Marketing Consent & Channel Preferences</h3>
                   </div>
                   <p className="text-xs text-amber-200/70">
-                    Choose how you would like to receive exclusive offers, new arrival drops, festival deals, and order updates from Marudhar Fashion Point. You can change these preferences at any time.
+                    Choose how you would like to receive exclusive offers, new arrival drops, festival deals, and order updates from us. You can change these preferences at any time.
                   </p>
                 </div>
               </div>
@@ -515,7 +515,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                     className="mt-1 w-4 h-4 text-amber-600 rounded border-neutral-300 focus:ring-amber-500"
                   />
                   <label htmlFor="masterConsent" className="text-xs font-bold text-neutral-900 leading-snug cursor-pointer">
-                    ☑ I would like to receive exclusive offers, new arrivals, festival deals, and important updates from Marudhar Fashion Point.
+                    ☑ I would like to receive exclusive offers, new arrivals, festival deals, and important updates from this store.
                   </label>
                 </div>
 

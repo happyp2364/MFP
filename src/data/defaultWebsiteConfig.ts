@@ -5,8 +5,8 @@ export const DEFAULT_SOCIAL_LINKS: SocialLinkItem[] = [
     id: 'soc_1',
     platform: 'Instagram',
     title: 'Instagram',
-    username: '@marudhar_fashion_point',
-    url: 'https://www.instagram.com/marudhar_fashion_point/',
+    username: '@official_store',
+    url: 'https://www.instagram.com/',
     enabled: true,
     openInNewTab: true,
     displayOrder: 1,
@@ -15,8 +15,8 @@ export const DEFAULT_SOCIAL_LINKS: SocialLinkItem[] = [
     id: 'soc_2',
     platform: 'Facebook',
     title: 'Facebook Page',
-    username: 'Marudhar Fashion Point Official',
-    url: 'https://www.facebook.com/share/1Antw1LgKS/',
+    username: 'Official Store Page',
+    url: 'https://www.facebook.com/',
     enabled: true,
     openInNewTab: true,
     displayOrder: 2,
@@ -35,8 +35,8 @@ export const DEFAULT_SOCIAL_LINKS: SocialLinkItem[] = [
     id: 'soc_4',
     platform: 'YouTube',
     title: 'YouTube Channel',
-    username: 'Marudhar Fashion Point Jodhpur',
-    url: 'https://yt.openinapp.co/10n4u',
+    username: 'Official Store Channel',
+    url: 'https://youtube.com/',
     enabled: true,
     openInNewTab: true,
     displayOrder: 4,
@@ -44,20 +44,20 @@ export const DEFAULT_SOCIAL_LINKS: SocialLinkItem[] = [
 ];
 
 export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
-  websiteId: 'mfp_store_001',
-  tenantId: 'mfp_store_001',
+  websiteId: 'tenant-default',
+  tenantId: 'tenant-default',
   // Section 1: Business Identity
   businessIdentity: {
-    businessName: 'Marudhar Fashion Point',
-    displayName: 'Marudhar Fashion Point',
-    legalName: 'Marudhar Fashion Point Private Limited',
-    brandName: 'Marudhar',
+    businessName: 'Footwear Store',
+    displayName: 'Footwear Store',
+    legalName: 'Footwear Store Private Limited',
+    brandName: 'Footwear Store',
     tagline: 'Style for Every Step.',
-    shortDescription: "Pipar City's premier destination for high-grade athletic sneakers, royal Rajasthani mojaris, and designer family footwear.",
-    longDescription: "Marudhar Fashion Point is Rajasthan's top-rated family footwear store bringing high-performance footwear, authentic craftsmanship, and orthopedic comfort at fair prices.",
-    aboutBusiness: 'Built on trust, personal service, and uncompromised quality since 2010.',
-    businessStory: 'Founded in 2010 by Viju Bhai in Pipar City, Marudhar Fashion Point originated with a singular mission: to bring authentic, high-grade footwear to families across Rajasthan at fair prices.',
-    establishedYear: '2010',
+    shortDescription: "Premier destination for high-grade athletic sneakers, leather loafers, and designer family footwear.",
+    longDescription: "A top-rated family footwear store bringing high-performance footwear, authentic craftsmanship, and orthopedic comfort at fair prices.",
+    aboutBusiness: 'Built on trust, personal service, and uncompromised quality.',
+    businessStory: 'Originated with a singular mission: to bring authentic, high-grade footwear to families at fair prices.',
+    establishedYear: '2015',
     gstNumber: '08AAAAA0000A1Z5',
     panNumber: 'ABCDE1234F',
     cinNumber: 'U52100RJ2010PTC000000',
@@ -81,11 +81,11 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     whatsappNumber: '919782482250',
     customerCareNumber: '+91 9782482250',
     tollFreeNumber: '1800-123-4567',
-    email: 'marudharfashionpoint@gmail.com',
-    supportEmail: 'support@marudharfashionpoint.com',
-    salesEmail: 'sales@marudharfashionpoint.com',
-    billingEmail: 'billing@marudharfashionpoint.com',
-    websiteUrl: 'https://marudharfashionpoint.com',
+    email: 'officialstore@gmail.com',
+    supportEmail: 'support@officialstore.com',
+    salesEmail: 'sales@officialstore.com',
+    billingEmail: 'billing@officialstore.com',
+    websiteUrl: 'https://nwd.vercel.app',
   },
 
   // Section 3: Address
@@ -112,7 +112,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
 
   // Section 5: Store Settings
   storeSettings: {
-    storeName: 'Marudhar Fashion Point Main Store',
+    storeName: 'Official Footwear Store',
     storeStatus: 'open',
     businessHours: 'Monday - Sunday: 9:00 AM - 9:30 PM',
     holidayCalendar: 'Open 365 Days a Year (Special Festive Timing on Diwali & Holi)',
@@ -127,18 +127,17 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
 
   // Section 6: SEO
   seo: {
-    websiteTitle: 'Marudhar Fashion Point — Premium Footwear & Athletic Shoes',
-    metaTitle: 'Marudhar Fashion Point — Best Family Shoe Store in Rajasthan',
-    metaDescription: 'Discover high-grade athletic sneakers, royal leather loafers, and Rajasthani juttis at Marudhar Fashion Point. Order online with free delivery and COD.',
-    keywords: ['Marudhar Fashion Point', 'Shoe Store Pipar City', 'Athletic Shoes', 'Rajasthani Jutti', 'Leather Shoes', 'Sneakers Jodhpur'],
-    canonicalUrl: 'https://marudharfashionpoint.com',
+    websiteTitle: 'Footwear Store — Premium Footwear & Athletic Shoes',
+    metaTitle: 'Footwear Store — Best Family Shoe Store',
+    metaDescription: 'Discover high-grade athletic sneakers, royal leather loafers, and juttis. Order online with fast delivery.',
+    keywords: ['Footwear Store', 'Athletic Shoes', 'Leather Shoes', 'Sneakers'],
+    canonicalUrl: 'https://nwd.vercel.app',
     ogImageUrl: '/logo.png',
     twitterCard: 'summary_large_image',
     structuredDataJson: JSON.stringify({
       "@context": "https://schema.org",
       "@type": "ShoeStore",
-      "name": "Marudhar Fashion Point",
-      "address": "Pipar City, Rajasthan 342601",
+      "name": "Footwear Store",
       "telephone": "+91 9782482250"
     }, null, 2),
     googleVerificationCode: '',
@@ -160,7 +159,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
 
   // Section 8: Footer
   footer: {
-    copyrightText: '© 2026 Marudhar Fashion Point. All Rights Reserved. Built with Royal Quality Standards.',
+    copyrightText: '© 2026 Footwear Store. All Rights Reserved.',
     footerLinks: [
       { label: 'Shop Men', url: '/category/men' },
       { label: 'Shop Women', url: '/category/women' },
@@ -178,10 +177,10 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
 
   // Section 9: Legal Documents
   legal: {
-    privacyPolicy: 'Marudhar Fashion Point values your privacy. We store customer information securely and never sell your personal data.',
-    termsAndConditions: 'All orders placed on Marudhar Fashion Point are subject to availability and verification. Prices include applicable taxes.',
-    refundPolicy: 'Easy 7-day returns and exchanges available for size and manufacturing defects. Open Box Delivery is supported.',
-    shippingPolicy: 'Free shipping on orders above ₹999. Local deliveries in Rajasthan delivered within 24-48 hours.',
+    privacyPolicy: 'We value your privacy. We store customer information securely and never sell your personal data.',
+    termsAndConditions: 'All orders placed are subject to availability and verification. Prices include applicable taxes.',
+    refundPolicy: 'Easy 7-day returns and exchanges available for size and manufacturing defects.',
+    shippingPolicy: 'Free shipping on orders above ₹999. Fast delivery across regions.',
     cancellationPolicy: 'Orders can be cancelled prior to dispatch directly from your account or by calling customer care.',
     cookiePolicy: 'We use essential browser cookies to remember your cart, wishlist, and preference settings.',
     disclaimer: 'Product colors may slightly vary due to photographic lighting sources or your monitor settings.',
@@ -189,37 +188,37 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
 
   // Section 10: Emails
   emails: {
-    emailHeader: '<div style="background:#111;padding:20px;text-align:center;"><h1 style="color:#F59E0B;">Marudhar Fashion Point</h1></div>',
-    emailFooter: '<div style="padding:15px;text-align:center;font-size:12px;color:#888;">© 2026 Marudhar Fashion Point. Thank you for shopping with us!</div>',
-    emailSignature: 'Warm regards,\nThe Marudhar Fashion Point Team\nCustomer Care: +91 9782482250',
-    supportName: 'Marudhar Customer Care',
-    supportEmail: 'support@marudharfashionpoint.com',
+    emailHeader: '<div style="background:#111;padding:20px;text-align:center;"><h1 style="color:#F59E0B;">Footwear Store</h1></div>',
+    emailFooter: '<div style="padding:15px;text-align:center;font-size:12px;color:#888;">© 2026 Footwear Store. Thank you for shopping with us!</div>',
+    emailSignature: 'Warm regards,\nThe Footwear Store Team\nCustomer Care: +91 9782482250',
+    supportName: 'Customer Care',
+    supportEmail: 'support@nwd.vercel.app',
   },
 
   // Section 11: WhatsApp
   whatsApp: {
-    greeting: 'Hello! Welcome to Marudhar Fashion Point 👟✨ How can we assist you today?',
-    autoReply: 'Thank you for contacting Marudhar Fashion Point. Our team will get back to you shortly!',
-    businessName: 'Marudhar Fashion Point',
+    greeting: 'Hello! Welcome to Footwear Store 👟✨ How can we assist you today?',
+    autoReply: 'Thank you for contacting us. Our team will get back to you shortly!',
+    businessName: 'Footwear Store',
     supportNumber: '919782482250',
   },
 
   // Section 12: AI Pet
   aiPet: {
-    customPrompts: 'You are the official AI Pet Assistant for Marudhar Fashion Point. Be friendly, polite, and assist customers with shoe sizes, order status, and store directions.',
+    customPrompts: 'You are the official AI Assistant for Footwear Store. Be friendly, polite, and assist customers with shoe sizes, order status, and store directions.',
     autoUseStoreInfo: true,
   },
 
   // Section 13: Invoices
   invoices: {
     logoUrl: '/logo.png',
-    address: 'JOJRI NADI KE PASS, MISTRI MARKET, PIPAR CITY, Rajasthan 342601',
+    address: 'Commercial Market, Main City',
     gstNumber: '08AAAAA0000A1Z5',
     phone: '+91 9782482250',
-    email: 'marudharfashionpoint@gmail.com',
-    website: 'https://marudharfashionpoint.com',
+    email: 'support@nwd.vercel.app',
+    website: 'https://nwd.vercel.app',
     qrCodeUrl: '',
-    footerText: 'Thank you for your purchase from Marudhar Fashion Point! Returns accepted within 7 days with valid invoice.',
+    footerText: 'Thank you for your purchase! Returns accepted within 7 days with valid invoice.',
   },
 
   // Section 14: Store Locator

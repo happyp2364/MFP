@@ -143,7 +143,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       navigator
         .share({
           title: product.name,
-          text: `Check out ${product.name} on Marudhar Fashion Point!`,
+          text: `Check out ${product.name}!`,
           url: shareUrl,
         })
         .catch(() => {});
@@ -286,7 +286,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <ImageOff className="w-6 h-6" />
             </div>
             <span className="text-xs font-bold text-neutral-800 tracking-wide uppercase">Real Image Coming Soon</span>
-            <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Marudhar Fashion Point</span>
+            <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Official Product Showcase</span>
           </div>
         ) : (
           <img

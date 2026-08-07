@@ -89,7 +89,7 @@ export const MARKETPLACE_PRESETS: HomepagePreset[] = [
           contentData: {
             ...FLOATING_SNEAKER_DEFAULT_SECTION.contentData,
             backgroundWord: 'AIRPRO',
-            smallHeading: '2026 DARK EDITION • MARUDHAR ATHLETICS',
+            smallHeading: '2026 DARK EDITION • APEX ATHLETICS',
             mainHeading: 'AIR GLIDE NIGHTSHADE',
             ctaBgColor: '#10b981',
             ctaTextColor: '#000000',

@@ -3,6 +3,7 @@ import { X, Calendar, Clock, Footprints, Sparkles, CheckCircle2, ExternalLink, A
 import { auth, signInWithGoogle, getCachedAccessToken, handleFirestoreError, db } from '../../lib/firebase';
 import { createGoogleCalendarEvent, CalendarEventResult } from '../../lib/googleWorkspace';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getPlatformConfig } from '../../lib/platformConfig';
 
 interface CalendarBookingModalProps {
   isOpen: boolean;
@@ -65,8 +66,9 @@ export const CalendarBookingModal: React.FC<CalendarBookingModalProps> = ({
       const startDateObj = new Date(`${date}T${hour.toString().padStart(2, '0')}:${minuteStr}:00+05:30`);
       const endDateObj = new Date(startDateObj.getTime() + 60 * 60 * 1000); // 1 hour slot
 
-      const eventSummary = `VIP Shoe Fitting & Consultation - Marudhar Fashion Point`;
-      const eventDescription = `Reserved VIP Fitting Session at Marudhar Fashion Point.\nCategory: ${category}\nNotes: ${notes || 'None'}\nPhone: +91 9782482250\nLocation: Pali, Rajasthan`;
+      const platform = getPlatformConfig();
+      const eventSummary = `VIP Shoe Fitting & Consultation - ${platform.platformDisplayName}`;
+      const eventDescription = `Reserved VIP Fitting Session at ${platform.platformDisplayName}.\nCategory: ${category}\nNotes: ${notes || 'None'}\nPhone: +91 9782482250\nLocation: Pali, Rajasthan`;
 
       // 1. Call Google Calendar API
       const eventResult = await createGoogleCalendarEvent({
@@ -74,7 +76,7 @@ export const CalendarBookingModal: React.FC<CalendarBookingModalProps> = ({
         description: eventDescription,
         startDateTime: startDateObj.toISOString(),
         endDateTime: endDateObj.toISOString(),
-        location: 'Marudhar Fashion Point, Pali, Rajasthan (+91 9782482250)',
+        location: `${platform.platformDisplayName}, Pali, Rajasthan (+91 9782482250)`,
       });
 
       // 2. Save appointment in Firestore
@@ -148,7 +150,7 @@ export const CalendarBookingModal: React.FC<CalendarBookingModalProps> = ({
                   Appointment Scheduled & Synced!
                 </h4>
                 <p className="text-xs text-neutral-600 max-w-xs mx-auto">
-                  Your VIP fitting session at Marudhar Fashion Point has been added to your Google Calendar.
+                  Your VIP fitting session at {getPlatformConfig().platformDisplayName} has been added to your Google Calendar.
                 </p>
               </div>
 
@@ -345,7 +347,7 @@ export const CalendarBookingModal: React.FC<CalendarBookingModalProps> = ({
             </div>
 
             <div className="bg-neutral-50 p-3 rounded-xl border text-left text-[11px] space-y-1 text-neutral-700">
-              <p><strong>Title:</strong> VIP Shoe Fitting - Marudhar Fashion Point</p>
+              <p><strong>Title:</strong> VIP Shoe Fitting - {getPlatformConfig().platformDisplayName}</p>
               <p><strong>Date & Time:</strong> {date} at {timeSlot}</p>
               <p><strong>Location:</strong> Pali, Rajasthan</p>
             </div>

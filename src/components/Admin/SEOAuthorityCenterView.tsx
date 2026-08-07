@@ -216,7 +216,7 @@ export const SEOAuthorityCenterView: React.FC = () => {
                 name="globalTitleTemplate"
                 value={formData.globalTitleTemplate}
                 onChange={handleChange}
-                placeholder="%s | Marudhar Fashion Point"
+                placeholder="%s | Platform Store"
                 className="w-full px-4 py-2 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-emerald-500"
               />
               <p className="text-xs text-neutral-500 mt-1">Use %s where the dynamic page name should go.</p>

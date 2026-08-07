@@ -162,14 +162,14 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-black tracking-tight text-white">
-                Marudhar Store Locator & Outlets
+                Store Locator & Outlets
               </h2>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-extrabold uppercase">
                 {enabledStores.length} Live Branches
               </span>
             </div>
             <p className="text-xs text-neutral-400 font-medium">
-              Find nearest Marudhar Fashion Point store for Shoe Trial & Open Box Delivery
+              Find nearest store branch for Shoe Trial & Open Box Delivery
             </p>
           </div>
         </div>
@@ -264,7 +264,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                 </div>
                 <h3 className="text-base font-extrabold text-neutral-800">No stores found</h3>
                 <p className="text-xs text-neutral-500 max-w-xs mx-auto">
-                  No Marudhar Fashion Point outlets match "{searchQuery}". Try searching for another city like Jodhpur, Jaipur, or Udaipur.
+                  No outlets match "{searchQuery}". Try searching for another city like Jodhpur, Jaipur, or Udaipur.
                 </p>
                 <button
                   onClick={() => {
@@ -402,7 +402,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
 
                       {/* WhatsApp Button */}
                       <a
-                        href={`https://wa.me/${store.whatsapp || '919829012345'}?text=Hi%20Marudhar%20Fashion%20Point%20${encodeURIComponent(store.name)},%20I%20want%20to%20inquire%20about%20shoe%20stock.`}
+                        href={`https://wa.me/${store.whatsapp || '919829012345'}?text=Hi%20${encodeURIComponent(store.name)},%20I%20want%20to%20inquire%20about%20shoe%20stock.`}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
@@ -496,7 +496,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
             /* Fallback Interactive Map Container */
             <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-white bg-gradient-to-br from-neutral-900 via-neutral-950 to-black relative">
               <iframe
-                title="Marudhar Stores Map Preview"
+                title="Stores Map Preview"
                 src={`https://maps.google.com/maps?q=${mapCenter.lat},${mapCenter.lng}&z=12&output=embed`}
                 className="w-full h-full border-0 absolute inset-0 opacity-80"
                 loading="lazy"
@@ -629,7 +629,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                   <Phone className="w-3.5 h-3.5 text-emerald-400" /> Call Store
                 </a>
                 <a
-                  href={`https://wa.me/${detailModalStore.whatsapp || '919829012345'}?text=Hi%20Marudhar%20Fashion%20Point%20${encodeURIComponent(detailModalStore.name)},%20I%20want%20to%20inquire%20about%20shoe%20stock.`}
+                  href={`https://wa.me/${detailModalStore.whatsapp || '919829012345'}?text=Hi%20${encodeURIComponent(detailModalStore.name)},%20I%20want%20to%20inquire%20about%20shoe%20stock.`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center gap-1.5 transition-colors shadow-sm"

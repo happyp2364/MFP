@@ -37,7 +37,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     if (!formData.name || !formData.phone) return;
 
     // Send formatted message directly to WhatsApp!
-    const text = `Hello Marudhar Fashion Point,
+    const text = `Hello,
 
 Inquiry / Order Request from Website:
 Name: ${formData.name}
@@ -233,7 +233,7 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
               {/* Map Iframe */}
               <div className="relative aspect-video w-full bg-neutral-100">
                 <iframe
-                  title="Marudhar Fashion Point Location"
+                  title="Store Location"
                   src={mapIframeSrc}
                   className="w-full h-full border-0"
                   allowFullScreen={true}
@@ -289,7 +289,7 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <h4 className="font-bold text-lg text-neutral-900">Opening WhatsApp...</h4>
-                <p className="text-xs text-neutral-600">Connecting you with Marudhar Fashion Point assistant.</p>
+                <p className="text-xs text-neutral-600">Connecting you with our store assistant.</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4 text-xs">

@@ -14,7 +14,7 @@ interface GmailInquiryModalProps {
 export const GmailInquiryModal: React.FC<GmailInquiryModalProps> = ({
   isOpen,
   onClose,
-  defaultSubject = 'Custom Shoe Inquiry - Marudhar Fashion Point',
+  defaultSubject = 'Custom Shoe Inquiry',
   defaultBody = '',
 }) => {
   const [user, setUser] = useState(auth.currentUser);
@@ -64,7 +64,7 @@ export const GmailInquiryModal: React.FC<GmailInquiryModalProps> = ({
     setErrorMsg(null);
 
     try {
-      const fullBody = `Inquiry Category: ${category}\nFrom: ${user?.displayName || 'Customer'} (${user?.email})\nPhone: +91 9782482250\n\nMessage:\n${message}\n\n---\nSent via Marudhar Fashion Point Gmail Integration`;
+      const fullBody = `Inquiry Category: ${category}\nFrom: ${user?.displayName || 'Customer'} (${user?.email})\nPhone: +91 9782482250\n\nMessage:\n${message}\n\n---\nSent via Official Store Gmail Integration`;
 
       // 1. Call Gmail API
       const res = await sendGmailMessage({

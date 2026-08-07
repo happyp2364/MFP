@@ -1,4 +1,5 @@
 import { Product } from '../types';
+import { getPlatformConfig } from '../lib/platformConfig';
 
 /**
  * Converts a string into a clean, URL-safe slug
@@ -46,11 +47,11 @@ export function getProductSlug(product: Product): string {
  * Constructs the canonical public URL for a product
  */
 export function getProductUrl(product: Product, customOrigin?: string): string {
-  const defaultDomain = 'https://marudhar-fashion-point-1.vercel.app';
-  const origin = customOrigin || (typeof window !== 'undefined' && window.location.origin ? window.location.origin : defaultDomain);
+  const config = getPlatformConfig();
+  const origin = customOrigin || (typeof window !== 'undefined' && window.location.origin ? window.location.origin : config.platformBaseUrl);
   // Use product.id (Firebase Document ID) or slug for permanent direct routing
   const productIdOrSlug = product.id ? product.id.trim() : getProductSlug(product);
-  return `${origin}/product/${productIdOrSlug}`;
+  return `${origin.replace(/\/+$/, '')}/product/${productIdOrSlug}`;
 }
 
 /**

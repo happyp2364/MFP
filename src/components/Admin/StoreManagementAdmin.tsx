@@ -149,7 +149,7 @@ export const StoreManagementAdmin: React.FC = () => {
 
     const payload: PhysicalStore = {
       id: editingStore ? editingStore.id : `store-${Date.now()}`,
-      name: formData.name || 'Marudhar Fashion Point Store',
+      name: formData.name || 'Store Branch',
       slug: (formData.name || 'store').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       rating: Number(formData.rating) || 4.9,
       reviewsCount: Number(formData.reviewsCount) || 100,
@@ -270,7 +270,7 @@ export const StoreManagementAdmin: React.FC = () => {
               Physical Store Outlets & Mobile Category Manager
             </h1>
             <p className="text-sm text-neutral-300 mt-1 max-w-2xl">
-              Manage physical Marudhar Fashion Point branches, Google ratings, GPS coordinates, opening hours, WhatsApp links, and mobile home category icons.
+              Manage physical store branches, Google ratings, GPS coordinates, opening hours, WhatsApp links, and mobile home category icons.
             </p>
           </div>
 
@@ -587,7 +587,7 @@ export const StoreManagementAdmin: React.FC = () => {
                     required
                     value={formData.name || ''}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Marudhar Fashion Point — Ratanada Branch"
+                    placeholder="e.g. Flagship Outlet — Main Branch"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
                 </div>

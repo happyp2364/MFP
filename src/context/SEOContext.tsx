@@ -2,20 +2,23 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { SEOMetadataConfig } from '../types';
 import { db } from '../lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { getPlatformConfig } from '../lib/platformConfig';
+
+const platform = getPlatformConfig();
 
 export const DEFAULT_SEO_CONFIG: SEOMetadataConfig = {
-  globalTitleTemplate: '%s | Marudhar Fashion Point',
-  globalDescription: 'Marudhar Fashion Point - Premium Sports & Luxury Footwear Store.',
+  globalTitleTemplate: `%s | ${platform.platformDisplayName}`,
+  globalDescription: `${platform.platformDisplayName} - Premium Multi-Tenant Store.`,
   defaultOgImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1200',
   googleAnalyticsId: 'G-MEASUREMENT_ID',
   googleSearchConsoleVerification: 'gsc_verification_code',
   googleBusinessProfileId: 'gbp_profile_id',
-  robotsTxtContent: 'User-agent: *\nAllow: /\nSitemap: https://marudharfashionpoint.com/sitemap.xml',
-  businessName: 'Marudhar Fashion Point',
-  businessCategory: 'Footwear Store',
-  foundedYear: '2015',
+  robotsTxtContent: `User-agent: *\nAllow: /\nSitemap: ${platform.platformBaseUrl}/sitemap.xml`,
+  businessName: platform.platformName,
+  businessCategory: 'E-commerce Platform',
+  foundedYear: '2024',
   contactNumber: '+919876543210',
-  businessAddress: 'Marudhar Fashion Point, Main Market, City',
+  businessAddress: 'Main Commercial Hub',
 };
 
 interface SEOContextType {

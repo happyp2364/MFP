@@ -147,7 +147,7 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
 
   // Admin Actions Handlers
   const handleCreateAdmin = async (adminData: Partial<AdminUser>, password?: string) => {
-    const currentAdminEmail = currentUser?.email || 'admin@marudharfashionpoint.com';
+    const currentAdminEmail = currentUser?.email || 'admin@nwd.app';
     const uid = `admin-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
     const newAdmin: AdminUser = {

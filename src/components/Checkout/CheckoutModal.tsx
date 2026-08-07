@@ -726,7 +726,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           key: activeKeyId,
           amount: Math.round(totalAmount * 100),
           currency: 'INR',
-          name: storeInfo.name || 'Marudhar Fashion Point',
+          name: storeInfo.name || 'Official Store',
           description: `Order ${gatewayOrderId}`,
           order_id: gatewayOrderId.startsWith('order_') ? gatewayOrderId : undefined,
           handler: async function (response: any) {
@@ -785,7 +785,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 Secure Payment & Checkout
               </h2>
               <p className="text-xs text-amber-200/70">
-                Marudhar Fashion Point • Bank-Level Encryption
+                {storeInfo.name || 'Official Store'} • Bank-Level Encryption
               </p>
             </div>
           </div>
@@ -1372,7 +1372,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         />
                         <div className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-amber-950 font-bold">
                           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                          <span>{paymentSettings.merchantName || 'Marudhar Fashion Point'}</span>
+                          <span>{paymentSettings.merchantName || storeInfo.name || 'Official Store'}</span>
                         </div>
                       </div>
 

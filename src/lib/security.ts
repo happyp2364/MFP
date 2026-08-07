@@ -1,6 +1,6 @@
 /**
  * Enterprise Security Utility
- * Marudhar Fashion Point - Security Hardening Suite
+ * Platform Security Hardening Suite
  */
 
 // 1. XSS & Input Sanitization

@@ -450,7 +450,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                     type="text"
                     value={formData.businessIdentity.businessName}
                     onChange={(e) => handleFieldChange('businessIdentity', 'businessName', e.target.value)}
-                    placeholder="e.g. Marudhar Fashion Point"
+                    placeholder="e.g. Royal Footwear Store"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -460,7 +460,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                     type="text"
                     value={formData.businessIdentity.displayName}
                     onChange={(e) => handleFieldChange('businessIdentity', 'displayName', e.target.value)}
-                    placeholder="e.g. Marudhar Fashion Point"
+                    placeholder="e.g. Royal Footwear"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -470,7 +470,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                     type="text"
                     value={formData.businessIdentity.legalName}
                     onChange={(e) => handleFieldChange('businessIdentity', 'legalName', e.target.value)}
-                    placeholder="e.g. Marudhar Fashion Point Pvt Ltd"
+                    placeholder="e.g. Royal Footwear Pvt Ltd"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -480,7 +480,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                     type="text"
                     value={formData.businessIdentity.brandName}
                     onChange={(e) => handleFieldChange('businessIdentity', 'brandName', e.target.value)}
-                    placeholder="e.g. Marudhar"
+                    placeholder="e.g. Royal"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -643,7 +643,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                     type="email"
                     value={formData.contactDetails.email}
                     onChange={(e) => handleFieldChange('contactDetails', 'email', e.target.value)}
-                    placeholder="marudharfashionpoint@gmail.com"
+                    placeholder="store@nwd.app"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -653,7 +653,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                     type="email"
                     value={formData.contactDetails.supportEmail}
                     onChange={(e) => handleFieldChange('contactDetails', 'supportEmail', e.target.value)}
-                    placeholder="support@marudharfashionpoint.com"
+                    placeholder="support@nwd.app"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -663,7 +663,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                     type="text"
                     value={formData.contactDetails.websiteUrl}
                     onChange={(e) => handleFieldChange('contactDetails', 'websiteUrl', e.target.value)}
-                    placeholder="https://marudharfashionpoint.com"
+                    placeholder="https://nwd.app"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>

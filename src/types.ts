@@ -36,7 +36,7 @@ export interface SizeStock {
 export interface Product {
   id: string;
   sku?: string;               // Unique Product ID / Stock Keeping Unit (e.g. MFP-M01-RUN)
-  slug?: string;              // Unique public URL slug (e.g. marudhar-airglide-knit-running-shoes)
+  slug?: string;              // Unique public URL slug (e.g. apex-airglide-knit-running-shoes)
   metaTitle?: string;         // Open Graph / WhatsApp preview custom title
   metaDescription?: string;   // Open Graph / WhatsApp preview custom description
   ogImage?: string;           // Open Graph / WhatsApp preview custom image URL
@@ -536,6 +536,29 @@ export interface TrendingCollectionItem {
   count: string;
 }
 
+export interface PlatformFeature {
+  id: string; // Feature ID e.g. "feat_spin_wheel"
+  name: string; // Feature Name
+  description: string; // Detailed description
+  versionIntroduced: string; // e.g. "v2.4.0"
+  releaseDate: string; // e.g. "2026-08-01"
+  status: 'Beta' | 'Stable' | 'Deprecated';
+  category: 'Marketing' | 'Sales' | 'Fulfillment' | 'AI & SEO' | 'Analytics' | 'Customer Experience';
+  disabledByDefault: boolean; // Must be true by default for all websites
+  modulePath?: string;
+  dependencies?: string[];
+}
+
+export interface PlatformReleaseVersion {
+  version: string; // e.g. "v2.5.0"
+  releaseName: string;
+  releaseDate: string;
+  description: string;
+  featuresIntroduced: string[];
+  changelogNotes: string[];
+  isCurrentMajor?: boolean;
+}
+
 export interface Tenant {
   id: string;
   slug?: string; // Platform-wide unique website slug e.g. "abc-shoes", "raj-footwear"
@@ -558,8 +581,10 @@ export interface Tenant {
   adminLoginStatus?: 'active' | 'pending_activation';
   lastLogin?: string;
   version?: string;
+  platformVersion?: string; // Current Platform Version e.g. "v2.5.0"
   healthStatus?: 'Operational' | 'Degraded' | 'Passing' | 'Maintenance';
-  enabledFeatures?: string[];
+  enabledFeatures?: string[]; // List of enabled feature IDs
+  pendingUpdates?: string[]; // List of pending update/feature IDs
   currentTheme?: string;
   language?: string;
   contactInfo?: {
@@ -855,8 +880,8 @@ export interface CustomerProfile {
 
 export interface InstagramConfig {
   enabled: boolean;
-  username: string; // default "marudhar_fashion_point"
-  displayName: string; // default "Marudhar Fashion Point"
+  username: string; // default "official_store"
+  displayName: string; // default "Official Store"
   accessToken?: string;
   appId?: string;
   postLimit: number; // 6, 8, 12, 16
@@ -926,7 +951,7 @@ export interface HangingSneakerConfig {
   baseRotationDeg: number; // base tilt angle in degrees (e.g. -18deg)
   enablePhysicsAnimation: boolean;
   enableShineEffect?: boolean; // gentle luxury glossy shine overlay
-  colorTheme?: 'ONE8_BURGUNDY' | 'MARUDHAR_HERITAGE' | 'MIDNIGHT_NAVY' | 'GOLD_LUXURY';
+  colorTheme?: 'ONE8_BURGUNDY' | 'ROYAL_HERITAGE' | 'MIDNIGHT_NAVY' | 'GOLD_LUXURY';
 }
 
 export type SoundType =

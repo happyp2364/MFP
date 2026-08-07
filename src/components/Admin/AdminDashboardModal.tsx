@@ -351,7 +351,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(auditLogs, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `marudhar_security_audit_logs_${Date.now()}.json`);
+    downloadAnchor.setAttribute("download", `nwd_security_audit_logs_${Date.now()}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -363,7 +363,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snapshot, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `marudhar_store_backup_${Date.now()}.json`);
+    downloadAnchor.setAttribute("download", `nwd_store_backup_${Date.now()}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -422,7 +422,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400">
-                Marudhar Fashion Point • Single Admin Direct Synchronization
+                Single Admin Direct Synchronization
               </p>
             </div>
           </div>
@@ -1091,7 +1091,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         setEditingProduct({
                           id: '',
                           name: '',
-                          brand: 'Marudhar Fashion',
+                          brand: 'Store Brand',
                           category: 'men',
                           subcategory: 'Sports Shoes',
                           price: 1499,
@@ -1729,7 +1729,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         type="text"
                         value={storeInfoForm.headerLogoText || ''}
                         onChange={(e) => setStoreInfoForm({ ...storeInfoForm, headerLogoText: e.target.value })}
-                        placeholder="Leave blank to use 'Marudhar Point'"
+                        placeholder="Leave blank to use default brand"
                         className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
                       />
                     </div>

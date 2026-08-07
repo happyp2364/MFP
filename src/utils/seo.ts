@@ -1,14 +1,14 @@
+import { getPlatformConfig } from '../lib/platformConfig';
+
 export const generateOrganizationSchema = () => {
+  const config = getPlatformConfig();
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "Marudhar Fashion Point",
-    "url": window.location.origin,
-    "logo": `${window.location.origin}/logo.png`,
-    "sameAs": [
-      "https://www.facebook.com/marudharfashionpoint",
-      "https://www.instagram.com/marudharfashionpoint"
-    ]
+    "name": config.platformDisplayName || config.platformName,
+    "url": typeof window !== 'undefined' ? window.location.origin : config.platformBaseUrl,
+    "logo": config.platformLogo || `${config.platformBaseUrl}/logo.png`,
+    "sameAs": []
   };
 };
 
@@ -54,6 +54,8 @@ export const generateLocalBusinessSchema = (store: any) => {
 
 export const generateProductSchema = (product: any) => {
   if (!product) return null;
+  const config = getPlatformConfig();
+  const platformTitle = config.platformName;
   return {
     "@context": "https://schema.org/",
     "@type": "Product",
@@ -64,11 +66,11 @@ export const generateProductSchema = (product: any) => {
     "mpn": product.id,
     "brand": {
       "@type": "Brand",
-      "name": product.brand || "Marudhar Fashion Point"
+      "name": product.brand || platformTitle
     },
     "offers": {
       "@type": "Offer",
-      "url": `${window.location.origin}/product/${product.id}`,
+      "url": `${typeof window !== 'undefined' ? window.location.origin : config.platformBaseUrl}/product/${product.id}`,
       "priceCurrency": "INR",
       "price": product.price,
       "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
@@ -76,7 +78,7 @@ export const generateProductSchema = (product: any) => {
       "availability": product.inStock !== false ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       "seller": {
         "@type": "Organization",
-        "name": "Marudhar Fashion Point"
+        "name": platformTitle
       }
     },
     "aggregateRating": product.rating ? {

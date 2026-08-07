@@ -21,7 +21,7 @@ export const InstagramFeed: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const instagramUrl = `https://www.instagram.com/${instagramConfig?.username || 'marudhar_fashion_point'}/`;
+  const instagramUrl = `https://www.instagram.com/${instagramConfig?.username || 'official_store'}/`;
 
   const fetchFeedData = async (isManualRefresh = false) => {
     if (isManualRefresh) setIsRefreshing(true);
@@ -75,7 +75,7 @@ export const InstagramFeed: React.FC = () => {
                 {profile?.profilePictureUrl ? (
                   <img
                     src={profile.profilePictureUrl}
-                    alt={`${profile.displayName || 'Marudhar Fashion Point'} Instagram`}
+                    alt={`${profile.displayName || 'Store'} Instagram`}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
                     loading="lazy"
@@ -92,7 +92,7 @@ export const InstagramFeed: React.FC = () => {
             <div>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <h3 className="text-xl sm:text-2xl font-bold font-serif-heading text-white">
-                  @{profile?.username || instagramConfig?.username || 'marudhar_fashion_point'}
+                  @{profile?.username || instagramConfig?.username || 'official_store'}
                 </h3>
                 <CheckCircle2 className="w-5 h-5 text-sky-400 fill-sky-400/20" />
                 {profile?.isLiveApiConnected && (
@@ -104,14 +104,14 @@ export const InstagramFeed: React.FC = () => {
               </div>
 
               <p className="text-xs sm:text-sm font-semibold text-amber-400/90 mt-0.5">
-                {profile?.displayName || instagramConfig?.displayName || 'Marudhar Fashion Point'} • Official Footwear & Fashion Hub
+                {profile?.displayName || instagramConfig?.displayName || 'Official Store'} • Official Footwear & Fashion Hub
               </p>
 
               {/* Bio Section */}
               {instagramConfig?.showBio !== false && (profile?.biography || true) && (
                 <p className="text-xs text-neutral-300 mt-2 max-w-2xl leading-relaxed">
                   {profile?.biography ||
-                    'Step into Royalty & Comfort 👞 Exclusive Footwear & Fashion Hub in Pipar City • Handcrafted Juttis, Sports Sneakers & Leather Wear • Worldwide Shipping 📦'}
+                    'Step into Royalty & Comfort 👞 Exclusive Footwear & Fashion Hub • Handcrafted Juttis, Sports Sneakers & Leather Wear • Worldwide Shipping 📦'}
                 </p>
               )}
 
@@ -127,7 +127,7 @@ export const InstagramFeed: React.FC = () => {
                     <span className="text-neutral-400">Followers</span>
                   </div>
                   <div>
-                    <span className="font-extrabold text-white">Pipar City</span>{' '}
+                    <span className="font-extrabold text-white">Official</span>{' '}
                     <span className="text-neutral-400">Main Store</span>
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export const InstagramFeed: React.FC = () => {
               className="w-full md:w-auto bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 hover:opacity-95 text-white text-sm font-extrabold px-8 py-3.5 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5"
             >
               <Instagram className="w-5 h-5" />
-              <span>Follow @{profile?.username || 'marudhar_fashion_point'}</span>
+              <span>Follow @{profile?.username || 'official_store'}</span>
               <ExternalLink className="w-4 h-4" />
             </a>
           </div>

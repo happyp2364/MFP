@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, ArrowRight, ChevronLeft, ChevronRight, ShieldCheck, Truck, RefreshCw, Sparkles, Zap, Star, CheckCircle, PackageCheck, Flame } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { getPlatformConfig } from '../../lib/platformConfig';
 
 interface HeroSectionProps {
   onExploreClick: () => void;
@@ -20,15 +21,16 @@ interface HeroSlide {
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
   const { storeInfo } = useStore();
+  const platform = getPlatformConfig();
 
-  const shopName = storeInfo?.name || 'Marudhar Fashion Point';
+  const shopName = storeInfo?.name || platform.platformDisplayName;
 
   const slides: HeroSlide[] = [
     {
       id: 'slide-1',
       badge: '👑 Royal Collection 2026',
       title: storeInfo?.tagline || 'Royal Comfort & Authentic Indian Fashion',
-      subtitle: 'Discover Marudhar Fashion Point\'s exclusive lineup of athletic sneakers, royal leather loafers, bridal footwear, and durable everyday shoes.',
+      subtitle: `Discover ${shopName}'s exclusive lineup of athletic sneakers, royal leather loafers, bridal footwear, and durable everyday shoes.`,
       image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80',
       ctaText: 'Explore Royal Range',
       ctaActionId: 'products',
@@ -218,7 +220,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
               <div className="absolute top-4 left-4 z-20">
                 <span className="bg-black/60 backdrop-blur-md text-amber-300 border border-white/20 text-[11px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>Marudhar Verified Quality</span>
+                  <span>Verified Quality Standard</span>
                 </span>
               </div>
 
@@ -313,7 +315,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
             </div>
             <div>
               <div className="text-xs font-bold text-white">100% Genuine Quality</div>
-              <div className="text-[10px] text-amber-300/70">Authentic Marudhar footwear</div>
+              <div className="text-[10px] text-amber-300/70">Authentic certified footwear</div>
             </div>
           </div>
 

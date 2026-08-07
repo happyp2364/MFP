@@ -38,7 +38,7 @@ export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
   onSelectProduct,
   onNavigateCategory,
 }) => {
-  const { homepageConfig, products, reviews, categoryHighlights } = useStore();
+  const { homepageConfig, products, reviews, categoryHighlights, storeInfo } = useStore();
   const config = previewConfig || homepageConfig;
 
   if (!config || !Array.isArray(config.sections) || config.sections.length === 0) {
@@ -647,6 +647,7 @@ const FloatingSneakerHeroSection: React.FC<{
   section: HomepageSection;
   onNavigateCategory?: (cat: string) => void;
 }> = ({ section, onNavigateCategory }) => {
+  const { storeInfo } = useStore();
   const data = section.contentData || {};
   const styling = section.styling || {};
 
@@ -668,7 +669,7 @@ const FloatingSneakerHeroSection: React.FC<{
   }, [mainImage]);
 
   const bgWord = (data.backgroundWord || 'SPORT').toUpperCase();
-  const smallHeading = data.smallHeading || '2026 EDITION • MARUDHAR LUXURY';
+  const smallHeading = data.smallHeading || `2026 EDITION • ${(storeInfo?.name || 'PREMIUM').toUpperCase()} LUXURY`;
   const mainHeading = data.mainHeading || 'AIR GLIDE PRO RUNNER';
   const description =
     data.description ||
@@ -714,11 +715,11 @@ const FloatingSneakerHeroSection: React.FC<{
       {/* Top Glassmorphic Navigation Bar */}
       <div className="relative z-20 px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-black/5 bg-white/30 backdrop-blur-md">
         <div className="flex items-center gap-2">
-          <span className="w-8 h-8 rounded-full bg-neutral-900 text-white font-black text-xs flex items-center justify-center shadow-md">
-            M
+          <span className="w-8 h-8 rounded-full bg-neutral-900 text-white font-black text-xs flex items-center justify-center shadow-md animate-pulse">
+            {(storeInfo?.name || 'P')[0].toUpperCase()}
           </span>
           <span className="text-xs font-black tracking-widest text-neutral-900 uppercase">
-            MARUDHAR LUXURY SNEAKERS
+            {storeInfo?.name ? `${storeInfo.name.toUpperCase()} LUXURY` : 'PREMIUM LUXURY SNEAKERS'}
           </span>
         </div>
 
@@ -900,9 +901,9 @@ const MBHShoeCarouselHeroSection: React.FC<{
   onSelectProduct?: (p: Product) => void;
   onNavigateCategory?: (cat: string) => void;
 }> = ({ section, products = [], onSelectProduct, onNavigateCategory }) => {
+  const { storeInfo, showToast } = useStore();
   const data = section.contentData || {};
   const styling = section.styling || {};
-  const { showToast } = useStore();
 
   const slides = Array.isArray(data.slides) && data.slides.length > 0
     ? data.slides
@@ -1078,11 +1079,11 @@ const MBHShoeCarouselHeroSection: React.FC<{
         } backdrop-blur-md`}
       >
         <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-xl bg-amber-500 text-black font-black text-xs flex items-center justify-center shadow-md">
-            MBH
+          <span className="w-8 h-8 rounded-xl bg-amber-500 text-black font-black text-xs flex items-center justify-center shadow-md animate-pulse">
+            {(storeInfo?.name || 'S')[0].toUpperCase()}
           </span>
           <span className="text-xs font-black tracking-widest uppercase">
-            MARUDHAR FASHION POINT
+            {storeInfo?.name ? storeInfo.name.toUpperCase() : 'PREMIUM FOOTWEAR'}
           </span>
         </div>
 

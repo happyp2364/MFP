@@ -25,6 +25,7 @@ import {
   createFullPermissionMatrix,
   getDeviceInfo,
 } from './adminPermissions';
+import { getPlatformConfig, buildWebsiteUrl, buildAdminLoginUrl } from './platformConfig';
 
 const SUPER_ADMIN_EMAIL = 'vpcreation2002@gmail.com';
 export const SUPER_ADMIN_EMAILS = ['vpcreation2002@gmail.com', 'vishalpparihar2002@gmail.com'];
@@ -142,12 +143,18 @@ export async function fetchTenants(): Promise<Tenant[]> {
     
     // Return mock data if none exist (since we don't have a provisioning flow setting up a tenant yet)
     if (tenants.length === 0) {
+       const config = getPlatformConfig();
+       const defaultSlug = 'main-store';
        return [{
          id: 'tenant-default',
-         name: 'Marudhar Fashion Point Primary Instance',
-         domain: 'marudharfashionpoint.com',
+         slug: defaultSlug,
+         name: `${config.platformDisplayName} Primary Instance`,
+         domain: 'main-store.platform.app',
+         websiteUrl: buildWebsiteUrl(defaultSlug, config),
+         adminLoginUrl: buildAdminLoginUrl(defaultSlug, config),
          ownerId: 'vpcreation2002',
          ownerEmail: 'vpcreation2002@gmail.com',
+         adminGoogleEmail: 'vpcreation2002@gmail.com',
          status: 'active',
          plan: 'enterprise',
          createdAt: new Date().toISOString(),

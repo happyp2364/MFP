@@ -11,6 +11,7 @@ import {
 } from '../data/defaultWhatsAppTemplates';
 import { STORE_INFO } from '../data/mockData';
 import { getProductSKU, getProductUrl } from './productUtils';
+import { getPlatformConfig } from '../lib/platformConfig';
 
 export interface WhatsAppPayloadData {
   customerName?: string;
@@ -105,17 +106,18 @@ export function renderWhatsAppMessageText(
   template: WhatsAppTemplate,
   payload: WhatsAppPayloadData
 ): string {
-  const shopName = payload.shopName || STORE_INFO.name || 'Marudhar Fashion Point';
+  const config = getPlatformConfig();
+  const shopName = payload.shopName || STORE_INFO.name || config.platformName;
   const shopPhone = payload.shopPhone || STORE_INFO.phone || '+91 97824 82250';
   const shopWhatsApp = payload.shopWhatsApp || STORE_INFO.whatsappNumber || '+91 97824 82250';
-  const website = payload.website || (typeof window !== 'undefined' ? window.location.origin : 'https://marudharfashion.com');
+  const website = payload.website || (typeof window !== 'undefined' ? window.location.origin : config.platformBaseUrl);
 
   const replacements: Record<string, string> = {
     '{customerName}': payload.customerName || 'Customer',
     '{customerPhone}': payload.customerPhone || 'N/A',
     '{customerEmail}': payload.customerEmail || 'N/A',
     '{productName}': payload.productName || 'Featured Fashion Item',
-    '{productBrand}': payload.productBrand || 'Marudhar Royal',
+    '{productBrand}': payload.productBrand || 'Royal Quality',
     '{productCategory}': payload.productCategory || 'Footwear',
     '{productPrice}': typeof payload.productPrice === 'number' ? `₹${payload.productPrice.toLocaleString('en-IN')}` : (payload.productPrice || 'N/A'),
     '{discountAmount}': typeof payload.discountAmount === 'number' ? `₹${payload.discountAmount.toLocaleString('en-IN')}` : (payload.discountAmount || '₹0'),
@@ -198,7 +200,7 @@ export function buildSamplePayloadForPreview(category: WhatsAppTemplateActionCat
     customerPhone: '+91 98765 43210',
     customerEmail: 'rajesh.sharma@example.com',
     productName: 'Royal Handcrafted Velvet Loafers',
-    productBrand: 'Marudhar Heritage',
+    productBrand: 'Royal Heritage',
     productCategory: 'Men Luxury Footwear',
     productPrice: 2999,
     discountAmount: 500,
@@ -216,11 +218,11 @@ export function buildSamplePayloadForPreview(category: WhatsAppTemplateActionCat
     orderId: 'MFP-892410',
     date: new Date().toLocaleDateString('en-IN'),
     time: '03:30 PM',
-    shopName: 'Marudhar Fashion Point',
+    shopName: 'Footwear Store',
     shopPhone: '+91 97824 82250',
     shopWhatsApp: '+91 97824 82250',
-    website: typeof window !== 'undefined' ? window.location.origin : 'https://marudharfashion.com',
-    productURL: 'https://marudharfashion.com/#product-velvet-loafers',
+    website: typeof window !== 'undefined' ? window.location.origin : 'https://nwd.vercel.app',
+    productURL: 'https://nwd.vercel.app/#product-velvet-loafers',
     productImageLink: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80',
     deliveryNotes: 'Please deliver after 2 PM',
   };

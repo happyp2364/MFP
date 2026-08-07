@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getPlatformConfig } from '../../lib/platformConfig';
 import {
   X,
   Sparkles,
@@ -50,7 +51,7 @@ interface SmartProductFormModalProps {
 const DRAFT_STORAGE_KEY = 'mfp_admin_product_draft_v2';
 
 const POPULAR_BRANDS = [
-  'Marudhar Fashion',
+  'House Brand',
   'Puma',
   'Nike',
   'Sparx',
@@ -426,8 +427,8 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
       ? productState.slug
       : `${slugBase}-${Math.floor(100 + Math.random() * 900)}`;
 
-    const autoMetaTitle = `${cleanName} | Marudhar Fashion Point`;
-    const autoMetaDesc = `Buy ${cleanName} by ${productState.brand || 'Marudhar Fashion Point'} at ₹${productState.price}. Fast delivery & cash on delivery.`;
+    const autoMetaTitle = `${cleanName} | ${getPlatformConfig().platformDisplayName}`;
+    const autoMetaDesc = `Buy ${cleanName} by ${productState.brand || getPlatformConfig().platformDisplayName} at ₹${productState.price}. Fast delivery & cash on delivery.`;
 
     // Process sizes: if no sizes selected, leave as empty array or keep current
     const activeSizes = productState.sizes || [];
@@ -657,7 +658,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Marudhar AirGlide Knit Running Shoes"
+                  placeholder="e.g. AirGlide Knit Running Shoes"
                   value={productState.name}
                   onChange={(e) => setProductState({ ...productState, name: e.target.value })}
                   className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#0B8F63] font-bold text-neutral-900 text-xs"
@@ -668,7 +669,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                 <label className="font-extrabold text-neutral-800 block mb-1">Brand Name</label>
                 <input
                   type="text"
-                  placeholder="e.g. Marudhar Fashion, Nike, Sparx"
+                  placeholder="e.g. Nike, Sparx, Puma"
                   value={productState.brand}
                   onChange={(e) => setProductState({ ...productState, brand: e.target.value })}
                   className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#0B8F63] text-xs font-medium"

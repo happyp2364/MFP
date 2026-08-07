@@ -95,7 +95,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
               {/* Fallback legacy links if none configured */}
               <div className="group relative flex items-center gap-2">
                 <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
-                  Instagram @marudhar_fashion_point
+                  Follow on Instagram
                 </span>
                 <a
                   href={storeInfo.instagram}

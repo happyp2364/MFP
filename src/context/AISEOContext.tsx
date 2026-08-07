@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { getPlatformConfig } from '../lib/platformConfig';
 
 interface AISEOContextType {
   isGeneratingSEO: boolean;
@@ -13,11 +14,12 @@ export const AISEOProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const generateProductSEO = async (productTitle: string, description: string) => {
     setIsGeneratingSEO(true);
     try {
-      const generatedTitle = `${productTitle} | Premium Footwear Collection`;
+      const config = getPlatformConfig();
+      const generatedTitle = `${productTitle} | ${config.platformDisplayName}`;
       const generatedDesc = description
-        ? `${description.slice(0, 140)}... Shop online at Marudhar Fashion Point.`
+        ? `${description.slice(0, 140)}... Shop online at ${config.platformName}.`
         : `Buy high quality ${productTitle} with fast delivery and easy returns.`;
-      const keywords = [productTitle.toLowerCase(), 'footwear', 'shoes', 'online shopping', 'marudhar fashion point'];
+      const keywords = [productTitle.toLowerCase(), 'products', 'online store', 'shopping'];
 
       return {
         title: generatedTitle,

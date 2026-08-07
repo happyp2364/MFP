@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getPlatformConfig } from '../../lib/platformConfig';
 import {
   ArrowLeft,
   Heart,
@@ -197,7 +198,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-12 animate-in fade-in duration-300">
         <SEOHead 
-          title="Product Not Found - Marudhar Fashion Point" 
+          title={`Product Not Found | ${getPlatformConfig().platformDisplayName}`} 
           description="The product you are looking for could not be found."
         />
         {/* Back Navigation */}
@@ -369,8 +370,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 animate-in fade-in duration-300">
       <SEOHead 
-        title={`${product.name} | Marudhar Fashion Point`}
-        description={product.description || `Buy ${product.name} at Marudhar Fashion Point. Best price ₹${product.price}. Genuine quality & fast delivery.`}
+        title={`${product.name} | ${getPlatformConfig().platformDisplayName}`}
+        description={product.description || `Buy ${product.name} at ${getPlatformConfig().platformDisplayName}. Best price ₹${product.price}. Genuine quality & fast delivery.`}
         image={product.images?.[0]}
         url={getProductUrl(product)}
         type="product"
@@ -427,7 +428,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       <ImageOff className="w-8 h-8" />
                     </div>
                     <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Product Image Coming Soon</span>
-                    <span className="text-[10px] font-medium text-neutral-400">Marudhar Fashion Point</span>
+                    <span className="text-[10px] font-medium text-neutral-400">Official Product Showcase</span>
                   </div>
                 ) : (
                   <img

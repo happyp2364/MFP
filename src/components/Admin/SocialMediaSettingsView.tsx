@@ -116,9 +116,9 @@ export const SocialMediaSettingsView: React.FC = () => {
   const [whatsappRole, setWhatsappRole] = useState(socialMediaConfig.whatsappSupportRole || '');
 
   // Facebook Configs
-  const [fbPageName, setFbPageName] = useState(socialMediaConfig.facebookPageName || 'Marudhar Fashion Point');
-  const [fbPageUrl, setFbPageUrl] = useState(socialMediaConfig.facebookPageUrl || 'https://facebook.com/marudharfashionpoint');
-  const [fbMessengerUrl, setFbMessengerUrl] = useState(socialMediaConfig.facebookMessengerUrl || 'https://m.me/marudharfashionpoint');
+  const [fbPageName, setFbPageName] = useState(socialMediaConfig.facebookPageName || 'Official Store');
+  const [fbPageUrl, setFbPageUrl] = useState(socialMediaConfig.facebookPageUrl || '');
+  const [fbMessengerUrl, setFbMessengerUrl] = useState(socialMediaConfig.facebookMessengerUrl || '');
   const [fbLikeEnabled, setFbLikeEnabled] = useState(socialMediaConfig.facebookLikeButtonEnabled !== false);
   const [fbShareEnabled, setFbShareEnabled] = useState(socialMediaConfig.facebookShareButtonEnabled !== false);
   const [fbFeedEmbed, setFbFeedEmbed] = useState(socialMediaConfig.facebookFeedEmbed || '');
@@ -131,7 +131,7 @@ export const SocialMediaSettingsView: React.FC = () => {
   const [instaReviewEnabled, setInstaReviewEnabled] = useState(socialMediaConfig.instagramReviewIntegrationEnabled !== false);
 
   // YouTube Custom Options
-  const [ytChannelName, setYtChannelName] = useState(socialMediaConfig.youtubeChannelName || 'Marudhar Fashion Point');
+  const [ytChannelName, setYtChannelName] = useState(socialMediaConfig.youtubeChannelName || 'Official Store Channel');
   const [ytChannelUrl, setYtChannelUrl] = useState(socialMediaConfig.youtubeChannelUrl || '');
   const [ytSubscribeBtn, setYtSubscribeBtn] = useState(socialMediaConfig.youtubeSubscribeButtonText || 'Subscribe Now');
   const [ytShortsEnabled, setYtShortsEnabled] = useState(socialMediaConfig.youtubeShortsSectionEnabled !== false);
@@ -433,7 +433,7 @@ export const SocialMediaSettingsView: React.FC = () => {
         id: 'hl-' + Date.now(),
         title: 'New Highlight',
         coverUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=120&q=80',
-        linkUrl: 'https://instagram.com/marudhar_fashion_point'
+        linkUrl: 'https://instagram.com/official_store'
       };
       const updated = [...socialMediaConfig.instagramHighlights, newHl];
       await updateSocialMediaConfig({ instagramHighlights: updated });
@@ -492,7 +492,7 @@ export const SocialMediaSettingsView: React.FC = () => {
         caption: 'Royal traditional leather Mojari handmade in Pipar City. 👑✨ #mojari #weddingseason',
         likes: 150,
         comments: 12,
-        postUrl: 'https://instagram.com/marudhar_fashion_point',
+        postUrl: 'https://instagram.com/official_store',
         createdAt: 'Just now'
       };
       const updated = [...socialMediaConfig.instagramMedia, newItem];
@@ -930,7 +930,7 @@ export const SocialMediaSettingsView: React.FC = () => {
               <label className="font-bold text-neutral-600 block mb-1">Username / ID Code</label>
               <input
                 type="text"
-                placeholder="marudhar_fashion"
+                placeholder="official_store"
                 value={addUsername}
                 onChange={(e) => setAddUsername(e.target.value)}
                 className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none"
@@ -1698,7 +1698,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                   type="text"
                   value={ytChannelName}
                   onChange={(e) => setYtChannelName(e.target.value)}
-                  placeholder="Marudhar Fashion Point Jodhpur"
+                  placeholder="e.g. Official Store Channel"
                   className="w-full bg-neutral-50 border p-2.5 rounded-xl"
                 />
               </div>
@@ -1708,7 +1708,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                   type="text"
                   value={ytChannelUrl}
                   onChange={(e) => setYtChannelUrl(e.target.value)}
-                  placeholder="https://youtube.com/@marudhar"
+                  placeholder="https://youtube.com/@official_store"
                   className="w-full bg-neutral-50 border p-2.5 rounded-xl"
                 />
               </div>
@@ -2037,7 +2037,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                         type="text"
                         value={fbPageName}
                         onChange={(e) => setFbPageName(e.target.value)}
-                        placeholder="Marudhar Fashion Point"
+                        placeholder="Official Store"
                         className="w-full bg-neutral-50 border p-2.5 rounded-xl text-[10px]"
                       />
                     </div>
@@ -2215,7 +2215,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      <span>Ask Marudhar AI Copilot</span>
+                      <span>Ask AI Copilot</span>
                     </>
                   )}
                 </button>
@@ -2323,8 +2323,8 @@ export const SocialMediaSettingsView: React.FC = () => {
                   ) : (
                     <div className="flex flex-col items-center justify-center py-16 text-center text-neutral-500">
                       <Sparkles className="w-8 h-8 text-neutral-700 animate-pulse mb-3" />
-                      <p className="font-bold">Marudhar Footwear Strategy Engine Idle</p>
-                      <p className="text-[11px] text-neutral-600 max-w-xs mt-1">Select an action and click Ask Marudhar AI Copilot to generate real-time brand-growth advice.</p>
+                      <p className="font-bold">Footwear Strategy Engine Idle</p>
+                      <p className="text-[11px] text-neutral-600 max-w-xs mt-1">Select an action and click Ask AI Copilot to generate real-time brand-growth advice.</p>
                     </div>
                   )}
                 </div>

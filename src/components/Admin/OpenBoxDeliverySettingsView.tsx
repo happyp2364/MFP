@@ -529,7 +529,7 @@ export const OpenBoxDeliverySettingsView: React.FC = () => {
                   </div>
                   <div className="min-w-0 flex-1">
                     <span className="text-xs font-bold text-neutral-800 block truncate">
-                      {products[0]?.name || 'Marudhar AirGlide Running Shoes'}
+                      {products[0]?.name || 'AirGlide Running Shoes'}
                     </span>
                     <span className="text-xs font-extrabold text-[#0B8F63]">
                       ₹{products[0]?.price || 1499}

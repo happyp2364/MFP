@@ -39,6 +39,7 @@ import { StoreLocatorPage } from './components/StoreLocator/StoreLocatorPage';
 import { ProductDetailPage } from './components/Products/ProductDetailPage';
 import { HomepageRenderer } from './components/Customer/HomepageRenderer';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { getPlatformConfig } from './lib/platformConfig';
 import { ScratchCardPopup } from './components/Promo/ScratchCardPopup';
 import { SpinWheelPopup } from './components/Promo/SpinWheelPopup';
 import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebration';
@@ -480,7 +481,7 @@ function AppContent() {
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
       <SEOHead 
-        title={seoConfig?.globalTitleTemplate?.replace('%s', 'Home') || 'Marudhar Fashion Point'}
+        title={seoConfig?.globalTitleTemplate?.replace('%s', 'Home') || getPlatformConfig().platformDisplayName}
         description={seoConfig?.globalDescription}
         image={seoConfig?.defaultOgImage}
         schemas={[generateOrganizationSchema()]}

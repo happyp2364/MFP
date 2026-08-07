@@ -793,7 +793,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                           })
                         }
                         className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none"
-                        placeholder="e.g. ✨ Thank you for choosing Marudhar Fashion Point!"
+                        placeholder="e.g. ✨ Thank you for choosing our store!"
                       />
                     </div>
 
@@ -875,7 +875,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                   MF
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm leading-tight">Marudhar Fashion Point</h4>
+                  <h4 className="font-bold text-sm leading-tight">Official Store</h4>
                   <p className="text-[10px] text-emerald-200 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     Online • WhatsApp Business

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Globe, Server, ShieldCheck, Mail, Link as LinkIcon, CheckCircle2, XCircle, RefreshCw, Crown } from 'lucide-react';
 import { Tenant } from '../../types';
 import { sanitizeSlug, isValidSlug, isSlugAvailable } from '../../lib/tenantIsolation';
+import { buildWebsiteUrl, buildAdminLoginUrl, getPlatformConfig } from '../../lib/platformConfig';
 
 interface ProvisionWebsiteModalProps {
   isOpen: boolean;
@@ -98,14 +99,17 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nwdstore.in';
-      const webUrl = `${origin}/${formData.slug}`;
-      const adminUrl = `${webUrl}?admin=true`;
+      const config = getPlatformConfig();
+      const webUrl = buildWebsiteUrl(formData.slug, config);
+      const adminUrl = buildAdminLoginUrl(formData.slug, config);
+      const platformHost = (() => {
+        try { return new URL(config.platformBaseUrl).hostname; } catch { return 'platform.app'; }
+      })();
 
       await onProvision({
         name: formData.name.trim(),
         slug: formData.slug.trim(),
-        domain: formData.domain.trim() || `${formData.slug}.nwdstore.in`,
+        domain: formData.domain.trim() || `${formData.slug}.${platformHost}`,
         ownerEmail: formData.ownerEmail.trim(),
         adminGoogleEmail: formData.ownerEmail.trim(),
         websiteUrl: webUrl,
@@ -121,7 +125,7 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
     }
   };
 
-  const currentHost = typeof window !== 'undefined' ? window.location.host : 'nwdstore.in';
+  const previewUrl = buildWebsiteUrl(formData.slug || '<website-slug>');
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -222,7 +226,7 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
                 <LinkIcon className="w-4 h-4 text-amber-400 shrink-0" />
                 <span className="text-[11px]">Generated URL:</span>
                 <strong className="text-amber-300 font-mono text-[11px] truncate">
-                  https://{currentHost}/{formData.slug || '<website-slug>'}
+                  {previewUrl}
                 </strong>
               </div>
             </div>

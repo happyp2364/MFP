@@ -63,8 +63,8 @@ const WHATSAPP_TEMPLATES = [
     category: 'FESTIVAL_OFFERS',
     language: 'en_US',
     status: 'APPROVED',
-    body: 'Namaste {{1}}! Marudhar Fashion Point brings you the {{2}} Festival Offer! Get up to {{3}} off on top footwear. Shop now: {{4}}',
-    exampleParams: ['Rahul', 'Diwali Special', '40%', 'https://marudharfashionpoint.com'],
+    body: 'Namaste {{1}}! Our store brings you the {{2}} Festival Offer! Get up to {{3}} off on top footwear. Shop now: {{4}}',
+    exampleParams: ['Rahul', 'Diwali Special', '40%', 'https://nwd.vercel.app'],
   },
   {
     id: 'wa_tpl_flash_02',
@@ -73,7 +73,7 @@ const WHATSAPP_TEMPLATES = [
     language: 'en_US',
     status: 'APPROVED',
     body: 'Exclusive Alert for {{1}}! ⚡ Flash Sale on handcrafted leather & sports shoes. Use code {{2}} at checkout: {{3}}. Reply STOP to unsubscribe.',
-    exampleParams: ['Priya', 'FLASH20', 'https://marudharfashionpoint.com'],
+    exampleParams: ['Priya', 'FLASH20', 'https://nwd.vercel.app'],
   },
   {
     id: 'wa_tpl_stock_03',
@@ -81,8 +81,8 @@ const WHATSAPP_TEMPLATES = [
     category: 'BACK_IN_STOCK',
     language: 'en_US',
     status: 'APPROVED',
-    body: 'Hi {{1}}, your favorite product {{2}} is back in stock at Marudhar Fashion Point! Grab it before it runs out: {{3}}',
-    exampleParams: ['Ankit', 'One8 Burgundy Sneaker', 'https://marudharfashionpoint.com'],
+    body: 'Hi {{1}}, your favorite product {{2}} is back in stock at our store! Grab it before it runs out: {{3}}',
+    exampleParams: ['Ankit', 'One8 Burgundy Sneaker', 'https://nwd.vercel.app'],
   },
 ];
 
@@ -118,7 +118,7 @@ export const MarketingCenterView: React.FC = () => {
   const [pushMessage, setPushMessage] = useState('');
   const [htmlBody, setHtmlBody] = useState('');
   const [selectedWaTemplate, setSelectedWaTemplate] = useState(WHATSAPP_TEMPLATES[0].id);
-  const [targetLink, setTargetLink] = useState('https://marudharfashionpoint.com');
+  const [targetLink, setTargetLink] = useState(storeInfo?.contactDetails?.websiteUrl || 'https://nwd.vercel.app');
   const [sendOption, setSendOption] = useState<'IMMEDIATE' | 'SCHEDULED'>('IMMEDIATE');
   const [scheduledDateTime, setScheduledDateTime] = useState('');
 
@@ -169,7 +169,7 @@ export const MarketingCenterView: React.FC = () => {
     setSelectedProduct(p);
     setEmailSubject(`Exclusive Offer: ${p.name} - Limited Stock Drop!`);
     setPushMessage(`🔥 ${p.name} is now available at ₹${p.price.toLocaleString('en-IN')}! Tap to view details.`);
-    setTargetLink(`https://marudharfashionpoint.com?product=${p.id}`);
+    setTargetLink(`${storeInfo?.contactDetails?.websiteUrl || 'https://nwd.vercel.app'}?product=${p.id}`);
     setHtmlBody(`
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #faf8f5; border: 1px solid #e5dccb; border-radius: 16px; padding: 24px;">
         <div style="text-align: center; padding-bottom: 16px; border-bottom: 2px solid #78350f;">
@@ -193,7 +193,7 @@ export const MarketingCenterView: React.FC = () => {
             ${p.description || 'Crafted with premium materials for unmatched comfort, durability, and contemporary style.'}
           </p>
 
-          <a href="https://marudharfashionpoint.com?product=${p.id}" style="display: inline-block; background: #78350f; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 32px; border-radius: 8px; font-size: 15px;">
+          <a href="${storeInfo?.contactDetails?.websiteUrl || 'https://nwd.vercel.app'}?product=${p.id}" style="display: inline-block; background: #78350f; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 32px; border-radius: 8px; font-size: 15px;">
             Shop Exclusive Drop Now
           </a>
         </div>
@@ -259,7 +259,7 @@ export const MarketingCenterView: React.FC = () => {
     setPushMessage('');
     setHtmlBody('');
     setSelectedProduct(null);
-    setTargetLink('https://marudharfashionpoint.com');
+    setTargetLink(storeInfo?.contactDetails?.websiteUrl || 'https://nwd.vercel.app');
     setSendOption('IMMEDIATE');
     setScheduledDateTime('');
   };
@@ -289,7 +289,7 @@ export const MarketingCenterView: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `marudhar_marketing_subscribers_${Date.now()}.csv`);
+    link.setAttribute('download', `nwd_marketing_subscribers_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

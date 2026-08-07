@@ -103,7 +103,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                     <User className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-white">Welcome to Marudhar</h3>
+                    <h3 className="text-sm font-black text-white">Welcome</h3>
                     <p className="text-xs text-neutral-400">Sign in to track orders & earn rewards</p>
                   </div>
                 </div>
@@ -241,7 +241,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
               </div>
 
               <a
-                href={`https://wa.me/91${storeInfo.phone.replace(/[^0-9]/g, '') || '9829012345'}?text=Hi%20Marudhar%20Fashion%20Point%20support,%20I%20need%20help.`}
+                href={`https://wa.me/91${storeInfo.phone.replace(/[^0-9]/g, '') || '9829012345'}?text=Hi%20support,%20I%20need%20help.`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full p-2.5 rounded-xl hover:bg-neutral-800 text-neutral-300 hover:text-white flex items-center gap-3 transition-colors"
@@ -278,7 +278,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
 
           {/* Drawer Footer */}
           <div className="p-4 bg-neutral-950 border-t border-neutral-800 text-center text-[10px] text-neutral-500 font-medium">
-            Marudhar Fashion Point © 2026 • Premium Footwear Systems
+            {storeInfo.name || 'Store'} © 2026 • Premium Footwear Systems
           </div>
         </div>
       </div>

@@ -20,12 +20,12 @@ export const SocialFollowCTA: React.FC = () => {
         {/* Top Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-bold text-amber-300 mb-6 shadow-lg animate-pulse">
           <Sparkles className="w-4 h-4 text-amber-400" />
-          <span>JOIN OUR MARUDHAR FASHION FAMILY</span>
+          <span>JOIN OUR EXCLUSIVE COMMUNITY</span>
         </div>
 
         {/* Heading & Subheading */}
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-black font-serif-heading tracking-tight text-white mb-4">
-          Stay Connected With Marudhar Fashion Point
+          Stay Connected With Us
         </h2>
         <p className="text-sm sm:text-base text-neutral-300 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
           Follow us for the latest fashion collections, premium footwear, offers, and exclusive updates.

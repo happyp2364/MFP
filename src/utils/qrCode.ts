@@ -1,4 +1,5 @@
 // Dynamic UPI Link & QR Code Utility
+import { getPlatformConfig } from '../lib/platformConfig';
 
 /**
  * Utility to clean and sanitize a UPI ID (VPA) by removing whitespace,
@@ -15,7 +16,7 @@ export function cleanAndSanitizeUPIId(upiId: string | null | undefined): string 
 
 /**
  * Validates whether a UPI ID meets standard VPA format rules.
- * Standard UPI format: username@handle (e.g. marudhar@oksbi, 9876543210@paytm)
+ * Standard UPI format: username@handle (e.g. merchant@oksbi, 9876543210@paytm)
  */
 export function isValidUPIIdFormat(upiId: string | null | undefined): boolean {
   const sanitized = cleanAndSanitizeUPIId(upiId);
@@ -46,9 +47,10 @@ export function generateUPILink(
     return '';
   }
 
-  const cleanName = encodeURIComponent((merchantName || 'Marudhar Fashion Point').trim());
+  const config = getPlatformConfig();
+  const cleanName = encodeURIComponent((merchantName || config.platformName).trim());
   const formattedAmount = (Math.max(0, amount) || 0).toFixed(2);
-  const cleanNote = note && note !== 'Order' && note !== 'Marudhar Fashion Order' ? `${note} #${orderId}` : `Order #${orderId}`;
+  const cleanNote = note && note !== 'Order' && !note.includes('Order') ? `${note} #${orderId}` : `Order #${orderId}`;
   const orderRef = encodeURIComponent(cleanNote.trim());
 
   // Official UPI specification URI

@@ -372,7 +372,7 @@ export async function recordAuditLog(
     action,
     category,
     details,
-    userEmail: auth.currentUser?.email || 'admin@marudharfashionpoint.com',
+    userEmail: auth.currentUser?.email || 'admin@nwd.app',
     status,
     ipAddress: '127.0.0.1 (Client Applet)',
   });
@@ -697,9 +697,9 @@ export async function changeAdminPasswordFirebase(
 
 // Default Payment Gateway & UPI Settings
 export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
-  merchantName: 'Marudhar Fashion Point',
-  upiId: 'marudharfashion@upi',
-  upiName: 'Marudhar Fashion Point',
+  merchantName: 'Multi-Store Platform Store',
+  upiId: 'store@upi',
+  upiName: 'Store Payment',
   qrCodeCustomImage: '',
   qrCodeUrl: '',
   paymentInstructions: 'Scan the QR code using any UPI app (Google Pay, PhonePe, Paytm, BHIM) to make instant payment. Enter your transaction ID after payment.',

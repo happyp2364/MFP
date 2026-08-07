@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getPlatformConfig } from '../../lib/platformConfig';
 import {
   Crown,
   ShieldCheck,
@@ -62,6 +63,8 @@ import { sendAdminPasswordResetEmail, recordAuditLog } from '../../lib/firebase'
 import { SuperAdminSecurityVerificationModal } from './SuperAdminSecurityVerificationModal';
 import { CreateAdminModal } from './CreateAdminModal';
 import { ProvisionWebsiteModal } from './ProvisionWebsiteModal';
+import { FeatureReleaseManagerView } from './FeatureReleaseManagerView';
+import { PlatformConfigManagerView } from './PlatformConfigManagerView';
 import { WebsiteDirectoryManager } from './WebsiteDirectoryManager';
 import { TenantSecurityVerificationView } from './TenantSecurityVerificationView';
 
@@ -76,7 +79,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   auditLogs = [],
   onRefreshAuditLogs,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'tenants' | 'security' | 'audit_log' | 'verification'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'tenants' | 'platform_config' | 'feature_releases' | 'security' | 'audit_log' | 'verification'>('overview');
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -534,6 +537,30 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
         </button>
 
         <button
+          onClick={() => setActiveTab('platform_config')}
+          className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+            activeTab === 'platform_config'
+              ? 'border-amber-500 text-amber-400 font-extrabold'
+              : 'border-transparent text-neutral-400 hover:text-white'
+          }`}
+        >
+          <Sliders className="w-4 h-4 text-emerald-400" />
+          <span>Platform Configuration</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('feature_releases')}
+          className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+            activeTab === 'feature_releases'
+              ? 'border-amber-500 text-amber-400 font-extrabold'
+              : 'border-transparent text-neutral-400 hover:text-white'
+          }`}
+        >
+          <Sliders className="w-4 h-4 text-amber-400" />
+          <span>Feature Releases & Governance</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('security')}
           className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
             activeTab === 'security'
@@ -919,7 +946,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
                 <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden text-xs">
                   <div className="flex justify-between items-center p-3 border-b border-neutral-800">
                     <span className="text-neutral-500 font-bold">Platform Name</span>
-                    <span className="text-white font-bold">Marudhar Fashion Enterprise</span>
+                    <span className="text-white font-bold">{getPlatformConfig().platformName}</span>
                   </div>
                   <div className="flex justify-between items-center p-3 border-b border-neutral-800">
                     <span className="text-neutral-500 font-bold">Platform Version</span>
@@ -935,7 +962,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
                   </div>
                   <div className="flex justify-between items-center p-3">
                     <span className="text-neutral-500 font-bold">Firebase Project</span>
-                    <span className="text-neutral-300 font-mono">ai-studio-marudharfashionp</span>
+                    <span className="text-neutral-300 font-mono">nwd-studio-platform</span>
                   </div>
                 </div>
               </div>
@@ -1160,6 +1187,28 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
           }}
           showToast={showToast}
           triggerSuperAdminVerification={triggerSuperAdminVerification}
+        />
+      )}
+
+      {/* ========================================== */}
+      {/* SECTION 3.5: PLATFORM CONFIGURATION        */}
+      {/* ========================================== */}
+      {activeTab === 'platform_config' && (
+        <PlatformConfigManagerView
+          showToast={showToast}
+          isSuperAdmin={isSuperAdmin}
+        />
+      )}
+
+      {/* ========================================== */}
+      {/* SECTION 4: FEATURE RELEASES & GOVERNANCE    */}
+      {/* ========================================== */}
+      {activeTab === 'feature_releases' && (
+        <FeatureReleaseManagerView
+          tenants={tenants}
+          onUpdateTenants={loadData}
+          showToast={showToast}
+          isSuperAdmin={isSuperAdmin}
         />
       )}
 

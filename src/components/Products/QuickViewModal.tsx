@@ -152,7 +152,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                   <ImageOff className="w-7 h-7" />
                 </div>
                 <span className="text-xs font-bold text-neutral-800 tracking-wide uppercase">Real Product Image Coming Soon</span>
-                <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Marudhar Fashion Point</span>
+                <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Official Product Showcase</span>
               </div>
             ) : (
               <img

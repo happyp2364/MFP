@@ -7,6 +7,7 @@ export interface PlatformConfig {
   platformBaseUrl: string;
   platformSupportEmail: string;
   platformSupportWhatsApp: string;
+  platformSupportWhatsapp?: string; // Support both casings
   platformLogo: string;
   platformFavicon: string;
 }
@@ -14,9 +15,10 @@ export interface PlatformConfig {
 export const DEFAULT_PLATFORM_CONFIG: PlatformConfig = {
   platformName: 'NWD',
   platformDisplayName: 'NWD Platform',
-  platformBaseUrl: 'https://nwd.vercel.app',
-  platformSupportEmail: 'support@nwd.vercel.app',
+  platformBaseUrl: 'https://nwd-phi.vercel.app',
+  platformSupportEmail: 'support@nwd-phi.vercel.app',
   platformSupportWhatsApp: '919829012345',
+  platformSupportWhatsapp: '919829012345',
   platformLogo: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=120&q=80',
   platformFavicon: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=32&h=32&q=80',
 };
@@ -110,13 +112,21 @@ export function subscribePlatformConfig(onUpdate: (config: PlatformConfig) => vo
 }
 
 /**
+ * Gets the current platform base URL.
+ */
+export function getPlatformBaseUrl(): string {
+  const config = getPlatformConfig();
+  return (config.platformBaseUrl || 'https://nwd-phi.vercel.app').trim().replace(/\/+$/, '');
+}
+
+/**
  * Builds a website URL dynamically using Platform Configuration.
  * Format: platformBaseUrl + "/" + websiteSlug
- * Example: https://nwd.vercel.app/happy-footwear
+ * Example: https://nwd-phi.vercel.app/happy-footwear
  */
 export function buildWebsiteUrl(websiteSlug: string, customConfig?: Partial<PlatformConfig>): string {
   const config = { ...getPlatformConfig(), ...customConfig };
-  let baseUrl = (config.platformBaseUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://nwd.vercel.app')).trim();
+  let baseUrl = (config.platformBaseUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://nwd-phi.vercel.app')).trim();
   baseUrl = baseUrl.replace(/\/+$/, '');
   const cleanSlug = (websiteSlug || '').trim().replace(/^\/+/, '');
   return cleanSlug ? `${baseUrl}/${cleanSlug}` : baseUrl;

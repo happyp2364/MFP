@@ -77,8 +77,8 @@ export const WHATSAPP_VARIABLES_LIST = [
   { key: '{shopName}', label: 'Shop Name', sample: 'Official Store', category: 'Store' },
   { key: '{shopPhone}', label: 'Shop Phone', sample: '+91 97824 82250', category: 'Store' },
   { key: '{shopWhatsApp}', label: 'Shop WhatsApp', sample: '+91 97824 82250', category: 'Store' },
-  { key: '{website}', label: 'Store URL', sample: 'https://nwd.vercel.app', category: 'Store' },
-  { key: '{productURL}', label: 'Product Link', sample: 'https://nwd.vercel.app/#product-one8-loafers', category: 'Product' },
+  { key: '{website}', label: 'Store URL', sample: 'https://nwd-phi.vercel.app', category: 'Store' },
+  { key: '{productURL}', label: 'Product Link', sample: 'https://nwd-phi.vercel.app/#product-one8-loafers', category: 'Product' },
 ];
 
 const DEFAULT_ADVANCED_OPTIONS = {

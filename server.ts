@@ -1709,7 +1709,7 @@ ${customerMessage || 'Please confirm availability.'}`;
         let html = fs.readFileSync(indexHtmlPath, "utf-8");
 
         if (foundProduct) {
-          const host = req.get("host") || "marudhar-fashion-point-1.vercel.app";
+          const host = req.get("host") || "nwd-phi.vercel.app";
           const protocol = req.protocol || "https";
           const fullUrl = `${protocol}://${host}/product/${foundProduct.id || foundProduct.slug}`;
           const title = `${foundProduct.name} | Marudhar Fashion Point`;
@@ -1773,7 +1773,7 @@ ${customerMessage || 'Please confirm availability.'}`;
         const desc = `Discover the best shoes, sneakers, and fashion accessories in ${capitalizedLocation}. Shop at Marudhar Fashion Point for premium quality footwear with exclusive local offers.`;
         const imgUrl = 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80';
         
-        const host = req.get("host") || "marudhar-fashion-point-1.vercel.app";
+        const host = req.get("host") || "nwd-phi.vercel.app";
         const protocol = req.protocol || "https";
         const fullUrl = `${protocol}://${host}/seo/${req.params.location}`;
 
@@ -1804,14 +1804,14 @@ ${customerMessage || 'Please confirm availability.'}`;
   // DYNAMIC SITEMAP AND ROBOTS.TXT
   // =========================================================================
   app.get("/robots.txt", (req, res) => {
-    const host = req.get("host") || "marudharfashionpoint.com";
+    const host = req.get("host") || "nwd-phi.vercel.app";
     const protocol = req.protocol || "https";
     res.type('text/plain');
     res.send(`User-agent: *\nAllow: /\nSitemap: ${protocol}://${host}/sitemap.xml`);
   });
 
   app.get("/sitemap.xml", (req, res) => {
-    const host = req.get("host") || "marudharfashionpoint.com";
+    const host = req.get("host") || "nwd-phi.vercel.app";
     const protocol = req.protocol || "https";
     const baseUrl = `${protocol}://${host}`;
     

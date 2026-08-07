@@ -316,6 +316,6 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
     facebook: "https://facebook.com/official_store",
     youtube: "https://youtube.com/@official_store",
     whatsapp: "919829012345",
-    website: "https://nwd.vercel.app"
+    website: "https://nwd-phi.vercel.app"
   }
 };

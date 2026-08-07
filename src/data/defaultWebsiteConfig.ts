@@ -85,7 +85,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     supportEmail: 'support@officialstore.com',
     salesEmail: 'sales@officialstore.com',
     billingEmail: 'billing@officialstore.com',
-    websiteUrl: 'https://nwd.vercel.app',
+    websiteUrl: 'https://nwd-phi.vercel.app',
   },
 
   // Section 3: Address
@@ -131,7 +131,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     metaTitle: 'Footwear Store — Best Family Shoe Store',
     metaDescription: 'Discover high-grade athletic sneakers, royal leather loafers, and juttis. Order online with fast delivery.',
     keywords: ['Footwear Store', 'Athletic Shoes', 'Leather Shoes', 'Sneakers'],
-    canonicalUrl: 'https://nwd.vercel.app',
+    canonicalUrl: 'https://nwd-phi.vercel.app',
     ogImageUrl: '/logo.png',
     twitterCard: 'summary_large_image',
     structuredDataJson: JSON.stringify({
@@ -192,7 +192,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     emailFooter: '<div style="padding:15px;text-align:center;font-size:12px;color:#888;">© 2026 Footwear Store. Thank you for shopping with us!</div>',
     emailSignature: 'Warm regards,\nThe Footwear Store Team\nCustomer Care: +91 9782482250',
     supportName: 'Customer Care',
-    supportEmail: 'support@nwd.vercel.app',
+    supportEmail: 'support@nwd-phi.vercel.app',
   },
 
   // Section 11: WhatsApp
@@ -215,8 +215,8 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     address: 'Commercial Market, Main City',
     gstNumber: '08AAAAA0000A1Z5',
     phone: '+91 9782482250',
-    email: 'support@nwd.vercel.app',
-    website: 'https://nwd.vercel.app',
+    email: 'support@nwd-phi.vercel.app',
+    website: 'https://nwd-phi.vercel.app',
     qrCodeUrl: '',
     footerText: 'Thank you for your purchase! Returns accepted within 7 days with valid invoice.',
   },

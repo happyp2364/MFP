@@ -168,7 +168,7 @@ export const PlatformConfigManagerView: React.FC<PlatformConfigManagerViewProps>
                   required
                   value={config.platformBaseUrl}
                   onChange={(e) => handleChange('platformBaseUrl', e.target.value)}
-                  placeholder="https://nwd.vercel.app"
+                  placeholder="https://nwd-phi.vercel.app"
                   className="w-full bg-neutral-50 border border-neutral-200 rounded-xl py-2.5 pl-10 pr-3.5 text-amber-700 font-mono text-xs focus:border-amber-500 focus:outline-none transition-colors"
                 />
               </div>
@@ -189,7 +189,7 @@ export const PlatformConfigManagerView: React.FC<PlatformConfigManagerViewProps>
                   required
                   value={config.platformSupportEmail}
                   onChange={(e) => handleChange('platformSupportEmail', e.target.value)}
-                  placeholder="support@nwd.vercel.app"
+                  placeholder="support@nwd-phi.vercel.app"
                   className="w-full bg-neutral-50 border border-neutral-200 rounded-xl py-2.5 pl-10 pr-3.5 text-neutral-900 font-mono text-xs focus:border-amber-500 focus:outline-none transition-colors"
                 />
               </div>
@@ -257,7 +257,7 @@ export const PlatformConfigManagerView: React.FC<PlatformConfigManagerViewProps>
               <div className="p-3 bg-neutral-950 border border-neutral-800 rounded-xl space-y-2">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-neutral-500">Platform Base URL:</span>
-                  <span className="font-mono text-neutral-300">{config.platformBaseUrl || 'https://nwd.vercel.app'}</span>
+                  <span className="font-mono text-neutral-300">{config.platformBaseUrl || 'https://nwd-phi.vercel.app'}</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-neutral-500">Website Slug:</span>

@@ -11,7 +11,7 @@ import {
 } from '../data/defaultWhatsAppTemplates';
 import { STORE_INFO } from '../data/mockData';
 import { getProductSKU, getProductUrl } from './productUtils';
-import { getPlatformConfig } from '../lib/platformConfig';
+import { getPlatformConfig, getPlatformBaseUrl } from '../lib/platformConfig';
 
 export interface WhatsAppPayloadData {
   customerName?: string;
@@ -221,8 +221,8 @@ export function buildSamplePayloadForPreview(category: WhatsAppTemplateActionCat
     shopName: 'Footwear Store',
     shopPhone: '+91 97824 82250',
     shopWhatsApp: '+91 97824 82250',
-    website: typeof window !== 'undefined' ? window.location.origin : 'https://nwd.vercel.app',
-    productURL: 'https://nwd.vercel.app/#product-velvet-loafers',
+    website: typeof window !== 'undefined' ? window.location.origin : getPlatformBaseUrl(),
+    productURL: `${getPlatformBaseUrl()}/#product-velvet-loafers`,
     productImageLink: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80',
     deliveryNotes: 'Please deliver after 2 PM',
   };

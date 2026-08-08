@@ -602,35 +602,66 @@ export async function provisionNewWebsite(tenantData: Partial<import('../types')
     businessCategory: tenantData.businessCategory,
   };
 
+  console.log("Firebase Connection Info:");
+  console.log("projectId:", db.app.options.projectId);
+  console.log("appId:", db.app.options.appId);
+  console.log("authDomain:", db.app.options.authDomain);
+  console.log("currentUser UID:", auth.currentUser?.uid);
+
+  const executeWrite = async (collectionName: string, docPath: string, action: () => Promise<void>) => {
+    console.log("Writing:", docPath);
+    try {
+      await action();
+      console.log("Successfully wrote to:", docPath);
+    } catch (error: any) {
+      console.error("Provisioning Error:", error);
+      if (error.code) { // checking if it's like a FirebaseError
+        console.error("error.code:", error.code);
+        console.error("error.message:", error.message);
+        console.error("error.stack:", error.stack);
+      }
+      throw new Error(
+        `Collection Name: ${collectionName}\n` +
+        `Document Path: ${docPath}\n` +
+        `Firebase Error Code: ${error.code || 'UNKNOWN'}\n` +
+        `Firebase Error Message: ${error.message || String(error)}`
+      );
+    }
+  };
+
   const tenantRef = doc(db, 'tenants', newTenant.id);
   const websiteRef = doc(db, 'websites', newTenant.id);
   
-  try {
+  // 1. Write tenants/{tenantId}
+  await executeWrite('tenants', `tenants/${newTenant.id}`, async () => {
     await setDoc(tenantRef, newTenant, { merge: true });
-    
-    // Create websites/{websiteId} doc
-    const websiteData = {
-      websiteId: newTenant.id,
-      websiteSlug: newTenant.slug || newTenant.id,
-      websiteUrl: newTenant.websiteUrl || '',
-      businessName: newTenant.name,
-      ownerEmail: newTenant.ownerEmail,
-      ownerUid: ownerUid,
-      createdAt: newTenant.createdAt || new Date().toISOString(),
-      status: 'pending',
-      enabledModules: Object.entries(tenantData.enabledModules).filter(([_, enabled]) => enabled).map(([key]) => key),
-      secretCode: secretCode,
-      theme: {
-        id: tenantData.defaultTheme,
-        primaryColor: tenantData.primaryColor,
-        secondaryColor: tenantData.secondaryColor,
-      }
-    };
-    
+  });
+
+  // 2. Write websites/{websiteId} doc
+  const websiteData = {
+    websiteId: newTenant.id,
+    websiteSlug: newTenant.slug || newTenant.id,
+    websiteUrl: newTenant.websiteUrl || '',
+    businessName: newTenant.name,
+    ownerEmail: newTenant.ownerEmail,
+    ownerUid: ownerUid,
+    createdAt: newTenant.createdAt || new Date().toISOString(),
+    status: 'pending',
+    enabledModules: Object.entries(tenantData.enabledModules).filter(([_, enabled]) => enabled).map(([key]) => key),
+    secretCode: secretCode,
+    theme: {
+      id: tenantData.defaultTheme,
+      primaryColor: tenantData.primaryColor,
+      secondaryColor: tenantData.secondaryColor,
+    }
+  };
+  await executeWrite('websites', `websites/${newTenant.id}`, async () => {
     await setDoc(websiteRef, websiteData, { merge: true });
-    
-    // Create admin user link
-    const adminRef = doc(db, 'admin_users', ownerUid);
+  });
+  
+  // 3. Write admin user link
+  const adminRef = doc(db, 'admin_users', ownerUid);
+  await executeWrite('admin_users', `admin_users/${ownerUid}`, async () => {
     await setDoc(adminRef, {
       uid: ownerUid,
       email: newTenant.ownerEmail,
@@ -641,38 +672,40 @@ export async function provisionNewWebsite(tenantData: Partial<import('../types')
       secretCode: secretCode,
       createdAt: new Date().toISOString()
     }, { merge: true });
+  });
 
-    // Seed default documents
-    const collectionsToSeed = [
-      'settings', 'homepage', 'theme', 'social', 'payment', 
-      'categories', 'notifications', 'analytics', 'products', 
-      'orders', 'reviews', 'customers', 'staff', 'managers', 
-      'media', 'seo'
-    ];
+  // 4. Seed default documents
+  const collectionsToSeed = [
+    'settings', 'homepage', 'theme', 'social', 'payment', 
+    'categories', 'notifications', 'analytics', 'products', 
+    'orders', 'reviews', 'customers', 'staff', 'managers', 
+    'media', 'seo'
+  ];
 
-    for (const col of collectionsToSeed) {
-      const colRef = doc(db, `websites/${newTenant.id}/${col}`, 'default');
+  for (const col of collectionsToSeed) {
+    const docPath = `websites/${newTenant.id}/${col}/default`;
+    const colRef = doc(db, `websites/${newTenant.id}/${col}`, 'default');
+    await executeWrite(col, docPath, async () => {
       await setDoc(colRef, {
         initializedAt: new Date().toISOString(),
         _type: 'system_default'
       }, { merge: true });
-    }
+    });
+  }
 
+  try {
     recordAuditLog(
       'New Website Provisioned',
       'SECURITY',
       `Provisioned website: ${newTenant.name} with slug: ${newTenant.slug}`,
       'SUCCESS'
     );
-
-    return { tenant: newTenant, secretCode };
   } catch (err) {
-    console.warn('Failed to provision website:', err);
-    throw err;
+    console.warn("Non-fatal: Failed to record audit log:", err);
   }
+
+  return { tenant: newTenant, secretCode };
 }
-
-
 /**
  * Initiates a full Firestore backup for a specific websiteId, archiving all core collections
  * into a single document in the 'backups' collection.

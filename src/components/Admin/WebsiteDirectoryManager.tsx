@@ -1256,7 +1256,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
             // For now just return result so the modal can show step 6
             return result;
           } catch (err) {
-            showToast('error', 'Failed to provision website');
+            showToast('error', err instanceof Error ? err.message : 'Failed to provision website');
             throw err; // So modal catches it
           }
         }}

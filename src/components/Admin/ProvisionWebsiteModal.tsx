@@ -20,6 +20,7 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [provisionResult, setProvisionResult] = useState<any>(null);
+  const [provisionError, setProvisionError] = useState<string | null>(null);
 
   // Business Info
   const [name, setName] = useState('');
@@ -136,9 +137,11 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
       const result = await onProvision(data);
       setProvisionResult(result);
       setStep(6); // Success Step
-    } catch (err) {
-      console.error(err);
-      alert('Failed to provision website');
+        } catch (err: any) {
+      console.error('Provisioning Error:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      setProvisionError(msg);
+      // alert removed so it shows in UI
     } finally {
       setIsSubmitting(false);
     }
@@ -249,6 +252,12 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
                   <label className="text-neutral-400 font-bold uppercase tracking-wider">Pincode</label>
                   <input type="text" value={pincode} onChange={(e) => setPincode(e.target.value)} className="w-full bg-neutral-900 border border-neutral-800 rounded-xl py-3 px-4 text-white focus:border-amber-500 outline-none" />
                 </div>
+                {provisionError && (
+                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-xs whitespace-pre-wrap font-mono mt-4 text-left">
+                    {provisionError}
+                  </div>
+                )}
+
               </div>
             )}
 
@@ -270,6 +279,12 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
                   <label className="text-neutral-400 font-bold uppercase tracking-wider block">Generated Website URL</label>
                   <div className="text-sky-400 font-mono text-sm">{buildWebsiteUrl(slug || '...')}</div>
                 </div>
+                {provisionError && (
+                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-xs whitespace-pre-wrap font-mono mt-4 text-left">
+                    {provisionError}
+                  </div>
+                )}
+
               </div>
             )}
 
@@ -299,6 +314,12 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
                     </div>
                   </div>
                 </div>
+                {provisionError && (
+                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-xs whitespace-pre-wrap font-mono mt-4 text-left">
+                    {provisionError}
+                  </div>
+                )}
+
               </div>
             )}
 
@@ -338,6 +359,12 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
                     <p className="text-amber-400 font-bold">{Object.values(enabledModules).filter(Boolean).length} modules</p>
                   </div>
                 </div>
+                {provisionError && (
+                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-xs whitespace-pre-wrap font-mono mt-4 text-left">
+                    {provisionError}
+                  </div>
+                )}
+
               </div>
             )}
 
@@ -385,6 +412,12 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
                     Done
                   </button>
                 </div>
+                {provisionError && (
+                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-xs whitespace-pre-wrap font-mono mt-4 text-left">
+                    {provisionError}
+                  </div>
+                )}
+
               </div>
             )}
           </div>

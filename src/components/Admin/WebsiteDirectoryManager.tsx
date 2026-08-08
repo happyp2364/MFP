@@ -16,6 +16,7 @@ import {
   KeyRound,
   Trash2,
   Archive,
+  Database,
   RefreshCw,
   Sliders,
   DollarSign,
@@ -42,7 +43,7 @@ import {
 } from 'lucide-react';
 import { Tenant, AdminUser } from '../../types';
 import { getWebsiteUrl, getAdminLoginUrl, sanitizeSlug, isValidSlug, isSlugAvailable } from '../../lib/tenantIsolation';
-import { transferTenantOwnership } from '../../lib/adminService';
+import { transferTenantOwnership, provisionNewWebsite, createWebsiteBackup } from '../../lib/adminService';
 import { ProvisionWebsiteModal } from './ProvisionWebsiteModal';
 import { buildWebsiteUrl, buildAdminLoginUrl, getPlatformConfig } from '../../lib/platformConfig';
 
@@ -306,6 +307,29 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
   };
 
   // Handle Website Status Actions
+
+  const handleBackupWebsite = async (tenant: Tenant) => {
+    if (!currentUser) return;
+    triggerSuperAdminVerification(
+      'CREATE DATABASE BACKUP',
+      `ACTION: Initiate full Firestore backup for website "${tenant.name}" (${tenant.id})`,
+      'This will snapshot all sub-collections and core data into the central backups collection.',
+      async () => {
+        try {
+          showToast('info', `Backup initiated for ${tenant.name}...`);
+          const res = await createWebsiteBackup(tenant.id, currentUser.email);
+          if (res.success) {
+            showToast('success', `Backup completed successfully. ID: ${res.backupId}`);
+          } else {
+            showToast('error', `Backup failed: ${res.message}`);
+          }
+        } catch (err: any) {
+          showToast('error', `Failed to backup website: ${err.message}`);
+        }
+      }
+    );
+  };
+
   const handleStatusChange = (tenant: Tenant, newStatus: Tenant['status']) => {
     const actionLabel =
       newStatus === 'suspended'
@@ -422,20 +446,19 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
           <table className="w-full text-left text-xs">
             <thead className="bg-neutral-900/80 border-b border-neutral-800 text-neutral-400 font-bold uppercase tracking-wider text-[10px]">
               <tr>
-                <th className="p-4">Logo</th>
-                <th className="p-4">Website Name & ID</th>
-                <th className="p-4">Owner Name & Email</th>
-                <th className="p-4">Website URL (Dynamic)</th>
-                <th className="p-4">Admin Login URL</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Created Date</th>
-                <th className="p-4 text-right">Super Admin Actions</th>
+                <th className="p-4 text-left">Website</th>
+                <th className="p-4 text-left">Owner</th>
+                <th className="p-4 text-left">Status</th>
+                <th className="p-4 text-left">URLs</th>
+                <th className="p-4 text-left">Created</th>
+                <th className="p-4 text-left">Stats</th>
+                <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800/60">
               {paginatedTenants.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-12 text-center text-neutral-500 font-bold">
+                  <td colSpan={7} className="p-12 text-center text-neutral-500 font-bold">
                     No websites match your search or filter criteria.
                   </td>
                 </tr>
@@ -602,6 +625,14 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
 
+                          {/* Backup */}
+                          <button
+                            onClick={() => handleBackupWebsite(tenant)}
+                            title="Create Backup Snapshot"
+                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-blue-400 border border-neutral-800 rounded-lg transition-all"
+                          >
+                            <Database className="w-3.5 h-3.5" />
+                          </button>
                           {/* Suspend / Restore */}
                           <button
                             onClick={() => {
@@ -1010,6 +1041,14 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
                   >
                     Copy
                   </button>
+                  <a
+                    href={getWebsiteUrl(sharingTenant)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-xl transition shrink-0 text-center"
+                  >
+                    Open
+                  </a>
                 </div>
               </div>
 
@@ -1028,6 +1067,14 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
                   >
                     Copy
                   </button>
+                  <a
+                    href={getAdminLoginUrl(sharingTenant)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-xl transition shrink-0 text-center"
+                  >
+                    Open
+                  </a>
                 </div>
               </div>
 
@@ -1200,38 +1247,17 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
         onClose={() => setIsProvisionModalOpen(false)}
         existingTenants={tenants}
         onProvision={async (tenantData) => {
-          const newId = tenantData.slug ? `tenant-${tenantData.slug}` : `tenant-${Date.now()}`;
-          const webUrl = tenantData.websiteUrl || (tenantData.slug ? buildWebsiteUrl(tenantData.slug) : undefined);
-          const adminUrl = tenantData.adminLoginUrl || (tenantData.slug ? buildAdminLoginUrl(tenantData.slug) : undefined);
-          const config = getPlatformConfig();
-          const platformHost = (() => {
-            try { return new URL(config.platformBaseUrl).hostname; } catch { return 'platform.app'; }
-          })();
-
-          const newTenant: Tenant = {
-            id: newId,
-            slug: tenantData.slug,
-            name: tenantData.name || 'Untitled Website',
-            domain: tenantData.domain || `${tenantData.slug || newId}.${platformHost}`,
-            websiteUrl: webUrl,
-            adminLoginUrl: adminUrl,
-            ownerEmail: tenantData.ownerEmail || 'owner@example.com',
-            adminGoogleEmail: tenantData.adminGoogleEmail || tenantData.ownerEmail || 'owner@example.com',
-            ownerName: tenantData.name ? `${tenantData.name} Owner` : 'Store Owner',
-            ownerId: `owner-${Date.now()}`,
-            status: tenantData.status || 'active',
-            plan: tenantData.plan || 'free',
-            createdAt: new Date().toISOString(),
-            databaseSize: 0,
-          };
-
           try {
-            await onUpdateTenant(newTenant);
-            const generatedUrl = buildWebsiteUrl(newTenant.slug || newTenant.id);
-            showToast('success', `Website URL created for "${newTenant.name}" (${generatedUrl})`);
-            setIsProvisionModalOpen(false);
+            const result = await provisionNewWebsite(tenantData as any);
+            const generatedUrl = buildWebsiteUrl(result.tenant.slug || result.tenant.id);
+            showToast('success', `Website URL created for "${result.tenant.name}" (${generatedUrl})`);
+            
+            // Refresh tenants list if we have a way... wait, we need to add to local state if possible or wait for sync
+            // For now just return result so the modal can show step 6
+            return result;
           } catch (err) {
             showToast('error', 'Failed to provision website');
+            throw err; // So modal catches it
           }
         }}
       />

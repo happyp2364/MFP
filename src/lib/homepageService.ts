@@ -2,6 +2,7 @@ import { doc, getDoc, setDoc, onSnapshot, collection, getDocs, query, orderBy, l
 import { db, handleFirestoreError, OperationType, recordAuditLog } from './firebase';
 import { HomepageConfig, HomepageVersion, ActiveThemeDoc } from '../types';
 import { DEFAULT_HOMEPAGE_CONFIG } from '../data/defaultHomepagePresets';
+import { resolveTenantCollection, getTenantDocWriteRef } from './firestoreMultiTenant';
 
 const ACTIVE_CONFIG_DOC = 'active';
 
@@ -63,7 +64,7 @@ export function buildActiveThemeDocument(config: HomepageConfig, authorEmail?: s
  */
 export async function fetchHomepageConfigFromFirestore(): Promise<HomepageConfig> {
   try {
-    const docRef = doc(db, 'homepage_config', ACTIVE_CONFIG_DOC);
+    const docRef = getTenantDocWriteRef(db, 'homepage_config', ACTIVE_CONFIG_DOC);
     const snap = await getDoc(docRef);
     if (snap.exists()) {
       const data = snap.data() as HomepageConfig;
@@ -111,7 +112,7 @@ export function subscribeToHomepageConfig(onUpdate: (config: HomepageConfig) => 
     activeUnsubscribeFn = null;
   }
 
-  const docRef = doc(db, 'homepage_config', ACTIVE_CONFIG_DOC);
+  const docRef = getTenantDocWriteRef(db, 'homepage_config', ACTIVE_CONFIG_DOC);
   console.log('[Theme Logger] Theme Listener Updated (Subscribed)');
 
   const unsub = onSnapshot(
@@ -167,12 +168,12 @@ export async function saveHomepageConfigToFirestore(
     };
 
     // 1. Save to active homepage_config document
-    const docRef = doc(db, 'homepage_config', ACTIVE_CONFIG_DOC);
+    const docRef = getTenantDocWriteRef(db, 'homepage_config', ACTIVE_CONFIG_DOC);
     await setDoc(docRef, updatedConfig);
 
     // 2. Build and save active theme document to theme/active (Requirement 11)
     const activeThemeDoc = buildActiveThemeDocument(updatedConfig, authorEmail);
-    const themeRef = doc(db, 'theme', 'active');
+    const themeRef = getTenantDocWriteRef(db, 'theme', 'active');
     await setDoc(themeRef, activeThemeDoc);
 
     // Save to local storage for immediate cache
@@ -181,7 +182,7 @@ export async function saveHomepageConfigToFirestore(
 
     // 3. Save version history snapshot
     const versionId = `ver_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const versionRef = doc(db, 'homepage_versions', versionId);
+    const versionRef = getTenantDocWriteRef(db, 'homepage_versions', versionId);
     const versionDoc: HomepageVersion = {
       id: versionId,
       config: updatedConfig,
@@ -216,7 +217,7 @@ export async function saveHomepageConfigToFirestore(
  */
 export async function fetchHomepageVersionsFromFirestore(): Promise<HomepageVersion[]> {
   try {
-    const q = query(collection(db, 'homepage_versions'), orderBy('createdAt', 'desc'), limit(25));
+    const q = query(await resolveTenantCollection(db, 'homepage_versions'), orderBy('createdAt', 'desc'), limit(25));
     const snap = await getDocs(q);
     const versions: HomepageVersion[] = [];
     snap.forEach((d) => {
@@ -241,7 +242,7 @@ export async function rollbackHomepageVersionInFirestore(
   authorEmail?: string
 ): Promise<boolean> {
   try {
-    const versionRef = doc(db, 'homepage_versions', versionId);
+    const versionRef = getTenantDocWriteRef(db, 'homepage_versions', versionId);
     const snap = await getDoc(versionRef);
     if (!snap.exists()) return false;
 

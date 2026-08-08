@@ -569,7 +569,7 @@ export interface Tenant {
   adminLoginUrl?: string;
   ownerId: string;
   ownerEmail: string;
-  status: 'active' | 'suspended' | 'provisioning' | 'draft' | 'maintenance' | 'archived';
+  status: 'active' | 'suspended' | 'provisioning' | 'draft' | 'maintenance' | 'archived' | 'pending_activation' | 'pending';
   plan: 'free' | 'pro' | 'enterprise';
   createdAt: string;
   updatedAt?: string;
@@ -606,6 +606,7 @@ export interface AdminUser {
   id?: string;
   email: string;
   name: string;
+  assignedWebsiteId?: string;
   roleId: string; // e.g. 'super_admin', 'admin', 'inventory_manager', etc.
   roleName?: string;
   status: 'active' | 'disabled';

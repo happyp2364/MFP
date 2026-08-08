@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { SEOMetadataConfig } from '../types';
 import { db } from '../lib/firebase';
+import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
+import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { getPlatformConfig } from '../lib/platformConfig';
 
@@ -32,7 +34,7 @@ export const SEOProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [seoConfig, setSeoConfig] = useState<SEOMetadataConfig>(DEFAULT_SEO_CONFIG);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'seo_config'), (snapshot) => {
+    const unsub = onTenantDocSnapshot(db, 'settings', 'seo_config', (snapshot) => {
       if (snapshot.exists()) {
         setSeoConfig(snapshot.data() as SEOMetadataConfig);
       }
@@ -44,7 +46,7 @@ export const SEOProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateSEOConfig = async (config: SEOMetadataConfig) => {
     setSeoConfig(config);
     try {
-      await setDoc(doc(db, 'settings', 'seo_config'), config, { merge: true });
+      await setDoc(getTenantDocWriteRef(db, 'settings', 'seo_config'), config, { merge: true });
     } catch (e) {
       console.warn('Firestore SEO config sync failed', e);
     }

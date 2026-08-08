@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { AdminUser, AdminRole } from '../types';
 import { db } from '../lib/firebase';
+import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
+import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 interface AdminContextType {
@@ -23,15 +25,15 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       id: targetUid,
       createdAt: new Date().toISOString(),
     };
-    await setDoc(doc(db, 'admin_users', targetUid), newAdmin);
+    await setDoc(getTenantDocWriteRef(db, 'admin_users', targetUid), newAdmin);
   };
 
   const updateAdminUser = async (id: string, user: Partial<AdminUser>) => {
-    await setDoc(doc(db, 'admin_users', id), user, { merge: true });
+    await setDoc(getTenantDocWriteRef(db, 'admin_users', id), user, { merge: true });
   };
 
   const deleteAdminUser = async (id: string) => {
-    await deleteDoc(doc(db, 'admin_users', id));
+    await deleteDoc(getTenantDocWriteRef(db, 'admin_users', id));
   };
 
   const createAdminRole = async (role: Omit<AdminRole, 'id'>) => {
@@ -39,15 +41,15 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       ...role,
       id: `role_${Date.now()}`,
     };
-    await setDoc(doc(db, 'admin_roles', newRole.id), newRole);
+    await setDoc(getTenantDocWriteRef(db, 'admin_roles', newRole.id), newRole);
   };
 
   const updateAdminRole = async (id: string, role: Partial<AdminRole>) => {
-    await setDoc(doc(db, 'admin_roles', id), role, { merge: true });
+    await setDoc(getTenantDocWriteRef(db, 'admin_roles', id), role, { merge: true });
   };
 
   const deleteAdminRole = async (id: string) => {
-    await deleteDoc(doc(db, 'admin_roles', id));
+    await deleteDoc(getTenantDocWriteRef(db, 'admin_roles', id));
   };
 
   return (

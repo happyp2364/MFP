@@ -8,6 +8,8 @@ import {
   ScratchReward,
 } from '../types';
 import { db } from '../lib/firebase';
+import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
+import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 interface FeatureFlagContextType {
@@ -97,15 +99,15 @@ export const FeatureFlagProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [isCelebrating, setIsCelebrating] = useState<boolean>(false);
 
   useEffect(() => {
-    const unsubSpin = onSnapshot(doc(db, 'settings', 'spin_wheel'), (snapshot) => {
+    const unsubSpin = onTenantDocSnapshot(db, 'settings', 'spin_wheel', (snapshot) => {
       if (snapshot.exists()) setSpinWheelConfig(snapshot.data() as SpinWheelConfig);
     }, () => {});
 
-    const unsubScratch = onSnapshot(doc(db, 'settings', 'scratch_win'), (snapshot) => {
+    const unsubScratch = onTenantDocSnapshot(db, 'settings', 'scratch_win', (snapshot) => {
       if (snapshot.exists()) setScratchWinConfig(snapshot.data() as ScratchWinConfig);
     }, () => {});
 
-    const unsubCelebration = onSnapshot(doc(db, 'settings', 'order_celebration'), (snapshot) => {
+    const unsubCelebration = onTenantDocSnapshot(db, 'settings', 'order_celebration', (snapshot) => {
       if (snapshot.exists()) setOrderCelebrationConfig(snapshot.data() as OrderCelebrationConfig);
     }, () => {});
 
@@ -119,7 +121,7 @@ export const FeatureFlagProvider: React.FC<{ children: ReactNode }> = ({ childre
   const updateSpinWheelConfig = async (newConfig: SpinWheelConfig) => {
     setSpinWheelConfig(newConfig);
     try {
-      await setDoc(doc(db, 'settings', 'spin_wheel'), newConfig, { merge: true });
+      await setDoc(getTenantDocWriteRef(db, 'settings', 'spin_wheel'), newConfig, { merge: true });
     } catch (e) {
       console.warn('Firestore spin wheel sync failed', e);
     }
@@ -128,7 +130,7 @@ export const FeatureFlagProvider: React.FC<{ children: ReactNode }> = ({ childre
   const updateScratchWinConfig = async (newConfig: ScratchWinConfig) => {
     setScratchWinConfig(newConfig);
     try {
-      await setDoc(doc(db, 'settings', 'scratch_win'), newConfig, { merge: true });
+      await setDoc(getTenantDocWriteRef(db, 'settings', 'scratch_win'), newConfig, { merge: true });
     } catch (e) {
       console.warn('Firestore scratch win sync failed', e);
     }
@@ -150,7 +152,7 @@ export const FeatureFlagProvider: React.FC<{ children: ReactNode }> = ({ childre
   const updateOrderCelebrationConfig = async (newConfig: OrderCelebrationConfig) => {
     setOrderCelebrationConfig(newConfig);
     try {
-      await setDoc(doc(db, 'settings', 'order_celebration'), newConfig, { merge: true });
+      await setDoc(getTenantDocWriteRef(db, 'settings', 'order_celebration'), newConfig, { merge: true });
     } catch (e) {
       console.warn('Firestore order celebration sync failed', e);
     }

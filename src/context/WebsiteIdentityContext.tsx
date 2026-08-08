@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { WebsiteConfig } from '../types';
 import { DEFAULT_WEBSITE_CONFIG } from '../data/defaultWebsiteConfig';
 import { db } from '../lib/firebase';
+import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
+import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 interface WebsiteIdentityContextType {
@@ -26,7 +28,7 @@ export const WebsiteIdentityProvider: React.FC<{ children: ReactNode }> = ({ chi
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'website_config'), (snapshot) => {
+    const unsub = onTenantDocSnapshot(db, 'settings', 'website_config', (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as WebsiteConfig;
         setWebsiteConfig(data);
@@ -40,7 +42,7 @@ export const WebsiteIdentityProvider: React.FC<{ children: ReactNode }> = ({ chi
     setWebsiteConfig(newConfig);
     localStorage.setItem(STORAGE_KEYS.WEBSITE_CONFIG, JSON.stringify(newConfig));
     try {
-      await setDoc(doc(db, 'settings', 'website_config'), newConfig, { merge: true });
+      await setDoc(getTenantDocWriteRef(db, 'settings', 'website_config'), newConfig, { merge: true });
     } catch (e) {
       console.warn('Firestore website config sync failed', e);
     }

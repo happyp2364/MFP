@@ -6,6 +6,8 @@ import {
 } from '../types';
 import { DEFAULT_INSTAGRAM_CONFIG, DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG, DEFAULT_SOCIAL_ANALYTICS } from '../data/mockData';
 import { db } from '../lib/firebase';
+import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
+import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 interface MediaContextType {
@@ -54,11 +56,11 @@ export const MediaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   });
 
   useEffect(() => {
-    const unsubInsta = onSnapshot(doc(db, 'settings', 'instagram_config'), (snapshot) => {
+    const unsubInsta = onTenantDocSnapshot(db, 'settings', 'instagram_config', (snapshot) => {
       if (snapshot.exists()) setInstagramConfig(snapshot.data() as InstagramConfig);
     }, () => {});
 
-    const unsubSocial = onSnapshot(doc(db, 'settings', 'social_media'), (snapshot) => {
+    const unsubSocial = onTenantDocSnapshot(db, 'settings', 'social_media', (snapshot) => {
       if (snapshot.exists()) setSocialMediaConfig(snapshot.data() as SocialMediaCenterConfig);
     }, () => {});
 
@@ -72,7 +74,7 @@ export const MediaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setInstagramConfig(config);
     localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(config));
     try {
-      await setDoc(doc(db, 'settings', 'instagram_config'), config, { merge: true });
+      await setDoc(getTenantDocWriteRef(db, 'settings', 'instagram_config'), config, { merge: true });
     } catch (e) {
       console.warn('Firestore instagram config sync failed', e);
     }
@@ -82,7 +84,7 @@ export const MediaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setSocialMediaConfig(config);
     localStorage.setItem(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, JSON.stringify(config));
     try {
-      await setDoc(doc(db, 'settings', 'social_media'), config, { merge: true });
+      await setDoc(getTenantDocWriteRef(db, 'settings', 'social_media'), config, { merge: true });
     } catch (e) {
       console.warn('Firestore social media config sync failed', e);
     }

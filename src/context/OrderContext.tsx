@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { CustomerOrder, OrderStatus, PaymentMethodType, PaymentStatus, CartItem, ShippingAddressInfo } from '../types';
 import { saveOrderInFirestore, updateOrderStatusInFirestore, db } from '../lib/firebase';
 import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { onTenantCollectionSnapshot } from '../lib/onSnapshotMultiTenant';
 import { getCurrentTenantId, filterDocsByTenant } from '../lib/tenantIsolation';
 
 interface OrderContextType {
@@ -25,11 +26,10 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
 
   useEffect(() => {
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(500));
-    const unsub = onSnapshot(q, (snapshot) => {
+    const unsub = onTenantCollectionSnapshot(db, 'orders', [orderBy('createdAt', 'desc'), limit(500)], (snapshot) => {
       const loaded: CustomerOrder[] = [];
       snapshot.forEach((docSnap) => {
-        loaded.push({ id: docSnap.id, ...docSnap.data() } as CustomerOrder);
+        loaded.push({ id: docSnap.id, ...(docSnap.data() as any) } as CustomerOrder);
       });
       setOrders(filterDocsByTenant(loaded, getCurrentTenantId()));
     }, () => {});

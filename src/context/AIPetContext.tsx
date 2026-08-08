@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { PetShoeConfig } from '../types';
 import { DEFAULT_PET_SHOE_CONFIG } from '../data/mockData';
 import { db } from '../lib/firebase';
+import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
+import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 interface AIPetContextType {
@@ -26,7 +28,7 @@ export const AIPetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'pet_shoe_config'), (snapshot) => {
+    const unsub = onTenantDocSnapshot(db, 'settings', 'pet_shoe_config', (snapshot) => {
       if (snapshot.exists()) {
         setPetShoeConfig(snapshot.data() as PetShoeConfig);
       }
@@ -39,7 +41,7 @@ export const AIPetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setPetShoeConfig(config);
     localStorage.setItem(STORAGE_KEYS.PET_SHOE_CONFIG, JSON.stringify(config));
     try {
-      await setDoc(doc(db, 'settings', 'pet_shoe_config'), config, { merge: true });
+      await setDoc(getTenantDocWriteRef(db, 'settings', 'pet_shoe_config'), config, { merge: true });
     } catch (e) {
       console.warn('Firestore pet shoe config sync failed', e);
     }

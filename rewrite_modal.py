@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import os
+
+modal_code = """import React, { useState, useEffect } from 'react';
 import { Globe, Server, ShieldCheck, Mail, Link as LinkIcon, CheckCircle2, XCircle, RefreshCw, Crown, Palette, Settings, Building2, User, Phone, MapPin, Search, PlusCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Tenant } from '../../types';
 import { sanitizeSlug, isValidSlug, isSlugAvailable } from '../../lib/tenantIsolation';
@@ -428,3 +430,8 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
     </div>
   );
 };
+"""
+
+with open('src/components/Admin/ProvisionWebsiteModal.tsx', 'w') as f:
+    f.write(modal_code)
+

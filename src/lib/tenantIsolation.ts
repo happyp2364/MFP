@@ -86,11 +86,13 @@ export function resolveCurrentWebsiteFromUrl(tenants?: { id: string; slug?: stri
     }
 
     if (targetIdentifier) {
+      // If we don't have the tenants list yet to verify, construct the expected ID format
+      const assumedId = targetIdentifier.startsWith('tenant-') ? targetIdentifier : `tenant-${targetIdentifier}`;
       localStorage.setItem(
         'nwd_website_config_live',
-        JSON.stringify({ websiteId: targetIdentifier, slug: targetIdentifier })
+        JSON.stringify({ websiteId: assumedId, slug: targetIdentifier })
       );
-      return targetIdentifier;
+      return assumedId;
     }
   } catch {
     // Fallback on error

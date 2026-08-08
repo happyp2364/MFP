@@ -10,9 +10,11 @@ import {
   syncCustomerProfileInFirestore,
   recordAuditLog,
 } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential, User as FirebaseUser } from 'firebase/auth';
-import { recordAdminLoginHistory, fetchAdminUsers, saveAdminUser } from '../lib/adminService';
+import { recordAdminLoginHistory, fetchAdminUsers, saveAdminUser, syncAdminWebsiteLink } from '../lib/adminService';
+import { getCurrentTenantId } from '../lib/tenantIsolation';
+import { getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 
 interface AuthContextType {
   isAdmin: boolean;
@@ -65,7 +67,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // 1. Try exact match by document ID (user.uid)
     try {
-      const adminDocRef = doc(db, 'admin_users', firebaseUser.uid);
+      const adminDocRef = getTenantDocWriteRef(db, 'admin_users', firebaseUser.uid);
       const adminSnap = await getDoc(adminDocRef);
       if (adminSnap.exists()) {
         const adminData = adminSnap.data() as AdminUser;
@@ -90,10 +92,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const updatedAdminUser: AdminUser = {
           ...matched,
           uid: firebaseUser.uid,
+          id: firebaseUser.uid, 
           email: matched.email || firebaseUser.email || '',
+          status: 'active',
         };
-        // Persist matched UID in background
-        saveAdminUser(updatedAdminUser).catch((e) => console.warn('Sync admin UID error:', e));
+        // Persist matched UID in background and delete old placeholder if different
+        (async () => {
+          try {
+            await saveAdminUser(updatedAdminUser);
+            if (matched.uid !== firebaseUser.uid) {
+              const { deleteDoc, doc } = await import('firebase/firestore');
+              const { db } = await import('../lib/firebase');
+              await deleteDoc(doc(db, 'admin_users', matched.uid));
+            }
+          } catch (e) {
+            console.warn('Sync admin UID error:', e);
+          }
+        })();
         return updatedAdminUser;
       }
     } catch (err) {
@@ -160,19 +175,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!adminUser) {
           const emailLower = email.toLowerCase();
           const isSuper = emailLower === 'vpcreation2002@gmail.com' || emailLower === 'vishalpparihar2002@gmail.com';
-          adminUser = {
-            uid: res.user.uid,
-            id: res.user.uid,
-            email: res.user.email || email,
-            name: res.user.displayName || (isSuper ? 'Super Admin' : 'Website Administrator'),
-            roleId: isSuper ? 'super_admin' : 'admin',
-            roleName: isSuper ? 'Super Admin' : 'Administrator',
-            status: 'active',
-            createdAt: new Date().toISOString(),
-            createdBy: 'system',
-          };
-          await saveAdminUser(adminUser);
+          if (isSuper) {
+            adminUser = {
+              uid: res.user.uid,
+              id: res.user.uid,
+              email: res.user.email || email,
+              name: res.user.displayName || 'Super Admin',
+              roleId: 'super_admin',
+              roleName: 'Super Admin',
+              status: 'active',
+              createdAt: new Date().toISOString(),
+              createdBy: 'system',
+            };
+            await saveAdminUser(adminUser);
+          } else {
+             console.warn('Denying activation: Email does not match any invited admin.');
+             await logoutUser();
+             return false;
+          }
         }
+        await syncAdminWebsiteLink(adminUser, getCurrentTenantId());
         setCurrentAdminUser(adminUser);
         await recordAdminLoginHistory(res.user.uid, res.user.email || email, 'password', 'success');
         return true;
@@ -192,19 +214,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!adminUser) {
           const emailLower = (result.user.email || '').toLowerCase();
           const isSuper = emailLower === 'vpcreation2002@gmail.com' || emailLower === 'vishalpparihar2002@gmail.com';
-          adminUser = {
-            uid: result.user.uid,
-            id: result.user.uid,
-            email: result.user.email || '',
-            name: result.user.displayName || (isSuper ? 'Super Admin' : 'Website Administrator'),
-            roleId: isSuper ? 'super_admin' : 'admin',
-            roleName: isSuper ? 'Super Admin' : 'Administrator',
-            status: 'active',
-            createdAt: new Date().toISOString(),
-            createdBy: 'system',
-          };
-          await saveAdminUser(adminUser);
+          if (isSuper) {
+            adminUser = {
+              uid: result.user.uid,
+              id: result.user.uid,
+              email: result.user.email || '',
+              name: result.user.displayName || 'Super Admin',
+              roleId: 'super_admin',
+              roleName: 'Super Admin',
+              status: 'active',
+              createdAt: new Date().toISOString(),
+              createdBy: 'system',
+            };
+            await saveAdminUser(adminUser);
+          } else {
+            console.warn('Denying activation: Email does not match any invited admin.');
+            await logoutUser();
+            return false;
+          }
         }
+        await syncAdminWebsiteLink(adminUser, getCurrentTenantId());
         setCurrentAdminUser(adminUser);
         await recordAdminLoginHistory(result.user.uid, result.user.email || '', 'google', 'success');
         return true;

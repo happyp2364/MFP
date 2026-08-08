@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Product, Review } from '../types';
 import { PRODUCTS_DATA, REVIEWS_DATA } from '../data/mockData';
 import { db } from '../lib/firebase';
+import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
+import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { collection, limit, onSnapshot, query, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { scopeDoc, getCurrentTenantId, filterDocsByTenant } from '../lib/tenantIsolation';
 
@@ -45,21 +47,21 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
   });
 
   useEffect(() => {
-    const unsubProducts = onSnapshot(query(collection(db, 'products'), limit(500)), (snapshot) => {
+    const unsubProducts = onTenantCollectionSnapshot(db, 'products', [limit(500)], (snapshot) => {
       if (!snapshot.empty) {
         const loaded: Product[] = [];
         snapshot.forEach((docSnap) => {
-          loaded.push({ id: docSnap.id, ...docSnap.data() } as Product);
+          loaded.push({ id: docSnap.id, ...(docSnap.data() as any) } as Product);
         });
         setProducts(filterDocsByTenant(loaded, getCurrentTenantId()));
       }
     }, () => {});
 
-    const unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
+    const unsubReviews = onTenantCollectionSnapshot(db, 'reviews', [], (snapshot) => {
       if (!snapshot.empty) {
         const loaded: Review[] = [];
         snapshot.forEach((docSnap) => {
-          loaded.push({ id: docSnap.id, ...docSnap.data() } as Review);
+          loaded.push({ id: docSnap.id, ...(docSnap.data() as any) } as Review);
         });
         setReviews(filterDocsByTenant(loaded, getCurrentTenantId()));
       }
@@ -78,7 +80,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     setProducts(updated);
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
     try {
-      await setDoc(doc(db, 'products', newProduct.id), scopedPayload);
+      await setDoc(getTenantDocWriteRef(db, 'products', newProduct.id), scopedPayload);
     } catch (e) {
       console.warn('Firestore add product failed', e);
     }
@@ -89,7 +91,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     setProducts(updated);
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
     try {
-      await setDoc(doc(db, 'products', id), p, { merge: true });
+      await setDoc(getTenantDocWriteRef(db, 'products', id), p, { merge: true });
     } catch (e) {
       console.warn('Firestore update product failed', e);
     }
@@ -100,7 +102,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     setProducts(updated);
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
     try {
-      await deleteDoc(doc(db, 'products', id));
+      await deleteDoc(getTenantDocWriteRef(db, 'products', id));
     } catch (e) {
       console.warn('Firestore delete product failed', e);
     }
@@ -125,7 +127,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     setReviews(updated);
     localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
     try {
-      await setDoc(doc(db, 'reviews', newReview.id), scopedPayload);
+      await setDoc(getTenantDocWriteRef(db, 'reviews', newReview.id), scopedPayload);
     } catch (e) {
       console.warn('Firestore add review failed', e);
     }
@@ -142,7 +144,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     setReviews(updated);
     localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
     try {
-      await deleteDoc(doc(db, 'reviews', id));
+      await deleteDoc(getTenantDocWriteRef(db, 'reviews', id));
     } catch (e) {
       console.warn('Firestore delete review failed', e);
     }

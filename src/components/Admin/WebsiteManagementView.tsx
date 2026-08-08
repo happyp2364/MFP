@@ -102,11 +102,16 @@ export const WebsiteManagementView: React.FC = () => {
     }
   }, [isSuperAdminUser]);
 
-  // Handler for Updating Tenant
   const handleUpdateTenant = async (updatedTenant: Tenant) => {
     try {
       await saveTenant(updatedTenant);
-      setTenants((prev) => prev.map((t) => (t.id === updatedTenant.id ? updatedTenant : t)));
+      setTenants((prev) => {
+        const exists = prev.find((t) => t.id === updatedTenant.id);
+        if (exists) {
+          return prev.map((t) => (t.id === updatedTenant.id ? updatedTenant : t));
+        }
+        return [updatedTenant, ...prev];
+      });
       showToast('Website tenant profile updated successfully!', 'success');
     } catch (err) {
       console.error('Error updating tenant:', err);

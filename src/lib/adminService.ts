@@ -7,6 +7,7 @@ import {
   getDocs,
   query,
   orderBy,
+  where,
   updateDoc,
 } from 'firebase/firestore';
 import { User as FirebaseUser } from 'firebase/auth';
@@ -170,8 +171,38 @@ export async function fetchTenants(): Promise<Tenant[]> {
 
 export async function saveTenant(tenant: Tenant): Promise<void> {
   const tenantRef = doc(db, 'tenants', tenant.id);
+  const websiteRef = doc(db, 'websites', tenant.id);
+  
   try {
     await setDoc(tenantRef, tenant, { merge: true });
+    
+    // Provision Website module synchronization
+    const websiteData = {
+      websiteId: tenant.id,
+      websiteSlug: tenant.slug || tenant.id,
+      websiteUrl: tenant.websiteUrl || '',
+      businessName: tenant.name,
+      ownerEmail: tenant.ownerEmail,
+      ownerUid: tenant.ownerId || '',
+      createdAt: tenant.createdAt || new Date().toISOString(),
+      status: tenant.status || 'active',
+      enabledModules: ['storefront', 'admin'],
+    };
+    
+    await setDoc(websiteRef, websiteData, { merge: true });
+    
+    if (tenant.ownerId) {
+      const adminRef = doc(db, 'admin_users', tenant.ownerId);
+      await setDoc(adminRef, {
+        uid: tenant.ownerId,
+        email: tenant.ownerEmail,
+        websiteId: tenant.id,
+        ownerUid: tenant.ownerId,
+        roleId: 'admin',
+        createdAt: new Date().toISOString()
+      }, { merge: true });
+    }
+
     recordAuditLog(
       'Tenant Profile Updated',
       'SECURITY',
@@ -504,5 +535,215 @@ export async function deleteCustomRole(
       console.warn('Delete custom role notice:', e);
     }
     return { success: false, message: err?.message || 'Failed to delete custom role.' };
+  }
+}
+export async function syncAdminWebsiteLink(adminUser: AdminUser, websiteId: string): Promise<void> {
+  if (adminUser.roleId === 'super_admin') return;
+  try {
+    const adminRef = doc(db, 'admin_users', adminUser.uid);
+    await setDoc(adminRef, { assignedWebsiteId: websiteId }, { merge: true });
+
+    const websiteRef = doc(db, 'websites', websiteId);
+    const snap = await getDoc(websiteRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      if (!data.ownerUid && data.ownerEmail === adminUser.email) {
+        await setDoc(websiteRef, { ownerUid: adminUser.uid, adminUid: adminUser.uid }, { merge: true });
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to sync admin website link:', err);
+  }
+}
+
+
+
+export async function provisionNewWebsite(tenantData: Partial<import('../types').Tenant> & { 
+  ownerName: string;
+  ownerGoogleEmail: string;
+  phone: string;
+  country: string;
+  state: string;
+  city: string;
+  pincode: string;
+  businessCategory: string;
+  defaultTheme: string;
+  primaryColor: string;
+  secondaryColor: string;
+  enabledModules: Record<string, boolean>;
+}): Promise<{ tenant: import('../types').Tenant, secretCode: string }> {
+  const newId = tenantData.slug ? `tenant-${tenantData.slug}` : `tenant-${Date.now()}`;
+  const ownerUid = `owner-${Date.now()}`;
+  const secretCode = `NWD-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+  
+  const config = getPlatformConfig();
+  const platformHost = (() => {
+    try { return new URL(config.platformBaseUrl).hostname; } catch { return 'platform.app'; }
+  })();
+
+  const webUrl = tenantData.websiteUrl || (tenantData.slug ? buildWebsiteUrl(tenantData.slug) : undefined);
+  const adminUrl = tenantData.adminLoginUrl || (tenantData.slug ? buildAdminLoginUrl(tenantData.slug) : undefined);
+
+  const newTenant: import('../types').Tenant = {
+    id: newId,
+    slug: tenantData.slug,
+    name: tenantData.name || 'Untitled Website',
+    domain: tenantData.domain || `${tenantData.slug || newId}.${platformHost}`,
+    websiteUrl: webUrl,
+    adminLoginUrl: adminUrl,
+    ownerEmail: tenantData.ownerEmail || 'owner@example.com',
+    adminGoogleEmail: tenantData.ownerGoogleEmail || tenantData.ownerEmail || 'owner@example.com',
+    ownerName: tenantData.ownerName || 'Store Owner',
+    ownerId: ownerUid,
+    status: 'pending_activation',
+    plan: tenantData.plan || 'free',
+    createdAt: new Date().toISOString(),
+    databaseSize: 0,
+    businessCategory: tenantData.businessCategory,
+  };
+
+  const tenantRef = doc(db, 'tenants', newTenant.id);
+  const websiteRef = doc(db, 'websites', newTenant.id);
+  
+  try {
+    await setDoc(tenantRef, newTenant, { merge: true });
+    
+    // Create websites/{websiteId} doc
+    const websiteData = {
+      websiteId: newTenant.id,
+      websiteSlug: newTenant.slug || newTenant.id,
+      websiteUrl: newTenant.websiteUrl || '',
+      businessName: newTenant.name,
+      ownerEmail: newTenant.ownerEmail,
+      ownerUid: ownerUid,
+      createdAt: newTenant.createdAt || new Date().toISOString(),
+      status: 'pending',
+      enabledModules: Object.entries(tenantData.enabledModules).filter(([_, enabled]) => enabled).map(([key]) => key),
+      secretCode: secretCode,
+      theme: {
+        id: tenantData.defaultTheme,
+        primaryColor: tenantData.primaryColor,
+        secondaryColor: tenantData.secondaryColor,
+      }
+    };
+    
+    await setDoc(websiteRef, websiteData, { merge: true });
+    
+    // Create admin user link
+    const adminRef = doc(db, 'admin_users', ownerUid);
+    await setDoc(adminRef, {
+      uid: ownerUid,
+      email: newTenant.ownerEmail,
+      websiteId: newTenant.id,
+      ownerUid: ownerUid,
+      roleId: 'admin',
+      status: 'pending_activation',
+      secretCode: secretCode,
+      createdAt: new Date().toISOString()
+    }, { merge: true });
+
+    // Seed default documents
+    const collectionsToSeed = [
+      'settings', 'homepage', 'theme', 'social', 'payment', 
+      'categories', 'notifications', 'analytics', 'products', 
+      'orders', 'reviews', 'customers', 'staff', 'managers', 
+      'media', 'seo'
+    ];
+
+    for (const col of collectionsToSeed) {
+      const colRef = doc(db, `websites/${newTenant.id}/${col}`, 'default');
+      await setDoc(colRef, {
+        initializedAt: new Date().toISOString(),
+        _type: 'system_default'
+      }, { merge: true });
+    }
+
+    recordAuditLog(
+      'New Website Provisioned',
+      'SECURITY',
+      `Provisioned website: ${newTenant.name} with slug: ${newTenant.slug}`,
+      'SUCCESS'
+    );
+
+    return { tenant: newTenant, secretCode };
+  } catch (err) {
+    console.warn('Failed to provision website:', err);
+    throw err;
+  }
+}
+
+
+/**
+ * Initiates a full Firestore backup for a specific websiteId, archiving all core collections
+ * into a single document in the 'backups' collection.
+ */
+export async function createWebsiteBackup(websiteId: string, adminEmail: string, notes: string = ''): Promise<{ success: boolean; backupId?: string; message?: string }> {
+  try {
+    const timestamp = Date.now();
+    const backupId = `backup_${websiteId}_${timestamp}`;
+    const backupRef = doc(db, 'backups', backupId);
+    
+    // Define the collections we want to back up
+    const collectionsToBackup = [
+      'products', 'orders', 'users', 'reviews', 'settings', 'homepage', 'categories',
+      'payment', 'animations', 'mascot', 'social', 'theme', 'about', 'coupons',
+      'product_gallery', 'product_variants', 'product_ai_metadata', 'storeInfo'
+    ];
+
+    const backupData: any = {
+      id: backupId,
+      websiteId,
+      createdAt: new Date().toISOString(),
+      timestamp,
+      createdBy: adminEmail,
+      notes,
+      collections: {}
+    };
+
+    // Since we are using top-level collections with websiteId filtering, or website/{id}/collections
+    // Based on firestore rules, it looks like most data might be top-level or scoped by websiteId.
+    // Let's fetch using collectionGroup or query.
+    // If they are subcollections of /websites/{websiteId}, we fetch them that way.
+    
+    for (const coll of collectionsToBackup) {
+      // Assuming subcollections of /websites/{websiteId}/{coll}
+      const collRef = collection(db, 'websites', websiteId, coll);
+      const snap = await getDocs(collRef);
+      backupData.collections[coll] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+    
+    // Also backup top-level things that have websiteId = websiteId
+    // e.g. products, orders
+    const topLevelCollections = ['products', 'orders', 'users', 'reviews'];
+    for (const topColl of topLevelCollections) {
+       if (!backupData.collections[topColl] || backupData.collections[topColl].length === 0) {
+         const topRef = collection(db, topColl);
+         const q = query(topRef, where('websiteId', '==', websiteId));
+         const snap = await getDocs(q);
+         if (!snap.empty) {
+            backupData.collections[topColl] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+         }
+       }
+    }
+
+    await setDoc(backupRef, backupData);
+
+    await recordAuditLog(
+      'Website Backup Created',
+      'BACKUP',
+      `Full backup created for website: ${websiteId} by ${adminEmail}`,
+      'SUCCESS'
+    );
+
+    return { success: true, backupId, message: 'Backup created successfully.' };
+  } catch (error: any) {
+    console.error('Backup creation failed:', error);
+    await recordAuditLog(
+      'Website Backup Failed',
+      'BACKUP',
+      `Backup failed for website: ${websiteId}. Error: ${error.message}`,
+      'DANGER'
+    );
+    return { success: false, message: error.message };
   }
 }

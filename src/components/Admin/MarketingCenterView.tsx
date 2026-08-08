@@ -125,28 +125,28 @@ export const MarketingCenterView: React.FC = () => {
 
   // Stats
   const totalSubscribers = subscribers.length;
-  const emailSubscribers = subscribers.filter((s) => s.preferences.email).length;
-  const pushSubscribers = subscribers.filter((s) => s.preferences.push).length;
-  const whatsAppSubscribers = subscribers.filter((s) => s.preferences.whatsApp).length;
+  const emailSubscribers = subscribers.filter((s: any) => s.preferences.email).length;
+  const pushSubscribers = subscribers.filter((s: any) => s.preferences.push).length;
+  const whatsAppSubscribers = subscribers.filter((s: any) => s.preferences.whatsApp).length;
 
-  const sentCampaigns = campaigns.filter((c) => c.status === 'SENT');
+  const sentCampaigns = campaigns.filter((c: any) => c.status === 'SENT');
   const avgOpenRate =
     sentCampaigns.length > 0
       ? Math.round(
-          sentCampaigns.reduce((acc, c) => acc + (c.deliveredCount > 0 ? (c.openCount / c.deliveredCount) * 100 : 0), 0) /
+          sentCampaigns.reduce((acc: any, c: any) => acc + (c.deliveredCount > 0 ? (c.openCount / c.deliveredCount) * 100 : 0), 0) /
             sentCampaigns.length
         )
       : 84;
   const avgClickRate =
     sentCampaigns.length > 0
       ? Math.round(
-          sentCampaigns.reduce((acc, c) => acc + (c.deliveredCount > 0 ? (c.clickCount / c.deliveredCount) * 100 : 0), 0) /
+          sentCampaigns.reduce((acc: any, c: any) => acc + (c.deliveredCount > 0 ? (c.clickCount / c.deliveredCount) * 100 : 0), 0) /
             sentCampaigns.length
         )
       : 42;
 
   // Filtered Campaigns
-  const filteredCampaigns = campaigns.filter((c) => {
+  const filteredCampaigns = campaigns.filter((c: any) => {
     const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesChannel = channelFilter === 'ALL' || c.channel === channelFilter;
     const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter;
@@ -154,7 +154,7 @@ export const MarketingCenterView: React.FC = () => {
   });
 
   // Filtered Subscribers
-  const filteredSubscribers = subscribers.filter((s) => {
+  const filteredSubscribers = subscribers.filter((s: any) => {
     const term = searchTerm.toLowerCase();
     const matchesSearch = s.name.toLowerCase().includes(term) || s.email.toLowerCase().includes(term) || (s.phoneNumber || '').includes(term);
     const matchesChannel =
@@ -274,7 +274,7 @@ export const MarketingCenterView: React.FC = () => {
 
   const handleExportCSV = () => {
     const headers = ['ID', 'Name', 'Email', 'Phone Number', 'Email OptIn', 'Push OptIn', 'WhatsApp OptIn', 'Subscribed At'];
-    const rows = subscribers.map((s) => [
+    const rows = subscribers.map((s: any) => [
       s.id,
       `"${s.name.replace(/"/g, '""')}"`,
       s.email,
@@ -285,7 +285,7 @@ export const MarketingCenterView: React.FC = () => {
       s.subscribedAt,
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const csvContent = [headers.join(','), ...rows.map((r: any) => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -363,7 +363,7 @@ export const MarketingCenterView: React.FC = () => {
             </div>
             <div className="text-2xl font-bold text-white">{sentCampaigns.length}</div>
             <div className="text-[11px] text-amber-200/60 mt-1">
-              {campaigns.filter((c) => c.status === 'SCHEDULED').length} Scheduled
+              {campaigns.filter((c: any) => c.status === 'SCHEDULED').length} Scheduled
             </div>
           </div>
 
@@ -475,7 +475,7 @@ export const MarketingCenterView: React.FC = () => {
             </div>
           ) : (
             <div className="divide-y divide-neutral-100">
-              {filteredCampaigns.map((campaign) => (
+              {filteredCampaigns.map((campaign: any) => (
                 <div key={campaign.id} className="p-5 hover:bg-amber-50/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-1 max-w-xl">
                     <div className="flex items-center space-x-2">
@@ -606,7 +606,7 @@ export const MarketingCenterView: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredSubscribers.map((sub) => (
+                  filteredSubscribers.map((sub: any) => (
                     <tr key={sub.id} className="hover:bg-neutral-50/50">
                       <td className="px-5 py-3 font-bold text-neutral-900">{sub.name}</td>
                       <td className="px-5 py-3 space-y-0.5">
@@ -837,13 +837,13 @@ export const MarketingCenterView: React.FC = () => {
                 </label>
                 <select
                   onChange={(e) => {
-                    const found = products.find((p) => p.id === e.target.value);
+                    const found = products.find((p: any) => p.id === e.target.value);
                     if (found) handleSelectProduct(found);
                   }}
                   className="w-full px-3.5 py-2 text-xs border border-neutral-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 >
                   <option value="">-- Choose a product to feature (Optional) --</option>
-                  {products.map((p) => (
+                  {products.map((p: any) => (
                     <option key={p.id} value={p.id}>
                       {p.name} (₹{p.price.toLocaleString('en-IN')})
                     </option>

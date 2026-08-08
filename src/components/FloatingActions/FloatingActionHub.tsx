@@ -33,8 +33,8 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
 
   // Extract other active floating platforms except WhatsApp (which is treated as a primary floating button below)
   const floatingPlatforms = (socialMediaConfig?.platforms || [])
-    .filter(p => p.enabled && p.showAsFloating && p.id !== 'whatsapp')
-    .sort((a, b) => a.displayOrder - b.displayOrder);
+    .filter((p: any) => p.enabled && p.showAsFloating && p.id !== 'whatsapp')
+    .sort((a: any, b: any) => a.displayOrder - b.displayOrder);
 
   // Predefined custom WhatsApp details
   const waMessage = socialMediaConfig?.whatsappPredefinedMessage || '';
@@ -54,7 +54,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
       {expandedSocials && (
         <div className="flex flex-col items-end gap-3 mb-1 pointer-events-auto animate-in slide-in-from-bottom-4 fade-in duration-300">
           {floatingPlatforms.length > 0 ? (
-            floatingPlatforms.map((plat) => {
+            floatingPlatforms.map((plat: any) => {
               const getHoverStyle = (effect: string) => {
                 switch (effect) {
                   case 'glow': return 'hover:shadow-[0_0_15px_rgba(255,255,255,0.7)]';

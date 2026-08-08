@@ -89,25 +89,25 @@ export const CouponManagementView: React.FC = () => {
   const [previewCoupon, setPreviewCoupon] = useState<PromoCoupon | null>(null);
 
   // Dynamic values extracted from products for restrictions
-  const uniqueBrands = Array.from(new Set(products.map(p => p.brand).filter(Boolean))) as string[];
-  const uniqueCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean))) as string[];
-  const uniqueSubcategories = Array.from(new Set(products.map(p => p.subcategory).filter(Boolean))) as string[];
-  const uniqueSizes = Array.from(new Set(products.flatMap(p => p.sizes || []).filter(Boolean))).map(String).sort((a, b) => a.localeCompare(b)) as string[];
-  const uniqueColors = Array.from(new Set(products.flatMap(p => (p.colors || []).map(c => c.name)).filter(Boolean))) as string[];
+  const uniqueBrands = Array.from(new Set(products.map((p: any) => p.brand).filter(Boolean))) as string[];
+  const uniqueCategories = Array.from(new Set(products.map((p: any) => p.category).filter(Boolean))) as string[];
+  const uniqueSubcategories = Array.from(new Set(products.map((p: any) => p.subcategory).filter(Boolean))) as string[];
+  const uniqueSizes = Array.from(new Set(products.flatMap((p: any) => p.sizes || []).filter(Boolean))).map(String).sort((a: any, b: any) => a.localeCompare(b)) as string[];
+  const uniqueColors = Array.from(new Set(products.flatMap((p: any) => (p.colors || []).map((c: any) => c.name)).filter(Boolean))) as string[];
 
   // Analytics helper variables
   const totalCoupons = coupons.length;
-  const activeCoupons = coupons.filter(c => c.status === 'active').length;
-  const totalRevenueGenerated = coupons.reduce((sum, c) => sum + (c.revenueGenerated || 0), 0);
-  const totalDiscountGiven = coupons.reduce((sum, c) => sum + (c.discountGiven || 0), 0);
-  const totalUsage = coupons.reduce((sum, c) => sum + (c.usageCount || 0), 0);
-  const totalFailed = coupons.reduce((sum, c) => sum + (c.failedCount || 0), 0);
+  const activeCoupons = coupons.filter((c: any) => c.status === 'active').length;
+  const totalRevenueGenerated = coupons.reduce((sum: any, c: any) => sum + (c.revenueGenerated || 0), 0);
+  const totalDiscountGiven = coupons.reduce((sum: any, c: any) => sum + (c.discountGiven || 0), 0);
+  const totalUsage = coupons.reduce((sum: any, c: any) => sum + (c.usageCount || 0), 0);
+  const totalFailed = coupons.reduce((sum: any, c: any) => sum + (c.failedCount || 0), 0);
   const conversionRate = totalUsage + totalFailed > 0 
     ? Math.round((totalUsage / (totalUsage + totalFailed)) * 100) 
     : 0;
 
   // Filter coupons
-  const filteredCoupons = coupons.filter(c => {
+  const filteredCoupons = coupons.filter((c: any) => {
     const matchesSearch = c.code.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           c.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = typeFilter === 'all' || c.type === typeFilter;
@@ -419,7 +419,7 @@ export const CouponManagementView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 font-medium text-neutral-700">
-                {filteredCoupons.map((c) => (
+                {filteredCoupons.map((c: any) => (
                   <tr key={c.id} className="hover:bg-neutral-50/80 transition-colors">
                     {/* Code and Name */}
                     <td className="p-3.5">
@@ -991,7 +991,7 @@ export const CouponManagementView: React.FC = () => {
                   <div className="bg-white p-3.5 rounded-xl border border-neutral-200 space-y-2">
                     <label className="block text-[10px] font-bold uppercase text-neutral-500">Select Eligible Products</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-40 overflow-y-auto p-1 border border-neutral-100 rounded-lg">
-                      {products.map(p => {
+                      {products.map((p: any) => {
                         const isSelected = formData.restrictProductIds.includes(p.id);
                         return (
                           <button

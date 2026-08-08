@@ -21,6 +21,7 @@ import {
 } from 'firebase/auth';
 import {
   getFirestore,
+  setLogLevel,
   doc,
   getDoc,
   setDoc,
@@ -42,7 +43,10 @@ import { resolveTenantCollection, getTenantCollectionWriteRef, getTenantDocWrite
 // Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined);
+export const db = firebaseConfig.firestoreDatabaseId ? getFirestore(app, firebaseConfig.firestoreDatabaseId) : getFirestore(app);
+
+// Suppress Firestore timestamp mismatch warnings
+setLogLevel('silent');
 
 // Enable persistent auth session across page reloads & tabs
 setPersistence(auth, browserLocalPersistence).catch((err) => {

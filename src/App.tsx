@@ -345,16 +345,16 @@ function AppContent() {
   const availableSubcategories = useMemo(() => {
     let relevantProducts = products;
     if (filterState.category !== 'all') {
-      relevantProducts = products.filter((p) => p.category === filterState.category);
+      relevantProducts = products.filter((p: any) => p.category === filterState.category);
     }
     const subs = new Set<string>();
-    relevantProducts.forEach((p) => subs.add(p.subcategory));
+    relevantProducts.forEach((p: any) => subs.add(p.subcategory));
     return Array.from(subs);
   }, [filterState.category, products]);
 
   // --- FILTERED PRODUCTS ---
   const filteredProducts = useMemo(() => {
-    const rawFiltered = products.filter((p) => {
+    const rawFiltered = products.filter((p: any) => {
       // Gender Category
       if (filterState.category !== 'all' && p.category !== filterState.category) {
         return false;
@@ -375,13 +375,13 @@ function AppContent() {
 
       // Colors
       if (filterState.colors.length > 0) {
-        const hasColor = p.colors.some((c) => filterState.colors.includes(c.name));
+        const hasColor = p.colors.some((c: any) => filterState.colors.includes(c.name));
         if (!hasColor) return false;
       }
 
       // Sizes
       if (filterState.sizes.length > 0) {
-        const hasSize = p.sizes.some((sz) => filterState.sizes.includes(sz));
+        const hasSize = p.sizes.some((sz: any) => filterState.sizes.includes(sz));
         if (!hasSize) return false;
       }
 
@@ -393,7 +393,7 @@ function AppContent() {
       // Collection Filter
       if (filterState.collection) {
         const colMatch = p.collectionTags.some(
-          (tag) => tag.toLowerCase() === filterState.collection.toLowerCase()
+          (tag: any) => tag.toLowerCase() === filterState.collection.toLowerCase()
         );
         if (!colMatch) return false;
       }
@@ -439,7 +439,7 @@ function AppContent() {
 
   // Carousels Products (Limited to 8 products per homepage limit as requested)
   const bestSellers = useMemo(() => {
-    const raw = products.filter((p) => p.isBestSeller);
+    const raw = products.filter((p: any) => p.isBestSeller);
     const unique = deduplicateProducts(raw, productFeedConfig);
     if (unique.length === 0) {
       return products.slice(0, 8);
@@ -448,7 +448,7 @@ function AppContent() {
   }, [products, productFeedConfig]);
 
   const newArrivals = useMemo(() => {
-    const raw = products.filter((p) => p.isNewArrival);
+    const raw = products.filter((p: any) => p.isNewArrival);
     const unique = deduplicateProducts(raw, productFeedConfig);
     if (unique.length === 0) {
       return products.slice(4, 12);
@@ -457,7 +457,7 @@ function AppContent() {
   }, [products, productFeedConfig]);
 
   const featuredProducts = useMemo(() => {
-    const raw = products.filter((p) => p.isFeatured);
+    const raw = products.filter((p: any) => p.isFeatured);
     const unique = deduplicateProducts(raw, productFeedConfig);
     if (unique.length === 0) {
       return products.slice(0, 8);
@@ -466,7 +466,7 @@ function AppContent() {
   }, [products, productFeedConfig]);
 
   const trendingProducts = useMemo(() => {
-    const raw = products.filter((p) => p.isTrending);
+    const raw = products.filter((p: any) => p.isTrending);
     const unique = deduplicateProducts(raw, productFeedConfig);
     if (unique.length === 0) {
       return products.slice(8, 16);
@@ -474,7 +474,7 @@ function AppContent() {
     return unique.slice(0, 8);
   }, [products, productFeedConfig]);
   const wishlistedProducts = useMemo(
-    () => products.filter((p) => wishlistIds.includes(p.id)),
+    () => products.filter((p: any) => wishlistIds.includes(p.id)),
     [wishlistIds, products]
   );
 
@@ -563,7 +563,7 @@ function AppContent() {
 
       {productRouteSlug !== null ? (
         <ProductDetailPage
-          product={activeRouteProduct}
+          product={activeRouteProduct || null}
           targetSlug={productRouteSlug}
           allProducts={products}
           onBackToHome={() => {

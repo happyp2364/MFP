@@ -56,7 +56,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
   const templates = whatsappTemplatesConfig?.templates || DEFAULT_WHATSAPP_TEMPLATES;
   const activeCategoryMap: Record<WhatsAppTemplateActionCategory, string> = whatsappTemplatesConfig?.activeCategoryMap || DEFAULT_ACTIVE_CATEGORY_MAP;
 
-  const filteredTemplates = templates.filter((tpl) => {
+  const filteredTemplates = templates.filter((tpl: any) => {
     if (selectedCategoryFilter === 'all') return true;
     return tpl.actionCategory === selectedCategoryFilter;
   });
@@ -107,7 +107,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
       return;
     }
     if (confirm('Are you sure you want to delete this WhatsApp message template?')) {
-      const updatedList = templates.filter((t) => t.id !== id);
+      const updatedList = templates.filter((t: any) => t.id !== id);
       updateWhatsAppTemplatesConfig({
         ...whatsappTemplatesConfig,
         templates: updatedList,
@@ -117,7 +117,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
   };
 
   const handleToggleEnabled = (id: string, currentVal: boolean) => {
-    const updatedList = templates.map((t) => (t.id === id ? { ...t, enabled: !currentVal } : t));
+    const updatedList = templates.map((t: any) => (t.id === id ? { ...t, enabled: !currentVal } : t));
     updateWhatsAppTemplatesConfig({
       ...whatsappTemplatesConfig,
       templates: updatedList,
@@ -125,7 +125,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
   };
 
   const handleSetActiveForCategory = (tpl: WhatsAppTemplate) => {
-    const updatedList = templates.map((t) => ({
+    const updatedList = templates.map((t: any) => ({
       ...t,
       isActiveForAction: t.actionCategory === tpl.actionCategory ? t.id === tpl.id : t.isActiveForAction,
     }));
@@ -146,18 +146,18 @@ export const WhatsAppTemplateManager: React.FC = () => {
       return;
     }
 
-    const exists = templates.some((t) => t.id === editingTemplate.id);
+    const exists = templates.some((t: any) => t.id === editingTemplate.id);
     let updatedList: WhatsAppTemplate[] = [];
 
     if (exists) {
-      updatedList = templates.map((t) => (t.id === editingTemplate.id ? { ...editingTemplate, updatedAt: new Date().toISOString() } : t));
+      updatedList = templates.map((t: any) => (t.id === editingTemplate.id ? { ...editingTemplate, updatedAt: new Date().toISOString() } : t));
     } else {
       updatedList = [{ ...editingTemplate, updatedAt: new Date().toISOString() }, ...templates];
     }
 
     let updatedMap: Record<WhatsAppTemplateActionCategory, string> = { ...activeCategoryMap };
     if (editingTemplate.isActiveForAction) {
-      updatedList = updatedList.map((t) => ({
+      updatedList = updatedList.map((t: any) => ({
         ...t,
         isActiveForAction: t.actionCategory === editingTemplate.actionCategory ? t.id === editingTemplate.id : t.isActiveForAction,
       }));
@@ -308,7 +308,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
           All Templates ({templates.length})
         </button>
         {Object.entries(ACTION_CATEGORY_INFO).map(([catKey, info]) => {
-          const count = templates.filter((t) => t.actionCategory === catKey).length;
+          const count = templates.filter((t: any) => t.actionCategory === catKey).length;
           return (
             <button
               key={catKey}
@@ -327,13 +327,13 @@ export const WhatsAppTemplateManager: React.FC = () => {
 
       {/* Template Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredTemplates.map((tpl) => {
-          const categoryMeta = ACTION_CATEGORY_INFO[tpl.actionCategory] || {
+        {filteredTemplates.map((tpl: any) => {
+          const categoryMeta = (ACTION_CATEGORY_INFO as any)[tpl.actionCategory] || {
             label: tpl.actionCategory,
             badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
           };
 
-          const isActive = activeCategoryMap[tpl.actionCategory] === tpl.id || tpl.isActiveForAction;
+          const isActive = (activeCategoryMap as any)[tpl.actionCategory] === tpl.id || tpl.isActiveForAction;
 
           return (
             <div
@@ -489,7 +489,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                   <input
                     type="text"
                     value={editingTemplate.title}
-                    onChange={(e) => setEditingTemplate({ ...editingTemplate, title: e.target.value })}
+                    onChange={(e: any) => setEditingTemplate({ ...editingTemplate, title: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                     placeholder="e.g., Summer Direct Buy Template"
                   />
@@ -501,7 +501,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                   </label>
                   <select
                     value={editingTemplate.actionCategory}
-                    onChange={(e) =>
+                    onChange={(e: any) =>
                       setEditingTemplate({
                         ...editingTemplate,
                         actionCategory: e.target.value as WhatsAppTemplateActionCategory,
@@ -524,7 +524,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={editingTemplate.enabled}
-                    onChange={(e) => setEditingTemplate({ ...editingTemplate, enabled: e.target.checked })}
+                    onChange={(e: any) => setEditingTemplate({ ...editingTemplate, enabled: e.target.checked })}
                     className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
                   />
                   Enable Template
@@ -534,7 +534,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={editingTemplate.isActiveForAction}
-                    onChange={(e) => setEditingTemplate({ ...editingTemplate, isActiveForAction: e.target.checked })}
+                    onChange={(e: any) => setEditingTemplate({ ...editingTemplate, isActiveForAction: e.target.checked })}
                     className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
                   />
                   Set as Active Default for {ACTION_CATEGORY_INFO[editingTemplate.actionCategory]?.label}
@@ -607,7 +607,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                     {/* Emoji Quick Toolbar */}
                     <div className="flex items-center gap-1 overflow-x-auto max-w-full">
                       <span className="text-[10px] text-slate-400 font-semibold uppercase mr-1">Quick Emojis:</span>
-                      {quickEmojis.map((emoji, idx) => (
+                      {quickEmojis.map((emoji: any, idx: any) => (
                         <button
                           key={idx}
                           type="button"
@@ -626,7 +626,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                       <Tag className="w-3.5 h-3.5 text-emerald-600" /> Click any variable button to insert into message body:
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                      {WHATSAPP_VARIABLES_LIST.map((v) => (
+                      {WHATSAPP_VARIABLES_LIST.map((v: any) => (
                         <button
                           key={v.key}
                           type="button"
@@ -651,7 +651,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                     <textarea
                       ref={textareaRef}
                       value={editingTemplate.messageBody}
-                      onChange={(e) => setEditingTemplate({ ...editingTemplate, messageBody: e.target.value })}
+                      onChange={(e: any) => setEditingTemplate({ ...editingTemplate, messageBody: e.target.value })}
                       rows={10}
                       className="w-full px-4 py-3 rounded-2xl border border-slate-300 font-mono text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none leading-relaxed"
                     />
@@ -674,7 +674,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={editingTemplate.advancedOptions?.showProductImageLink}
-                        onChange={(e) =>
+                        onChange={(e: any) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             advancedOptions: { ...editingTemplate.advancedOptions, showProductImageLink: e.target.checked },
@@ -692,7 +692,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={editingTemplate.advancedOptions?.showProductURL}
-                        onChange={(e) =>
+                        onChange={(e: any) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             advancedOptions: { ...editingTemplate.advancedOptions, showProductURL: e.target.checked },
@@ -710,7 +710,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={editingTemplate.advancedOptions?.showCouponDetails}
-                        onChange={(e) =>
+                        onChange={(e: any) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             advancedOptions: { ...editingTemplate.advancedOptions, showCouponDetails: e.target.checked },
@@ -728,7 +728,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={editingTemplate.advancedOptions?.showCustomerAddress}
-                        onChange={(e) =>
+                        onChange={(e: any) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             advancedOptions: { ...editingTemplate.advancedOptions, showCustomerAddress: e.target.checked },
@@ -746,7 +746,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={editingTemplate.advancedOptions?.showPaymentDetails}
-                        onChange={(e) =>
+                        onChange={(e: any) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             advancedOptions: { ...editingTemplate.advancedOptions, showPaymentDetails: e.target.checked },
@@ -764,7 +764,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={editingTemplate.advancedOptions?.showDeliveryNotes}
-                        onChange={(e) =>
+                        onChange={(e: any) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             advancedOptions: { ...editingTemplate.advancedOptions, showDeliveryNotes: e.target.checked },
@@ -786,7 +786,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                       <input
                         type="text"
                         value={editingTemplate.advancedOptions?.customThankYouMessage || ''}
-                        onChange={(e) =>
+                        onChange={(e: any) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             advancedOptions: { ...editingTemplate.advancedOptions, customThankYouMessage: e.target.value },
@@ -802,7 +802,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                       <input
                         type="text"
                         value={editingTemplate.advancedOptions?.storePoliciesNote || ''}
-                        onChange={(e) =>
+                        onChange={(e: any) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             advancedOptions: { ...editingTemplate.advancedOptions, storePoliciesNote: e.target.value },
@@ -818,7 +818,7 @@ export const WhatsAppTemplateManager: React.FC = () => {
                       <input
                         type="text"
                         value={editingTemplate.advancedOptions?.returnExchangeNote || ''}
-                        onChange={(e) =>
+                        onChange={(e: any) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             advancedOptions: { ...editingTemplate.advancedOptions, returnExchangeNote: e.target.value },

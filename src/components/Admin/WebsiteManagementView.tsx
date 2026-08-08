@@ -105,10 +105,10 @@ export const WebsiteManagementView: React.FC = () => {
   const handleUpdateTenant = async (updatedTenant: Tenant) => {
     try {
       await saveTenant(updatedTenant);
-      setTenants((prev) => {
-        const exists = prev.find((t) => t.id === updatedTenant.id);
+      setTenants((prev: any) => {
+        const exists = prev.find((t: any) => t.id === updatedTenant.id);
         if (exists) {
-          return prev.map((t) => (t.id === updatedTenant.id ? updatedTenant : t));
+          return prev.map((t: any) => (t.id === updatedTenant.id ? updatedTenant : t));
         }
         return [updatedTenant, ...prev];
       });
@@ -141,7 +141,7 @@ export const WebsiteManagementView: React.FC = () => {
   const handleConfirmVerification = (e: React.FormEvent) => {
     e.preventDefault();
     if (!verificationModal.passwordInput.trim()) {
-      setVerificationModal((prev) => ({ ...prev, error: 'Password is required' }));
+      setVerificationModal((prev: any) => ({ ...prev, error: 'Password is required' }));
       return;
     }
 
@@ -154,7 +154,7 @@ export const WebsiteManagementView: React.FC = () => {
       setVerificationModal({ isOpen: false, title: '', description: '', passwordInput: '' });
       if (cb) cb();
     } else {
-      setVerificationModal((prev) => ({ ...prev, error: 'Invalid Super Admin password' }));
+      setVerificationModal((prev: any) => ({ ...prev, error: 'Invalid Super Admin password' }));
     }
   };
 
@@ -249,7 +249,7 @@ export const WebsiteManagementView: React.FC = () => {
               tenants={tenants}
               currentUser={currentAdminUser}
               onUpdateTenant={handleUpdateTenant}
-              showToast={(type, msg) => showToast(msg, type as any)}
+              showToast={(type: any, msg: any) => showToast(msg, type as any)}
               triggerSuperAdminVerification={triggerSuperAdminVerification}
             />
           )}
@@ -382,7 +382,7 @@ export const WebsiteManagementView: React.FC = () => {
               <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-1">
                 <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block">Total Products</span>
                 <span className="font-bold text-amber-400 text-lg font-mono block">{products.length} Items</span>
-                <span className="text-[10px] text-neutral-500 block">{products.filter(p => p.inStock).length} In-Stock</span>
+                <span className="text-[10px] text-neutral-500 block">{products.filter((p: any) => p.inStock).length} In-Stock</span>
               </div>
 
               <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-1">
@@ -455,7 +455,7 @@ export const WebsiteManagementView: React.FC = () => {
                 <span>Super Admin Verification Required</span>
               </div>
               <button
-                onClick={() => setVerificationModal((prev) => ({ ...prev, isOpen: false }))}
+                onClick={() => setVerificationModal((prev: any) => ({ ...prev, isOpen: false }))}
                 className="p-1 text-neutral-400 hover:text-white"
               >
                 <XCircle className="w-5 h-5" />
@@ -486,8 +486,8 @@ export const WebsiteManagementView: React.FC = () => {
                 autoFocus
                 placeholder="Enter Super Admin password"
                 value={verificationModal.passwordInput}
-                onChange={(e) =>
-                  setVerificationModal((prev) => ({ ...prev, passwordInput: e.target.value }))
+                onChange={(e: any) =>
+                  setVerificationModal((prev: any) => ({ ...prev, passwordInput: e.target.value }))
                 }
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:border-amber-500 font-mono"
               />
@@ -495,7 +495,7 @@ export const WebsiteManagementView: React.FC = () => {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setVerificationModal((prev) => ({ ...prev, isOpen: false }))}
+                  onClick={() => setVerificationModal((prev: any) => ({ ...prev, isOpen: false }))}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-neutral-300 rounded-xl text-xs font-bold"
                 >
                   Cancel
@@ -544,7 +544,7 @@ export const WebsiteManagementView: React.FC = () => {
                   required
                   placeholder="e.g. Update Store Hours / Custom Domain Setup"
                   value={requestSubject}
-                  onChange={(e) => setRequestSubject(e.target.value)}
+                  onChange={(e: any) => setRequestSubject(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:border-amber-500"
                 />
               </div>
@@ -556,7 +556,7 @@ export const WebsiteManagementView: React.FC = () => {
                   rows={4}
                   placeholder="Describe the specific settings, phone numbers, or domain changes you require..."
                   value={requestDetails}
-                  onChange={(e) => setRequestDetails(e.target.value)}
+                  onChange={(e: any) => setRequestDetails(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white outline-none focus:border-amber-500"
                 />
               </div>

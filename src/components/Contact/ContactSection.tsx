@@ -250,7 +250,7 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
                     <div className="font-serif-heading font-extrabold text-sm text-[#0B8F63]">
                       {storeInfo.name}
                     </div>
-                    {storeInfo.address.split(',').map((line, idx) => (
+                    {storeInfo.address.split(',').map((line: any, idx: any) => (
                       <div key={idx} className="font-extrabold text-neutral-800 tracking-wide uppercase text-[11px]">
                         {line.trim()}{idx < storeInfo.address.split(',').length - 1 ? ',' : ''}
                       </div>
@@ -300,7 +300,7 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
                       type="text"
                       required
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="e.g. Ramesh Kumar"
                       className="w-full bg-white border border-neutral-200 rounded-xl p-3 focus:ring-2 focus:ring-[#0B8F63] outline-none"
                     />
@@ -312,7 +312,7 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
                       type="tel"
                       required
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="e.g. 9829012345"
                       className="w-full bg-white border border-neutral-200 rounded-xl p-3 focus:ring-2 focus:ring-[#0B8F63] outline-none"
                     />
@@ -325,7 +325,7 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
                     <input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="e.g. ramesh@gmail.com"
                       className="w-full bg-white border border-neutral-200 rounded-xl p-3 focus:ring-2 focus:ring-[#0B8F63] outline-none"
                     />
@@ -335,7 +335,7 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
                     <label className="font-bold text-neutral-700 block mb-1">Product Category Interest</label>
                     <select
                       value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
                       className="w-full bg-white border border-neutral-200 rounded-xl p-3 focus:ring-2 focus:ring-[#0B8F63] outline-none font-medium"
                     >
                       <option value="Men Footwear">Men's Footwear & Sneakers</option>
@@ -352,7 +352,7 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
                   <textarea
                     rows={4}
                     value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, message: e.target.value })}
                     placeholder="Describe what size or style you are looking for..."
                     className="w-full bg-white border border-neutral-200 rounded-xl p-3 focus:ring-2 focus:ring-[#0B8F63] outline-none"
                   />

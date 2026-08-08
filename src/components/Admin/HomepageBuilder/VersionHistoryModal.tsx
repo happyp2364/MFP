@@ -23,7 +23,7 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
     if (isOpen) {
       setIsLoading(true);
       fetchHomepageVersionsList()
-        .then((v) => setVersions(v))
+        .then((v: any) => setVersions(v))
         .finally(() => setIsLoading(false));
     }
   }, [isOpen, fetchHomepageVersionsList]);

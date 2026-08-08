@@ -19,7 +19,7 @@ export const MobileScrollableCategories: React.FC<MobileScrollableCategoriesProp
   const { mobileCategories } = useStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const enabledCategories = mobileCategories.filter((c) => c.enabled !== false);
+  const enabledCategories = mobileCategories.filter((c: any) => c.enabled !== false);
 
   if (enabledCategories.length === 0) return null;
 
@@ -48,7 +48,7 @@ export const MobileScrollableCategories: React.FC<MobileScrollableCategoriesProp
           ref={scrollRef}
           className="flex items-center gap-3 overflow-x-auto scrollbar-none px-1 py-1 snap-x snap-mandatory touch-pan-x scroll-smooth"
         >
-          {enabledCategories.map((cat) => {
+          {enabledCategories.map((cat: any) => {
             const isActive = activeCategory === cat.categoryKey;
             
             // Soft pastel background default fallback if not set
@@ -102,7 +102,7 @@ export const MobileScrollableCategories: React.FC<MobileScrollableCategoriesProp
                       loading="lazy"
                       decoding="async"
                       referrerPolicy="no-referrer"
-                      onError={(e) => {
+                      onError={(e: any) => {
                         (e.target as HTMLImageElement).src =
                           'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80';
                       }}

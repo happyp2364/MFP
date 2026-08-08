@@ -85,7 +85,7 @@ export const OpenBoxDeliverySettingsView: React.FC = () => {
   ];
 
   // Filtered products for selection
-  const filteredProducts = products.filter((p) =>
+  const filteredProducts = products.filter((p: any) =>
     p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
     p.category.toLowerCase().includes(productSearch.toLowerCase()) ||
     (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase()))
@@ -434,7 +434,7 @@ export const OpenBoxDeliverySettingsView: React.FC = () => {
                 </div>
 
                 <div className="max-h-48 overflow-y-auto space-y-1 pr-1 border border-neutral-200/60 rounded-lg p-2 bg-white">
-                  {filteredProducts.map((prod) => {
+                  {filteredProducts.map((prod: any) => {
                     const checked = (formConfig.applicableProductIds || []).includes(prod.id);
                     return (
                       <div

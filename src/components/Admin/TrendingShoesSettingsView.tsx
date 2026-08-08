@@ -55,7 +55,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
     if (current.includes(productId)) {
       setForm({
         ...form,
-        selectedProductIds: current.filter((id) => id !== productId),
+        selectedProductIds: current.filter((id: any) => id !== productId),
       });
     } else {
       setForm({
@@ -81,7 +81,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
   };
 
   const filteredProductsForPicker = products.filter(
-    (p) =>
+    (p: any) =>
       p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
       p.brand.toLowerCase().includes(productSearch.toLowerCase()) ||
       p.category.toLowerCase().includes(productSearch.toLowerCase())
@@ -200,7 +200,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               <input
                 type="checkbox"
                 checked={form.enabled}
-                onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
+                onChange={(e: any) => setForm({ ...form, enabled: e.target.checked })}
                 className="w-4 h-4 accent-[#0B8F63] rounded"
               />
               <span className="text-xs font-bold text-neutral-800">Enable Section on Homepage</span>
@@ -215,7 +215,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               <input
                 type="text"
                 value={form.badgeLabel || ''}
-                onChange={(e) => setForm({ ...form, badgeLabel: e.target.value })}
+                onChange={(e: any) => setForm({ ...form, badgeLabel: e.target.value })}
                 placeholder="COLLEGE FAVOURITES"
                 className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-[#0B8F63] outline-none"
               />
@@ -231,7 +231,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               <input
                 type="text"
                 value={form.ctaText || ''}
-                onChange={(e) => setForm({ ...form, ctaText: e.target.value })}
+                onChange={(e: any) => setForm({ ...form, ctaText: e.target.value })}
                 placeholder="View All Shoes"
                 className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-[#0B8F63] outline-none"
               />
@@ -244,7 +244,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               <input
                 type="text"
                 value={form.sectionTitle}
-                onChange={(e) => setForm({ ...form, sectionTitle: e.target.value })}
+                onChange={(e: any) => setForm({ ...form, sectionTitle: e.target.value })}
                 placeholder="🔥 Trending Shoes Collection"
                 className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl text-sm font-extrabold focus:ring-2 focus:ring-[#0B8F63] outline-none"
               />
@@ -257,7 +257,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               <textarea
                 rows={2}
                 value={form.subtitle}
-                onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+                onChange={(e: any) => setForm({ ...form, subtitle: e.target.value })}
                 placeholder="Discover our most popular college sports shoes."
                 className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#0B8F63] outline-none"
               />
@@ -276,7 +276,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               </label>
               <select
                 value={form.source}
-                onChange={(e) => setForm({ ...form, source: e.target.value as TrendingShoesSource })}
+                onChange={(e: any) => setForm({ ...form, source: e.target.value as TrendingShoesSource })}
                 className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl text-xs font-bold text-neutral-800 focus:ring-2 focus:ring-[#0B8F63] outline-none"
               >
                 <option value="trending">🔥 Trending Products (Highest Reviews & Badges)</option>
@@ -300,7 +300,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
                 max={12}
                 step={1}
                 value={form.maxProducts || 8}
-                onChange={(e) => setForm({ ...form, maxProducts: parseInt(e.target.value, 10) })}
+                onChange={(e: any) => setForm({ ...form, maxProducts: parseInt(e.target.value, 10) })}
                 className="w-full accent-[#0B8F63] cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-neutral-500 font-bold mt-1">
@@ -322,7 +322,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
                   type="text"
                   placeholder="Search products..."
                   value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
+                  onChange={(e: any) => setProductSearch(e.target.value)}
                   className="px-3 py-1.5 border border-neutral-300 rounded-lg text-xs outline-none focus:border-[#0B8F63]"
                 />
               </div>
@@ -334,8 +334,8 @@ export const TrendingShoesSettingsView: React.FC = () => {
                     Current Showcase Sequence (Click arrows to reorder):
                   </span>
                   <div className="space-y-1.5">
-                    {form.selectedProductIds.map((id, index) => {
-                      const p = products.find((prod) => prod.id === id);
+                    {form.selectedProductIds.map((id: any, index: any) => {
+                      const p = products.find((prod: any) => prod.id === id);
                       if (!p) return null;
                       return (
                         <div
@@ -391,7 +391,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
 
               {/* Product Grid Checklist */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-80 overflow-y-auto p-1 border border-neutral-200 rounded-2xl">
-                {filteredProductsForPicker.map((prod) => {
+                {filteredProductsForPicker.map((prod: any) => {
                   const isSelected = form.selectedProductIds?.includes(prod.id);
                   return (
                     <div
@@ -440,7 +440,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               </label>
               <select
                 value={form.backgroundStyle}
-                onChange={(e) =>
+                onChange={(e: any) =>
                   setForm({
                     ...form,
                     backgroundStyle: e.target.value as any,
@@ -462,7 +462,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               </label>
               <select
                 value={form.cardStyle}
-                onChange={(e) =>
+                onChange={(e: any) =>
                   setForm({
                     ...form,
                     cardStyle: e.target.value as any,
@@ -483,7 +483,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               </label>
               <select
                 value={form.transitionSpeed}
-                onChange={(e) =>
+                onChange={(e: any) =>
                   setForm({
                     ...form,
                     transitionSpeed: e.target.value as any,
@@ -504,7 +504,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               <input
                 type="checkbox"
                 checked={form.enableAnimation}
-                onChange={(e) => setForm({ ...form, enableAnimation: e.target.checked })}
+                onChange={(e: any) => setForm({ ...form, enableAnimation: e.target.checked })}
                 className="w-4 h-4 accent-[#0B8F63] rounded"
               />
               <span className="text-xs font-bold text-neutral-800">
@@ -531,7 +531,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               <input
                 type="datetime-local"
                 value={form.scheduleStart || ''}
-                onChange={(e) => setForm({ ...form, scheduleStart: e.target.value })}
+                onChange={(e: any) => setForm({ ...form, scheduleStart: e.target.value })}
                 className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-[#0B8F63] outline-none"
               />
             </div>
@@ -543,7 +543,7 @@ export const TrendingShoesSettingsView: React.FC = () => {
               <input
                 type="datetime-local"
                 value={form.scheduleEnd || ''}
-                onChange={(e) => setForm({ ...form, scheduleEnd: e.target.value })}
+                onChange={(e: any) => setForm({ ...form, scheduleEnd: e.target.value })}
                 className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-[#0B8F63] outline-none"
               />
             </div>

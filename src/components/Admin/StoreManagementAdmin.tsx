@@ -99,7 +99,7 @@ export const StoreManagementAdmin: React.FC = () => {
     'Wheelchair Accessible',
   ];
 
-  const cities = Array.from(new Set(physicalStores.map((s) => s.city)));
+  const cities = Array.from(new Set(physicalStores.map((s: any) => s.city)));
 
   const handleOpenAddModal = () => {
     setEditingStore(null);
@@ -197,7 +197,7 @@ export const StoreManagementAdmin: React.FC = () => {
       description: `Uploaded store photo for ${formData.name || 'Branch'}`,
     };
 
-    setFormData((prev) => ({
+    setFormData((prev: any) => ({
       ...prev,
       images: [...(prev.images || []), url],
       galleryPhotos: [...(prev.galleryPhotos || []), newPhoto],
@@ -207,24 +207,24 @@ export const StoreManagementAdmin: React.FC = () => {
   };
 
   const handleRemoveImage = (index: number) => {
-    setFormData((prev) => ({
+    setFormData((prev: any) => ({
       ...prev,
-      images: (prev.images || []).filter((_, i) => i !== index),
-      galleryPhotos: (prev.galleryPhotos || []).filter((_, i) => i !== index),
+      images: (prev.images || []).filter((_: any, i: any) => i !== index),
+      galleryPhotos: (prev.galleryPhotos || []).filter((_: any, i: any) => i !== index),
     }));
   };
 
   const handleToggleService = (serviceName: string) => {
-    setFormData((prev) => {
+    setFormData((prev: any) => {
       const current = prev.services || [];
       const updated = current.includes(serviceName)
-        ? current.filter((s) => s !== serviceName)
+        ? current.filter((s: any) => s !== serviceName)
         : [...current, serviceName];
       return { ...prev, services: updated };
     });
   };
 
-  const filteredStores = physicalStores.filter((s) => {
+  const filteredStores = physicalStores.filter((s: any) => {
     const matchesSearch =
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       s.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -236,7 +236,7 @@ export const StoreManagementAdmin: React.FC = () => {
 
   // Mobile Categories Handlers
   const handleToggleCategory = (catId: string) => {
-    const updated = mobileCategories.map((c) =>
+    const updated = mobileCategories.map((c: any) =>
       c.id === catId ? { ...c, enabled: !c.enabled } : c
     );
     updateMobileCategories(updated);
@@ -250,7 +250,7 @@ export const StoreManagementAdmin: React.FC = () => {
     updated[index] = updated[targetIdx];
     updated[targetIdx] = temp;
     // update orders
-    const reordered = updated.map((item, idx) => ({ ...item, order: idx + 1 }));
+    const reordered = updated.map((item: any, idx: any) => ({ ...item, order: idx + 1 }));
     updateMobileCategories(reordered);
   };
 
@@ -313,7 +313,7 @@ export const StoreManagementAdmin: React.FC = () => {
                   type="text"
                   placeholder="Search stores by name, city, address, or pincode..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e: any) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                 />
               </div>
@@ -321,7 +321,7 @@ export const StoreManagementAdmin: React.FC = () => {
               {cities.length > 0 && (
                 <select
                   value={selectedCityFilter}
-                  onChange={(e) => setSelectedCityFilter(e.target.value)}
+                  onChange={(e: any) => setSelectedCityFilter(e.target.value)}
                   className="px-3 py-2.5 text-xs sm:text-sm border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500 bg-neutral-50 font-medium"
                 >
                   <option value="all">All Cities</option>
@@ -345,7 +345,7 @@ export const StoreManagementAdmin: React.FC = () => {
 
           {/* Stores Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredStores.map((store) => (
+            {filteredStores.map((store: any) => (
               <div
                 key={store.id}
                 className={`bg-white rounded-3xl border shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col ${
@@ -431,7 +431,7 @@ export const StoreManagementAdmin: React.FC = () => {
 
                     {/* Services Chips */}
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {store.services.map((srv) => (
+                      {store.services.map((srv: any) => (
                         <span
                           key={srv}
                           className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold"
@@ -503,7 +503,7 @@ export const StoreManagementAdmin: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {mobileCategories.map((cat, index) => (
+            {mobileCategories.map((cat: any, index: any) => (
               <div
                 key={cat.id}
                 className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
@@ -586,7 +586,7 @@ export const StoreManagementAdmin: React.FC = () => {
                     type="text"
                     required
                     value={formData.name || ''}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g. Flagship Outlet — Main Branch"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
@@ -598,7 +598,7 @@ export const StoreManagementAdmin: React.FC = () => {
                     type="text"
                     required
                     value={formData.city || ''}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, city: e.target.value })}
                     placeholder="e.g. Jodhpur, Jaipur, Udaipur"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
@@ -609,7 +609,7 @@ export const StoreManagementAdmin: React.FC = () => {
                   <input
                     type="text"
                     value={formData.area || ''}
-                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, area: e.target.value })}
                     placeholder="e.g. Ratanada, MI Road"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
@@ -621,14 +621,14 @@ export const StoreManagementAdmin: React.FC = () => {
                     <input
                       type="text"
                       value={formData.state || ''}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, state: e.target.value })}
                       placeholder="Rajasthan"
                       className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                     />
                     <input
                       type="text"
                       value={formData.pincode || ''}
-                      onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, pincode: e.target.value })}
                       placeholder="342001"
                       className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                     />
@@ -641,7 +641,7 @@ export const StoreManagementAdmin: React.FC = () => {
                     required
                     rows={2}
                     value={formData.address || ''}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, address: e.target.value })}
                     placeholder="Plot No. 14, Main Station Road, Near Clock Tower..."
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
@@ -652,7 +652,7 @@ export const StoreManagementAdmin: React.FC = () => {
                   <input
                     type="text"
                     value={formData.phone || ''}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+91 98290 12345"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
@@ -663,7 +663,7 @@ export const StoreManagementAdmin: React.FC = () => {
                   <input
                     type="text"
                     value={formData.whatsapp || ''}
-                    onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, whatsapp: e.target.value })}
                     placeholder="919829012345"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
@@ -674,7 +674,7 @@ export const StoreManagementAdmin: React.FC = () => {
                   <input
                     type="text"
                     value={formData.openingHoursToday || ''}
-                    onChange={(e) => setFormData({ ...formData, openingHoursToday: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, openingHoursToday: e.target.value })}
                     placeholder="10:00 AM - 9:30 PM"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
@@ -685,7 +685,7 @@ export const StoreManagementAdmin: React.FC = () => {
                   <input
                     type="text"
                     value={formData.managerName || ''}
-                    onChange={(e) => setFormData({ ...formData, managerName: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, managerName: e.target.value })}
                     placeholder="Vikram Singh"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
@@ -697,7 +697,7 @@ export const StoreManagementAdmin: React.FC = () => {
                     type="number"
                     step="any"
                     value={formData.latitude || ''}
-                    onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) })}
+                    onChange={(e: any) => setFormData({ ...formData, latitude: parseFloat(e.target.value) })}
                     placeholder="26.2918"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
@@ -709,7 +709,7 @@ export const StoreManagementAdmin: React.FC = () => {
                     type="number"
                     step="any"
                     value={formData.longitude || ''}
-                    onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) })}
+                    onChange={(e: any) => setFormData({ ...formData, longitude: parseFloat(e.target.value) })}
                     placeholder="73.0168"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
@@ -720,7 +720,7 @@ export const StoreManagementAdmin: React.FC = () => {
                   <input
                     type="text"
                     value={formData.specialOffers || ''}
-                    onChange={(e) => setFormData({ ...formData, specialOffers: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, specialOffers: e.target.value })}
                     placeholder="e.g. 🔥 Flat 15% OFF on College Shoes this week!"
                     className="w-full px-3 py-2 border border-neutral-200 rounded-xl focus:outline-none focus:border-emerald-500"
                   />
@@ -731,7 +731,7 @@ export const StoreManagementAdmin: React.FC = () => {
               <div>
                 <label className="block font-bold text-neutral-700 mb-2">Available In-Store Services</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-neutral-50 p-3 rounded-2xl border border-neutral-200">
-                  {ALL_SERVICES.map((srv) => {
+                  {ALL_SERVICES.map((srv: any) => {
                     const isChecked = (formData.services || []).includes(srv);
                     return (
                       <label key={srv} className="flex items-center gap-2 cursor-pointer text-xs font-semibold">
@@ -756,13 +756,13 @@ export const StoreManagementAdmin: React.FC = () => {
                     <input
                       type="text"
                       value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      onChange={(e: any) => setNewImageUrl(e.target.value)}
                       placeholder="Image URL (https://...)"
                       className="sm:col-span-2 px-3 py-2 border border-neutral-200 bg-white rounded-xl focus:outline-none focus:border-emerald-500"
                     />
                     <select
                       value={newImageCategory}
-                      onChange={(e) => setNewImageCategory(e.target.value as StoreGalleryPhotoCategory)}
+                      onChange={(e: any) => setNewImageCategory(e.target.value as StoreGalleryPhotoCategory)}
                       className="px-3 py-2 border border-neutral-200 bg-white rounded-xl focus:outline-none focus:border-emerald-500 font-bold"
                     >
                       <option value="exterior">🏢 Exterior View</option>
@@ -776,7 +776,7 @@ export const StoreManagementAdmin: React.FC = () => {
                     <input
                       type="text"
                       value={newImageTitle}
-                      onChange={(e) => setNewImageTitle(e.target.value)}
+                      onChange={(e: any) => setNewImageTitle(e.target.value)}
                       placeholder="Photo Caption / Title (Optional)"
                       className="flex-1 px-3 py-2 border border-neutral-200 bg-white rounded-xl focus:outline-none focus:border-emerald-500"
                     />
@@ -790,7 +790,7 @@ export const StoreManagementAdmin: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
-                    {(formData.images || []).map((img, i) => {
+                    {(formData.images || []).map((img: any, i: any) => {
                       const photoMeta = formData.galleryPhotos?.[i];
                       return (
                         <div key={i} className="relative group rounded-xl overflow-hidden h-20 border border-neutral-200 bg-black">
@@ -823,7 +823,7 @@ export const StoreManagementAdmin: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={formData.isOpen !== false}
-                    onChange={(e) => setFormData({ ...formData, isOpen: e.target.checked })}
+                    onChange={(e: any) => setFormData({ ...formData, isOpen: e.target.checked })}
                     className="rounded text-emerald-600"
                   />
                   <span>Open Today</span>
@@ -833,7 +833,7 @@ export const StoreManagementAdmin: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={Boolean(formData.isFeatured)}
-                    onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
+                    onChange={(e: any) => setFormData({ ...formData, isFeatured: e.target.checked })}
                     className="rounded text-emerald-600"
                   />
                   <span>Featured Outlet</span>
@@ -843,7 +843,7 @@ export const StoreManagementAdmin: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={formData.isEnabled !== false}
-                    onChange={(e) => setFormData({ ...formData, isEnabled: e.target.checked })}
+                    onChange={(e: any) => setFormData({ ...formData, isEnabled: e.target.checked })}
                     className="rounded text-emerald-600"
                   />
                   <span>Active & Visible</span>

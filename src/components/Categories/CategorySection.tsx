@@ -33,7 +33,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
 
         {/* Category Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {categoryHighlights.map((cat) => {
+          {categoryHighlights.map((cat: any) => {
             const isSelected = activeCategory === cat.id;
 
             return (
@@ -80,7 +80,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
 
                     {/* Subcategories Quick Pills */}
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {cat.subcategories.slice(0, 4).map((sub, idx) => (
+                      {cat.subcategories.slice(0, 4).map((sub: any, idx: any) => (
                         <span
                           key={idx}
                           className="text-[10px] font-semibold bg-white/20 hover:bg-white/30 backdrop-blur-sm px-2.5 py-1 rounded-lg text-white/90 transition-colors"

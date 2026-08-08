@@ -43,7 +43,7 @@ export const ReviewsSettingsView: React.FC = () => {
 
   // Master lists filter
   const filteredReviews = useMemo(() => {
-    return reviews.filter((rev) => {
+    return reviews.filter((rev: any) => {
       // Search term
       const matchesSearch = 
         rev.author.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -202,7 +202,7 @@ export const ReviewsSettingsView: React.FC = () => {
   // Bulk actions
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedIds(filteredReviews.map(r => r.id));
+      setSelectedIds(filteredReviews.map((r: any) => r.id));
     } else {
       setSelectedIds([]);
     }
@@ -425,7 +425,7 @@ export const ReviewsSettingsView: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredReviews.map((rev) => {
+                filteredReviews.map((rev: any) => {
                   const isEditing = editingReviewId === rev.id;
                   const isReplying = replyReviewId === rev.id;
 

@@ -42,7 +42,7 @@ export const SpinWheelPopup: React.FC<SpinWheelPopupProps> = ({ currentPath }) =
 
     // Select winner
     const sections = spinWheelConfig.sections;
-    const totalProb = sections.reduce((sum, s) => sum + s.probability, 0);
+    const totalProb = sections.reduce((sum: any, s: any) => sum + s.probability, 0);
     let rand = Math.random() * totalProb;
     
     let winnerIdx = 0;
@@ -106,13 +106,13 @@ export const SpinWheelPopup: React.FC<SpinWheelPopupProps> = ({ currentPath }) =
               transition={{ duration: 5, ease: [0.15, 0, 0.15, 1] }}
               className="w-full h-full rounded-full border-[12px] border-neutral-800 shadow-2xl relative overflow-hidden flex items-center justify-center"
               style={{
-                background: `conic-gradient(${spinWheelConfig.sections.map((s, i) => {
+                background: `conic-gradient(${spinWheelConfig.sections.map((s: any, i: any) => {
                   const angle = 360 / spinWheelConfig.sections.length;
                   return `${s.color} ${i * angle}deg ${(i + 1) * angle}deg`;
                 }).join(', ')})`,
               }}
             >
-              {spinWheelConfig.sections.map((s, i) => {
+              {spinWheelConfig.sections.map((s: any, i: any) => {
                 const angle = (360 / spinWheelConfig.sections.length);
                 const rotation = i * angle;
                 return (

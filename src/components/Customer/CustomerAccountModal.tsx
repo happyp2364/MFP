@@ -97,14 +97,14 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
   if (!isOpen) return null;
 
   // Filter orders for logged-in user or matching email/phone
-  const myOrders = orders.filter((o) => {
+  const myOrders = orders.filter((o: any) => {
     if (customerUser && o.userId === customerUser.uid) return true;
     if (customerProfile && o.customerEmail === customerProfile.email) return true;
     return false;
   });
 
   const wishlistProducts = (customerProfile?.wishlist || [])
-    .map((id) => products.find((p) => p.id === id))
+    .map((id: any) => products.find((p: any) => p.id === id))
     .filter(Boolean) as Product[];
 
   const handleAddAddress = async (e: React.FormEvent) => {
@@ -116,7 +116,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
 
     const updatedList = [
       addressItem,
-      ...(customerProfile?.savedAddresses || []).map((a) =>
+      ...(customerProfile?.savedAddresses || []).map((a: any) =>
         newAddress.isDefault ? { ...a, isDefault: false } : a
       ),
     ];
@@ -126,13 +126,13 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
   };
 
   const handleDeleteAddress = async (id: string) => {
-    const updatedList = (customerProfile?.savedAddresses || []).filter((a) => a.id !== id);
+    const updatedList = (customerProfile?.savedAddresses || []).filter((a: any) => a.id !== id);
     await updateCustomerProfileInFirestore({ savedAddresses: updatedList });
   };
 
   const getStepProgressIndex = (status: OrderStatus): number => {
     if (status === 'CANCELLED' || status === 'RETURNED') return -1;
-    return ORDER_STEPS.findIndex((s) => s.status === status);
+    return ORDER_STEPS.findIndex((s: any) => s.status === status);
   };
 
   return (
@@ -257,7 +257,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                   <p className="text-xs">Place your first order to track real-time delivery status here.</p>
                 </div>
               ) : (
-                myOrders.map((order) => {
+                myOrders.map((order: any) => {
                   const stepIndex = getStepProgressIndex(order.orderStatus);
 
                   return (
@@ -295,7 +295,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                             Real-Time Delivery Timeline
                           </p>
                           <div className="grid grid-cols-7 gap-1 text-center text-[10px]">
-                            {ORDER_STEPS.map((s, idx) => {
+                            {ORDER_STEPS.map((s: any, idx: any) => {
                               const isCompleted = idx <= stepIndex;
                               const isCurrent = idx === stepIndex;
 
@@ -331,7 +331,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
 
                       {/* Item Thumbnails */}
                       <div className="flex flex-wrap gap-2 text-xs pt-1">
-                        {order.items.map((item, idx) => (
+                        {order.items.map((item: any, idx: any) => (
                           <div
                             key={idx}
                             className="flex items-center space-x-2 p-1.5 bg-neutral-50 rounded-lg border border-neutral-100"
@@ -394,7 +394,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                       required
                       placeholder="Full Name"
                       value={newAddress.name}
-                      onChange={(e) => setNewAddress({ ...newAddress, name: e.target.value })}
+                      onChange={(e: any) => setNewAddress({ ...newAddress, name: e.target.value })}
                       className="px-3 py-2 border rounded-lg bg-white"
                     />
                     <input
@@ -402,7 +402,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                       required
                       placeholder="Phone Number"
                       value={newAddress.phone}
-                      onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
+                      onChange={(e: any) => setNewAddress({ ...newAddress, phone: e.target.value })}
                       className="px-3 py-2 border rounded-lg bg-white"
                     />
                     <input
@@ -410,7 +410,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                       required
                       placeholder="Street / House Address"
                       value={newAddress.street}
-                      onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })}
+                      onChange={(e: any) => setNewAddress({ ...newAddress, street: e.target.value })}
                       className="col-span-2 px-3 py-2 border rounded-lg bg-white"
                     />
                     <input
@@ -418,7 +418,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                       required
                       placeholder="City"
                       value={newAddress.city}
-                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
+                      onChange={(e: any) => setNewAddress({ ...newAddress, city: e.target.value })}
                       className="px-3 py-2 border rounded-lg bg-white"
                     />
                     <input
@@ -426,7 +426,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                       required
                       placeholder="PIN Code"
                       value={newAddress.pincode}
-                      onChange={(e) => setNewAddress({ ...newAddress, pincode: e.target.value })}
+                      onChange={(e: any) => setNewAddress({ ...newAddress, pincode: e.target.value })}
                       className="px-3 py-2 border rounded-lg bg-white"
                     />
                   </div>
@@ -443,7 +443,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                 <p className="text-xs text-neutral-500 py-8 text-center">No saved addresses. Click above to add one.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                  {(customerProfile?.savedAddresses || []).map((addr) => (
+                  {(customerProfile?.savedAddresses || []).map((addr: any) => (
                     <div key={addr.id} className="p-4 bg-white border border-neutral-200 rounded-xl relative space-y-1">
                       {addr.isDefault && (
                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[10px]">
@@ -498,7 +498,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                     type="checkbox"
                     id="masterConsent"
                     checked={marketingConsent.accepted ?? (marketingConsent.email || marketingConsent.push || marketingConsent.whatsApp)}
-                    onChange={(e) => {
+                    onChange={(e: any) => {
                       const checked = e.target.checked;
                       setMarketingConsent({
                         accepted: checked,
@@ -537,9 +537,9 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                       <input
                         type="checkbox"
                         checked={Boolean(marketingConsent.email)}
-                        onChange={(e) => {
+                        onChange={(e: any) => {
                           const val = e.target.checked;
-                          setMarketingConsent((prev) => ({
+                          setMarketingConsent((prev: any) => ({
                             ...prev,
                             email: val,
                             emailMarketing: val,
@@ -582,9 +582,9 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                       <input
                         type="checkbox"
                         checked={Boolean(marketingConsent.push)}
-                        onChange={(e) => {
+                        onChange={(e: any) => {
                           const val = e.target.checked;
-                          setMarketingConsent((prev) => ({
+                          setMarketingConsent((prev: any) => ({
                             ...prev,
                             push: val,
                             pushNotifications: val,
@@ -618,9 +618,9 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                       <input
                         type="checkbox"
                         checked={Boolean(marketingConsent.whatsApp)}
-                        onChange={(e) => {
+                        onChange={(e: any) => {
                           const val = e.target.checked;
-                          setMarketingConsent((prev) => ({
+                          setMarketingConsent((prev: any) => ({
                             ...prev,
                             whatsApp: val,
                             whatsappMarketing: val,
@@ -683,7 +683,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {wishlistProducts.map((p) => (
+                  {wishlistProducts.map((p: any) => (
                     <div key={p.id} className="p-2.5 bg-white border border-neutral-200 rounded-xl space-y-2">
                       <img src={p.images[0]} alt={p.name} className="w-full h-32 object-cover rounded-lg" />
                       <p className="font-bold text-xs text-neutral-900 line-clamp-1">{p.name}</p>

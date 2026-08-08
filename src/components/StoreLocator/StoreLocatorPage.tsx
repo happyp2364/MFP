@@ -64,7 +64,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
 
   // Active stores (enabled only)
   const enabledStores = useMemo(() => {
-    return physicalStores.filter((s) => s.isEnabled !== false);
+    return physicalStores.filter((s: any) => s.isEnabled !== false);
   }, [physicalStores]);
 
   // Request Customer Geolocation
@@ -75,7 +75,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
     }
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      (pos: any) => {
         const coords = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
@@ -86,7 +86,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
         setIsLocating(false);
         showToast('📍 Nearest stores calculated based on your live location!', 'success');
       },
-      (err) => {
+      (err: any) => {
         console.warn('Geolocation error:', err);
         setIsLocating(false);
         showToast('Unable to detect live GPS location. You can search by City or Pincode.', 'info');
@@ -112,7 +112,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
 
   // Filtered and Sorted Stores
   const filteredStores = useMemo(() => {
-    let result = enabledStores.filter((store) => {
+    let result = enabledStores.filter((store: any) => {
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
         !q ||
@@ -130,7 +130,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
 
     // If user location is available, sort by distance
     if (userLocation) {
-      result = [...result].sort((a, b) => {
+      result = [...result].sort((a: any, b: any) => {
         const distA = calculateDistanceKm(userLocation.lat, userLocation.lng, a.latitude, a.longitude);
         const distB = calculateDistanceKm(userLocation.lat, userLocation.lng, b.latitude, b.longitude);
         return distA - distB;
@@ -196,7 +196,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                 type="text"
                 placeholder="Search by City, Area, State, or Pincode (e.g. Jodhpur, Ratanada, 342001)..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-10 py-3 text-xs sm:text-sm bg-neutral-100 border border-neutral-200 rounded-2xl focus:outline-none focus:bg-white focus:border-emerald-500 font-medium transition-all"
               />
               {searchQuery && (
@@ -277,7 +277,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                 </button>
               </div>
             ) : (
-              filteredStores.map((store) => {
+              filteredStores.map((store: any) => {
                 const isSelected = selectedStore?.id === store.id;
                 const activeImgIdx = activePhotoIndex[store.id] || 0;
                 const images = store.images && store.images.length > 0
@@ -342,7 +342,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                       </div>
 
                       <button
-                        onClick={(e) => {
+                        onClick={(e: any) => {
                           e.stopPropagation();
                           setDetailModalStore(store);
                         }}
@@ -373,7 +373,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
 
                     {/* Available Services Chips */}
                     <div className="flex flex-wrap gap-1.5 mt-3">
-                      {store.services.slice(0, 4).map((srv) => (
+                      {store.services.slice(0, 4).map((srv: any) => (
                         <span
                           key={srv}
                           className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200/60"
@@ -393,7 +393,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                       {/* Call Button */}
                       <a
                         href={`tel:${store.phone}`}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: any) => e.stopPropagation()}
                         className="px-2 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-900 text-xs font-bold flex items-center justify-center gap-1 transition-colors"
                       >
                         <Phone className="w-3.5 h-3.5 text-emerald-600" />
@@ -405,7 +405,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                         href={`https://wa.me/${store.whatsapp || '919829012345'}?text=Hi%20${encodeURIComponent(store.name)},%20I%20want%20to%20inquire%20about%20shoe%20stock.`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: any) => e.stopPropagation()}
                         className="px-2 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs"
                       >
                         <MessageCircle className="w-3.5 h-3.5" />
@@ -417,7 +417,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                         href={store.googleMapsUrl || `https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: any) => e.stopPropagation()}
                         className="px-2 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs"
                       >
                         <Navigation className="w-3.5 h-3.5" />
@@ -446,7 +446,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                 mapId="DEMO_MAP_ID"
                 internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
               >
-                {filteredStores.map((store) => (
+                {filteredStores.map((store: any) => (
                   <AdvancedMarker
                     key={store.id}
                     position={{ lat: store.latitude, lng: store.longitude }}
@@ -602,7 +602,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                   Available Services & Privileges at this Store
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {detailModalStore.services.map((srv) => (
+                  {detailModalStore.services.map((srv: any) => (
                     <div key={srv} className="p-3 bg-emerald-50/60 border border-emerald-200/80 rounded-xl flex items-center gap-2 text-xs font-bold text-emerald-900">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>{srv}</span>

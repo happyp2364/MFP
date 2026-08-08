@@ -18,7 +18,7 @@ export const CustomerIntelligenceCRMView: React.FC = () => {
   const customers = useMemo(() => {
     const customerMap = new Map<string, any>();
     
-    orders.forEach(order => {
+    orders.forEach((order: any) => {
       const email = order.customerEmail || order.customerPhone || 'Unknown';
       if (!customerMap.has(email)) {
         customerMap.set(email, {
@@ -161,7 +161,7 @@ export const CustomerIntelligenceCRMView: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
-                          {cust.segments.map((seg, idx) => (
+                          {cust.segments.map((seg: any, idx: any) => (
                             <span key={idx} className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                               seg === 'VIP' ? 'bg-amber-100 text-amber-700' :
                               seg === 'High Value' ? 'bg-purple-100 text-purple-700' :

@@ -99,7 +99,7 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
       if (activeRewards.length === 0) return null;
 
       // Weighted random selection
-      const totalProb = activeRewards.reduce((sum, r) => sum + r.probability, 0);
+      const totalProb = activeRewards.reduce((sum: any, r: any) => sum + r.probability, 0);
       let rand = Math.random() * totalProb;
 
       for (const r of activeRewards) {

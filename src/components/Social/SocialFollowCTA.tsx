@@ -7,8 +7,8 @@ export const SocialFollowCTA: React.FC = () => {
   const { socialMediaConfig, recordSocialClick } = useStore();
 
   const enabledPlatforms = (socialMediaConfig?.platforms || [])
-    .filter(p => p.enabled)
-    .sort((a, b) => a.displayOrder - b.displayOrder);
+    .filter((p: any) => p.enabled)
+    .sort((a: any, b: any) => a.displayOrder - b.displayOrder);
 
   return (
     <section className="py-16 bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 text-white relative overflow-hidden border-t border-b border-white/10">
@@ -34,7 +34,7 @@ export const SocialFollowCTA: React.FC = () => {
         {/* Animated Social Buttons Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
           {enabledPlatforms.length > 0 ? (
-            enabledPlatforms.map((plat) => {
+            enabledPlatforms.map((plat: any) => {
               const getHoverStyle = (effect: string) => {
                 switch (effect) {
                   case 'glow': return 'hover:shadow-[0_0_20px_rgba(255,255,255,0.4)]';

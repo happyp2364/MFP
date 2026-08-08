@@ -27,7 +27,7 @@ export const AnnouncementBar: React.FC = () => {
 
   // Filter enabled announcements
   const enabledAnnouncements = (topAnnouncementBarConfig?.announcements || [])
-    .filter((item) => item.enabled);
+    .filter((item: any) => item.enabled);
 
   const displayItems = enabledAnnouncements.length > 0
     ? enabledAnnouncements
@@ -45,7 +45,7 @@ export const AnnouncementBar: React.FC = () => {
   useEffect(() => {
     if (displayItems.length <= 1 || !shouldAutoScroll) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % displayItems.length);
+      setCurrentIndex((prev: any) => (prev + 1) % displayItems.length);
     }, speed);
     return () => clearInterval(interval);
   }, [displayItems.length, speed, shouldAutoScroll]);

@@ -46,11 +46,11 @@ export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
   }
 
   // Filter only enabled sections
-  const activeSections = config.sections.filter((s) => s.enabled);
+  const activeSections = config.sections.filter((s: any) => s.enabled);
 
   return (
     <div className="w-full space-y-8 pb-12">
-      {activeSections.map((section, idx) => (
+      {activeSections.map((section: any, idx: any) => (
         <SectionItem
           key={`${section.id}-${idx}`}
           section={section}
@@ -88,7 +88,7 @@ function getCategoryCoverImage(catItem: any, products: Product[]): string {
   const catFilter = (catItem.categoryFilter || catItem.title || catItem.name || '').toLowerCase();
   const subFilter = (catItem.subcategoryFilter || '').toLowerCase();
 
-  const matchingProducts = products.filter((p) => {
+  const matchingProducts = products.filter((p: any) => {
     const pCat = (p.category || '').toLowerCase();
     const pSub = (p.subcategory || '').toLowerCase();
     const pName = (p.name || '').toLowerCase();
@@ -101,12 +101,12 @@ function getCategoryCoverImage(catItem: any, products: Product[]): string {
   // 2. Highest selling product
   if (matchingProducts.length > 0) {
     const sorted = [...matchingProducts].sort(
-      (a, b) => (b.reviewsCount || 0) - (a.reviewsCount || 0)
+      (a: any, b: any) => (b.reviewsCount || 0) - (a.reviewsCount || 0)
     );
     if (sorted[0]?.images?.[0]) return sorted[0].images[0];
 
     // 3. Featured product
-    const featured = matchingProducts.find((p) => p.isBestSeller || p.isFeatured || p.isTrending);
+    const featured = matchingProducts.find((p: any) => p.isBestSeller || p.isFeatured || p.isTrending);
     if (featured?.images?.[0]) return featured.images[0];
 
     if (matchingProducts[0]?.images?.[0]) return matchingProducts[0].images[0];
@@ -114,11 +114,11 @@ function getCategoryCoverImage(catItem: any, products: Product[]): string {
 
   // Check overall store products matching footwear category/gender
   if (catFilter.includes('women')) {
-    const wShoe = products.find((p) => p.category === 'women' && p.images?.length);
+    const wShoe = products.find((p: any) => p.category === 'women' && p.images?.length);
     if (wShoe?.images[0]) return wShoe.images[0];
   }
   if (catFilter.includes('kid')) {
-    const kShoe = products.find((p) => p.category === 'kids' && p.images?.length);
+    const kShoe = products.find((p: any) => p.category === 'kids' && p.images?.length);
     if (kShoe?.images[0]) return kShoe.images[0];
   }
 
@@ -232,7 +232,7 @@ const SectionItem: React.FC<SectionItemProps> = ({
       const filteredCat = data.category;
       let items = products;
       if (filteredCat && filteredCat !== 'ALL') {
-        items = items.filter((p) => p.category?.toLowerCase() === filteredCat.toLowerCase());
+        items = items.filter((p: any) => p.category?.toLowerCase() === filteredCat.toLowerCase());
       }
       const displayProducts = items.slice(0, limit);
 
@@ -257,11 +257,11 @@ const SectionItem: React.FC<SectionItemProps> = ({
 
             {/* Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
-              {displayProducts.map((prod) => (
+              {displayProducts.map((prod: any) => (
                 <ProductCard
                   key={prod.id}
                   product={prod}
-                  onQuickView={(p) => onSelectProduct && onSelectProduct(p)}
+                  onQuickView={(p: any) => onSelectProduct && onSelectProduct(p)}
                   onToggleWishlist={() => {}}
                   isWishlisted={false}
                 />
@@ -294,11 +294,11 @@ const SectionItem: React.FC<SectionItemProps> = ({
 
             {/* Flash Sale Products */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {displayProducts.map((prod) => (
+              {displayProducts.map((prod: any) => (
                 <ProductCard
                   key={prod.id}
                   product={prod}
-                  onQuickView={(p) => onSelectProduct && onSelectProduct(p)}
+                  onQuickView={(p: any) => onSelectProduct && onSelectProduct(p)}
                   onToggleWishlist={() => {}}
                   isWishlisted={false}
                 />
@@ -454,7 +454,7 @@ const SectionItem: React.FC<SectionItemProps> = ({
               {displayReviews.map((rev: any, idx: number) => (
                 <div key={rev.id || idx} className="p-5 bg-white rounded-2xl border border-neutral-200 shadow-xs space-y-3">
                   <div className="flex items-center gap-1 text-amber-400">
-                    {[...Array(5)].map((_, i) => (
+                    {[...Array(5)].map((_: any, i: any) => (
                       <Star key={i} className="w-4 h-4 fill-amber-400" />
                     ))}
                   </div>
@@ -526,7 +526,7 @@ const HeroCarousel: React.FC<{ slides: any[] }> = ({ slides }) => {
   useEffect(() => {
     if (slides.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % slides.length);
+      setCurrent((prev: any) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(interval);
   }, [slides.length]);
@@ -558,7 +558,7 @@ const HeroCarousel: React.FC<{ slides: any[] }> = ({ slides }) => {
 
       {slides.length > 1 && (
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
-          {slides.map((_, i) => (
+          {slides.map((_: any, i: any) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
@@ -619,7 +619,7 @@ const FaqAccordion: React.FC<{ faqs: any[]; title?: string; subtitle?: string }>
       </div>
 
       <div className="space-y-3">
-        {faqs.map((faq, idx) => {
+        {faqs.map((faq: any, idx: any) => {
           const isOpen = openIdx === idx;
           return (
             <div key={idx} className="border border-neutral-200 rounded-2xl overflow-hidden bg-white shadow-xs">
@@ -946,17 +946,17 @@ const MBHShoeCarouselHeroSection: React.FC<{
   useEffect(() => {
     if (!autoPlay || isHovered || slides.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % slides.length);
+      setCurrentIndex((prev: any) => (prev + 1) % slides.length);
     }, autoPlayInterval);
     return () => clearInterval(timer);
   }, [autoPlay, autoPlayInterval, isHovered, slides.length]);
 
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+    setCurrentIndex((prev: any) => (prev === 0 ? slides.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % slides.length);
+    setCurrentIndex((prev: any) => (prev + 1) % slides.length);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -982,7 +982,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
 
   const handleToggleWishlist = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsWishlisted((prev) => {
+    setIsWishlisted((prev: any) => {
       const next = !prev[idx];
       showToast(
         next ? `Added "${activeSlide.productName}" to Wishlist` : `Removed from Wishlist`,
@@ -994,7 +994,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
 
   const handleBuyNow = () => {
     const linked = products.find(
-      (p) =>
+      (p: any) =>
         p.id === activeSlide.productId ||
         p.name.toLowerCase() === activeSlide.productName.toLowerCase()
     );
@@ -1007,7 +1007,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
 
   const handleViewDetails = () => {
     const linked = products.find(
-      (p) =>
+      (p: any) =>
         p.id === activeSlide.productId ||
         p.name.toLowerCase() === activeSlide.productName.toLowerCase()
     );
@@ -1158,7 +1158,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
 
             {activeSlide.showWishlist !== false && (
               <button
-                onClick={(e) => handleToggleWishlist(currentIndex, e)}
+                onClick={(e: any) => handleToggleWishlist(currentIndex, e)}
                 className={`p-3.5 rounded-2xl border transition-all ${
                   isWishlisted[currentIndex]
                     ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-105'

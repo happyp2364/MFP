@@ -24,7 +24,7 @@ export const AdminNotificationDrawer: React.FC<AdminNotificationDrawerProps> = (
 
   if (!isOpen) return null;
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n: any) => !n.read).length;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm">
@@ -73,7 +73,7 @@ export const AdminNotificationDrawer: React.FC<AdminNotificationDrawerProps> = (
               <p className="text-[11px]">When customers place & pay for orders, live alerts will appear here with audio chime.</p>
             </div>
           ) : (
-            notifications.map((n) => (
+            notifications.map((n: any) => (
               <div
                 key={n.id}
                 onClick={() => markNotificationRead(n.id)}

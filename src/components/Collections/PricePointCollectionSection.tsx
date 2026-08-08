@@ -59,7 +59,7 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
     if (!products || products.length === 0) return [];
 
     // Filter 1: Footwear only (exclude clothing)
-    let shoeProducts = products.filter((p) => {
+    let shoeProducts = products.filter((p: any) => {
       const cat = (p.category || '').toLowerCase();
       const sub = (p.subcategory || '').toLowerCase();
       const name = (p.name || '').toLowerCase();
@@ -100,12 +100,12 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
 
     // Filter 2: Out of Stock check
     if (config.excludeOutofStock) {
-      shoeProducts = shoeProducts.filter((p) => p.inStock !== false);
+      shoeProducts = shoeProducts.filter((p: any) => p.inStock !== false);
     }
 
     // Filter 3: Deduplication if enabled
     if (config.preventDuplicateHomepageItems && alreadyDisplayedProductIds.length > 0) {
-      const deduped = shoeProducts.filter((p) => !alreadyDisplayedProductIds.includes(p.id));
+      const deduped = shoeProducts.filter((p: any) => !alreadyDisplayedProductIds.includes(p.id));
       if (deduped.length >= 2) {
         shoeProducts = deduped;
       }
@@ -117,46 +117,46 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
 
     switch (config.source) {
       case 'price_limit':
-        filtered = shoeProducts.filter((p) => p.price <= limitPrice);
+        filtered = shoeProducts.filter((p: any) => p.price <= limitPrice);
         // If not enough products strictly <= limit, sort ascending by price
         if (filtered.length === 0) {
-          filtered = [...shoeProducts].sort((a, b) => a.price - b.price);
+          filtered = [...shoeProducts].sort((a: any, b: any) => a.price - b.price);
         }
         break;
 
       case 'manual':
         if (config.selectedProductIds && config.selectedProductIds.length > 0) {
           filtered = config.selectedProductIds
-            .map((id) => shoeProducts.find((p) => p.id === id))
-            .filter((p): p is Product => Boolean(p));
+            .map((id: any) => shoeProducts.find((p: any) => p.id === id))
+            .filter((p: any): p is Product => Boolean(p));
         } else {
           filtered = shoeProducts;
         }
         break;
 
       case 'featured':
-        filtered = shoeProducts.filter((p) => p.isFeatured || p.price <= limitPrice);
+        filtered = shoeProducts.filter((p: any) => p.isFeatured || p.price <= limitPrice);
         break;
 
       case 'collection':
         filtered = shoeProducts.filter(
-          (p) =>
+          (p: any) =>
             p.price <= limitPrice ||
-            p.collectionTags?.some((t) => ['budget', 'value', 'college', 'bestseller'].includes(t.toLowerCase()))
+            p.collectionTags?.some((t: any) => ['budget', 'value', 'college', 'bestseller'].includes(t.toLowerCase()))
         );
         break;
 
       case 'ai_recommended':
       default:
         filtered = [...shoeProducts]
-          .filter((p) => p.price <= limitPrice + 300)
-          .sort((a, b) => a.price - b.price);
+          .filter((p: any) => p.price <= limitPrice + 300)
+          .sort((a: any, b: any) => a.price - b.price);
         break;
     }
 
     // Deduplicate within this section itself
     const uniqueMap = new Map<string, Product>();
-    filtered.forEach((p) => uniqueMap.set(p.id, p));
+    filtered.forEach((p: any) => uniqueMap.set(p.id, p));
     const uniqueList = Array.from(uniqueMap.values());
 
     const max = config.maxProducts || 8;
@@ -184,7 +184,7 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
   };
 
   // Background style classes
-  const bgThemeClasses = {
+  const bgThemeClasses = ({
     obsidian_emerald:
       'bg-gradient-to-br from-neutral-950 via-neutral-900 to-emerald-950 text-white border-y border-emerald-900/30',
     midnight_purple:
@@ -193,17 +193,17 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
       'bg-gradient-to-br from-amber-50/90 via-orange-50/30 to-amber-100/50 text-neutral-900 border-y border-amber-200/60',
     clean_white:
       'bg-white text-neutral-900 border-y border-neutral-200',
-  }[config.backgroundStyle || 'obsidian_emerald'];
+  } as any)[config.backgroundStyle || 'obsidian_emerald'];
 
   // Card style classes
-  const cardStyleClasses = {
+  const cardStyleClasses = ({
     neon_glass:
       'bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl hover:shadow-[#0B8F63]/30 rounded-3xl hover:border-[#0B8F63]/50',
     minimalist_glow:
       'bg-white/15 backdrop-blur-md border border-white/25 shadow-lg rounded-3xl hover:shadow-2xl',
     luxury_dark_gold:
       'bg-neutral-900/90 border border-amber-500/30 shadow-2xl rounded-3xl hover:border-amber-500/60',
-  }[config.cardStyle || 'neon_glass'];
+  } as any)[config.cardStyle || 'neon_glass'];
 
   const isDarkBg = config.backgroundStyle !== 'clean_white' && config.backgroundStyle !== 'cream_gold';
 
@@ -247,7 +247,7 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
 
         {/* PRODUCTS GRID / SHOWCASE DECK */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {displayProducts.map((product, idx) => {
+          {displayProducts.map((product: any, idx: any) => {
             const isWishlisted = wishlistIds.includes(product.id);
             const discountPercent = calculateDiscount(product.price, product.originalPrice) || product.discountPercent;
             const currentSelectedSize = selectedSizes[product.id] || product.sizes?.[0] || '8';
@@ -364,7 +364,7 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
                         Size:
                       </span>
                       <div className="flex gap-1">
-                        {product.sizes.slice(0, 4).map((sz) => (
+                        {product.sizes.slice(0, 4).map((sz: any) => (
                           <button
                             key={sz}
                             onClick={() => setSelectedSizes({ ...selectedSizes, [product.id]: sz })}

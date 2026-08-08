@@ -214,7 +214,7 @@ const canAccessTab = (tab: string) => {
 
   const isGoogleUser = auth.currentUser?.providerData.some((p) => p.providerId === 'google.com');
 
-  const unreadNotifCount = notifications.filter((n) => !n.read).length;
+  const unreadNotifCount = notifications.filter((n: any) => !n.read).length;
 
   // Search & Filters for Products
   const [adminSearch, setAdminSearch] = useState('');
@@ -290,8 +290,8 @@ const canAccessTab = (tab: string) => {
 
     const items = announcementsText
       .split('\n')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+      .map((s: any) => s.trim())
+      .filter((s: any) => s.length > 0);
     await setAnnouncementsList(items);
 
     showNotification('✅ Homepage and store information synchronized live with Firebase!');
@@ -350,7 +350,7 @@ const canAccessTab = (tab: string) => {
   };
 
   // Filtered Products for Admin
-  const adminFilteredProducts = products.filter((p) => {
+  const adminFilteredProducts = products.filter((p: any) => {
     if (selectedCategoryFilter !== 'all' && p.category !== selectedCategoryFilter) return false;
     if (adminSearch.trim()) {
       const q = adminSearch.toLowerCase();
@@ -364,7 +364,7 @@ const canAccessTab = (tab: string) => {
   });
 
   // Filtered Audit Logs
-  const filteredAuditLogs = auditLogs.filter((log) => {
+  const filteredAuditLogs = auditLogs.filter((log: any) => {
     if (auditCategoryFilter !== 'ALL' && log.category !== auditCategoryFilter) return false;
     if (auditSearch.trim()) {
       const q = auditSearch.toLowerCase();
@@ -1160,7 +1160,7 @@ const canAccessTab = (tab: string) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 font-medium">
-                        {adminFilteredProducts.map((p) => (
+                        {adminFilteredProducts.map((p: any) => (
                           <tr key={p.id} className="hover:bg-neutral-50/80 transition-colors">
                             <td className="p-3.5">
                               <div className="flex items-center gap-3">
@@ -1318,7 +1318,7 @@ const canAccessTab = (tab: string) => {
                             </td>
                           </tr>
                         ) : (
-                          filteredAuditLogs.map((log) => (
+                          filteredAuditLogs.map((log: any) => (
                             <tr key={log.id} className="hover:bg-neutral-50 transition-colors">
                               <td className="p-3.5 font-mono text-[10px] text-neutral-500 whitespace-nowrap">
                                 {new Date(log.timestamp).toLocaleString()}
@@ -1888,7 +1888,7 @@ const canAccessTab = (tab: string) => {
                   <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm">
                     <div className="text-neutral-500 font-bold text-xs">In-Stock Items</div>
                     <div className="font-serif-heading font-extrabold text-3xl text-emerald-600 mt-2">
-                      {products.filter((p) => p.inStock).length}
+                      {products.filter((p: any) => p.inStock).length}
                     </div>
                   </div>
                   <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm">

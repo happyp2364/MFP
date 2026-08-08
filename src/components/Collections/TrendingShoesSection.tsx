@@ -66,7 +66,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
 
     switch (config.source) {
       case 'newest':
-        filtered = [...products].sort((a, b) => {
+        filtered = [...products].sort((a: any, b: any) => {
           const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return timeB - timeA;
@@ -74,37 +74,37 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
         break;
 
       case 'bestsellers':
-        filtered = products.filter((p) => p.isBestSeller);
+        filtered = products.filter((p: any) => p.isBestSeller);
         if (filtered.length === 0) filtered = products;
         break;
 
       case 'trending':
-        filtered = products.filter((p) => p.isTrending || p.isBestSeller);
+        filtered = products.filter((p: any) => p.isTrending || p.isBestSeller);
         if (filtered.length === 0) filtered = products;
         break;
 
       case 'featured':
-        filtered = products.filter((p) => p.isFeatured);
+        filtered = products.filter((p: any) => p.isFeatured);
         if (filtered.length === 0) filtered = products;
         break;
 
       case 'rating':
-        filtered = [...products].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        filtered = [...products].sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0));
         break;
 
       case 'manual':
         if (config.selectedProductIds && config.selectedProductIds.length > 0) {
           filtered = config.selectedProductIds
-            .map((id) => products.find((p) => p.id === id))
-            .filter((p): p is Product => Boolean(p));
+            .map((id: any) => products.find((p: any) => p.id === id))
+            .filter((p: any): p is Product => Boolean(p));
         } else {
           filtered = products;
         }
         break;
 
       case 'seasonal':
-        filtered = products.filter((p) =>
-          p.collectionTags?.some((tag) =>
+        filtered = products.filter((p: any) =>
+          p.collectionTags?.some((tag: any) =>
             ['college', 'sports', 'festive', 'summer', 'winter', 'running', 'bestseller'].includes(
               tag.toLowerCase()
             )
@@ -115,7 +115,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
 
       case 'ai_recommended':
       default:
-        filtered = [...products].sort((a, b) => (b.rating || 0) * (b.reviewsCount || 1) - (a.rating || 0) * (a.reviewsCount || 1));
+        filtered = [...products].sort((a: any, b: any) => (b.rating || 0) * (b.reviewsCount || 1) - (a.rating || 0) * (a.reviewsCount || 1));
         break;
     }
 
@@ -142,7 +142,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
     const intervalMs = config.transitionSpeed === 'fast' ? 3000 : config.transitionSpeed === 'smooth' ? 6000 : 4500;
 
     const timer = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % collectionProducts.length);
+      setActiveIndex((prev: any) => (prev + 1) % collectionProducts.length);
     }, intervalMs);
 
     return () => clearInterval(timer);
@@ -155,7 +155,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
   const isWishlisted = wishlistIds.includes(currentShoe.id);
 
   // Background Theme Styles
-  const bgThemeClasses = {
+  const bgThemeClasses = ({
     dark_glass:
       'bg-gradient-to-br from-neutral-950 via-neutral-900 to-emerald-950 text-white border-y border-emerald-900/40',
     premium_cream:
@@ -164,17 +164,17 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
       'bg-gradient-to-br from-emerald-950 via-neutral-950 to-neutral-900 text-white border-y border-emerald-500/30',
     clean_white:
       'bg-white text-neutral-900 border-y border-neutral-200/80',
-  }[config.backgroundStyle || 'dark_glass'];
+  } as any)[config.backgroundStyle || 'dark_glass'];
 
   // Card Style
-  const cardStyleClasses = {
+  const cardStyleClasses = ({
     '3d_glass':
       'bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl',
     floating_showcase:
       'bg-white/15 backdrop-blur-md border border-white/30 shadow-2xl rounded-3xl hover:shadow-[#0B8F63]/20 transition-all duration-500',
     elevated_modern:
       'bg-white/80 backdrop-blur-sm border border-neutral-200 shadow-xl rounded-3xl text-neutral-900',
-  }[config.cardStyle || 'floating_showcase'];
+  } as any)[config.cardStyle || 'floating_showcase'];
 
   const isDarkBg = config.backgroundStyle === 'dark_glass' || config.backgroundStyle === 'neon_emerald';
 
@@ -222,7 +222,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <button
               onClick={() =>
-                setActiveIndex((prev) => (prev === 0 ? collectionProducts.length - 1 : prev - 1))
+                setActiveIndex((prev: any) => (prev === 0 ? collectionProducts.length - 1 : prev - 1))
               }
               aria-label="Previous Shoe"
               className={`p-3 rounded-2xl border transition-all cursor-pointer ${
@@ -237,7 +237,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
               {activeIndex + 1} / {collectionProducts.length}
             </span>
             <button
-              onClick={() => setActiveIndex((prev) => (prev + 1) % collectionProducts.length)}
+              onClick={() => setActiveIndex((prev: any) => (prev + 1) % collectionProducts.length)}
               aria-label="Next Shoe"
               className={`p-3 rounded-2xl border transition-all cursor-pointer ${
                 isDarkBg
@@ -310,7 +310,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
             {/* Image Gallery Swatches if shoe has multiple images */}
             {currentShoe.images && currentShoe.images.length > 1 && (
               <div className="flex items-center justify-center gap-2 mb-6">
-                {currentShoe.images.slice(0, 5).map((img, i) => (
+                {currentShoe.images.slice(0, 5).map((img: any, i: any) => (
                   <button
                     key={i}
                     onClick={() => setActiveImageIndex(i)}
@@ -379,7 +379,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {currentShoe.sizes.map((sz) => (
+                    {currentShoe.sizes.map((sz: any) => (
                       <button
                         key={sz}
                         onClick={() => setSelectedSize(sz)}
@@ -452,7 +452,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
             </div>
 
             <div className="space-y-3 max-h-[580px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-neutral-700">
-              {collectionProducts.map((shoe, idx) => {
+              {collectionProducts.map((shoe: any, idx: any) => {
                 const isActive = idx === activeIndex;
                 const shoeDisc = calculateDiscount(shoe.price, shoe.originalPrice);
 
@@ -515,7 +515,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
 
                     <div className="shrink-0">
                       <button
-                        onClick={(e) => {
+                        onClick={(e: any) => {
                           e.stopPropagation();
                           onQuickView?.(shoe);
                         }}

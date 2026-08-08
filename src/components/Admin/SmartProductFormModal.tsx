@@ -438,11 +438,11 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
       name: cleanName,
       brand: productState.brand ? productState.brand.trim() : '',
       description: productState.description ? productState.description.trim() : '',
-      rating: productState.rating && productState.rating > 0 ? productState.rating : undefined,
-      reviewsCount: productState.reviewsCount && productState.reviewsCount > 0 ? productState.reviewsCount : undefined,
+      rating: productState.rating && productState.rating > 0 ? productState.rating : 0,
+      reviewsCount: productState.reviewsCount && productState.reviewsCount > 0 ? productState.reviewsCount : 0,
       originalPrice: (productState.originalPrice && productState.originalPrice > productState.price)
         ? productState.originalPrice
-        : undefined,
+        : 0,
       discountPercent: (productState.originalPrice && productState.originalPrice > productState.price)
         ? Math.round(((productState.originalPrice - productState.price) / productState.originalPrice) * 100)
         : 0,

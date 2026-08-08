@@ -142,7 +142,7 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
         filtered = shoeProducts.filter(
           (p: any) =>
             p.price <= limitPrice ||
-            p.collectionTags?.some((t: any) => ['budget', 'value', 'college', 'bestseller'].includes(t.toLowerCase()))
+            p.collectionTags?.some((t: any) => ['budget', 'value', 'college', 'bestseller'].includes((t || '').toLowerCase()))
         );
         break;
 

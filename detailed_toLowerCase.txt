@@ -1,0 +1,238 @@
+Total files: 48
+=== ./server.ts (8 occurrences) ===
+  L351: const lower = q.toLowerCase();
+  L652: const isDark = prompt.toLowerCase().includes("dark") || prompt.toLowerCase().includes("black") || prompt.toLowerCase().includes("nike") || prompt.toLowerCase().includes("sports");
+  L653: const isFestival = prompt.toLowerCase().includes("festival") || prompt.toLowerCase().includes("rakhi") || prompt.toLowerCase().includes("diwali") || prompt.toLowerCase().includes("wedding") || prompt.toLowerCase().includes("royal");
+  L1692: const target = rawSlug.trim().toLowerCase();
+  L1697: p.slug.toLowerCase() === target ||
+  L1698: p.id.toLowerCase() === target ||
+  L1699: (p.sku && p.sku.toLowerCase() === target) ||
+  L1700: target.includes(p.id.toLowerCase())
+=== ./src/App.tsx (9 occurrences) ===
+  L149: if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'a') {
+  L249: (v) => v.color.toLowerCase() === color.toLowerCase() && v.size.toString() === size.toString()
+  L290: (v) => v.color.toLowerCase() === chosenColor.toLowerCase() && v.size.toString() === chosenSize.toString()
+  L396: (tag: any) => tag.toLowerCase() === filterState.collection.toLowerCase()
+  L403: const q = filterState.searchQuery.toLowerCase();
+  L405: p.name.toLowerCase().includes(q) ||
+  L406: p.brand.toLowerCase().includes(q) ||
+  L407: p.subcategory.toLowerCase().includes(q) ||
+  L408: p.description.toLowerCase().includes(q);
+=== ./src/components/Admin/AdminDashboardModal.tsx (11 occurrences) ===
+  L162: currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+  L163: currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+  L356: const q = adminSearch.toLowerCase();
+  L358: p.name.toLowerCase().includes(q) ||
+  L359: p.brand.toLowerCase().includes(q) ||
+  L360: p.subcategory.toLowerCase().includes(q)
+  L370: const q = auditSearch.toLowerCase();
+  L372: log.action.toLowerCase().includes(q) ||
+  L373: log.details.toLowerCase().includes(q) ||
+  L374: log.userEmail.toLowerCase().includes(q)
+  L515: {(currentAdminUser?.roleId === 'super_admin' || currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com') && (
+=== ./src/components/Admin/AdminManagementView.tsx (5 occurrences) ===
+  L76: const isSuperAdmin = currentUser?.roleId === 'super_admin' || currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
+  L138: admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L139: admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L140: (admin.roleName || '').toLowerCase().includes(searchTerm.toLowerCase());
+  L508: admin.email.toLowerCase() === 'vpcreation2002@gmail.com';
+=== ./src/components/Admin/CategoriesSettingsView.tsx (3 occurrences) ===
+  L325: const catKey = (p.category || 'general').toLowerCase();
+  L328: const subKey = p.subcategory.toLowerCase();
+  L1131: onChange={(e) => setFormId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+=== ./src/components/Admin/CouponManagementView.tsx (2 occurrences) ===
+  L111: const matchesSearch = c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  L112: c.name.toLowerCase().includes(searchQuery.toLowerCase());
+=== ./src/components/Admin/CreateAdminModal.tsx (1 occurrences) ===
+  L77: const cleanEmail = email.trim().toLowerCase();
+=== ./src/components/Admin/CustomerIntelligenceCRMView.tsx (3 occurrences) ===
+  L67: c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L68: c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L70: c.city.toLowerCase().includes(searchTerm.toLowerCase())
+=== ./src/components/Admin/FeatureReleaseManagerView.tsx (4 occurrences) ===
+  L118: f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L119: f.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L120: f.description.toLowerCase().includes(searchTerm.toLowerCase());
+  L134: const cleanId = newFeature.id.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
+=== ./src/components/Admin/HomepageBuilder/HomepageBuilderTab.tsx (1 occurrences) ===
+  L115: downloadAnchor.setAttribute('download', `homepage_preset_${(localConfig.name || 'custom').toLowerCase().replace(/\s+/g, '_')}.json`);
+=== ./src/components/Admin/HomepageBuilder/TemplateMarketplaceView.tsx (6 occurrences) ===
+  L151: `homepage_template_${preset.name.toLowerCase().replace(/\s+/g, '_')}.json`
+  L218: const q = searchQuery.toLowerCase();
+  L221: p.name.toLowerCase().includes(q) ||
+  L222: p.description.toLowerCase().includes(q) ||
+  L223: p.badge.toLowerCase().includes(q) ||
+  L224: p.tags?.some((t) => t.toLowerCase().includes(q))
+=== ./src/components/Admin/MarketingCenterView.tsx (3 occurrences) ===
+  L150: const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase());
+  L158: const term = searchTerm.toLowerCase();
+  L159: const matchesSearch = s.name.toLowerCase().includes(term) || s.email.toLowerCase().includes(term) || (s.phoneNumber || '').includes(term);
+=== ./src/components/Admin/OpenBoxDeliverySettingsView.tsx (3 occurrences) ===
+  L89: p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+  L90: p.category.toLowerCase().includes(productSearch.toLowerCase()) ||
+  L91: (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase()))
+=== ./src/components/Admin/OrderManagementView.tsx (3 occurrences) ===
+  L48: o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  L49: o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  L51: o.customerEmail.toLowerCase().includes(searchQuery.toLowerCase());
+=== ./src/components/Admin/PricePointSettingsView.tsx (3 occurrences) ===
+  L85: p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+  L86: p.brand.toLowerCase().includes(productSearch.toLowerCase()) ||
+  L87: p.category.toLowerCase().includes(productSearch.toLowerCase())
+=== ./src/components/Admin/ReviewsSettingsView.tsx (4 occurrences) ===
+  L49: rev.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  L50: rev.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  L51: (rev.location && rev.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
+  L52: (rev.productBought && rev.productBought.toLowerCase().includes(searchQuery.toLowerCase()));
+=== ./src/components/Admin/SizeStockManager.tsx (1 occurrences) ===
+  L72: if (sizeStocks.some((s) => s.size.toLowerCase() === trimmed.toLowerCase())) {
+=== ./src/components/Admin/SmartProductFormModal.tsx (13 occurrences) ===
+  L122: v => v.color.toLowerCase() === col.name.toLowerCase() && v.size.toString() === sz.toString()
+  L138: .find(v => v.color.toLowerCase() === col.name.toLowerCase() && v.images && v.images.length > 0)
+  L184: if (v.color.toLowerCase() === colorName.toLowerCase()) {
+  L354: (c) => c.name.toLowerCase() === colorObj.name.toLowerCase()
+  L422: .toLowerCase()
+  L1034: selectedColorForGallery.toLowerCase() === c.name.toLowerCase()
+  L1062: .filter(c => c.name.toLowerCase() !== selectedColorForGallery.toLowerCase())
+  L1074: .find(v => v.color.toLowerCase() === colorCopySource.toLowerCase() && v.images && v.images.length > 0)
+  L1113: .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
+  L1148: .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
+  L1167: v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+  L1174: v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+  L1189: v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+=== ./src/components/Admin/SocialMediaSettingsView.tsx (2 occurrences) ===
+  L320: if (socialMediaConfig.platforms.some((p: any) => p.id === addId.trim().toLowerCase())) {
+  L330: id: addId.trim().toLowerCase(),
+=== ./src/components/Admin/StoreManagementAdmin.tsx (5 occurrences) ===
+  L153: slug: (formData.name || 'store').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+  L229: s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  L230: s.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  L231: s.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  L233: const matchesCity = selectedCityFilter === 'all' || s.city.toLowerCase() === selectedCityFilter.toLowerCase();
+=== ./src/components/Admin/SuperAdminConsoleView.tsx (4 occurrences) ===
+  L89: const isSuperAdmin = currentUser?.roleId === 'super_admin' || currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
+  L162: admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L163: admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L1042: admin.email.toLowerCase() === 'vpcreation2002@gmail.com';
+=== ./src/components/Admin/TrendingShoesSettingsView.tsx (3 occurrences) ===
+  L85: p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+  L86: p.brand.toLowerCase().includes(productSearch.toLowerCase()) ||
+  L87: p.category.toLowerCase().includes(productSearch.toLowerCase())
+=== ./src/components/Admin/WebsiteConfigurationView.tsx (2 occurrences) ===
+  L256: s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  L257: s.description.toLowerCase().includes(searchQuery.toLowerCase())
+=== ./src/components/Admin/WebsiteDirectoryManager.tsx (8 occurrences) ===
+  L110: currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+  L111: currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
+  L131: tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L132: tenant.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L133: tenant.domain.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L134: (tenant.ownerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L135: (tenant.ownerEmail || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+  L136: (tenant.adminGoogleEmail || '').toLowerCase().includes(searchTerm.toLowerCase());
+=== ./src/components/Admin/WebsiteManagementView.tsx (2 occurrences) ===
+  L53: currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+  L54: currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+=== ./src/components/Collections/PricePointCollectionSection.tsx (4 occurrences) ===
+  L63: const cat = (p.category || '').toLowerCase();
+  L64: const sub = (p.subcategory || '').toLowerCase();
+  L65: const name = (p.name || '').toLowerCase();
+  L145: p.collectionTags?.some((t: any) => ['budget', 'value', 'college', 'bestseller'].includes(t.toLowerCase()))
+=== ./src/components/Collections/TrendingShoesSection.tsx (1 occurrences) ===
+  L109: tag.toLowerCase()
+=== ./src/components/Common/UniversalImageSystem.tsx (1 occurrences) ===
+  L347: const query = aiPrompt.toLowerCase();
+=== ./src/components/Customer/HomepageRenderer.tsx (8 occurrences) ===
+  L88: const catFilter = (catItem.categoryFilter || catItem.title || catItem.name || '').toLowerCase();
+  L89: const subFilter = (catItem.subcategoryFilter || '').toLowerCase();
+  L92: const pCat = (p.category || '').toLowerCase();
+  L93: const pSub = (p.subcategory || '').toLowerCase();
+  L94: const pName = (p.name || '').toLowerCase();
+  L235: items = items.filter((p: any) => p.category?.toLowerCase() === filteredCat.toLowerCase());
+  L999: p.name.toLowerCase() === activeSlide.productName.toLowerCase()
+  L1012: p.name.toLowerCase() === activeSlide.productName.toLowerCase()
+=== ./src/components/Products/ProductCard.tsx (2 occurrences) ===
+  L84: v.color.toLowerCase() === selectedColor.toLowerCase() &&
+  L103: (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize
+=== ./src/components/Products/ProductDetailPage.tsx (8 occurrences) ===
+  L97: v => v.color.toLowerCase() === firstColor.toLowerCase() && v.status === 'active'
+  L118: v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.status === 'active'
+  L132: v.color.toLowerCase() === selectedColor.toLowerCase() &&
+  L146: .filter((v) => v.color.toLowerCase() === selectedColor.toLowerCase())
+  L290: v.color.toLowerCase(),
+  L299: .filter((v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.status === 'active')
+  L413: (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+  L485: (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+=== ./src/components/Products/QuickViewModal.tsx (3 occurrences) ===
+  L108: (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+  L122: const isVariantSelected = Boolean(product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize));
+  L123: const activeVariant = product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize);
+=== ./src/components/Reviews/ReviewsSection.tsx (2 occurrences) ===
+  L59: (r: any) => r.productBought?.toLowerCase() === productId.toLowerCase() || r.id === productId
+  L160: order.customerEmail.toLowerCase() === customerUser.email.toLowerCase());
+=== ./src/components/Search/LiveSearchModal.tsx (4 occurrences) ===
+  L89: p.name.toLowerCase().includes(query.toLowerCase()) ||
+  L90: p.category.toLowerCase().includes(query.toLowerCase()) ||
+  L91: p.subcategory.toLowerCase().includes(query.toLowerCase()) ||
+  L92: p.brand.toLowerCase().includes(query.toLowerCase())
+=== ./src/components/Social/SocialIconRenderer.tsx (2 occurrences) ===
+  L77: if (identifier.toLowerCase().startsWith('<svg')) {
+  L107: const LucideIcon = LUCIDE_MAP[identifier] || LUCIDE_MAP[identifier.toLowerCase()] || Share2;
+=== ./src/components/StoreLocator/StoreLocatorPage.tsx (6 occurrences) ===
+  L116: const q = searchQuery.toLowerCase().trim();
+  L119: store.name.toLowerCase().includes(q) ||
+  L120: store.city.toLowerCase().includes(q) ||
+  L121: store.area.toLowerCase().includes(q) ||
+  L122: store.state.toLowerCase().includes(q) ||
+  L124: store.address.toLowerCase().includes(q);
+=== ./src/context/AISEOContext.tsx (1 occurrences) ===
+  L22: const keywords = [productTitle.toLowerCase(), 'products', 'online store', 'shopping'];
+=== ./src/context/AuthContext.tsx (6 occurrences) ===
+  L51: currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+  L52: currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+  L66: const userEmailLower = (firebaseUser.email || '').toLowerCase();
+  L89: (a) => a.email?.toLowerCase() === userEmailLower && a.status !== 'disabled'
+  L176: const emailLower = email.toLowerCase();
+  L215: const emailLower = (result.user.email || '').toLowerCase();
+=== ./src/context/StoreContext.tsx (2 occurrences) ===
+  L190: auth.currentAdminUser.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+  L191: auth.currentAdminUser.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+=== ./src/lib/adminService.ts (3 occurrences) ===
+  L50: if (targetEmail.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() && data.roleId !== 'super_admin') {
+  L320: adminData.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
+  L380: adminData.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
+=== ./src/lib/firebase.ts (2 occurrences) ===
+  L242: const msg = typeof err.message === 'string' ? err.message.toLowerCase() : '';
+  L1017: const subId = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+=== ./src/lib/security.ts (3 occurrences) ===
+  L28: const clean = sanitizeString(email, 120).toLowerCase();
+  L76: if (!ALLOWED_MIME_TYPES.includes(file.type.toLowerCase())) {
+  L88: const ext = file.name.slice(extIndex).toLowerCase();
+=== ./src/lib/tenantIsolation.ts (3 occurrences) ===
+  L11: .toLowerCase()
+  L69: const rawPathSlug = pathSegments.length > 0 ? pathSegments[0].toLowerCase() : null;
+  L192: const normalizedEmail = (userEmail || '').toLowerCase();
+=== ./src/utils/productCategoryDefaults.ts (1 occurrences) ===
+  L119: const sub = subcategory.toLowerCase();
+=== ./src/utils/productFeedOptimizer.ts (6 occurrences) ===
+  L30: const formattedSku = p.sku.trim().toLowerCase();
+  L36: const formattedSlug = p.slug.trim().toLowerCase();
+  L43: const formattedBarcode = String(barcode).trim().toLowerCase();
+  L49: if (p.sku && p.sku.trim() !== '') seenSkus.add(p.sku.trim().toLowerCase());
+  L50: if (p.slug && p.slug.trim() !== '') seenSlugs.add(p.slug.trim().toLowerCase());
+  L51: if (barcode && String(barcode).trim() !== '') seenBarcodes.add(String(barcode).trim().toLowerCase());
+=== ./src/utils/productUtils.ts (7 occurrences) ===
+  L11: .toLowerCase()
+  L42: const cleanId = (product.id || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  L65: cleanTarget = decodeURIComponent(targetSlugOrId).trim().toLowerCase();
+  L67: cleanTarget = targetSlugOrId.trim().toLowerCase();
+  L74: const id = (p.id || '').trim().toLowerCase();
+  L75: const slug = getProductSlug(p).toLowerCase();
+  L76: const sku = getProductSKU(p).toLowerCase();
+=== ./src/utils/sizeStockUtils.ts (1 occurrences) ===
+  L72: return stocks.find((s) => s.size.trim().toLowerCase() === size.trim().toLowerCase());
+=== ./src/utils/variantUtils.ts (4 occurrences) ===
+  L18: (v) => v.color.toLowerCase() === color.toLowerCase() && (!size || v.size === size)
+  L34: (v) => v.color.toLowerCase() === color.toLowerCase() && (!size || v.size === size)
+  L77: (v) => v.color.toLowerCase() === color.toLowerCase() && v.images && v.images.length > 0
+  L97: (v) => v.color.toLowerCase() === item.selectedColor.toLowerCase() && v.images && v.images.length > 0

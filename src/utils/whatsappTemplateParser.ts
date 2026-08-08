@@ -160,7 +160,7 @@ export function renderWhatsAppMessageText(
       rendered += `\n\n🎟️ *Applied Coupon:* ${payload.couponCode} (${payload.couponDiscount || 'Discount Applied'})`;
     }
     if (opts.showCustomerAddress && payload.deliveryAddress && !rendered.includes(payload.deliveryAddress)) {
-      rendered += `\n\n📍 *Shipping Address:*\n${payload.deliveryAddress}, ${payload.city || ''}, ${payload.state || ''} - ${payload.pincode || ''}`;
+      rendered += `\n\n📍 *Shipping Address:*\n${payload.deliveryAddress}, ${payload.city || '}, ${payload.state || '} - ${payload.pincode || ''}`;
     }
     if (opts.showPaymentDetails && payload.paymentMethod && !rendered.includes(payload.paymentMethod)) {
       rendered += `\n\n💳 *Payment Details:* ${payload.paymentMethod}`;

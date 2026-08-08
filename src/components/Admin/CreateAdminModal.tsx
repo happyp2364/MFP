@@ -74,7 +74,7 @@ export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = (email || '').trim().toLowerCase();
     const cleanName = name.trim();
 
     if (!cleanEmail || !cleanEmail.includes('@')) {

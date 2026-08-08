@@ -81,7 +81,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const activeVariantWithImages = useMemo(() => {
     return product.variants?.find(
       (v) =>
-        v.color.toLowerCase() === selectedColor.toLowerCase() &&
+        (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() &&
         v.images &&
         v.images.length > 0
     );
@@ -100,7 +100,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   // Compute prices dynamically
   const computedPrice = getProductPrice(product, selectedSize, selectedColor);
   const activeVariant = product.variants?.find(
-    (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize
+    (v) => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.size === selectedSize
   );
   const originalPrice = activeVariant?.originalPrice || product.originalPrice || product.price;
   const currentPrice = computedPrice || product.price;

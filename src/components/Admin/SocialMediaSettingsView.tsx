@@ -317,7 +317,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
     try {
       // Check for duplicate ID
-      if (socialMediaConfig.platforms.some((p: any) => p.id === addId.trim().toLowerCase())) {
+      if (socialMediaConfig.platforms.some((p: any) => p.id === (addId || '').trim().toLowerCase())) {
         showToast('A platform with this ID already exists.', true);
         return;
       }
@@ -327,7 +327,7 @@ export const SocialMediaSettingsView: React.FC = () => {
         : 1;
 
       const newPlat: SocialPlatformConfig = {
-        id: addId.trim().toLowerCase(),
+        id: (addId || '').trim().toLowerCase(),
         name: addName.trim(),
         enabled: true,
         username: addUsername.trim(),

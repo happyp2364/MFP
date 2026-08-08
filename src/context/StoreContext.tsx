@@ -187,8 +187,8 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
       if (!auth.currentAdminUser) return false;
       const isSuper = Boolean(
         auth.currentAdminUser.roleId === 'super_admin' ||
-        auth.currentAdminUser.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
-        auth.currentAdminUser.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+        (auth.currentAdminUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' ||
+        (auth.currentAdminUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com'
       );
       if (tab === 'super_admin_console' || tab === 'admin_management') {
         return isSuper;

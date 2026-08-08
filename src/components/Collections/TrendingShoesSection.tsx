@@ -106,7 +106,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
         filtered = products.filter((p: any) =>
           p.collectionTags?.some((tag: any) =>
             ['college', 'sports', 'festive', 'summer', 'winter', 'running', 'bestseller'].includes(
-              tag.toLowerCase()
+              (tag || '').toLowerCase()
             )
           )
         );

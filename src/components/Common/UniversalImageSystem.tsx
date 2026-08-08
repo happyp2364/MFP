@@ -344,7 +344,7 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
     setIsGeneratingAi(true);
 
     setTimeout(() => {
-      const query = aiPrompt.toLowerCase();
+      const query = (aiPrompt || '').toLowerCase();
       // Look for a matching simulator image
       const match = AI_SIM_IMAGES.find((item) => 
         item.keywords.some((kw) => query.includes(kw))

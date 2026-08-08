@@ -239,7 +239,7 @@ export async function syncCustomerProfileInFirestore(user: FirebaseUser): Promis
 export function isUnauthorizedDomainError(err: any): boolean {
   if (!err) return false;
   const code = err.code || '';
-  const msg = typeof err.message === 'string' ? err.message.toLowerCase() : '';
+  const msg = typeof err.message === 'string' ? (err.message || '').toLowerCase() : '';
   return (
     code === 'auth/unauthorized-domain' ||
     msg.includes('unauthorized-domain') ||
@@ -1014,7 +1014,7 @@ export async function saveMarketingConsentInFirestore(
 
     // 2. Upsert subscriber entry in marketingSubscribers collection
     if (email) {
-      const subId = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const subId = (email || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
       const subRef = getTenantDocWriteRef(db, 'marketingSubscribers', subId);
       console.log('[DEBUG] Firestore Path (marketingSubscribers):', `marketingSubscribers/${subId}`);
       const subscriberDoc: MarketingSubscriber = {

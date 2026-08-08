@@ -19,7 +19,7 @@ export const AISEOProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const generatedDesc = description
         ? `${description.slice(0, 140)}... Shop online at ${config.platformName}.`
         : `Buy high quality ${productTitle} with fast delivery and easy returns.`;
-      const keywords = [productTitle.toLowerCase(), 'products', 'online store', 'shopping'];
+      const keywords = [(productTitle || '').toLowerCase(), 'products', 'online store', 'shopping'];
 
       return {
         title: generatedTitle,

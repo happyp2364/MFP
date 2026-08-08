@@ -15,7 +15,7 @@ export function getProductPrice(product: Product, size?: string, color?: string)
   if (!product) return 0;
   if (product.variants && product.variants.length > 0 && color) {
     const matchingVariant = product.variants.find(
-      (v) => v.color.toLowerCase() === color.toLowerCase() && (!size || v.size === size)
+      (v) => (v.color || '').toLowerCase() === (color || '').toLowerCase() && (!size || v.size === size)
     );
     if (matchingVariant && matchingVariant.price !== undefined) {
       return matchingVariant.price;
@@ -31,7 +31,7 @@ export function getProductOriginalPrice(product: Product, size?: string, color?:
   if (!product) return 0;
   if (product.variants && product.variants.length > 0 && color) {
     const matchingVariant = product.variants.find(
-      (v) => v.color.toLowerCase() === color.toLowerCase() && (!size || v.size === size)
+      (v) => (v.color || '').toLowerCase() === (color || '').toLowerCase() && (!size || v.size === size)
     );
     if (matchingVariant && matchingVariant.originalPrice !== undefined) {
       return matchingVariant.originalPrice;
@@ -74,7 +74,7 @@ export function getProductImage(product: Product, color?: string): string {
   if (!product) return '';
   if (product.variants && product.variants.length > 0 && color) {
     const matchingColorVar = product.variants.find(
-      (v) => v.color.toLowerCase() === color.toLowerCase() && v.images && v.images.length > 0
+      (v) => (v.color || '').toLowerCase() === (color || '').toLowerCase() && v.images && v.images.length > 0
     );
     if (matchingColorVar && matchingColorVar.images && matchingColorVar.images.length > 0) {
       return matchingColorVar.images[0];
@@ -94,7 +94,7 @@ export function getCartItemImage(item: CartItem): string {
   // Try to find if any variant has images for this color
   if (item.product.variants && item.product.variants.length > 0) {
     const matchingColorVar = item.product.variants.find(
-      (v) => v.color.toLowerCase() === item.selectedColor.toLowerCase() && v.images && v.images.length > 0
+      (v) => (v.color || '').toLowerCase() === (item.selectedColor || '').toLowerCase() && v.images && v.images.length > 0
     );
     if (matchingColorVar && matchingColorVar.images && matchingColorVar.images.length > 0) {
       return matchingColorVar.images[0];

@@ -86,7 +86,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const isSuperAdmin = currentUser?.roleId === 'super_admin' || currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
+  const isSuperAdmin = currentUser?.roleId === 'super_admin' || (currentUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' || (currentUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com';
 
   if (!isSuperAdmin) {
     return (
@@ -159,8 +159,8 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   // Filtered Admins
   const filteredAdmins = admins.filter((admin) => {
     const matchesSearch =
-      admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (admin.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      (admin.email || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
       (admin.phoneNumber || '').includes(searchTerm);
 
     const matchesStatus = statusFilter === 'all' || admin.status === statusFilter;
@@ -1039,7 +1039,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
                     filteredAdmins.map((admin) => {
                       const isPrimarySuper =
                         admin.roleId === 'super_admin' ||
-                        admin.email.toLowerCase() === 'vpcreation2002@gmail.com';
+                        (admin.email || '').toLowerCase() === 'vpcreation2002@gmail.com';
 
                       return (
                         <tr key={admin.uid} className="hover:bg-neutral-900/50 transition-colors">

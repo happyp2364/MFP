@@ -48,8 +48,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const isSuperAdmin = Boolean(
     currentAdminUser?.roleId === 'super_admin' ||
-    currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
-    currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+    (currentAdminUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' ||
+    (currentAdminUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com'
   );
 
   const isAdmin = Boolean(
@@ -86,7 +86,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const allAdmins = await fetchAdminUsers();
       const matched = allAdmins.find(
-        (a) => a.email?.toLowerCase() === userEmailLower && a.status !== 'disabled'
+        (a) => (a.email || '').toLowerCase() === userEmailLower && a.status !== 'disabled'
       );
       if (matched) {
         const updatedAdminUser: AdminUser = {
@@ -173,7 +173,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (res.user) {
         let adminUser = await resolveAdminUser(res.user);
         if (!adminUser) {
-          const emailLower = email.toLowerCase();
+          const emailLower = (email || '').toLowerCase();
           const isSuper = emailLower === 'vpcreation2002@gmail.com' || emailLower === 'vishalpparihar2002@gmail.com';
           if (isSuper) {
             adminUser = {

@@ -113,15 +113,15 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
   // Filtered and Sorted Stores
   const filteredStores = useMemo(() => {
     let result = enabledStores.filter((store: any) => {
-      const q = searchQuery.toLowerCase().trim();
+      const q = (searchQuery || '').toLowerCase().trim();
       const matchesSearch =
         !q ||
-        store.name.toLowerCase().includes(q) ||
-        store.city.toLowerCase().includes(q) ||
-        store.area.toLowerCase().includes(q) ||
-        store.state.toLowerCase().includes(q) ||
+        (store.name || '').toLowerCase().includes(q) ||
+        (store.city || '').toLowerCase().includes(q) ||
+        (store.area || '').toLowerCase().includes(q) ||
+        (store.state || '').toLowerCase().includes(q) ||
         store.pincode.includes(q) ||
-        store.address.toLowerCase().includes(q);
+        (store.address || '').toLowerCase().includes(q);
 
       if (activeFilter === 'open') return matchesSearch && store.isOpen;
       if (activeFilter === 'featured') return matchesSearch && store.isFeatured;

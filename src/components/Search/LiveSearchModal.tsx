@@ -86,10 +86,10 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
   const filteredProducts = query.trim()
     ? products.filter(
         (p) =>
-          p.name.toLowerCase().includes(query.toLowerCase()) ||
-          p.category.toLowerCase().includes(query.toLowerCase()) ||
-          p.subcategory.toLowerCase().includes(query.toLowerCase()) ||
-          p.brand.toLowerCase().includes(query.toLowerCase())
+          (p.name || '').toLowerCase().includes((query || '').toLowerCase()) ||
+          (p.category || '').toLowerCase().includes((query || '').toLowerCase()) ||
+          (p.subcategory || '').toLowerCase().includes((query || '').toLowerCase()) ||
+          (p.brand || '').toLowerCase().includes((query || '').toLowerCase())
       )
     : [];
 

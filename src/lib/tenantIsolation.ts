@@ -66,7 +66,7 @@ export function resolveCurrentWebsiteFromUrl(tenants?: { id: string; slug?: stri
     const params = new URLSearchParams(window.location.search);
     const queryWebsiteId = params.get('websiteId') || params.get('slug') || params.get('tenantId');
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
-    const rawPathSlug = pathSegments.length > 0 ? pathSegments[0].toLowerCase() : null;
+    const rawPathSlug = pathSegments.length > 0 ? (pathSegments[0] || '').toLowerCase() : null;
     const reserved = ['admin', 'api', 'assets', 'static', 'login', 'dashboard', 'auth', 'settings', 'store-locator', 'product'];
     const pathSlug = rawPathSlug && !reserved.includes(rawPathSlug) ? rawPathSlug : null;
 

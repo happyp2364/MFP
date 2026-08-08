@@ -253,8 +253,8 @@ export const WebsiteConfigurationView: React.FC = () => {
   // Filter sections by search query
   const filteredSections = SECTIONS.filter(
     (s: any) =>
-      s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.description.toLowerCase().includes(searchQuery.toLowerCase())
+      (s.title || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      (s.description || '').toLowerCase().includes((searchQuery || '').toLowerCase())
   );
 
   return (

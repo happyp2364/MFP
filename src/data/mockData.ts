@@ -1013,10 +1013,10 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
 
 export const DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG: TopAnnouncementBarConfig = {
   announcements: [
-    { id: '1', text: '🚚 Free Delivery on Selected Products Across India', enabled: true, icon: 'Truck', buttonText: '', buttonUrl: '', deviceVisibility: 'both' },
-    { id: '2', text: '👟 New Season Sports Shoes & Sneakers Just Arrived', enabled: true, icon: 'Sparkles', buttonText: '', buttonUrl: '', deviceVisibility: 'both' },
-    { id: '3', text: '⭐ Rated 4.9/5 by 15,000+ Happy Local Families', enabled: true, icon: 'Award', buttonText: '', buttonUrl: '', deviceVisibility: 'both' },
-    { id: '4', text: '📱 Easy WhatsApp Order & Instant Confirmation', enabled: true, icon: 'MessageCircle', buttonText: '', buttonUrl: '', deviceVisibility: 'both' },
+    { id: '1', text: '🚚 Free Delivery on Selected Products Across India', enabled: true, icon: 'Truck', buttonText: ', buttonUrl: ', deviceVisibility: 'both' },
+    { id: '2', text: '👟 New Season Sports Shoes & Sneakers Just Arrived', enabled: true, icon: 'Sparkles', buttonText: ', buttonUrl: ', deviceVisibility: 'both' },
+    { id: '3', text: '⭐ Rated 4.9/5 by 15,000+ Happy Local Families', enabled: true, icon: 'Award', buttonText: ', buttonUrl: ', deviceVisibility: 'both' },
+    { id: '4', text: '📱 Easy WhatsApp Order & Instant Confirmation', enabled: true, icon: 'MessageCircle', buttonText: ', buttonUrl: ', deviceVisibility: 'both' },
   ],
   backgroundColor: '#00A5B5',
   textColor: '#FFFFFF',

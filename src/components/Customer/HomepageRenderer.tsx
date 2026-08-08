@@ -232,7 +232,7 @@ const SectionItem: React.FC<SectionItemProps> = ({
       const filteredCat = data.category;
       let items = products;
       if (filteredCat && filteredCat !== 'ALL') {
-        items = items.filter((p: any) => p.category?.toLowerCase() === filteredCat.toLowerCase());
+        items = items.filter((p: any) => (p.category || '').toLowerCase() === (filteredCat || '').toLowerCase());
       }
       const displayProducts = items.slice(0, limit);
 
@@ -996,7 +996,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
     const linked = products.find(
       (p: any) =>
         p.id === activeSlide.productId ||
-        p.name.toLowerCase() === activeSlide.productName.toLowerCase()
+        (p.name || '').toLowerCase() === (activeSlide.productName || '').toLowerCase()
     );
     if (linked && onSelectProduct) {
       onSelectProduct(linked);
@@ -1009,7 +1009,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
     const linked = products.find(
       (p: any) =>
         p.id === activeSlide.productId ||
-        p.name.toLowerCase() === activeSlide.productName.toLowerCase()
+        (p.name || '').toLowerCase() === (activeSlide.productName || '').toLowerCase()
     );
     if (linked && onSelectProduct) {
       onSelectProduct(linked);

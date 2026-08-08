@@ -1,61 +1,54 @@
 import { Product } from '../types';
-import { getPlatformConfig } from '../lib/platformConfig';
 
 /**
- * Converts a string into a clean, URL-safe slug
- */
-export function slugify(text: string): string {
-  if (!text) return '';
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')           // Replace spaces with -
-    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-    .replace(/^-+/, '')             // Trim - from start of text
-    .replace(/-+$/, '');            // Trim - from end of text
-}
-
-/**
- * Ensures every product has a valid, unique Product ID (SKU).
- * Fallback format: NWD-{CATEGORY_LETTER}-{PRODUCT_ID_SHORT}
- */
-export function getProductSKU(product: Product): string {
-  if (product.sku && product.sku.trim()) {
-    return product.sku.trim().toUpperCase();
-  }
-  const categoryCode = (product.category || 'M').charAt(0).toUpperCase();
-  const cleanId = (product.id || '01').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-  return `NWD-${categoryCode}-${cleanId}`;
-}
-
-/**
- * Ensures every product has a unique public URL slug.
- * Fallback: slugified name + clean ID
+ * Returns a URL-friendly slug for a product.
+ * If product.slug is missing, falls back to sanitized product.name or product.id.
  */
 export function getProductSlug(product: Product): string {
-  if (product.slug && product.slug.trim()) {
-    return slugify(product.slug);
+  if (!product) return '';
+  if (product.slug && product.slug.trim().length > 0) {
+    return product.slug.trim().toLowerCase();
   }
-  const nameSlug = slugify(product.name || 'product');
-  const cleanId = (product.id || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-  return nameSlug ? `${nameSlug}-${cleanId}` : cleanId || 'product';
+  if (product.name && product.name.trim().length > 0) {
+    return product.name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+  return (product.id || '').trim().toLowerCase();
 }
 
 /**
- * Constructs the canonical public URL for a product
+ * Returns a standardized SKU for a product or variant.
  */
-export function getProductUrl(product: Product, customOrigin?: string): string {
-  const config = getPlatformConfig();
-  const origin = customOrigin || (typeof window !== 'undefined' && window.location.origin ? window.location.origin : config.platformBaseUrl);
-  // Use product.id (Firebase Document ID) or slug for permanent direct routing
-  const productIdOrSlug = product.id ? product.id.trim() : getProductSlug(product);
-  return `${origin.replace(/\/+$/, '')}/product/${productIdOrSlug}`;
+export function getProductSKU(product: Product): string {
+  if (!product) return '';
+  if (pSKU(product)) return pSKU(product);
+  return `SKU-${(product.id || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+}
+
+function pSKU(product: Product): string {
+  return product.sku && product.sku.trim().length > 0 ? product.sku.trim() : '';
 }
 
 /**
- * Matches a product by Firebase ID, slug, or SKU with full decoder support
+ * Generates the full canonical route for a product detail page.
+ * Format: /product/[slug] or /product/[id]
+ */
+export function getProductDetailUrl(product: Product): string {
+  const slugOrId = getProductSlug(product);
+  return `/product/${slugOrId}`;
+}
+
+export const getProductUrl = getProductDetailUrl;
+
+/**
+ * Finds a product from an array of products by comparing target string against:
+ * 1. product.id
+ * 2. product.slug
+ * 3. product.sku
+ * 4. sanitized versions of above
  */
 export function findProductBySlugOrId(products: Product[], targetSlugOrId: string): Product | undefined {
   if (!targetSlugOrId) return undefined;
@@ -64,7 +57,7 @@ export function findProductBySlugOrId(products: Product[], targetSlugOrId: strin
   try {
     cleanTarget = decodeURIComponent(targetSlugOrId).trim().toLowerCase();
   } catch (e) {
-    cleanTarget = targetSlugOrId.trim().toLowerCase();
+    cleanTarget = (targetSlugOrId || '').trim().toLowerCase();
   }
 
   // Strip leading slashes if any
@@ -72,8 +65,8 @@ export function findProductBySlugOrId(products: Product[], targetSlugOrId: strin
 
   return products.find((p) => {
     const id = (p.id || '').trim().toLowerCase();
-    const slug = getProductSlug(p).toLowerCase();
-    const sku = getProductSKU(p).toLowerCase();
+    const slug = (getProductSlug(p) || '').toLowerCase();
+    const sku = (getProductSKU(p) || '').toLowerCase();
 
     return (
       id === cleanTarget ||

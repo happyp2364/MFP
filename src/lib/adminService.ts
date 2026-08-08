@@ -47,7 +47,7 @@ export async function ensureSuperAdminExists(
     if (snap.exists()) {
       const data = snap.data() as AdminUser;
       // Ensure super_admin role and active status for main owner
-      if (targetEmail.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() && data.roleId !== 'super_admin') {
+      if ((targetEmail || '').toLowerCase() === (SUPER_ADMIN_EMAIL || '').toLowerCase() && data.roleId !== 'super_admin') {
         const updated: AdminUser = {
           ...data,
           roleId: 'super_admin',
@@ -317,7 +317,7 @@ export async function toggleAdminStatus(
 
     // Failsafe: Prevent disabling primary Super Admin or sole Super Admin
     if (
-      adminData.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
+      (adminData.email || '').toLowerCase() === (SUPER_ADMIN_EMAIL || '').toLowerCase() ||
       adminData.roleId === 'super_admin'
     ) {
       const allAdmins = await fetchAdminUsers();
@@ -377,7 +377,7 @@ export async function deleteAdminUser(
 
     // Failsafe: Cannot delete primary Super Admin or last remaining Super Admin
     if (
-      adminData.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
+      (adminData.email || '').toLowerCase() === (SUPER_ADMIN_EMAIL || '').toLowerCase() ||
       adminData.roleId === 'super_admin'
     ) {
       const allAdmins = await fetchAdminUsers();

@@ -1,0 +1,190 @@
+Total matches: 189
+./server.ts:351 -> const lower = q.toLowerCase();
+./server.ts:652 -> const isDark = prompt.toLowerCase().includes("dark") || prompt.toLowerCase().includes("black") || prompt.toLowerCase().includes("nike") || prompt.toLowerCase().includes("sports");
+./server.ts:653 -> const isFestival = prompt.toLowerCase().includes("festival") || prompt.toLowerCase().includes("rakhi") || prompt.toLowerCase().includes("diwali") || prompt.toLowerCase().includes("wedding") || prompt.toLowerCase().includes("royal");
+./server.ts:1692 -> const target = rawSlug.trim().toLowerCase();
+./server.ts:1697 -> p.slug.toLowerCase() === target ||
+./server.ts:1698 -> p.id.toLowerCase() === target ||
+./server.ts:1699 -> (p.sku && p.sku.toLowerCase() === target) ||
+./server.ts:1700 -> target.includes(p.id.toLowerCase())
+./src/App.tsx:149 -> if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'a') {
+./src/App.tsx:249 -> (v) => v.color.toLowerCase() === color.toLowerCase() && v.size.toString() === size.toString()
+./src/App.tsx:290 -> (v) => v.color.toLowerCase() === chosenColor.toLowerCase() && v.size.toString() === chosenSize.toString()
+./src/App.tsx:396 -> (tag: any) => tag.toLowerCase() === filterState.collection.toLowerCase()
+./src/App.tsx:403 -> const q = filterState.searchQuery.toLowerCase();
+./src/App.tsx:405 -> p.name.toLowerCase().includes(q) ||
+./src/App.tsx:406 -> p.brand.toLowerCase().includes(q) ||
+./src/App.tsx:407 -> p.subcategory.toLowerCase().includes(q) ||
+./src/App.tsx:408 -> p.description.toLowerCase().includes(q);
+./src/components/Admin/AdminDashboardModal.tsx:162 -> currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+./src/components/Admin/AdminDashboardModal.tsx:163 -> currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+./src/components/Admin/AdminDashboardModal.tsx:356 -> const q = adminSearch.toLowerCase();
+./src/components/Admin/AdminDashboardModal.tsx:358 -> p.name.toLowerCase().includes(q) ||
+./src/components/Admin/AdminDashboardModal.tsx:359 -> p.brand.toLowerCase().includes(q) ||
+./src/components/Admin/AdminDashboardModal.tsx:360 -> p.subcategory.toLowerCase().includes(q)
+./src/components/Admin/AdminDashboardModal.tsx:370 -> const q = auditSearch.toLowerCase();
+./src/components/Admin/AdminDashboardModal.tsx:372 -> log.action.toLowerCase().includes(q) ||
+./src/components/Admin/AdminDashboardModal.tsx:373 -> log.details.toLowerCase().includes(q) ||
+./src/components/Admin/AdminDashboardModal.tsx:374 -> log.userEmail.toLowerCase().includes(q)
+./src/components/Admin/AdminDashboardModal.tsx:515 -> {(currentAdminUser?.roleId === 'super_admin' || currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com') && (
+./src/components/Admin/AdminManagementView.tsx:76 -> const isSuperAdmin = currentUser?.roleId === 'super_admin' || currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
+./src/components/Admin/AdminManagementView.tsx:138 -> admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/AdminManagementView.tsx:139 -> admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/AdminManagementView.tsx:140 -> (admin.roleName || '').toLowerCase().includes(searchTerm.toLowerCase());
+./src/components/Admin/AdminManagementView.tsx:508 -> admin.email.toLowerCase() === 'vpcreation2002@gmail.com';
+./src/components/Admin/CategoriesSettingsView.tsx:325 -> const catKey = (p.category || 'general').toLowerCase();
+./src/components/Admin/CategoriesSettingsView.tsx:328 -> const subKey = p.subcategory.toLowerCase();
+./src/components/Admin/CategoriesSettingsView.tsx:1131 -> onChange={(e) => setFormId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+./src/components/Admin/CouponManagementView.tsx:111 -> const matchesSearch = c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+./src/components/Admin/CouponManagementView.tsx:112 -> c.name.toLowerCase().includes(searchQuery.toLowerCase());
+./src/components/Admin/CreateAdminModal.tsx:77 -> const cleanEmail = email.trim().toLowerCase();
+./src/components/Admin/CustomerIntelligenceCRMView.tsx:67 -> c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/CustomerIntelligenceCRMView.tsx:68 -> c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/CustomerIntelligenceCRMView.tsx:70 -> c.city.toLowerCase().includes(searchTerm.toLowerCase())
+./src/components/Admin/FeatureReleaseManagerView.tsx:118 -> f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/FeatureReleaseManagerView.tsx:119 -> f.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/FeatureReleaseManagerView.tsx:120 -> f.description.toLowerCase().includes(searchTerm.toLowerCase());
+./src/components/Admin/FeatureReleaseManagerView.tsx:134 -> const cleanId = newFeature.id.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
+./src/components/Admin/HomepageBuilder/HomepageBuilderTab.tsx:115 -> downloadAnchor.setAttribute('download', `homepage_preset_${(localConfig.name || 'custom').toLowerCase().replace(/\s+/g, '_')}.json`);
+./src/components/Admin/HomepageBuilder/TemplateMarketplaceView.tsx:151 -> `homepage_template_${preset.name.toLowerCase().replace(/\s+/g, '_')}.json`
+./src/components/Admin/HomepageBuilder/TemplateMarketplaceView.tsx:218 -> const q = searchQuery.toLowerCase();
+./src/components/Admin/HomepageBuilder/TemplateMarketplaceView.tsx:221 -> p.name.toLowerCase().includes(q) ||
+./src/components/Admin/HomepageBuilder/TemplateMarketplaceView.tsx:222 -> p.description.toLowerCase().includes(q) ||
+./src/components/Admin/HomepageBuilder/TemplateMarketplaceView.tsx:223 -> p.badge.toLowerCase().includes(q) ||
+./src/components/Admin/HomepageBuilder/TemplateMarketplaceView.tsx:224 -> p.tags?.some((t) => t.toLowerCase().includes(q))
+./src/components/Admin/MarketingCenterView.tsx:150 -> const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase());
+./src/components/Admin/MarketingCenterView.tsx:158 -> const term = searchTerm.toLowerCase();
+./src/components/Admin/MarketingCenterView.tsx:159 -> const matchesSearch = s.name.toLowerCase().includes(term) || s.email.toLowerCase().includes(term) || (s.phoneNumber || '').includes(term);
+./src/components/Admin/OpenBoxDeliverySettingsView.tsx:89 -> p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+./src/components/Admin/OpenBoxDeliverySettingsView.tsx:90 -> p.category.toLowerCase().includes(productSearch.toLowerCase()) ||
+./src/components/Admin/OpenBoxDeliverySettingsView.tsx:91 -> (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase()))
+./src/components/Admin/OrderManagementView.tsx:48 -> o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+./src/components/Admin/OrderManagementView.tsx:49 -> o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+./src/components/Admin/OrderManagementView.tsx:51 -> o.customerEmail.toLowerCase().includes(searchQuery.toLowerCase());
+./src/components/Admin/PricePointSettingsView.tsx:85 -> p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+./src/components/Admin/PricePointSettingsView.tsx:86 -> p.brand.toLowerCase().includes(productSearch.toLowerCase()) ||
+./src/components/Admin/PricePointSettingsView.tsx:87 -> p.category.toLowerCase().includes(productSearch.toLowerCase())
+./src/components/Admin/ReviewsSettingsView.tsx:49 -> rev.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+./src/components/Admin/ReviewsSettingsView.tsx:50 -> rev.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+./src/components/Admin/ReviewsSettingsView.tsx:51 -> (rev.location && rev.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
+./src/components/Admin/ReviewsSettingsView.tsx:52 -> (rev.productBought && rev.productBought.toLowerCase().includes(searchQuery.toLowerCase()));
+./src/components/Admin/SizeStockManager.tsx:72 -> if (sizeStocks.some((s) => s.size.toLowerCase() === trimmed.toLowerCase())) {
+./src/components/Admin/SmartProductFormModal.tsx:122 -> v => v.color.toLowerCase() === col.name.toLowerCase() && v.size.toString() === sz.toString()
+./src/components/Admin/SmartProductFormModal.tsx:138 -> .find(v => v.color.toLowerCase() === col.name.toLowerCase() && v.images && v.images.length > 0)
+./src/components/Admin/SmartProductFormModal.tsx:184 -> if (v.color.toLowerCase() === colorName.toLowerCase()) {
+./src/components/Admin/SmartProductFormModal.tsx:354 -> (c) => c.name.toLowerCase() === colorObj.name.toLowerCase()
+./src/components/Admin/SmartProductFormModal.tsx:422 -> .toLowerCase()
+./src/components/Admin/SmartProductFormModal.tsx:1034 -> selectedColorForGallery.toLowerCase() === c.name.toLowerCase()
+./src/components/Admin/SmartProductFormModal.tsx:1062 -> .filter(c => c.name.toLowerCase() !== selectedColorForGallery.toLowerCase())
+./src/components/Admin/SmartProductFormModal.tsx:1074 -> .find(v => v.color.toLowerCase() === colorCopySource.toLowerCase() && v.images && v.images.length > 0)
+./src/components/Admin/SmartProductFormModal.tsx:1113 -> .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
+./src/components/Admin/SmartProductFormModal.tsx:1148 -> .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
+./src/components/Admin/SmartProductFormModal.tsx:1167 -> v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+./src/components/Admin/SmartProductFormModal.tsx:1174 -> v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+./src/components/Admin/SmartProductFormModal.tsx:1189 -> v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+./src/components/Admin/SocialMediaSettingsView.tsx:320 -> if (socialMediaConfig.platforms.some((p: any) => p.id === addId.trim().toLowerCase())) {
+./src/components/Admin/SocialMediaSettingsView.tsx:330 -> id: addId.trim().toLowerCase(),
+./src/components/Admin/StoreManagementAdmin.tsx:153 -> slug: (formData.name || 'store').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+./src/components/Admin/StoreManagementAdmin.tsx:229 -> s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+./src/components/Admin/StoreManagementAdmin.tsx:230 -> s.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+./src/components/Admin/StoreManagementAdmin.tsx:231 -> s.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+./src/components/Admin/StoreManagementAdmin.tsx:233 -> const matchesCity = selectedCityFilter === 'all' || s.city.toLowerCase() === selectedCityFilter.toLowerCase();
+./src/components/Admin/SuperAdminConsoleView.tsx:89 -> const isSuperAdmin = currentUser?.roleId === 'super_admin' || currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
+./src/components/Admin/SuperAdminConsoleView.tsx:162 -> admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/SuperAdminConsoleView.tsx:163 -> admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/SuperAdminConsoleView.tsx:1042 -> admin.email.toLowerCase() === 'vpcreation2002@gmail.com';
+./src/components/Admin/TrendingShoesSettingsView.tsx:85 -> p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+./src/components/Admin/TrendingShoesSettingsView.tsx:86 -> p.brand.toLowerCase().includes(productSearch.toLowerCase()) ||
+./src/components/Admin/TrendingShoesSettingsView.tsx:87 -> p.category.toLowerCase().includes(productSearch.toLowerCase())
+./src/components/Admin/WebsiteConfigurationView.tsx:256 -> s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+./src/components/Admin/WebsiteConfigurationView.tsx:257 -> s.description.toLowerCase().includes(searchQuery.toLowerCase())
+./src/components/Admin/WebsiteDirectoryManager.tsx:110 -> currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+./src/components/Admin/WebsiteDirectoryManager.tsx:111 -> currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
+./src/components/Admin/WebsiteDirectoryManager.tsx:131 -> tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/WebsiteDirectoryManager.tsx:132 -> tenant.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/WebsiteDirectoryManager.tsx:133 -> tenant.domain.toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/WebsiteDirectoryManager.tsx:134 -> (tenant.ownerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/WebsiteDirectoryManager.tsx:135 -> (tenant.ownerEmail || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+./src/components/Admin/WebsiteDirectoryManager.tsx:136 -> (tenant.adminGoogleEmail || '').toLowerCase().includes(searchTerm.toLowerCase());
+./src/components/Admin/WebsiteManagementView.tsx:53 -> currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+./src/components/Admin/WebsiteManagementView.tsx:54 -> currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+./src/components/Collections/PricePointCollectionSection.tsx:63 -> const cat = (p.category || '').toLowerCase();
+./src/components/Collections/PricePointCollectionSection.tsx:64 -> const sub = (p.subcategory || '').toLowerCase();
+./src/components/Collections/PricePointCollectionSection.tsx:65 -> const name = (p.name || '').toLowerCase();
+./src/components/Collections/PricePointCollectionSection.tsx:145 -> p.collectionTags?.some((t: any) => ['budget', 'value', 'college', 'bestseller'].includes(t.toLowerCase()))
+./src/components/Collections/TrendingShoesSection.tsx:109 -> tag.toLowerCase()
+./src/components/Common/UniversalImageSystem.tsx:347 -> const query = aiPrompt.toLowerCase();
+./src/components/Customer/HomepageRenderer.tsx:88 -> const catFilter = (catItem.categoryFilter || catItem.title || catItem.name || '').toLowerCase();
+./src/components/Customer/HomepageRenderer.tsx:89 -> const subFilter = (catItem.subcategoryFilter || '').toLowerCase();
+./src/components/Customer/HomepageRenderer.tsx:92 -> const pCat = (p.category || '').toLowerCase();
+./src/components/Customer/HomepageRenderer.tsx:93 -> const pSub = (p.subcategory || '').toLowerCase();
+./src/components/Customer/HomepageRenderer.tsx:94 -> const pName = (p.name || '').toLowerCase();
+./src/components/Customer/HomepageRenderer.tsx:235 -> items = items.filter((p: any) => p.category?.toLowerCase() === filteredCat.toLowerCase());
+./src/components/Customer/HomepageRenderer.tsx:999 -> p.name.toLowerCase() === activeSlide.productName.toLowerCase()
+./src/components/Customer/HomepageRenderer.tsx:1012 -> p.name.toLowerCase() === activeSlide.productName.toLowerCase()
+./src/components/Products/ProductCard.tsx:84 -> v.color.toLowerCase() === selectedColor.toLowerCase() &&
+./src/components/Products/ProductCard.tsx:103 -> (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize
+./src/components/Products/ProductDetailPage.tsx:97 -> v => v.color.toLowerCase() === firstColor.toLowerCase() && v.status === 'active'
+./src/components/Products/ProductDetailPage.tsx:118 -> v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.status === 'active'
+./src/components/Products/ProductDetailPage.tsx:132 -> v.color.toLowerCase() === selectedColor.toLowerCase() &&
+./src/components/Products/ProductDetailPage.tsx:146 -> .filter((v) => v.color.toLowerCase() === selectedColor.toLowerCase())
+./src/components/Products/ProductDetailPage.tsx:290 -> v.color.toLowerCase(),
+./src/components/Products/ProductDetailPage.tsx:299 -> .filter((v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.status === 'active')
+./src/components/Products/ProductDetailPage.tsx:413 -> (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+./src/components/Products/ProductDetailPage.tsx:485 -> (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+./src/components/Products/QuickViewModal.tsx:108 -> (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+./src/components/Products/QuickViewModal.tsx:122 -> const isVariantSelected = Boolean(product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize));
+./src/components/Products/QuickViewModal.tsx:123 -> const activeVariant = product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize);
+./src/components/Reviews/ReviewsSection.tsx:59 -> (r: any) => r.productBought?.toLowerCase() === productId.toLowerCase() || r.id === productId
+./src/components/Reviews/ReviewsSection.tsx:160 -> order.customerEmail.toLowerCase() === customerUser.email.toLowerCase());
+./src/components/Search/LiveSearchModal.tsx:89 -> p.name.toLowerCase().includes(query.toLowerCase()) ||
+./src/components/Search/LiveSearchModal.tsx:90 -> p.category.toLowerCase().includes(query.toLowerCase()) ||
+./src/components/Search/LiveSearchModal.tsx:91 -> p.subcategory.toLowerCase().includes(query.toLowerCase()) ||
+./src/components/Search/LiveSearchModal.tsx:92 -> p.brand.toLowerCase().includes(query.toLowerCase())
+./src/components/Social/SocialIconRenderer.tsx:77 -> if (identifier.toLowerCase().startsWith('<svg')) {
+./src/components/Social/SocialIconRenderer.tsx:107 -> const LucideIcon = LUCIDE_MAP[identifier] || LUCIDE_MAP[identifier.toLowerCase()] || Share2;
+./src/components/StoreLocator/StoreLocatorPage.tsx:116 -> const q = searchQuery.toLowerCase().trim();
+./src/components/StoreLocator/StoreLocatorPage.tsx:119 -> store.name.toLowerCase().includes(q) ||
+./src/components/StoreLocator/StoreLocatorPage.tsx:120 -> store.city.toLowerCase().includes(q) ||
+./src/components/StoreLocator/StoreLocatorPage.tsx:121 -> store.area.toLowerCase().includes(q) ||
+./src/components/StoreLocator/StoreLocatorPage.tsx:122 -> store.state.toLowerCase().includes(q) ||
+./src/components/StoreLocator/StoreLocatorPage.tsx:124 -> store.address.toLowerCase().includes(q);
+./src/context/AISEOContext.tsx:22 -> const keywords = [productTitle.toLowerCase(), 'products', 'online store', 'shopping'];
+./src/context/AuthContext.tsx:51 -> currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+./src/context/AuthContext.tsx:52 -> currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+./src/context/AuthContext.tsx:66 -> const userEmailLower = (firebaseUser.email || '').toLowerCase();
+./src/context/AuthContext.tsx:89 -> (a) => a.email?.toLowerCase() === userEmailLower && a.status !== 'disabled'
+./src/context/AuthContext.tsx:176 -> const emailLower = email.toLowerCase();
+./src/context/AuthContext.tsx:215 -> const emailLower = (result.user.email || '').toLowerCase();
+./src/context/StoreContext.tsx:190 -> auth.currentAdminUser.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+./src/context/StoreContext.tsx:191 -> auth.currentAdminUser.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+./src/lib/adminService.ts:50 -> if (targetEmail.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() && data.roleId !== 'super_admin') {
+./src/lib/adminService.ts:320 -> adminData.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
+./src/lib/adminService.ts:380 -> adminData.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
+./src/lib/firebase.ts:242 -> const msg = typeof err.message === 'string' ? err.message.toLowerCase() : '';
+./src/lib/firebase.ts:1017 -> const subId = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+./src/lib/security.ts:28 -> const clean = sanitizeString(email, 120).toLowerCase();
+./src/lib/security.ts:76 -> if (!ALLOWED_MIME_TYPES.includes(file.type.toLowerCase())) {
+./src/lib/security.ts:88 -> const ext = file.name.slice(extIndex).toLowerCase();
+./src/lib/tenantIsolation.ts:11 -> .toLowerCase()
+./src/lib/tenantIsolation.ts:69 -> const rawPathSlug = pathSegments.length > 0 ? pathSegments[0].toLowerCase() : null;
+./src/lib/tenantIsolation.ts:192 -> const normalizedEmail = (userEmail || '').toLowerCase();
+./src/utils/productCategoryDefaults.ts:119 -> const sub = subcategory.toLowerCase();
+./src/utils/productFeedOptimizer.ts:30 -> const formattedSku = p.sku.trim().toLowerCase();
+./src/utils/productFeedOptimizer.ts:36 -> const formattedSlug = p.slug.trim().toLowerCase();
+./src/utils/productFeedOptimizer.ts:43 -> const formattedBarcode = String(barcode).trim().toLowerCase();
+./src/utils/productFeedOptimizer.ts:49 -> if (p.sku && p.sku.trim() !== '') seenSkus.add(p.sku.trim().toLowerCase());
+./src/utils/productFeedOptimizer.ts:50 -> if (p.slug && p.slug.trim() !== '') seenSlugs.add(p.slug.trim().toLowerCase());
+./src/utils/productFeedOptimizer.ts:51 -> if (barcode && String(barcode).trim() !== '') seenBarcodes.add(String(barcode).trim().toLowerCase());
+./src/utils/productUtils.ts:11 -> .toLowerCase()
+./src/utils/productUtils.ts:42 -> const cleanId = (product.id || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+./src/utils/productUtils.ts:65 -> cleanTarget = decodeURIComponent(targetSlugOrId).trim().toLowerCase();
+./src/utils/productUtils.ts:67 -> cleanTarget = targetSlugOrId.trim().toLowerCase();
+./src/utils/productUtils.ts:74 -> const id = (p.id || '').trim().toLowerCase();
+./src/utils/productUtils.ts:75 -> const slug = getProductSlug(p).toLowerCase();
+./src/utils/productUtils.ts:76 -> const sku = getProductSKU(p).toLowerCase();
+./src/utils/sizeStockUtils.ts:72 -> return stocks.find((s) => s.size.trim().toLowerCase() === size.trim().toLowerCase());
+./src/utils/variantUtils.ts:18 -> (v) => v.color.toLowerCase() === color.toLowerCase() && (!size || v.size === size)
+./src/utils/variantUtils.ts:34 -> (v) => v.color.toLowerCase() === color.toLowerCase() && (!size || v.size === size)
+./src/utils/variantUtils.ts:77 -> (v) => v.color.toLowerCase() === color.toLowerCase() && v.images && v.images.length > 0
+./src/utils/variantUtils.ts:97 -> (v) => v.color.toLowerCase() === item.selectedColor.toLowerCase() && v.images && v.images.length > 0

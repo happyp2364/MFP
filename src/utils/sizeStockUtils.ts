@@ -69,7 +69,7 @@ export function getFirstAvailableInStockSize(product: Product): string {
  */
 export function getSizeStockInfo(product: Product, size: string): SizeStock | undefined {
   const stocks = normalizeProductSizeStocks(product);
-  return stocks.find((s) => s.size.trim().toLowerCase() === size.trim().toLowerCase());
+  return stocks.find((s) => (s.size || '').trim().toLowerCase() === (size || '').trim().toLowerCase());
 }
 
 /**

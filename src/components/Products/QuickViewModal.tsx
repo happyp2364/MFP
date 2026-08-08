@@ -105,7 +105,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   };
 
   const activeVariantWithImages = product.variants?.find(
-    (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+    (v) => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.images && v.images.length > 0
   );
   
   const displayImages = activeVariantWithImages?.images || product.images || [];
@@ -119,8 +119,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     : rawImageSrc;
 
   const currentPrice = getProductPrice(product, selectedSize, selectedColor);
-  const isVariantSelected = Boolean(product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize));
-  const activeVariant = product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize);
+  const isVariantSelected = Boolean(product.variants?.find(v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.size === selectedSize));
+  const activeVariant = product.variants?.find(v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.size === selectedSize);
   const originalPrice = isVariantSelected && activeVariant ? activeVariant.originalPrice : product.originalPrice;
 
   return (

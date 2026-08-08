@@ -116,7 +116,7 @@ export function getSizeTypeForSubcategory(category: 'men' | 'women' | 'kids', su
     return 'footwear';
   }
 
-  const sub = subcategory.toLowerCase();
+  const sub = (subcategory || '').toLowerCase();
   if (sub.includes('jeans') || sub.includes('trouser') || sub.includes('lower')) {
     return 'clothing_waist';
   }

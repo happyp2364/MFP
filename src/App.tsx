@@ -146,7 +146,7 @@ function AppContent() {
   // Global hotkey shortcut to open Admin Login: Ctrl + Alt + A (or Cmd + Opt + A on Mac)
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'a') {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && (e.key || '').toLowerCase() === 'a') {
         e.preventDefault();
         setAdminLoginOpen(true);
       }
@@ -246,7 +246,7 @@ function AppContent() {
     let variant = selectedVariant;
     if (!variant && product.variants && product.variants.length > 0) {
       variant = product.variants.find(
-        (v) => v.color.toLowerCase() === color.toLowerCase() && v.size.toString() === size.toString()
+        (v) => (v.color || '').toLowerCase() === (color || '').toLowerCase() && v.size.toString() === size.toString()
       );
     }
 
@@ -287,7 +287,7 @@ function AppContent() {
     let variant = selectedVariant;
     if (!variant && product.variants && product.variants.length > 0) {
       variant = product.variants.find(
-        (v) => v.color.toLowerCase() === chosenColor.toLowerCase() && v.size.toString() === chosenSize.toString()
+        (v) => (v.color || '').toLowerCase() === (chosenColor || '').toLowerCase() && v.size.toString() === chosenSize.toString()
       );
     }
 
@@ -393,19 +393,19 @@ function AppContent() {
       // Collection Filter
       if (filterState.collection) {
         const colMatch = p.collectionTags.some(
-          (tag: any) => tag.toLowerCase() === filterState.collection.toLowerCase()
+          (tag: any) => (tag || '').toLowerCase() === (filterState.collection || '').toLowerCase()
         );
         if (!colMatch) return false;
       }
 
       // Search Query
       if (filterState.searchQuery) {
-        const q = filterState.searchQuery.toLowerCase();
+        const q = (filterState.searchQuery || '').toLowerCase();
         const match =
-          p.name.toLowerCase().includes(q) ||
-          p.brand.toLowerCase().includes(q) ||
-          p.subcategory.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q);
+          (p.name || '').toLowerCase().includes(q) ||
+          (p.brand || '').toLowerCase().includes(q) ||
+          (p.subcategory || '').toLowerCase().includes(q) ||
+          (p.description || '').toLowerCase().includes(q);
         if (!match) return false;
       }
 

@@ -115,9 +115,9 @@ export const FeatureReleaseManagerView: React.FC<FeatureReleaseManagerViewProps>
   // Filter features
   const filteredFeatures = features.filter((f) => {
     const matchesSearch =
-      f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.description.toLowerCase().includes(searchTerm.toLowerCase());
+      (f.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      (f.id || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      (f.description || '').toLowerCase().includes((searchTerm || '').toLowerCase());
     const matchesCategory = selectedCategory === 'all' || f.category === selectedCategory;
     const matchesStatus = selectedStatus === 'all' || f.status === selectedStatus;
     return matchesSearch && matchesCategory && matchesStatus;
@@ -131,7 +131,7 @@ export const FeatureReleaseManagerView: React.FC<FeatureReleaseManagerViewProps>
       return;
     }
 
-    const cleanId = newFeature.id.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
+    const cleanId = (newFeature.id || '').toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
     const featureToSave: PlatformFeature = {
       id: cleanId.startsWith('feat_') ? cleanId : `feat_${cleanId}`,
       name: newFeature.name.trim(),

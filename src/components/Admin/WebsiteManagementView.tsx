@@ -50,8 +50,8 @@ export const WebsiteManagementView: React.FC = () => {
   const isSuperAdminUser = Boolean(
     isSuperAdmin ||
     currentAdminUser?.roleId === 'super_admin' ||
-    currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
-    currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+    (currentAdminUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' ||
+    (currentAdminUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com'
   );
 
   // Super Admin Sub-Tab: 'configuration' | 'directory'

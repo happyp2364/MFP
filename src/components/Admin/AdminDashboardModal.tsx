@@ -159,8 +159,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const isSuperAdminUser = Boolean(
     store.isSuperAdmin ||
     currentAdminUser?.roleId === 'super_admin' ||
-    currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
-    currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
+    (currentAdminUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' ||
+    (currentAdminUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com'
   );
 
   const hasTenantAccess = currentAdminUser ? validateTenantAccess(
@@ -353,11 +353,11 @@ const canAccessTab = (tab: string) => {
   const adminFilteredProducts = products.filter((p: any) => {
     if (selectedCategoryFilter !== 'all' && p.category !== selectedCategoryFilter) return false;
     if (adminSearch.trim()) {
-      const q = adminSearch.toLowerCase();
+      const q = (adminSearch || '').toLowerCase();
       return (
-        p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        p.subcategory.toLowerCase().includes(q)
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.brand || '').toLowerCase().includes(q) ||
+        (p.subcategory || '').toLowerCase().includes(q)
       );
     }
     return true;
@@ -367,11 +367,11 @@ const canAccessTab = (tab: string) => {
   const filteredAuditLogs = auditLogs.filter((log: any) => {
     if (auditCategoryFilter !== 'ALL' && log.category !== auditCategoryFilter) return false;
     if (auditSearch.trim()) {
-      const q = auditSearch.toLowerCase();
+      const q = (auditSearch || '').toLowerCase();
       return (
-        log.action.toLowerCase().includes(q) ||
-        log.details.toLowerCase().includes(q) ||
-        log.userEmail.toLowerCase().includes(q)
+        (log.action || '').toLowerCase().includes(q) ||
+        (log.details || '').toLowerCase().includes(q) ||
+        (log.userEmail || '').toLowerCase().includes(q)
       );
     }
     return true;
@@ -512,7 +512,7 @@ const canAccessTab = (tab: string) => {
           <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-2.5 sm:p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto scrollbar-none touch-pan-x">
             
             {/* Super Admin Exclusive Console */}
-            {(currentAdminUser?.roleId === 'super_admin' || currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com') && (
+            {(currentAdminUser?.roleId === 'super_admin' || (currentAdminUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' || (currentAdminUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com') && (
               <button
                 onClick={() => setActiveTab('super_admin_console')}
                 className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap text-left border ${

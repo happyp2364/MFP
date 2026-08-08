@@ -46,10 +46,10 @@ export const ReviewsSettingsView: React.FC = () => {
     return reviews.filter((rev: any) => {
       // Search term
       const matchesSearch = 
-        rev.author.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        rev.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (rev.location && rev.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (rev.productBought && rev.productBought.toLowerCase().includes(searchQuery.toLowerCase()));
+        (rev.author || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
+        (rev.comment || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+        (rev.location && (rev.location || '').toLowerCase().includes((searchQuery || '').toLowerCase())) ||
+        (rev.productBought && (rev.productBought || '').toLowerCase().includes((searchQuery || '').toLowerCase()));
 
       if (!matchesSearch) return false;
 

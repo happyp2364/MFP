@@ -86,9 +86,9 @@ export const OpenBoxDeliverySettingsView: React.FC = () => {
 
   // Filtered products for selection
   const filteredProducts = products.filter((p: any) =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    p.category.toLowerCase().includes(productSearch.toLowerCase()) ||
-    (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase()))
+    (p.name || '').toLowerCase().includes((productSearch || '').toLowerCase()) ||
+    (p.category || '').toLowerCase().includes((productSearch || '').toLowerCase()) ||
+    (p.sku && (p.sku || '').toLowerCase().includes((productSearch || '').toLowerCase()))
   );
 
   const toggleCategorySelection = (catId: string) => {

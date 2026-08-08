@@ -348,7 +348,7 @@ Respond ONLY with valid JSON:
         'sport': 'Sports Shoes',
       };
 
-      const lower = q.toLowerCase();
+      const lower = (q || '').toLowerCase();
       if (typoMap[lower]) corrected = typoMap[lower];
 
       return res.json({
@@ -649,8 +649,8 @@ Ensure 6 to 10 sections are included to form a rich, realistic homepage! Include
       }
 
       // Smart Fallback layout based on prompt keywords
-      const isDark = prompt.toLowerCase().includes("dark") || prompt.toLowerCase().includes("black") || prompt.toLowerCase().includes("nike") || prompt.toLowerCase().includes("sports");
-      const isFestival = prompt.toLowerCase().includes("festival") || prompt.toLowerCase().includes("rakhi") || prompt.toLowerCase().includes("diwali") || prompt.toLowerCase().includes("wedding") || prompt.toLowerCase().includes("royal");
+      const isDark = (prompt || '').toLowerCase().includes("dark") || (prompt || '').toLowerCase().includes("black") || (prompt || '').toLowerCase().includes("nike") || (prompt || '').toLowerCase().includes("sports");
+      const isFestival = (prompt || '').toLowerCase().includes("festival") || (prompt || '').toLowerCase().includes("rakhi") || (prompt || '').toLowerCase().includes("diwali") || (prompt || '').toLowerCase().includes("wedding") || (prompt || '').toLowerCase().includes("royal");
 
       return res.json({
         success: true,
@@ -1689,15 +1689,15 @@ ${customerMessage || 'Please confirm availability.'}`;
   const handleProductRoute = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
       const rawSlug = req.params.slug || "";
-      const target = rawSlug.trim().toLowerCase();
+      const target = (rawSlug || '').trim().toLowerCase();
 
       // Find product in catalog
       const foundProduct = SERVER_PRODUCT_CATALOG.find(
         (p) =>
-          p.slug.toLowerCase() === target ||
-          p.id.toLowerCase() === target ||
-          (p.sku && p.sku.toLowerCase() === target) ||
-          target.includes(p.id.toLowerCase())
+          (p.slug || '').toLowerCase() === target ||
+          (p.id || '').toLowerCase() === target ||
+          (p.sku && (p.sku || '').toLowerCase() === target) ||
+          target.includes((p.id || '').toLowerCase())
       );
 
       const fs = await import("fs");

@@ -325,7 +325,7 @@ export const CategoriesSettingsView: React.FC = () => {
         const catKey = (p.category || 'general').toLowerCase();
         countByCategory[catKey] = (countByCategory[catKey] || 0) + 1;
         if (p.subcategory) {
-          const subKey = p.subcategory.toLowerCase();
+          const subKey = (p.subcategory || '').toLowerCase();
           countBySubcategory[subKey] = (countBySubcategory[subKey] || 0) + 1;
         }
       });
@@ -1128,7 +1128,7 @@ export const CategoriesSettingsView: React.FC = () => {
                     required
                     disabled={!isAddMode}
                     value={formId}
-                    onChange={(e) => setFormId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                    onChange={(e) => setFormId((e.target.value || '').toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
                     placeholder="e.g. mens_sports"
                     className="w-full bg-neutral-50 disabled:opacity-60 border border-neutral-200 rounded-xl p-2.5 font-mono focus:ring-2 focus:ring-[#0B8F63] outline-none"
                   />

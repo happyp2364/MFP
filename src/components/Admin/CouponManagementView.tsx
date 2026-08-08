@@ -108,8 +108,8 @@ export const CouponManagementView: React.FC = () => {
 
   // Filter coupons
   const filteredCoupons = coupons.filter((c: any) => {
-    const matchesSearch = c.code.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          c.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (c.code || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
+                          (c.name || '').toLowerCase().includes((searchQuery || '').toLowerCase());
     const matchesType = typeFilter === 'all' || c.type === typeFilter;
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
     return matchesSearch && matchesType && matchesStatus;

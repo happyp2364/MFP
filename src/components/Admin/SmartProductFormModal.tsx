@@ -119,7 +119,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     productState.colors.forEach(col => {
       activeSizes.forEach(sz => {
         const existing = (productState.variants || []).find(
-          v => v.color.toLowerCase() === col.name.toLowerCase() && v.size.toString() === sz.toString()
+          v => (v.color || '').toLowerCase() === (col.name || '').toLowerCase() && v.size.toString() === sz.toString()
         );
         
         if (existing) {
@@ -135,7 +135,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
           const autoBarcode = generateAutoBarcode(productState.id || '101', col.name, sz);
           
           const siblingImages = (productState.variants || [])
-            .find(v => v.color.toLowerCase() === col.name.toLowerCase() && v.images && v.images.length > 0)
+            .find(v => (v.color || '').toLowerCase() === (col.name || '').toLowerCase() && v.images && v.images.length > 0)
             ?.images || [];
 
           newVariants.push({
@@ -181,7 +181,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
 
   const updateColorGalleryImages = (colorName: string, newImages: string[], videoUrl?: string, labels?: Record<string, string>) => {
     const updatedVariants = (productState.variants || []).map(v => {
-      if (v.color.toLowerCase() === colorName.toLowerCase()) {
+      if ((v.color || '').toLowerCase() === (colorName || '').toLowerCase()) {
         return {
           ...v,
           images: newImages,
@@ -351,7 +351,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // COLOR MANAGEMENT
   const handleAddPresetColor = (colorObj: ProductColor) => {
     const exists = productState.colors.some(
-      (c) => c.name.toLowerCase() === colorObj.name.toLowerCase()
+      (c) => (c.name || '').toLowerCase() === (colorObj.name || '').toLowerCase()
     );
     if (exists) return;
 
@@ -405,7 +405,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     if (e) e.preventDefault();
     if (!isFormValid) return;
 
-    const cleanName = productState.name.trim();
+    const cleanName = (productState.name || '').trim();
     const catCode = productState.category.charAt(0).toUpperCase();
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const subCode = (productState.subcategory || 'GEN')
@@ -1031,7 +1031,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                             key={c.name}
                             onClick={() => setSelectedColorForGallery(c.name)}
                             className={`px-3 py-1.5 rounded-xl border-2 font-bold text-xs flex items-center gap-1.5 transition-all ${
-                              selectedColorForGallery.toLowerCase() === c.name.toLowerCase()
+                              (selectedColorForGallery || '').toLowerCase() === (c.name || '').toLowerCase()
                                 ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/15'
                                 : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
                             }`}
@@ -1059,7 +1059,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                           >
                             <option value="">Copy Gallery from...</option>
                             {productState.colors
-                              .filter(c => c.name.toLowerCase() !== selectedColorForGallery.toLowerCase())
+                              .filter(c => (c.name || '').toLowerCase() !== (selectedColorForGallery || '').toLowerCase())
                               .map(c => (
                                 <option key={c.name} value={c.name}>{c.name}</option>
                               ))
@@ -1071,7 +1071,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                               if (!colorCopySource) return;
                               // Find siblings' images
                               const sourceImages = (productState.variants || [])
-                                .find(v => v.color.toLowerCase() === colorCopySource.toLowerCase() && v.images && v.images.length > 0)
+                                .find(v => (v.color || '').toLowerCase() === (colorCopySource || '').toLowerCase() && v.images && v.images.length > 0)
                                 ?.images || [];
                               if (sourceImages.length > 0) {
                                 updateColorGalleryImages(selectedColorForGallery, sourceImages);
@@ -1110,7 +1110,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                                 return;
                               }
                               const existingImages = (productState.variants || [])
-                                .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
+                                .find(v => (v.color || '').toLowerCase() === (selectedColorForGallery || '').toLowerCase())
                                 ?.images || [];
                               const merged = [...existingImages, ...urls];
                               updateColorGalleryImages(selectedColorForGallery, merged);
@@ -1145,7 +1145,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                               'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&auto=format&fit=crop&q=60',
                             ];
                             const existingImages = (productState.variants || [])
-                              .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
+                              .find(v => (v.color || '').toLowerCase() === (selectedColorForGallery || '').toLowerCase())
                               ?.images || [];
                             const merged = [...existingImages, ...demoImages];
                             updateColorGalleryImages(selectedColorForGallery, merged);
@@ -1164,14 +1164,14 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                       <span className="text-[11px] font-extrabold text-neutral-700 block">
                         Gallery Portfolio ({
                           ((productState.variants || []).find(
-                            v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+                            v => (v.color || '').toLowerCase() === (selectedColorForGallery || '').toLowerCase()
                           )?.images || []).length
                         } / 50 Images)
                       </span>
 
                       {(() => {
                         const activeImages = ((productState.variants || []).find(
-                          v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+                          v => (v.color || '').toLowerCase() === (selectedColorForGallery || '').toLowerCase()
                         )?.images || []);
 
                         if (activeImages.length === 0) {
@@ -1186,7 +1186,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                             {activeImages.map((img, index) => {
                               const activeVarObj = (productState.variants || []).find(
-                                v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
+                                v => (v.color || '').toLowerCase() === (selectedColorForGallery || '').toLowerCase()
                               );
                               const labels = (activeVarObj as any)?.imageLabels || {};
                               const activeLabel = labels[img] || '';

@@ -147,7 +147,7 @@ export const MarketingCenterView: React.FC = () => {
 
   // Filtered Campaigns
   const filteredCampaigns = campaigns.filter((c: any) => {
-    const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (c.title || '').toLowerCase().includes((searchTerm || '').toLowerCase());
     const matchesChannel = channelFilter === 'ALL' || c.channel === channelFilter;
     const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter;
     return matchesSearch && matchesChannel && matchesStatus;
@@ -155,8 +155,8 @@ export const MarketingCenterView: React.FC = () => {
 
   // Filtered Subscribers
   const filteredSubscribers = subscribers.filter((s: any) => {
-    const term = searchTerm.toLowerCase();
-    const matchesSearch = s.name.toLowerCase().includes(term) || s.email.toLowerCase().includes(term) || (s.phoneNumber || '').includes(term);
+    const term = (searchTerm || '').toLowerCase();
+    const matchesSearch = (s.name || '').toLowerCase().includes(term) || (s.email || '').toLowerCase().includes(term) || (s.phoneNumber || '').includes(term);
     const matchesChannel =
       channelFilter === 'ALL' ||
       (channelFilter === 'EMAIL' && s.preferences.email) ||

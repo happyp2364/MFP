@@ -277,7 +277,7 @@ export const ProvisionWebsiteModal: React.FC<ProvisionWebsiteModalProps> = ({
                 </div>
                 <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-2">
                   <label className="text-neutral-400 font-bold uppercase tracking-wider block">Generated Website URL</label>
-                  <div className="text-sky-400 font-mono text-sm">{buildWebsiteUrl(slug || '...')}</div>
+                  <div className="text-sky-400 font-mono text-sm">{buildWebsiteUrl(slug || '')}</div>
                 </div>
                 {provisionError && (
                   <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-xs whitespace-pre-wrap font-mono mt-4 text-left">

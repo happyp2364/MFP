@@ -1,16 +1,16 @@
-import { Product, ProductFeedConfig } from '../types';
+import { Product } from '../types';
+
+export interface ProductFeedConfig {
+  sortBy?: 'priority' | 'price_asc' | 'price_desc' | 'newest' | string;
+  inStockOnly?: boolean;
+}
 
 /**
- * Deduplicates an array of products based on:
- * - Product ID
- * - SKU
- * - Slug
- * - Barcode
+ * Enterprise-grade deduplication for products.
+ * Deduplicates by ID, SKU, Slug, or Barcode to ensure product lists never contain duplicates.
  */
 export function deduplicateProducts(products: Product[], config?: ProductFeedConfig): Product[] {
-  if (config && config.duplicateDetection === false) {
-    return products;
-  }
+  if (!Array.isArray(products)) return [];
 
   const seenIds = new Set<string>();
   const seenSkus = new Set<string>();
@@ -27,13 +27,13 @@ export function deduplicateProducts(products: Product[], config?: ProductFeedCon
 
     // 2. Check SKU
     if (p.sku && p.sku.trim() !== '') {
-      const formattedSku = p.sku.trim().toLowerCase();
+      const formattedSku = (p.sku || '').trim().toLowerCase();
       if (seenSkus.has(formattedSku)) return false;
     }
 
     // 3. Check Slug
     if (p.slug && p.slug.trim() !== '') {
-      const formattedSlug = p.slug.trim().toLowerCase();
+      const formattedSlug = (p.slug || '').trim().toLowerCase();
       if (seenSlugs.has(formattedSlug)) return false;
     }
 
@@ -46,8 +46,8 @@ export function deduplicateProducts(products: Product[], config?: ProductFeedCon
 
     // If none of the attributes have been seen, we mark them all as seen and keep the product
     if (p.id) seenIds.add(p.id);
-    if (p.sku && p.sku.trim() !== '') seenSkus.add(p.sku.trim().toLowerCase());
-    if (p.slug && p.slug.trim() !== '') seenSlugs.add(p.slug.trim().toLowerCase());
+    if (p.sku && p.sku.trim() !== '') seenSkus.add((p.sku || '').trim().toLowerCase());
+    if (p.slug && p.slug.trim() !== '') seenSlugs.add((p.slug || '').trim().toLowerCase());
     if (barcode && String(barcode).trim() !== '') seenBarcodes.add(String(barcode).trim().toLowerCase());
 
     return true;
@@ -57,52 +57,74 @@ export function deduplicateProducts(products: Product[], config?: ProductFeedCon
 /**
  * Calculates a priority score for a product based on Admin weights & flags.
  */
-export function scoreProduct(p: Product, config: ProductFeedConfig): number {
+export function scoreProduct(p: Product, config?: ProductFeedConfig): number {
+  if (!p) return 0;
   let score = 0;
 
-  if (p.isFeatured && config.featuredPriority !== undefined) {
-    score += config.featuredPriority * 10;
-  }
-  if (p.isTrending && config.trendingPriority !== undefined) {
-    score += config.trendingPriority * 10;
-  }
-  if (p.isBestSeller && config.bestSellerPriority !== undefined) {
-    score += config.bestSellerPriority * 10;
-  }
-  if (p.isNewArrival && config.recentlyAddedPriority !== undefined) {
-    score += config.recentlyAddedPriority * 10;
+  const isFeatured = p.isFeatured || (p as any).featured;
+  const isBestSeller = p.isBestSeller || (p as any).bestseller;
+
+  // 1. Featured / Bestseller boost
+  if (isFeatured) score += 50;
+  if (isBestSeller) score += 30;
+
+  // 2. Stock Availability
+  const totalStock = Array.isArray(p.variants)
+    ? p.variants.reduce((acc, v) => acc + (v.stock || 0), 0)
+    : (p as any).stock ?? (p.inStock ? 10 : 0);
+
+  if (totalStock > 0) {
+    score += 20;
+  } else if (config?.inStockOnly) {
+    return -1; // Exclude out-of-stock items if flag is active
   }
 
-  // Handle randomization if enabled (makes feed discoverable but stable within session)
-  if (config.randomization && p.id) {
-    const hash = p.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    score += (hash % 10);
+  // 3. Discount Percentage Boost
+  if (p.originalPrice && p.price && p.originalPrice > p.price) {
+    const discountPercent = ((p.originalPrice - p.price) / p.originalPrice) * 100;
+    score += Math.min(discountPercent, 30);
   }
 
   return score;
 }
 
 /**
- * Sorts and ranks products by smart mix score (if 'featured') or standard metrics.
+ * Sorts products using a smart mix algorithm based on score and selected sort criteria.
  */
 export function sortProductsWithSmartMix(
   products: Product[],
-  config: ProductFeedConfig,
-  sortBy: string
+  configOrSortBy?: ProductFeedConfig | string,
+  sortByOverride?: string
 ): Product[] {
-  const sorted = [...products];
+  if (!Array.isArray(products)) return [];
+  const deduped = deduplicateProducts(products);
 
-  if (sortBy === 'featured') {
-    return sorted.sort((a, b) => {
-      const scoreA = scoreProduct(a, config);
-      const scoreB = scoreProduct(b, config);
-      if (scoreB !== scoreA) {
-        return scoreB - scoreA;
-      }
-      // Fallback to name comparison to keep sort stable
-      return a.name.localeCompare(b.name);
-    });
+  let sortBy = 'featured';
+  let config: ProductFeedConfig | undefined = undefined;
+
+  if (typeof configOrSortBy === 'string') {
+    sortBy = configOrSortBy;
+  } else if (configOrSortBy) {
+    config = configOrSortBy;
+    if (sortByOverride) {
+      sortBy = sortByOverride;
+    } else if (config.sortBy) {
+      sortBy = config.sortBy;
+    }
   }
 
-  return sorted;
+  const list = [...deduped];
+
+  if (sortBy === 'price_asc' || sortBy === 'price-low') {
+    return list.sort((a, b) => (a.price || 0) - (b.price || 0));
+  }
+  if (sortBy === 'price_desc' || sortBy === 'price-high') {
+    return list.sort((a, b) => (b.price || 0) - (a.price || 0));
+  }
+  if (sortBy === 'newest') {
+    return list.reverse();
+  }
+
+  // Default smart mix / priority scoring
+  return list.sort((a, b) => scoreProduct(b, config) - scoreProduct(a, config));
 }

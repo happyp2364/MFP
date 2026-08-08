@@ -226,11 +226,11 @@ export const StoreManagementAdmin: React.FC = () => {
 
   const filteredStores = physicalStores.filter((s: any) => {
     const matchesSearch =
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.name || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      (s.city || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      (s.address || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
       s.pincode.includes(searchQuery);
-    const matchesCity = selectedCityFilter === 'all' || s.city.toLowerCase() === selectedCityFilter.toLowerCase();
+    const matchesCity = selectedCityFilter === 'all' || (s.city || '').toLowerCase() === (selectedCityFilter || '').toLowerCase();
     return matchesSearch && matchesCity;
   });
 

@@ -56,7 +56,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
   const activeReviews = useMemo(() => {
     if (!productId) return reviews;
     return reviews.filter(
-      (r: any) => r.productBought?.toLowerCase() === productId.toLowerCase() || r.id === productId
+      (r: any) => (r.productBought || '').toLowerCase() === (productId || '').toLowerCase() || r.id === productId
     );
   }, [reviews, productId]);
 
@@ -157,7 +157,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
           (customerUser?.uid && order.userId === customerUser.uid) ||
           (customerUser?.email &&
             order.customerEmail &&
-            order.customerEmail.toLowerCase() === customerUser.email.toLowerCase());
+            (order.customerEmail || '').toLowerCase() === (customerUser.email || '').toLowerCase());
         if (matchesUser) {
           order.items?.forEach((item: any) => {
             if (item.product?.name) {

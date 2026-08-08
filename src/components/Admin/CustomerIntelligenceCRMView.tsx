@@ -64,10 +64,10 @@ export const CustomerIntelligenceCRMView: React.FC = () => {
   }, [orders]);
 
   const filteredCustomers = customers.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+    (c.email || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
     c.phone?.includes(searchTerm) ||
-    c.city.toLowerCase().includes(searchTerm.toLowerCase())
+    (c.city || '').toLowerCase().includes((searchTerm || '').toLowerCase())
   );
 
   return (

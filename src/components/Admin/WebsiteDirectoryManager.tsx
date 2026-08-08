@@ -107,8 +107,8 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
   // Security Check: Normal Admin cannot view Website Directory
   const isSuperAdmin =
     currentUser?.roleId === 'super_admin' ||
-    currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
-    currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
+    (currentUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' ||
+    (currentUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com';
 
   if (!isSuperAdmin) {
     return (
@@ -128,12 +128,12 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
   const filteredTenants = useMemo(() => {
     return tenants.filter((tenant) => {
       const matchSearch =
-        tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tenant.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tenant.domain.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (tenant.ownerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (tenant.ownerEmail || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (tenant.adminGoogleEmail || '').toLowerCase().includes(searchTerm.toLowerCase());
+        (tenant.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+        (tenant.id || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+        (tenant.domain || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+        (tenant.ownerName || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+        (tenant.ownerEmail || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+        (tenant.adminGoogleEmail || '').toLowerCase().includes((searchTerm || '').toLowerCase());
 
       const matchStatus = statusFilter === 'all' || tenant.status === statusFilter;
       return matchSearch && matchStatus;

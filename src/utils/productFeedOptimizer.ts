@@ -26,14 +26,14 @@ export function deduplicateProducts(products: Product[], config?: ProductFeedCon
     }
 
     // 2. Check SKU
-    if (p.sku && p.sku.trim() !== '') {
-      const formattedSku = (p.sku || '').trim().toLowerCase();
+    if (p.sku && typeof p.sku === 'string' && p.sku.trim() !== '') {
+      const formattedSku = p.sku.trim().toLowerCase();
       if (seenSkus.has(formattedSku)) return false;
     }
 
     // 3. Check Slug
-    if (p.slug && p.slug.trim() !== '') {
-      const formattedSlug = (p.slug || '').trim().toLowerCase();
+    if (p.slug && typeof p.slug === 'string' && p.slug.trim() !== '') {
+      const formattedSlug = p.slug.trim().toLowerCase();
       if (seenSlugs.has(formattedSlug)) return false;
     }
 
@@ -46,8 +46,8 @@ export function deduplicateProducts(products: Product[], config?: ProductFeedCon
 
     // If none of the attributes have been seen, we mark them all as seen and keep the product
     if (p.id) seenIds.add(p.id);
-    if (p.sku && p.sku.trim() !== '') seenSkus.add((p.sku || '').trim().toLowerCase());
-    if (p.slug && p.slug.trim() !== '') seenSlugs.add((p.slug || '').trim().toLowerCase());
+    if (p.sku && typeof p.sku === 'string' && p.sku.trim() !== '') seenSkus.add(p.sku.trim().toLowerCase());
+    if (p.slug && typeof p.slug === 'string' && p.slug.trim() !== '') seenSlugs.add(p.slug.trim().toLowerCase());
     if (barcode && String(barcode).trim() !== '') seenBarcodes.add(String(barcode).trim().toLowerCase());
 
     return true;

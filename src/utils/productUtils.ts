@@ -6,17 +6,17 @@ import { Product } from '../types';
  */
 export function getProductSlug(product: Product): string {
   if (!product) return '';
-  if (product.slug && product.slug.trim().length > 0) {
+  if (product.slug && typeof product.slug === 'string' && product.slug.trim().length > 0) {
     return product.slug.trim().toLowerCase();
   }
-  if (product.name && product.name.trim().length > 0) {
+  if (product.name && typeof product.name === 'string' && product.name.trim().length > 0) {
     return product.name
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
   }
-  return (product.id || '').trim().toLowerCase();
+  return String(product.id ?? '').trim().toLowerCase();
 }
 
 /**
@@ -25,11 +25,11 @@ export function getProductSlug(product: Product): string {
 export function getProductSKU(product: Product): string {
   if (!product) return '';
   if (pSKU(product)) return pSKU(product);
-  return `SKU-${(product.id || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+  return `SKU-${String(product.id ?? '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
 }
 
 function pSKU(product: Product): string {
-  return product.sku && product.sku.trim().length > 0 ? product.sku.trim() : '';
+  return product.sku && typeof product.sku === 'string' && product.sku.trim().length > 0 ? product.sku.trim() : '';
 }
 
 /**
@@ -55,16 +55,17 @@ export function findProductBySlugOrId(products: Product[], targetSlugOrId: strin
   
   let cleanTarget = '';
   try {
-    cleanTarget = decodeURIComponent(targetSlugOrId).trim().toLowerCase();
+    cleanTarget = decodeURIComponent(String(targetSlugOrId ?? '')).trim().toLowerCase();
   } catch (e) {
-    cleanTarget = (targetSlugOrId || '').trim().toLowerCase();
+    cleanTarget = String(targetSlugOrId ?? '').trim().toLowerCase();
   }
 
   // Strip leading slashes if any
   cleanTarget = cleanTarget.replace(/^\/+(products?\/)?/, '');
 
   return products.find((p) => {
-    const id = (p.id || '').trim().toLowerCase();
+    if (!p) return false;
+    const id = String(p.id ?? '').trim().toLowerCase();
     const slug = (getProductSlug(p) || '').toLowerCase();
     const sku = (getProductSKU(p) || '').toLowerCase();
 

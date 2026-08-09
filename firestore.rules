@@ -257,7 +257,7 @@ service cloud.firestore {
 
     // Customer Profiles Directory (Top-level)
     match /customers/{customerId} {
-      allow create: if true;
+      allow create: if isAdmin() || (isSignedIn() && request.auth.uid == customerId);
       allow read, update: if isAdmin() || (isSignedIn() && request.auth.uid == customerId);
       allow delete: if isAdmin();
     }
@@ -448,7 +448,7 @@ service cloud.firestore {
 
       // Customer Directory
       match /customers/{customerId} {
-        allow create: if true;
+        allow create: if isAdmin() || (isSignedIn() && request.auth.uid == customerId);
         allow read, update: if isAdmin() || (isSignedIn() && request.auth.uid == customerId);
         allow delete: if isAdmin();
       }

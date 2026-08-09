@@ -58,6 +58,7 @@ import {
   saveAdminUser,
   fetchTenants,
   saveTenant,
+  deleteTenant,
 } from '../../lib/adminService';
 import { sendAdminPasswordResetEmail, recordAuditLog } from '../../lib/firebase';
 import { SuperAdminSecurityVerificationModal } from './SuperAdminSecurityVerificationModal';
@@ -1184,6 +1185,15 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
           onUpdateTenant={async (t) => {
             await saveTenant(t);
             await loadData();
+          }}
+          onDeleteTenant={async (tenantId) => {
+            const res = await deleteTenant(tenantId);
+            if (res.success) {
+              showToast('success', res.message);
+              await loadData();
+            } else {
+              showToast('error', res.message);
+            }
           }}
           showToast={showToast}
           triggerSuperAdminVerification={triggerSuperAdminVerification}

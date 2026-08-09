@@ -215,6 +215,48 @@ export async function saveTenant(tenant: Tenant): Promise<void> {
   }
 }
 
+// Permanently delete website tenant and associated website record
+export async function deleteTenant(tenantId: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const tenantRef = doc(db, 'tenants', tenantId);
+    await deleteDoc(tenantRef);
+
+    const websiteRef = doc(db, 'websites', tenantId);
+    await deleteDoc(websiteRef);
+
+    try {
+      const adminUsersCol = collection(db, 'admin_users');
+      const q = query(adminUsersCol, where('websiteId', '==', tenantId));
+      const snap = await getDocs(q);
+      for (const d of snap.docs) {
+        const data = d.data() as AdminUser;
+        if (data.roleId !== 'super_admin' && (data.email || '').toLowerCase() !== 'vpcreation2002@gmail.com') {
+          await deleteDoc(d.ref);
+        }
+      }
+    } catch (e) {
+      console.warn('Non-fatal error clearing admin_users during tenant deletion:', e);
+    }
+
+    recordAuditLog(
+      'Tenant Permanently Deleted',
+      'SECURITY',
+      `Deleted tenant & website instance ID: ${tenantId}`,
+      'WARNING'
+    );
+
+    return { success: true, message: `Website tenant "${tenantId}" permanently deleted successfully.` };
+  } catch (err: any) {
+    console.error('Delete tenant error:', err);
+    try {
+      handleFirestoreError(err, OperationType.DELETE, `tenants/${tenantId}`);
+    } catch (e) {
+      console.warn('Delete tenant notice:', e);
+    }
+    return { success: false, message: err?.message || 'Failed to delete website tenant.' };
+  }
+}
+
 // Securely transfer tenant ownership, update Firestore, create notification & audit log
 export async function transferTenantOwnership(
   tenant: Tenant,

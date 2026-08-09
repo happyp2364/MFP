@@ -103,6 +103,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
   const [transferReason, setTransferReason] = useState('');
   const [transferDisclaimerChecked, setTransferDisclaimerChecked] = useState(false);
   const [isSubmittingTransfer, setIsSubmittingTransfer] = useState(false);
+  const [processingTenantId, setProcessingTenantId] = useState<string | null>(null);
 
   // Security Check: Normal Admin cannot view Website Directory
   const isSuperAdmin =
@@ -192,13 +193,16 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
       `Updating owner & admin details for "${assigningTenant.name}"`,
       `Owner: ${ownerNameInput} (${ownerEmailInput}) | Admin: ${googleEmailInput}`,
       async () => {
+        setProcessingTenantId(assigningTenant.id);
         try {
           await onUpdateTenant(updatedTenant);
           showToast('success', `Ownership successfully updated for ${assigningTenant.name}`);
           setIsAssignModalOpen(false);
           setAssigningTenant(null);
-        } catch (err) {
-          showToast('error', 'Failed to update website ownership');
+        } catch (err: any) {
+          showToast('error', err?.message || 'Failed to update website ownership');
+        } finally {
+          setProcessingTenantId(null);
         }
       }
     );
@@ -235,6 +239,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
       `Target Owner: ${transferNewOwnerName} (${transferNewOwnerEmail})`,
       async () => {
         setIsSubmittingTransfer(true);
+        setProcessingTenantId(transferTenant.id);
         try {
           const updated = await transferTenantOwnership(transferTenant, {
             ownerName: transferNewOwnerName.trim(),
@@ -249,11 +254,12 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
           setTransferTenant(null);
           setTransferReason('');
           setTransferDisclaimerChecked(false);
-        } catch (err) {
+        } catch (err: any) {
           console.error('Transfer ownership error:', err);
-          showToast('error', 'Failed to transfer website ownership.');
+          showToast('error', err?.message || 'Failed to transfer website ownership.');
         } finally {
           setIsSubmittingTransfer(false);
+          setProcessingTenantId(null);
         }
       }
     );
@@ -294,13 +300,16 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
       `Configuring dynamic URL for "${urlTenant.name}"`,
       `Slug: /${cleanSlug || urlTenant.slug || 'none'} | Domain: ${cleanDomain || 'Default Dynamic URL'}`,
       async () => {
+        setProcessingTenantId(urlTenant.id);
         try {
           await onUpdateTenant(updatedTenant);
           showToast('success', `Website URL & Slug updated for ${urlTenant.name}`);
           setIsUrlModalOpen(false);
           setUrlTenant(null);
-        } catch (err) {
-          showToast('error', 'Failed to update website URL');
+        } catch (err: any) {
+          showToast('error', err?.message || 'Failed to update website URL');
+        } finally {
+          setProcessingTenantId(null);
         }
       }
     );
@@ -315,6 +324,7 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
       `ACTION: Initiate full Firestore backup for website "${tenant.name}" (${tenant.id})`,
       'This will snapshot all sub-collections and core data into the central backups collection.',
       async () => {
+        setProcessingTenantId(tenant.id);
         try {
           showToast('info', `Backup initiated for ${tenant.name}...`);
           const res = await createWebsiteBackup(tenant.id, currentUser.email);
@@ -324,7 +334,9 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
             showToast('error', `Backup failed: ${res.message}`);
           }
         } catch (err: any) {
-          showToast('error', `Failed to backup website: ${err.message}`);
+          showToast('error', `Failed to backup website: ${err?.message || 'Unknown error'}`);
+        } finally {
+          setProcessingTenantId(null);
         }
       }
     );
@@ -345,11 +357,14 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
       `Are you sure you want to change status to "${newStatus}" for website "${tenant.name}"?`,
       `Website ID: ${tenant.id} | Target Status: ${newStatus}`,
       async () => {
+        setProcessingTenantId(tenant.id);
         try {
           await onUpdateTenant({ ...tenant, status: newStatus });
           showToast('success', `Website status updated to ${newStatus}`);
-        } catch (err) {
-          showToast('error', 'Failed to update website status');
+        } catch (err: any) {
+          showToast('error', err?.message || 'Failed to update website status');
+        } finally {
+          setProcessingTenantId(null);
         }
       }
     );
@@ -362,15 +377,18 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
       `CRITICAL ACTION: Permanently delete website "${tenant.name}" (${tenant.id})`,
       'This will revoke all domain configurations and remove tenant access.',
       async () => {
+        setProcessingTenantId(tenant.id);
         try {
           if (onDeleteTenant) {
             await onDeleteTenant(tenant.id);
           } else {
             await onUpdateTenant({ ...tenant, status: 'archived' });
+            showToast('success', `Website ${tenant.name} archived successfully`);
           }
-          showToast('success', `Website ${tenant.name} archived / deleted successfully`);
-        } catch (err) {
-          showToast('error', 'Failed to delete website');
+        } catch (err: any) {
+          showToast('error', err?.message || 'Failed to delete website');
+        } finally {
+          setProcessingTenantId(null);
         }
       }
     );
@@ -556,104 +574,119 @@ export const WebsiteDirectoryManager: React.FC<WebsiteDirectoryManagerProps> = (
 
                       {/* Quick Actions (Super Admin Only) */}
                       <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* Open Website */}
-                          <button
-                            onClick={() => window.open(webUrl, '_blank')}
-                            title="Open Website"
-                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-sky-400 border border-neutral-800 rounded-lg transition-all"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </button>
+                        {processingTenantId === tenant.id ? (
+                          <div className="flex items-center justify-end gap-2 text-amber-400 font-bold font-mono text-xs animate-pulse">
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Processing...</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* Open Website */}
+                            <button
+                              onClick={() => {
+                                const win = window.open(webUrl, '_blank');
+                                if (!win) {
+                                  copyToClipboard(webUrl, 'Website URL');
+                                  showToast('info', 'Popup blocked. Website URL copied to clipboard instead!');
+                                } else {
+                                  showToast('info', `Opening ${tenant.name}...`);
+                                }
+                              }}
+                              title="Open Website"
+                              className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-sky-400 border border-neutral-800 rounded-lg transition-all"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </button>
 
-                          {/* Share Website */}
-                          <button
-                            onClick={() => handleShareWebsite(tenant)}
-                            title="Share Website URL"
-                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-purple-400 border border-neutral-800 rounded-lg transition-all"
-                          >
-                            <Share2 className="w-3.5 h-3.5" />
-                          </button>
+                            {/* Share Website */}
+                            <button
+                              onClick={() => handleShareWebsite(tenant)}
+                              title="Share Website URL"
+                              className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-purple-400 border border-neutral-800 rounded-lg transition-all"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                            </button>
 
-                          {/* Configure URL / Domain */}
-                          <button
-                            onClick={() => {
-                              setUrlTenant(tenant);
-                              setSlugInput(tenant.slug || sanitizeSlug(tenant.name));
-                              setCustomDomainInput(tenant.customDomain || '');
-                              setIsUrlModalOpen(true);
-                            }}
-                            title="Generate / Edit Custom Domain & Website Slug URL"
-                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-emerald-400 border border-neutral-800 rounded-lg transition-all"
-                          >
-                            <Link2 className="w-3.5 h-3.5" />
-                          </button>
+                            {/* Configure URL / Domain */}
+                            <button
+                              onClick={() => {
+                                setUrlTenant(tenant);
+                                setSlugInput(tenant.slug || sanitizeSlug(tenant.name));
+                                setCustomDomainInput(tenant.customDomain || '');
+                                setIsUrlModalOpen(true);
+                              }}
+                              title="Generate / Edit Custom Domain & Website Slug URL"
+                              className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-emerald-400 border border-neutral-800 rounded-lg transition-all"
+                            >
+                              <Link2 className="w-3.5 h-3.5" />
+                            </button>
 
-                          {/* Transfer Ownership */}
-                          <button
-                            onClick={() => openTransferModal(tenant)}
-                            title="Transfer Primary Website Ownership"
-                            className="p-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg transition-all"
-                          >
-                            <Crown className="w-3.5 h-3.5 text-amber-400" />
-                          </button>
+                            {/* Transfer Ownership */}
+                            <button
+                              onClick={() => openTransferModal(tenant)}
+                              title="Transfer Primary Website Ownership"
+                              className="p-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg transition-all"
+                            >
+                              <Crown className="w-3.5 h-3.5 text-amber-400" />
+                            </button>
 
-                          {/* View Details */}
-                          <button
-                            onClick={() => {
-                              setSelectedTenant(tenant);
-                              setIsDrawerOpen(true);
-                            }}
-                            title="View Full Website Details"
-                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-blue-400 border border-neutral-800 rounded-lg transition-all"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
+                            {/* View Details */}
+                            <button
+                              onClick={() => {
+                                setSelectedTenant(tenant);
+                                setIsDrawerOpen(true);
+                              }}
+                              title="View Full Website Details"
+                              className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-blue-400 border border-neutral-800 rounded-lg transition-all"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
 
-                          {/* Change / Assign Owner */}
-                          <button
-                            onClick={() => {
-                              setAssigningTenant(tenant);
-                              setOwnerNameInput(tenant.ownerName || '');
-                              setOwnerEmailInput(tenant.ownerEmail || '');
-                              setGoogleEmailInput(tenant.adminGoogleEmail || '');
-                              setIsAssignModalOpen(true);
-                            }}
-                            title="Assign or Change Owner"
-                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-amber-400 border border-neutral-800 rounded-lg transition-all"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
+                            {/* Change / Assign Owner */}
+                            <button
+                              onClick={() => {
+                                setAssigningTenant(tenant);
+                                setOwnerNameInput(tenant.ownerName || '');
+                                setOwnerEmailInput(tenant.ownerEmail || '');
+                                setGoogleEmailInput(tenant.adminGoogleEmail || '');
+                                setIsAssignModalOpen(true);
+                              }}
+                              title="Assign or Change Owner"
+                              className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-amber-400 border border-neutral-800 rounded-lg transition-all"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
 
-                          {/* Backup */}
-                          <button
-                            onClick={() => handleBackupWebsite(tenant)}
-                            title="Create Backup Snapshot"
-                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-blue-400 border border-neutral-800 rounded-lg transition-all"
-                          >
-                            <Database className="w-3.5 h-3.5" />
-                          </button>
-                          {/* Suspend / Restore */}
-                          <button
-                            onClick={() => {
-                              const nextStatus = tenant.status === 'active' ? 'suspended' : 'active';
-                              handleStatusChange(tenant, nextStatus);
-                            }}
-                            title={tenant.status === 'active' ? 'Suspend Website' : 'Activate Website'}
-                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-rose-400 border border-neutral-800 rounded-lg transition-all"
-                          >
-                            <Power className="w-3.5 h-3.5" />
-                          </button>
+                            {/* Backup */}
+                            <button
+                              onClick={() => handleBackupWebsite(tenant)}
+                              title="Create Backup Snapshot"
+                              className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-blue-400 border border-neutral-800 rounded-lg transition-all"
+                            >
+                              <Database className="w-3.5 h-3.5" />
+                            </button>
+                            {/* Suspend / Restore */}
+                            <button
+                              onClick={() => {
+                                const nextStatus = tenant.status === 'active' ? 'suspended' : 'active';
+                                handleStatusChange(tenant, nextStatus);
+                              }}
+                              title={tenant.status === 'active' ? 'Suspend Website' : 'Activate Website'}
+                              className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-rose-400 border border-neutral-800 rounded-lg transition-all"
+                            >
+                              <Power className="w-3.5 h-3.5" />
+                            </button>
 
-                          {/* Archive / Delete */}
-                          <button
-                            onClick={() => handleDeleteWebsite(tenant)}
-                            title="Archive or Delete Website"
-                            className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-500 hover:text-rose-400 border border-neutral-800 rounded-lg transition-all"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                            {/* Archive / Delete */}
+                            <button
+                              onClick={() => handleDeleteWebsite(tenant)}
+                              title="Archive or Delete Website"
+                              className="p-1.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-500 hover:text-rose-400 border border-neutral-800 rounded-lg transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Tenant } from '../../types';
-import { fetchTenants, saveTenant } from '../../lib/adminService';
+import { fetchTenants, saveTenant, deleteTenant } from '../../lib/adminService';
 import { WebsiteDirectoryManager } from './WebsiteDirectoryManager';
 import { WebsiteConfigurationView } from './WebsiteConfigurationView';
 import { getWebsiteUrl, getAdminLoginUrl } from '../../lib/tenantIsolation';
@@ -116,6 +116,20 @@ export const WebsiteManagementView: React.FC = () => {
     } catch (err) {
       console.error('Error updating tenant:', err);
       showToast('Failed to update website tenant profile.', 'error');
+    }
+  };
+
+  const handleDeleteTenant = async (tenantId: string) => {
+    try {
+      const res = await deleteTenant(tenantId);
+      if (res.success) {
+        setTenants((prev: Tenant[]) => prev.filter((t) => t.id !== tenantId));
+        showToast(res.message, 'success');
+      } else {
+        showToast(res.message, 'error');
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to delete website tenant', 'error');
     }
   };
 
@@ -249,6 +263,7 @@ export const WebsiteManagementView: React.FC = () => {
               tenants={tenants}
               currentUser={currentAdminUser}
               onUpdateTenant={handleUpdateTenant}
+              onDeleteTenant={handleDeleteTenant}
               showToast={(type: any, msg: any) => showToast(msg, type as any)}
               triggerSuperAdminVerification={triggerSuperAdminVerification}
             />

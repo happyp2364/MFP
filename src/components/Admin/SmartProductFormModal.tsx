@@ -406,7 +406,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     if (!isFormValid) return;
 
     const cleanName = (productState.name || '').trim();
-    const catCode = productState.category.charAt(0).toUpperCase();
+    const catCode = (productState.category || 'X').charAt(0).toUpperCase();
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const subCode = (productState.subcategory || 'GEN')
       .substring(0, 3)

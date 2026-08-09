@@ -226,7 +226,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
     const nextStatus = admin.status === 'active' ? 'disabled' : 'active';
     triggerSuperAdminVerification(
       `${nextStatus === 'disabled' ? 'Suspend' : 'Reactivate'} Admin Account`,
-      `Authorizing status change for website owner "${admin.name}".`,
+      `Authorizing status change for website owner "${admin.name || admin.email || 'Admin'}".`,
       `${admin.email} -> ${nextStatus.toUpperCase()}`,
       async () => {
         const res = await toggleAdminStatus(
@@ -247,7 +247,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   const handleForceLogoutAdmin = (admin: AdminUser) => {
     triggerSuperAdminVerification(
       'Force Logout Session',
-      `Terminating active login session for website owner "${admin.name}".`,
+      `Terminating active login session for website owner "${admin.name || admin.email || 'Admin'}".`,
       `User: ${admin.email}`,
       async () => {
         const res = await forceLogoutAdminUser(
@@ -267,7 +267,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   const handleResetAdminPassword = (admin: AdminUser) => {
     triggerSuperAdminVerification(
       'Reset Admin Password',
-      `Sending official password reset email to website owner "${admin.name}".`,
+      `Sending official password reset email to website owner "${admin.name || admin.email || 'Admin'}".`,
       `Email: ${admin.email}`,
       async () => {
         const res = await sendAdminPasswordResetEmail(admin.email);
@@ -283,7 +283,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   const handleDeleteAdminPermanently = (admin: AdminUser) => {
     triggerSuperAdminVerification(
       'PERMANENTLY DELETE ADMIN ACCOUNT',
-      `WARNING: This will permanently purge admin account "${admin.name}" (${admin.email}). This cannot be undone.`,
+      `WARNING: This will permanently purge admin account "${admin.name || admin.email || 'Admin'}" (${admin.email}). This cannot be undone.`,
       `UID: ${admin.uid}`,
       async () => {
         const res = await deleteAdminUser(
@@ -1047,10 +1047,10 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
                           <td className="p-4">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 font-bold flex items-center justify-center uppercase shrink-0">
-                                {isPrimarySuper ? '👑' : admin.name.charAt(0) || 'A'}
+                                {isPrimarySuper ? '👑' : (admin.name || admin.email || 'A').charAt(0).toUpperCase()}
                               </div>
                               <div>
-                                <span className="font-bold text-white block">{admin.name}</span>
+                                <span className="font-bold text-white block">{admin.name || admin.email || 'Admin User'}</span>
                                 <span className="text-[11px] text-neutral-400 font-mono">{admin.email}</span>
                                 {admin.phoneNumber && (
                                   <span className="text-[10px] text-neutral-500 block">{admin.phoneNumber}</span>

@@ -217,25 +217,45 @@ export async function saveTenant(tenant: Tenant): Promise<void> {
 
 // Permanently delete website tenant and associated website record
 export async function deleteTenant(tenantId: string): Promise<{ success: boolean; message: string }> {
+  console.log('[DELETE DIAGNOSTIC] 1. Initiating deleteTenant:', {
+    tenantId,
+    tenantDocPath: `tenants/${tenantId}`,
+    websiteDocPath: `websites/${tenantId}`
+  });
   try {
     const tenantRef = doc(db, 'tenants', tenantId);
+    console.log('[DELETE DIAGNOSTIC] 2. Executing deleteDoc for tenant:', tenantRef.path);
     await deleteDoc(tenantRef);
+    console.log('[DELETE DIAGNOSTIC] 2. SUCCESS: Deleted tenant doc:', tenantRef.path);
 
     const websiteRef = doc(db, 'websites', tenantId);
+    console.log('[DELETE DIAGNOSTIC] 3. Executing deleteDoc for website:', websiteRef.path);
     await deleteDoc(websiteRef);
+    console.log('[DELETE DIAGNOSTIC] 3. SUCCESS: Deleted website doc:', websiteRef.path);
 
+    let associatedAdminUids: string[] = [];
     try {
       const adminUsersCol = collection(db, 'admin_users');
       const q = query(adminUsersCol, where('websiteId', '==', tenantId));
+      console.log('[DELETE DIAGNOSTIC] 4. Querying admin_users where websiteId ==', tenantId);
       const snap = await getDocs(q);
+      associatedAdminUids = snap.docs.map(d => d.id);
+      console.log('[DELETE DIAGNOSTIC] 4. Found associated admin_users UIDs:', associatedAdminUids);
+
       for (const d of snap.docs) {
         const data = d.data() as AdminUser;
         if (data.roleId !== 'super_admin' && (data.email || '').toLowerCase() !== 'vpcreation2002@gmail.com') {
+          console.log('[DELETE DIAGNOSTIC] Deleting admin_users doc path:', d.ref.path, 'UID:', d.id);
           await deleteDoc(d.ref);
+          console.log('[DELETE DIAGNOSTIC] SUCCESS: Deleted admin_users doc:', d.ref.path);
         }
       }
-    } catch (e) {
-      console.warn('Non-fatal error clearing admin_users during tenant deletion:', e);
+    } catch (e: any) {
+      console.warn('[DELETE DIAGNOSTIC] 4. Non-fatal notice in admin_users query/delete:', {
+        code: e?.code,
+        message: e?.message,
+        e
+      });
     }
 
     recordAuditLog(
@@ -245,9 +265,17 @@ export async function deleteTenant(tenantId: string): Promise<{ success: boolean
       'WARNING'
     );
 
+    console.log('[DELETE DIAGNOSTIC] 5. Complete deleteTenant process finished successfully for tenantId:', tenantId);
     return { success: true, message: `Website tenant "${tenantId}" permanently deleted successfully.` };
   } catch (err: any) {
-    console.error('Delete tenant error:', err);
+    console.error('[DELETE DIAGNOSTIC] CRITICAL FAILURE in deleteTenant:', {
+      tenantId,
+      tenantDocPath: `tenants/${tenantId}`,
+      websiteDocPath: `websites/${tenantId}`,
+      code: err?.code,
+      message: err?.message,
+      err
+    });
     try {
       handleFirestoreError(err, OperationType.DELETE, `tenants/${tenantId}`);
     } catch (e) {

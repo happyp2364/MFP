@@ -956,7 +956,9 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <AdminErrorBoundary fallbackTitle="Storefront Experience Notice">
+        <AppContent />
+      </AdminErrorBoundary>
     </ThemeProvider>
   );
 }

@@ -541,11 +541,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <div className="flex items-baseline justify-between">
             <div className="flex items-baseline gap-2">
               <span className="font-extrabold text-lg text-neutral-900 tracking-tight">
-                ₹{currentPrice.toLocaleString('en-IN')}
+                ₹{(currentPrice || 0).toLocaleString('en-IN')}
               </span>
               {originalPrice > currentPrice && (
                 <span className="text-xs text-neutral-400 line-through">
-                  ₹{originalPrice.toLocaleString('en-IN')}
+                  ₹{(originalPrice || 0).toLocaleString('en-IN')}
                 </span>
               )}
             </div>

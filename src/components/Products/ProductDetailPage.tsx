@@ -595,11 +595,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200/80 space-y-1">
             <div className="flex items-baseline gap-3">
               <span className="font-serif-heading font-extrabold text-3xl sm:text-4xl text-neutral-900">
-                ₹{displayPrice.toLocaleString('en-IN')}
+                ₹{(displayPrice || 0).toLocaleString('en-IN')}
               </span>
               {displayOriginalPrice > displayPrice && (
                 <span className="text-lg text-neutral-400 line-through">
-                  ₹{displayOriginalPrice.toLocaleString('en-IN')}
+                  ₹{(displayOriginalPrice || 0).toLocaleString('en-IN')}
                 </span>
               )}
               {displayDiscountPercent > 0 && (
@@ -740,7 +740,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <span className="text-[10px] text-neutral-300">
                     {displayPrice >= (paymentSettings.freeShippingMinAmount || 999)
                       ? 'Eligible for Free Standard Delivery'
-                      : `Add ₹${((paymentSettings.freeShippingMinAmount || 999) - displayPrice).toLocaleString()} for Free Delivery`}
+                      : `Add ₹${((paymentSettings.freeShippingMinAmount || 999) - (displayPrice || 0)).toLocaleString()} for Free Delivery`}
                   </span>
                 </div>
               </div>

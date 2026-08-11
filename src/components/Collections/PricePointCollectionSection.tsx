@@ -176,7 +176,7 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
     return null;
   }
 
-  const formatINR = (val: number) => `₹${Math.round(val).toLocaleString('en-IN')}`;
+  const formatINR = (val: number) => `₹${Math.round(val || 0).toLocaleString('en-IN')}`;
 
   const calculateDiscount = (price: number, orig: number) => {
     if (!orig || orig <= price) return null;

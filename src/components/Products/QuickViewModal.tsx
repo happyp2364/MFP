@@ -254,11 +254,11 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             {/* Price Box */}
             <div className="flex items-baseline gap-3">
               <span className="font-serif-heading font-extrabold text-3xl text-neutral-900">
-                ₹{currentPrice.toLocaleString('en-IN')}
+                ₹{(currentPrice || 0).toLocaleString('en-IN')}
               </span>
               {originalPrice > currentPrice && (
                 <span className="text-base text-neutral-400 line-through">
-                  ₹{originalPrice.toLocaleString('en-IN')}
+                  ₹{(originalPrice || 0).toLocaleString('en-IN')}
                 </span>
               )}
               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">

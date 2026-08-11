@@ -179,7 +179,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
   const isDarkBg = config.backgroundStyle === 'dark_glass' || config.backgroundStyle === 'neon_emerald';
 
   const formatINR = (val: number) => {
-    return `₹${Math.round(val).toLocaleString('en-IN')}`;
+    return `₹${Math.round(val || 0).toLocaleString('en-IN')}`;
   };
 
   const calculateDiscount = (price: number, orig: number) => {

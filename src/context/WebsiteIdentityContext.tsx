@@ -39,10 +39,30 @@ export const WebsiteIdentityProvider: React.FC<{ children: ReactNode }> = ({ chi
   }, []);
 
   const updateWebsiteConfig = async (newConfig: WebsiteConfig) => {
-    setWebsiteConfig(newConfig);
-    localStorage.setItem(STORAGE_KEYS.WEBSITE_CONFIG, JSON.stringify(newConfig));
+    let activeWebsiteId: string | undefined = undefined;
+    let activeSlug: string | undefined = undefined;
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'website_config'), newConfig, { merge: true });
+      const saved = localStorage.getItem(STORAGE_KEYS.WEBSITE_CONFIG);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        activeWebsiteId = parsed.websiteId || parsed.tenantId;
+        activeSlug = parsed.slug;
+      }
+    } catch {
+      // Ignore parse error
+    }
+
+    const mergedConfig = {
+      ...newConfig,
+      websiteId: newConfig.websiteId || activeWebsiteId,
+      tenantId: newConfig.tenantId || activeWebsiteId,
+      slug: (newConfig as any).slug || activeSlug,
+    };
+
+    setWebsiteConfig(mergedConfig);
+    localStorage.setItem(STORAGE_KEYS.WEBSITE_CONFIG, JSON.stringify(mergedConfig));
+    try {
+      await setDoc(getTenantDocWriteRef(db, 'settings', 'website_config'), mergedConfig, { merge: true });
     } catch (e) {
       console.warn('Firestore website config sync failed', e);
     }

@@ -163,12 +163,28 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     (currentAdminUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com'
   );
 
+  const userAssignedWebsite = currentAdminUser?.assignedWebsiteId || currentAdminUser?.websiteId;
+
   const hasTenantAccess = currentAdminUser ? validateTenantAccess(
     currentAdminUser.roleId,
-    currentAdminUser.websiteId,
+    userAssignedWebsite,
     getCurrentTenantId(),
     currentAdminUser.email
   ) : false;
+
+  if (currentAdminUser) {
+    console.log('[TENANT ADMIN AUTH DEBUG]', {
+      uid: currentAdminUser?.uid,
+      email: currentAdminUser?.email,
+      roleId: currentAdminUser?.roleId,
+      assignedWebsiteId: currentAdminUser?.assignedWebsiteId,
+      websiteId: currentAdminUser?.websiteId,
+      resolvedTenantId: getCurrentTenantId(),
+      hasTenantAccess,
+      pathname: typeof window !== 'undefined' ? window.location.pathname : '',
+      search: typeof window !== 'undefined' ? window.location.search : ''
+    });
+  }
 
   if (isOpen && !hasTenantAccess && currentAdminUser) {
     return (

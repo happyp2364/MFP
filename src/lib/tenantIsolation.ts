@@ -200,7 +200,10 @@ export function validateTenantAccess(
   const target = targetWebsiteId || getCurrentTenantId();
   const userTenant = userWebsiteId || DEFAULT_TENANT_ID;
 
-  return userTenant === target;
+  const normUserTenant = userTenant.startsWith('tenant-') ? userTenant : `tenant-${userTenant}`;
+  const normTarget = target.startsWith('tenant-') ? target : `tenant-${target}`;
+
+  return normUserTenant === normTarget;
 }
 
 /**

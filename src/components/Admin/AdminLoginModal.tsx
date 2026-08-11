@@ -25,7 +25,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
     try {
       const result = await loginWithGoogleAdmin();
-      if (result && result.success) {
+      const isSuccess = result === true || (result && (result as any).success === true);
+      if (isSuccess) {
         onLoginSuccess();
         onClose();
       } else {

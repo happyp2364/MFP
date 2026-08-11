@@ -143,6 +143,35 @@ function AppContent() {
     return () => window.removeEventListener('popstate', handleUrlChange);
   }, []);
 
+  // --- AUTOMATIC ADMIN ROUTE DETECTION FOR TENANT & PLATFORM ADMINS ---
+  React.useEffect(() => {
+    const checkAdminRoute = () => {
+      if (typeof window === 'undefined') return;
+      const path = window.location.pathname.toLowerCase();
+      const searchParams = new URLSearchParams(window.location.search);
+      const hash = window.location.hash.toLowerCase();
+
+      const adminParam = searchParams.get('admin');
+      const isAdminQuery = adminParam === 'true' || adminParam === '1' || searchParams.has('admin');
+      const isAdminPath = path === '/admin' || path.endsWith('/admin');
+      const isAdminHash = hash === '#admin' || hash === '#/admin' || hash.includes('admin=true');
+
+      if (isAdminQuery || isAdminPath || isAdminHash) {
+        if (isAdmin) {
+          setAdminDashboardOpen(true);
+          setAdminLoginOpen(false);
+        } else {
+          setAdminLoginOpen(true);
+          setAdminDashboardOpen(false);
+        }
+      }
+    };
+
+    checkAdminRoute();
+    window.addEventListener('popstate', checkAdminRoute);
+    return () => window.removeEventListener('popstate', checkAdminRoute);
+  }, [isAdmin]);
+
   // Global hotkey shortcut to open Admin Login: Ctrl + Alt + A (or Cmd + Opt + A on Mac)
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

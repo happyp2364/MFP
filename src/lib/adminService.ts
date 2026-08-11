@@ -609,11 +609,13 @@ export async function deleteCustomRole(
 }
 export async function syncAdminWebsiteLink(adminUser: AdminUser, websiteId: string): Promise<void> {
   if (adminUser.roleId === 'super_admin') return;
+  const existingAssigned = adminUser.assignedWebsiteId || adminUser.websiteId;
+  const targetWebsiteId = (existingAssigned && existingAssigned !== 'tenant-default') ? existingAssigned : websiteId;
   try {
     const adminRef = doc(db, 'admin_users', adminUser.uid);
-    await setDoc(adminRef, { assignedWebsiteId: websiteId }, { merge: true });
+    await setDoc(adminRef, { assignedWebsiteId: targetWebsiteId, websiteId: targetWebsiteId }, { merge: true });
 
-    const websiteRef = doc(db, 'websites', websiteId);
+    const websiteRef = doc(db, 'websites', targetWebsiteId);
     const snap = await getDoc(websiteRef);
     if (snap.exists()) {
       const data = snap.data();

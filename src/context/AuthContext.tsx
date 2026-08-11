@@ -72,10 +72,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (adminSnap.exists()) {
         const adminData = adminSnap.data() as AdminUser;
         if (adminData.status === 'disabled') return null;
+        const assignedId = adminData.assignedWebsiteId || adminData.websiteId;
         return {
           ...adminData,
           uid: firebaseUser.uid,
           email: adminData.email || firebaseUser.email || '',
+          assignedWebsiteId: assignedId,
+          websiteId: assignedId,
         };
       }
     } catch (err) {
@@ -89,11 +92,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         (a) => (a.email || '').toLowerCase() === userEmailLower && a.status !== 'disabled'
       );
       if (matched) {
+        const assignedId = matched.assignedWebsiteId || matched.websiteId;
         const updatedAdminUser: AdminUser = {
           ...matched,
           uid: firebaseUser.uid,
           id: firebaseUser.uid, 
           email: matched.email || firebaseUser.email || '',
+          assignedWebsiteId: assignedId,
+          websiteId: assignedId,
           status: 'active',
         };
         // Persist matched UID in background and delete old placeholder if different
@@ -151,6 +157,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
           const adminUser = await resolveAdminUser(user);
           if (adminUser) {
+            const assignedId = adminUser.assignedWebsiteId || adminUser.websiteId;
+            if (assignedId && adminUser.roleId !== 'super_admin') {
+              const currentActive = getCurrentTenantId();
+              if (currentActive !== assignedId) {
+                const slug = assignedId.replace(/^tenant-/, '');
+                localStorage.setItem('nwd_website_config_live', JSON.stringify({ websiteId: assignedId, slug }));
+              }
+            }
             setCurrentAdminUser(adminUser);
           } else {
             setCurrentAdminUser(null);

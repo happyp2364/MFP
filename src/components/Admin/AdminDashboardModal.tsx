@@ -451,7 +451,10 @@ const canAccessTab = (tab: string) => {
       />
 
       {/* Main Admin Panel Container */}
-      <div className="relative w-full max-w-6xl bg-[#F8FAFC]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 h-[92vh] flex flex-col">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-6xl bg-[#F8FAFC]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 h-[92vh] flex flex-col"
+      >
         
         {/* Top Admin Header Bar */}
         <div className="bg-[#121816] text-white p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/10 shrink-0">
@@ -1133,12 +1136,15 @@ const canAccessTab = (tab: string) => {
                     </select>
 
                     <button
-                      onClick={() => {
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setIsCreatingProduct(true);
                         setEditingProduct({
                           id: '',
                           name: '',
-                          brand: 'Store Brand',
+                          brand: storeInfo?.storeName || 'Store Brand',
                           category: 'men',
                           subcategory: 'Sports Shoes',
                           price: 1499,
@@ -1154,7 +1160,7 @@ const canAccessTab = (tab: string) => {
                           inStock: true,
                         });
                       }}
-                      className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 transition-all shrink-0"
+                      className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Add Product</span>

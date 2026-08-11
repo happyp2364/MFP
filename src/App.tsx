@@ -52,7 +52,7 @@ import { SEOHead } from './components/SEO/SEOHead';
 import { generateOrganizationSchema, generateLocalBusinessSchema, generateBreadcrumbSchema, generateFAQSchema } from './utils/seo';
 
 function AppContent() {
-  const { products, isAdmin, toastMessage, productFeedConfig, seoConfig } = useStore();
+  const { products, isAdmin, isAdminAuthLoading, toastMessage, productFeedConfig, seoConfig } = useStore();
   const { backgroundGradientClass } = useTheme();
 
   // --- STATE ---
@@ -157,6 +157,8 @@ function AppContent() {
       const isAdminHash = hash === '#admin' || hash === '#/admin' || hash.includes('admin=true');
 
       if (isAdminQuery || isAdminPath || isAdminHash) {
+        if (isAdminAuthLoading) return; // Wait until authentication finishes resolving
+
         if (isAdmin) {
           setAdminDashboardOpen(true);
           setAdminLoginOpen(false);
@@ -170,7 +172,7 @@ function AppContent() {
     checkAdminRoute();
     window.addEventListener('popstate', checkAdminRoute);
     return () => window.removeEventListener('popstate', checkAdminRoute);
-  }, [isAdmin]);
+  }, [isAdmin, isAdminAuthLoading]);
 
   // Global hotkey shortcut to open Admin Login: Ctrl + Alt + A (or Cmd + Opt + A on Mac)
   React.useEffect(() => {
@@ -206,6 +208,39 @@ function AppContent() {
   }, [quickViewProduct, productRouteSlug]);
 
   // --- HANDLERS ---
+  const handleOpenAdminFlow = (tab?: string) => {
+    if (tab) {
+      setAdminActiveTab(tab as any);
+    } else {
+      setAdminActiveTab(undefined);
+    }
+
+    if (isAdminAuthLoading) {
+      // If auth is still resolving, show quick status and wait briefly
+      const interval = setInterval(() => {
+        if (!isAdminAuthLoading) {
+          clearInterval(interval);
+          if (isAdmin) {
+            setAdminDashboardOpen(true);
+            setAdminLoginOpen(false);
+          } else {
+            setAdminLoginOpen(true);
+            setAdminDashboardOpen(false);
+          }
+        }
+      }, 100);
+      setTimeout(() => clearInterval(interval), 2500);
+      return;
+    }
+
+    if (isAdmin) {
+      setAdminDashboardOpen(true);
+      setAdminLoginOpen(false);
+    } else {
+      setAdminLoginOpen(true);
+      setAdminDashboardOpen(false);
+    }
+  };
   const handleUpdateFilter = (updated: Partial<FilterState>) => {
     setFilterState((prev) => {
       const newFilters = { ...prev, ...updated };
@@ -790,22 +825,8 @@ function AppContent() {
 
       {/* Premium Floating Admin Command Button */}
       <FloatingAdminButton
-        onOpenAdmin={() => {
-          setAdminActiveTab(undefined);
-          if (isAdmin) {
-            setAdminDashboardOpen(true);
-          } else {
-            setAdminLoginOpen(true);
-          }
-        }}
-        onOpenAdminWithTab={(tab) => {
-          setAdminActiveTab(tab as any);
-          if (isAdmin) {
-            setAdminDashboardOpen(true);
-          } else {
-            setAdminLoginOpen(true);
-          }
-        }}
+        onOpenAdmin={() => handleOpenAdminFlow()}
+        onOpenAdminWithTab={(tab) => handleOpenAdminFlow(tab)}
       />
 
       <SEOLiveScoreWidget />

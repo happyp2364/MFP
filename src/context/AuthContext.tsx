@@ -19,6 +19,7 @@ import { getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 interface AuthContextType {
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isAdminAuthLoading: boolean;
   currentAdminUser: AdminUser | null;
   customerUser: FirebaseUser | null;
   customerProfile: CustomerProfile | null;
@@ -43,6 +44,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [customerUser, setCustomerUser] = useState<FirebaseUser | null>(null);
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
   const [isCustomerAuthLoading, setIsCustomerAuthLoading] = useState<boolean>(true);
+  const [isAdminAuthLoading, setIsAdminAuthLoading] = useState<boolean>(true);
   const [customerAuthError, setCustomerAuthError] = useState<string | null>(null);
   const [isTwoFactorEnabled, setIsTwoFactorEnabled] = useState<boolean>(false);
 
@@ -172,10 +174,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (err) {
           console.warn('Failed to resolve admin user on auth state change:', err);
           setCurrentAdminUser(null);
+        } finally {
+          setIsAdminAuthLoading(false);
         }
       } else {
         setCustomerProfile(null);
         setCurrentAdminUser(null);
+        setIsAdminAuthLoading(false);
       }
     });
     return () => unsub();
@@ -316,6 +321,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         isAdmin,
         isSuperAdmin,
+        isAdminAuthLoading,
         currentAdminUser,
         customerUser,
         customerProfile,

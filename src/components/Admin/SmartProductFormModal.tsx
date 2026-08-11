@@ -472,10 +472,10 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const availableSubcategories = getSubcategoriesForProductFor(productState.category);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-      <div className="fixed inset-0 bg-black/75 backdrop-blur-md" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" onClick={(e) => e.stopPropagation()}>
+      <div className="fixed inset-0 bg-black/75 backdrop-blur-md" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }} />
 
-      <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden z-10 max-h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden z-10 max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* HEADER */}
         <div className="bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 text-white p-4 sm:p-5 flex items-center justify-between border-b border-neutral-800 shrink-0">
           <div className="flex items-center gap-3">

@@ -259,6 +259,7 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
     // Auth
     isAdmin: auth.isAdmin,
     isSuperAdmin: auth.isSuperAdmin,
+    isAdminAuthLoading: auth.isAdminAuthLoading,
     currentAdminUser: auth.currentAdminUser,
     customerUser: auth.customerUser,
     customerProfile: auth.customerProfile,

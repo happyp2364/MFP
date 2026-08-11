@@ -446,8 +446,14 @@ const canAccessTab = (tab: string) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-neutral-950/80 backdrop-blur-2xl animate-in fade-in duration-300"
-        onClick={onClose}
+        className={`fixed inset-0 bg-neutral-950/80 backdrop-blur-2xl animate-in fade-in duration-300 ${
+          editingProduct ? 'pointer-events-none opacity-50' : ''
+        }`}
+        onClick={() => {
+          if (!editingProduct) {
+            onClose();
+          }
+        }}
       />
 
       {/* Main Admin Panel Container */}
@@ -1988,13 +1994,15 @@ const canAccessTab = (tab: string) => {
 
       {/* --- SMART DYNAMIC PRODUCT ADD / EDIT MODAL --- */}
       {editingProduct && (
-        <SmartProductFormModal
-          product={editingProduct}
-          isCreating={isCreatingProduct}
-          onSave={(savedProduct) => handleSaveProduct(savedProduct)}
-          onClose={() => setEditingProduct(null)}
-          onDuplicate={(duplicated) => handleDuplicateProduct(duplicated)}
-        />
+        <AdminErrorBoundary fallbackTitle="Smart Product Form Error">
+          <SmartProductFormModal
+            product={editingProduct}
+            isCreating={isCreatingProduct}
+            onSave={(savedProduct) => handleSaveProduct(savedProduct)}
+            onClose={() => setEditingProduct(null)}
+            onDuplicate={(duplicated) => handleDuplicateProduct(duplicated)}
+          />
+        </AdminErrorBoundary>
       )}
 
       {/* Real-time Order Notification Drawer */}

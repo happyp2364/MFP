@@ -95,17 +95,17 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const [colorCopySource, setColorCopySource] = useState<string>('');
 
   // Helper functions for auto-SKU and auto-barcode
-  const generateAutoSKU = (productName: string, color: string, size: string): string => {
-    const cleanName = productName.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const cleanColor = color.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const cleanSize = size.padStart(2, '0').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const generateAutoSKU = (productName: any, color: any, size: any): string => {
+    const cleanName = (productName || '').toString().substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const cleanColor = (color || '').toString().substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const cleanSize = (size || '').toString().padStart(2, '0').toUpperCase().replace(/[^A-Z0-9]/g, '');
     return `${cleanName}-${cleanColor}-${cleanSize}`;
   };
 
-  const generateAutoBarcode = (productId: string, color: string, size: string): string => {
-    const cleanId = productId.substring(0, 4).toUpperCase();
-    const cleanColor = color.substring(0, 2).toUpperCase();
-    const cleanSize = size.replace(/[^0-9]/g, '');
+  const generateAutoBarcode = (productId: any, color: any, size: any): string => {
+    const cleanId = (productId || '').toString().substring(0, 4).toUpperCase();
+    const cleanColor = (color || '').toString().substring(0, 2).toUpperCase();
+    const cleanSize = (size || '').toString().replace(/[^0-9]/g, '');
     return `890${cleanId}${cleanColor}${cleanSize}`.padEnd(13, '0').substring(0, 13);
   };
 
@@ -113,13 +113,16 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const regenerateVariantMatrix = () => {
     const newVariants: ProductVariant[] = [];
     const activeSizes = productState.sizeStocks 
-      ? productState.sizeStocks.filter(s => s.isAvailable).map(s => s.size) 
-      : productState.sizes;
+      ? productState.sizeStocks.filter(s => s && s.isAvailable).map(s => s.size) 
+      : (productState.sizes || []);
     
-    productState.colors.forEach(col => {
+    const colorsList = productState.colors || [];
+
+    colorsList.forEach(col => {
+      if (!col || !col.name) return;
       activeSizes.forEach(sz => {
         const existing = (productState.variants || []).find(
-          v => (v.color || '').toLowerCase() === (col.name || '').toLowerCase() && v.size.toString() === sz.toString()
+          v => (v.color || '').toLowerCase() === (col.name || '').toLowerCase() && String(v.size) === String(sz)
         );
         
         if (existing) {
@@ -130,7 +133,8 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
             size: sz
           });
         } else {
-          const varId = `${productState.id || 'prod'}_${col.name.replace(/\s+/g, '')}_${sz}`;
+          const cleanColName = (col.name || 'col').toString().replace(/\s+/g, '');
+          const varId = `${productState.id || 'prod'}_${cleanColName}_${sz}`;
           const autoSku = generateAutoSKU(productState.name || 'NWD', col.name, sz);
           const autoBarcode = generateAutoBarcode(productState.id || '101', col.name, sz);
           
@@ -175,7 +179,10 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // Set default gallery color selection
   useEffect(() => {
     if (productState.colors && productState.colors.length > 0 && !selectedColorForGallery) {
-      setSelectedColorForGallery(productState.colors[0].name);
+      const firstCol = productState.colors[0];
+      if (firstCol && firstCol.name) {
+        setSelectedColorForGallery(firstCol.name);
+      }
     }
   }, [productState.colors, selectedColorForGallery]);
 
@@ -469,7 +476,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     onSave(finalProduct);
   };
 
-  const availableSubcategories = getSubcategoriesForProductFor(productState.category);
+  const availableSubcategories = getSubcategoriesForProductFor(productState.category || 'men');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" onClick={(e) => e.stopPropagation()}>

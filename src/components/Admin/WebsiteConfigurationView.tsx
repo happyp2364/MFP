@@ -42,6 +42,7 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { WebsiteConfig, SocialLinkItem, PhysicalStore } from '../../types';
 import { DEFAULT_WEBSITE_CONFIG } from '../../data/defaultWebsiteConfig';
+import { mergeWithDefaultConfig } from '../../context/WebsiteIdentityContext';
 
 type ConfigSection =
   | 'identity'
@@ -90,7 +91,7 @@ export const WebsiteConfigurationView: React.FC = () => {
   const { websiteConfig, updateWebsiteConfig, showToast, physicalStores, addPhysicalStore, updatePhysicalStore, deletePhysicalStore } = useStore();
 
   const [activeSection, setActiveSection] = useState<ConfigSection>('identity');
-  const [formData, setFormData] = useState<WebsiteConfig>(websiteConfig || DEFAULT_WEBSITE_CONFIG);
+  const [formData, setFormData] = useState<WebsiteConfig>(() => mergeWithDefaultConfig(websiteConfig));
   const [searchQuery, setSearchQuery] = useState('');
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -105,7 +106,7 @@ export const WebsiteConfigurationView: React.FC = () => {
   // Keep local form in sync with context when context changes externally
   useEffect(() => {
     if (websiteConfig) {
-      setFormData(websiteConfig);
+      setFormData(mergeWithDefaultConfig(websiteConfig));
     }
   }, [websiteConfig]);
 
@@ -222,7 +223,7 @@ export const WebsiteConfigurationView: React.FC = () => {
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(formData, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `${formData.businessIdentity.businessName.replace(/\s+/g, '_')}_WebsiteConfig.json`);
+    downloadAnchor.setAttribute('download', `${(formData?.businessIdentity?.businessName || 'Website').replace(/\s+/g, '_')}_WebsiteConfig.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -275,7 +276,7 @@ export const WebsiteConfigurationView: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Live Store Identity for <strong className="text-amber-400">{formData.businessIdentity.businessName || 'Your Business'}</strong>
+              Live Store Identity for <strong className="text-amber-400">{formData?.businessIdentity?.businessName || 'Your Business'}</strong>
             </p>
           </div>
         </div>
@@ -1186,7 +1187,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <span>AI Assistant Auto-Sync Status: ACTIVE</span>
                 </div>
                 <p>
-                  The AI Mascot is currently reading business identity from <strong>{formData.businessIdentity.businessName}</strong>, phone <strong>{formData.contactDetails.phone}</strong>, and address <strong>{formData.address.city}</strong>.
+                  The AI Mascot is currently reading business identity from <strong>{formData?.businessIdentity?.businessName || 'Your Business'}</strong>, phone <strong>{formData?.contactDetails?.phone || ''}</strong>, and address <strong>{formData?.address?.city || ''}</strong>.
                 </p>
               </div>
 
@@ -1354,20 +1355,20 @@ export const WebsiteConfigurationView: React.FC = () => {
             <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
               <div className="flex items-center space-x-3 border-b border-slate-800 pb-3">
                 <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-bold text-amber-400 text-lg">
-                  {formData.businessIdentity.businessName?.[0] || 'M'}
+                  {formData?.businessIdentity?.businessName?.[0] || 'M'}
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">{formData.businessIdentity.displayName || 'Storefront Title'}</h4>
-                  <p className="text-xs text-slate-400">{formData.businessIdentity.tagline || 'Tagline'}</p>
+                  <h4 className="text-sm font-bold text-white">{formData?.businessIdentity?.displayName || 'Storefront Title'}</h4>
+                  <p className="text-xs text-slate-400">{formData?.businessIdentity?.tagline || 'Tagline'}</p>
                 </div>
               </div>
 
               <div className="text-xs space-y-2 text-slate-300">
-                <p><strong>Phone:</strong> {formData.contactDetails.phone}</p>
-                <p><strong>Email:</strong> {formData.contactDetails.email}</p>
-                <p><strong>Address:</strong> {formData.address.shopAddress}</p>
-                <p><strong>GST:</strong> {formData.businessIdentity.gstNumber}</p>
-                <p><strong>Copyright:</strong> {formData.footer.copyrightText}</p>
+                <p><strong>Phone:</strong> {formData?.contactDetails?.phone || ''}</p>
+                <p><strong>Email:</strong> {formData?.contactDetails?.email || ''}</p>
+                <p><strong>Address:</strong> {formData?.address?.shopAddress || ''}</p>
+                <p><strong>GST:</strong> {formData?.businessIdentity?.gstNumber || ''}</p>
+                <p><strong>Copyright:</strong> {formData?.footer?.copyrightText || ''}</p>
               </div>
             </div>
 

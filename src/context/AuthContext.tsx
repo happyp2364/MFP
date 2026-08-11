@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // 1. Try exact match by document ID (user.uid)
     try {
-      const adminDocRef = getTenantDocWriteRef(db, 'admin_users', firebaseUser.uid);
+      const adminDocRef = doc(db, 'admin_users', firebaseUser.uid);
       const adminSnap = await getDoc(adminDocRef);
       if (adminSnap.exists()) {
         const adminData = adminSnap.data() as AdminUser;

@@ -25,15 +25,15 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       id: targetUid,
       createdAt: new Date().toISOString(),
     };
-    await setDoc(getTenantDocWriteRef(db, 'admin_users', targetUid), newAdmin);
+    await setDoc(doc(db, 'admin_users', targetUid), newAdmin);
   };
 
   const updateAdminUser = async (id: string, user: Partial<AdminUser>) => {
-    await setDoc(getTenantDocWriteRef(db, 'admin_users', id), user, { merge: true });
+    await setDoc(doc(db, 'admin_users', id), user, { merge: true });
   };
 
   const deleteAdminUser = async (id: string) => {
-    await deleteDoc(getTenantDocWriteRef(db, 'admin_users', id));
+    await deleteDoc(doc(db, 'admin_users', id));
   };
 
   const createAdminRole = async (role: Omit<AdminRole, 'id'>) => {

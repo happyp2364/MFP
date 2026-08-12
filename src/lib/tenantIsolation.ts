@@ -55,6 +55,21 @@ export function isSlugAvailable(
   );
 }
 
+export function setTenantId(websiteId: string, slug?: string): void {
+  try {
+    const cleanSlug = slug || websiteId.replace(/^tenant-/, '');
+    localStorage.setItem(
+      'nwd_website_config_live',
+      JSON.stringify({ websiteId, slug: cleanSlug })
+    );
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tenantChanged', { detail: { websiteId, slug: cleanSlug } }));
+    }
+  } catch (e) {
+    console.warn('Failed to save tenant ID to localStorage:', e);
+  }
+}
+
 /**
  * Dynamically resolves current websiteId from URL path or search query param
  * E.g. https://nwdstore.in/abc-shoes -> resolves to tenant with slug "abc-shoes"
@@ -77,10 +92,7 @@ export function resolveCurrentWebsiteFromUrl(tenants?: { id: string; slug?: stri
         (t) => t.slug === targetIdentifier || t.id === targetIdentifier
       );
       if (matched) {
-        localStorage.setItem(
-          'nwd_website_config_live',
-          JSON.stringify({ websiteId: matched.id, slug: matched.slug })
-        );
+        setTenantId(matched.id, matched.slug);
         return matched.id;
       }
     }
@@ -88,10 +100,7 @@ export function resolveCurrentWebsiteFromUrl(tenants?: { id: string; slug?: stri
     if (targetIdentifier) {
       // If we don't have the tenants list yet to verify, construct the expected ID format
       const assumedId = targetIdentifier.startsWith('tenant-') ? targetIdentifier : `tenant-${targetIdentifier}`;
-      localStorage.setItem(
-        'nwd_website_config_live',
-        JSON.stringify({ websiteId: assumedId, slug: targetIdentifier })
-      );
+      setTenantId(assumedId, targetIdentifier);
       return assumedId;
     }
   } catch {

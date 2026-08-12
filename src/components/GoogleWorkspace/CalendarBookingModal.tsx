@@ -3,6 +3,7 @@ import { X, Calendar, Clock, Footprints, Sparkles, CheckCircle2, ExternalLink, A
 import { auth, signInWithGoogle, getCachedAccessToken, handleFirestoreError, db } from '../../lib/firebase';
 import { createGoogleCalendarEvent, CalendarEventResult } from '../../lib/googleWorkspace';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getTenantCollectionWriteRef } from '../../lib/firestoreMultiTenant';
 import { getPlatformConfig } from '../../lib/platformConfig';
 
 interface CalendarBookingModalProps {
@@ -81,7 +82,7 @@ export const CalendarBookingModal: React.FC<CalendarBookingModalProps> = ({
 
       // 2. Save appointment in Firestore
       try {
-        await addDoc(collection(db, 'appointments'), {
+        await addDoc(getTenantCollectionWriteRef(db, 'appointments'), {
           userId: user?.uid || 'guest',
           userEmail: user?.email || '',
           userName: user?.displayName || 'Valued Customer',

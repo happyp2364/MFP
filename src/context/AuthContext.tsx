@@ -13,7 +13,7 @@ import {
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential, User as FirebaseUser } from 'firebase/auth';
 import { recordAdminLoginHistory, fetchAdminUsers, saveAdminUser, syncAdminWebsiteLink } from '../lib/adminService';
-import { getCurrentTenantId } from '../lib/tenantIsolation';
+import { getCurrentTenantId, setTenantId } from '../lib/tenantIsolation';
 import { getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 
 interface AuthContextType {
@@ -163,8 +163,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (assignedId && adminUser.roleId !== 'super_admin') {
               const currentActive = getCurrentTenantId();
               if (currentActive !== assignedId) {
-                const slug = assignedId.replace(/^tenant-/, '');
-                localStorage.setItem('nwd_website_config_live', JSON.stringify({ websiteId: assignedId, slug }));
+                setTenantId(assignedId);
               }
             }
             setCurrentAdminUser(adminUser);

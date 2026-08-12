@@ -4,15 +4,27 @@ import {
   ScratchWinConfig,
   EngagementAnalytics,
   OrderCelebrationConfig,
-  WheelSection,
-  ScratchReward,
 } from '../types';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
+import { getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
+import { setDoc } from 'firebase/firestore';
+import { getCurrentTenantId } from '../lib/tenantIsolation';
+import {
+  getDefaultFeatureConfig,
+  checkFeatureDependencies,
+  getFeatureById,
+} from '../lib/featureRegistry';
+import { saveTenantFeatureSettings, getTenantFeatureSettings } from '../lib/tenantFeatureService';
 
 interface FeatureFlagContextType {
+  // Global / Tenant Feature Registry Toggles
+  tenantFeatures: Record<string, boolean>;
+  isFeatureEnabled: (featureId: string) => boolean;
+  checkFeatureDependency: (featureId: string) => { satisfied: boolean; missing: string[] };
+  updateTenantFeatureToggle: (featureId: string, enabled: boolean) => Promise<void>;
+  
+  // Specific Gamification Feature Configs (backward compatibility)
   spinWheelConfig: SpinWheelConfig;
   updateSpinWheelConfig: (newConfig: SpinWheelConfig) => Promise<void>;
   scratchWinConfig: ScratchWinConfig;
@@ -92,6 +104,8 @@ const DEFAULT_ORDER_CELEBRATION_CONFIG: OrderCelebrationConfig = {
 const FeatureFlagContext = createContext<FeatureFlagContextType | undefined>(undefined);
 
 export const FeatureFlagProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [activeTenant, setActiveTenant] = useState(getCurrentTenantId());
+  const [tenantFeatures, setTenantFeatures] = useState<Record<string, boolean>>(getDefaultFeatureConfig());
   const [spinWheelConfig, setSpinWheelConfig] = useState<SpinWheelConfig>(DEFAULT_SPIN_WHEEL_CONFIG);
   const [scratchWinConfig, setScratchWinConfig] = useState<ScratchWinConfig>(DEFAULT_SCRATCH_WIN_CONFIG);
   const [engagementAnalytics, setEngagementAnalytics] = useState<EngagementAnalytics>(DEFAULT_ENGAGEMENT_ANALYTICS);
@@ -99,6 +113,33 @@ export const FeatureFlagProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [isCelebrating, setIsCelebrating] = useState<boolean>(false);
 
   useEffect(() => {
+    const handleTenantChange = () => {
+      setActiveTenant(getCurrentTenantId());
+    };
+    window.addEventListener('tenantChanged', handleTenantChange);
+    window.addEventListener('storage', handleTenantChange);
+    return () => {
+      window.removeEventListener('tenantChanged', handleTenantChange);
+      window.removeEventListener('storage', handleTenantChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Subscribe to tenant features document
+    const unsubFeatures = onTenantDocSnapshot(db, 'settings', 'features', (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && data.features) {
+          setTenantFeatures({
+            ...getDefaultFeatureConfig(),
+            ...data.features,
+          });
+        }
+      } else {
+        setTenantFeatures(getDefaultFeatureConfig());
+      }
+    }, () => {});
+
     const unsubSpin = onTenantDocSnapshot(db, 'settings', 'spin_wheel', (snapshot) => {
       if (snapshot.exists()) setSpinWheelConfig(snapshot.data() as SpinWheelConfig);
     }, () => {});
@@ -112,11 +153,33 @@ export const FeatureFlagProvider: React.FC<{ children: ReactNode }> = ({ childre
     }, () => {});
 
     return () => {
+      unsubFeatures();
       unsubSpin();
       unsubScratch();
       unsubCelebration();
     };
-  }, []);
+  }, [activeTenant]);
+
+  const isFeatureEnabled = (featureId: string): boolean => {
+    if (!featureId) return true;
+    // Default to feature registry default if undefined
+    if (tenantFeatures[featureId] !== undefined) {
+      return Boolean(tenantFeatures[featureId]);
+    }
+    const def = getFeatureById(featureId);
+    return def ? def.defaultEnabled : true;
+  };
+
+  const checkFeatureDependency = (featureId: string) => {
+    return checkFeatureDependencies(featureId, tenantFeatures);
+  };
+
+  const updateTenantFeatureToggle = async (featureId: string, enabled: boolean) => {
+    const activeId = getCurrentTenantId();
+    const updated = { ...tenantFeatures, [featureId]: enabled };
+    setTenantFeatures(updated);
+    await saveTenantFeatureSettings(activeId, { features: updated }, 'Admin User');
+  };
 
   const updateSpinWheelConfig = async (newConfig: SpinWheelConfig) => {
     setSpinWheelConfig(newConfig);
@@ -165,6 +228,10 @@ export const FeatureFlagProvider: React.FC<{ children: ReactNode }> = ({ childre
   return (
     <FeatureFlagContext.Provider
       value={{
+        tenantFeatures,
+        isFeatureEnabled,
+        checkFeatureDependency,
+        updateTenantFeatureToggle,
         spinWheelConfig,
         updateSpinWheelConfig,
         scratchWinConfig,

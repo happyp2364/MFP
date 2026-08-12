@@ -3,6 +3,7 @@ import { X, Mail, Send, CheckCircle2, AlertCircle, ShieldAlert, Sparkles, Messag
 import { auth, signInWithGoogle, getCachedAccessToken, handleFirestoreError, db } from '../../lib/firebase';
 import { sendGmailMessage, GmailSendResult } from '../../lib/googleWorkspace';
 import { collection, addDoc } from 'firebase/firestore';
+import { getTenantCollectionWriteRef } from '../../lib/firestoreMultiTenant';
 
 interface GmailInquiryModalProps {
   isOpen: boolean;
@@ -75,7 +76,7 @@ export const GmailInquiryModal: React.FC<GmailInquiryModalProps> = ({
 
       // 2. Save inquiry in Firestore
       try {
-        await addDoc(collection(db, 'inquiries'), {
+        await addDoc(getTenantCollectionWriteRef(db, 'inquiries'), {
           userId: user?.uid || 'guest',
           email: user?.email || '',
           name: user?.displayName || 'Valued Customer',

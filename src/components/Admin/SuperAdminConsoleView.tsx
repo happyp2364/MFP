@@ -68,6 +68,8 @@ import { FeatureReleaseManagerView } from './FeatureReleaseManagerView';
 import { PlatformConfigManagerView } from './PlatformConfigManagerView';
 import { WebsiteDirectoryManager } from './WebsiteDirectoryManager';
 import { TenantSecurityVerificationView } from './TenantSecurityVerificationView';
+import { TenantFeatureThemeControlView } from './TenantFeatureThemeControlView';
+import { TenantFeatureManager } from './TenantFeatureManager';
 
 interface SuperAdminConsoleViewProps {
   currentUser: AdminUser | null;
@@ -80,7 +82,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   auditLogs = [],
   onRefreshAuditLogs,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'tenants' | 'platform_config' | 'feature_releases' | 'security' | 'audit_log' | 'verification'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'tenants' | 'tenant_control' | 'tenant_feature_manager' | 'platform_config' | 'feature_releases' | 'security' | 'audit_log' | 'verification'>('overview');
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -538,6 +540,30 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
         </button>
 
         <button
+          onClick={() => setActiveTab('tenant_control')}
+          className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+            activeTab === 'tenant_control'
+              ? 'border-amber-500 text-amber-400 font-extrabold'
+              : 'border-transparent text-neutral-400 hover:text-white'
+          }`}
+        >
+          <Sliders className="w-4 h-4 text-amber-400" />
+          <span>Tenant Feature & Theme Control</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('tenant_feature_manager')}
+          className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
+            activeTab === 'tenant_feature_manager'
+              ? 'border-amber-500 text-amber-400 font-extrabold'
+              : 'border-transparent text-neutral-400 hover:text-white'
+          }`}
+        >
+          <Sliders className="w-4 h-4 text-sky-400" />
+          <span>Tenant Feature Manager</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('platform_config')}
           className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
             activeTab === 'platform_config'
@@ -604,6 +630,33 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
       {activeTab === 'verification' && (
         <div className="animate-in fade-in duration-300">
           <TenantSecurityVerificationView />
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* TENANT FEATURE & THEME CONTROL             */}
+      {/* ========================================== */}
+      {activeTab === 'tenant_control' && (
+        <div className="animate-in fade-in duration-300">
+          <TenantFeatureThemeControlView
+            tenants={tenants}
+            admins={admins}
+            currentUser={currentUser}
+            onRefresh={loadData}
+          />
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* TENANT FEATURE MANAGER                     */}
+      {/* ========================================== */}
+      {activeTab === 'tenant_feature_manager' && (
+        <div className="animate-in fade-in duration-300">
+          <TenantFeatureManager
+            tenants={tenants}
+            currentUser={currentUser}
+            onRefresh={loadData}
+          />
         </div>
       )}
 

@@ -35,6 +35,7 @@ import { InvoiceModal } from '../Customer/InvoiceModal';
 import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 import { db } from '../../lib/firebase';
 import { getDoc, doc } from 'firebase/firestore';
+import { getTenantDocWriteRef } from '../../lib/firestoreMultiTenant';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -181,7 +182,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           return false;
         }
 
-        const prodRef = doc(db, 'products', item.product.id);
+        const prodRef = getTenantDocWriteRef(db, 'products', item.product.id);
         const prodSnap = await getDoc(prodRef);
 
         if (!prodSnap.exists()) {
@@ -266,7 +267,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         }
 
         try {
-          const orderRef = doc(db, 'orders', completedOrderId);
+          const orderRef = getTenantDocWriteRef(db, 'orders', completedOrderId);
           const orderSnap = await getDoc(orderRef);
           if (!orderSnap.exists()) {
             console.error('Security Gate: order document does not exist in Firestore.');

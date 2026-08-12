@@ -291,13 +291,13 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // Toggle Size Availability
   const handleToggleSizeAvailable = (sizeStr: string) => {
     const updated = currentSizeStocks.map((st) => {
-      if (st.size === sizeStr) {
+      if (String(st.size) === String(sizeStr)) {
         return { ...st, isAvailable: !st.isAvailable };
       }
       return st;
     });
 
-    const activeSizes = updated.filter((s) => s.isAvailable).map((s) => s.size);
+    const activeSizes = updated.filter((s) => s.isAvailable).map((s) => String(s.size));
     setProductState({ ...productState, sizeStocks: updated, sizes: activeSizes });
   };
 
@@ -305,7 +305,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const handleSizeQuantityChange = (sizeStr: string, qty: number) => {
     const sanitized = Math.max(0, qty);
     const updated = currentSizeStocks.map((st) => {
-      if (st.size === sizeStr) {
+      if (String(st.size) === String(sizeStr)) {
         return {
           ...st,
           stockQuantity: sanitized,
@@ -321,7 +321,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // Bulk Size Actions
   const handleBulkSelectAllSizes = () => {
     const updated = standardSizeOptions.map((sz) => {
-      const existing = currentSizeStocks.find((s) => s.size === sz);
+      const existing = currentSizeStocks.find((s) => String(s.size) === String(sz));
       return {
         size: sz,
         isAvailable: true,
@@ -851,7 +851,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
               {standardSizeOptions.map((szStr) => {
-                const stockObj = currentSizeStocks.find((s) => s.size === szStr) || {
+                const stockObj = currentSizeStocks.find((s) => String(s.size) === String(szStr)) || {
                   size: szStr,
                   isAvailable: true,
                   inStock: true,

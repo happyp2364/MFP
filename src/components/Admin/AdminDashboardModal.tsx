@@ -1193,17 +1193,17 @@ const canAccessTab = (tab: string) => {
                             <td className="p-3.5">
                               <div className="flex items-center gap-3">
                                 <img
-                                  src={p.images[0]}
-                                  alt={p.name}
+                                  src={(p.images && p.images[0]) || 'https://via.placeholder.com/150'}
+                                  alt={p.name || 'Product'}
                                   className="w-10 h-10 rounded-lg object-cover bg-neutral-100 border border-neutral-200 shrink-0"
                                 />
                                 <div>
                                   <div className="font-bold text-neutral-900">{p.name}</div>
                                   <div className="text-[10px] text-neutral-500 flex items-center gap-1.5 mt-0.5">
                                     <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.2 font-mono font-bold rounded">
-                                      SKU: {p.sku || p.id.toUpperCase()}
+                                      SKU: {p.sku || (p.id || '').toString().toUpperCase()}
                                     </span>
-                                    <span>• {p.brand}</span>
+                                    <span>• {p.brand || 'NWD'}</span>
                                   </div>
                                 </div>
                               </div>

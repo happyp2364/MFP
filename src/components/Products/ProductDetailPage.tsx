@@ -118,7 +118,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.status === 'active'
       );
       // If selectedSize is not available in new color, pick one
-      const exists = sizesForColor.some(v => v.size === selectedSize);
+      const exists = sizesForColor.some(v => String(v.size) === String(selectedSize));
       if (!exists && sizesForColor.length > 0) {
         const inStock = sizesForColor.filter(v => v.stock > 0);
         setSelectedSize(inStock.length > 0 ? inStock[0].size : sizesForColor[0].size);
@@ -310,7 +310,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     : isProductCompletelyOutOfStock(product);
 
   const selectedSizeInfo = product.variants && product.variants.length > 0
-    ? sizeStocks.find(s => s.size === selectedSize)
+    ? sizeStocks.find(s => String(s.size) === String(selectedSize))
     : getSizeStockInfo(product, selectedSize);
 
   const isSelectedSizeOutOfStock = selectedSizeInfo

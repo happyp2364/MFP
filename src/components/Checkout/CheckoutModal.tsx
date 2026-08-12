@@ -202,7 +202,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         }
 
         if (item.selectedSize && liveProduct.sizeStocks && liveProduct.sizeStocks.length > 0) {
-          const sizeStock = liveProduct.sizeStocks.find((s: any) => s.size === item.selectedSize);
+          const sizeStock = liveProduct.sizeStocks.find((s: any) => String(s.size) === String(item.selectedSize));
           if (sizeStock) {
             if (!sizeStock.inStock || !sizeStock.isAvailable) {
               setErrorMessage(`Size "${item.selectedSize}" for product "${liveProduct.name}" is out of stock.`);

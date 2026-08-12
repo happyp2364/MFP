@@ -127,8 +127,10 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (isSuperAdmin) {
+      loadData();
+    }
+  }, [isSuperAdmin]);
 
   const allRoles = [...BUILTIN_ROLES, ...customRoles];
 

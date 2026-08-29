@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Star, CheckCircle, MessageSquarePlus, X, HeartHandshake, UserCheck, Sparkles, ShieldCheck, ShoppingBag, LogIn, ThumbsUp, Camera, UploadCloud, Trash2, Maximize2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Star, CheckCircle, MessageSquarePlus, X, HeartHandshake, UserCheck, Sparkles, ShieldCheck, ShoppingBag, LogIn, ThumbsUp, Camera, UploadCloud, Trash2, Maximize2, Loader2 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Review } from '../../types';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
@@ -114,15 +114,26 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
   const [customProduct, setCustomProduct] = useState('');
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState<boolean>(false);
+  const reviewPhotoFileInputRef = useRef<HTMLInputElement>(null);
   const [previewPhotoModal, setPreviewPhotoModal] = useState<{ src: string; author: string; product: string; comment: string; rating: number } | null>(null);
   const [submittedMessage, setSubmittedMessage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isAuthenticated = Boolean(customerUser || customerProfile);
 
-  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleTriggerPhotoPicker = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isUploadingPhoto && reviewPhotoFileInputRef.current) {
+      reviewPhotoFileInputRef.current.click();
+    }
+  };
+
+  const processReviewPhotoFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      return;
+    }
     setIsUploadingPhoto(true);
     try {
       const optimized = await optimizeImageFile(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.82 });
@@ -131,6 +142,37 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
       console.error('Error optimizing product photo:', err);
     } finally {
       setIsUploadingPhoto(false);
+      if (reviewPhotoFileInputRef.current) reviewPhotoFileInputRef.current.value = '';
+    }
+  };
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processReviewPhotoFile(file);
+    }
+  };
+
+  const handlePhotoDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isUploadingPhoto) setIsDraggingPhoto(true);
+  };
+
+  const handlePhotoDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingPhoto(false);
+  };
+
+  const handlePhotoDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingPhoto(false);
+    if (isUploadingPhoto) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processReviewPhotoFile(file);
     }
   };
 
@@ -757,18 +799,41 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                       </button>
                     </div>
                   ) : (
-                    <label className="border-2 border-dashed border-neutral-300 hover:border-[#0B8F63] bg-neutral-50 hover:bg-emerald-50/30 transition-all rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer text-center group">
+                    <div
+                      onClick={handleTriggerPhotoPicker}
+                      onDragOver={handlePhotoDragOver}
+                      onDragEnter={handlePhotoDragOver}
+                      onDragLeave={handlePhotoDragLeave}
+                      onDrop={handlePhotoDrop}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleTriggerPhotoPicker(e as any);
+                        }
+                      }}
+                      className={`border-2 border-dashed transition-all rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer text-center group ${
+                        isDraggingPhoto
+                          ? 'border-[#0B8F63] bg-emerald-50 scale-[1.01]'
+                          : 'border-neutral-300 hover:border-[#0B8F63] bg-neutral-50 hover:bg-emerald-50/30'
+                      }`}
+                    >
                       <input
+                        ref={reviewPhotoFileInputRef}
+                        id="customer-review-photo-input"
                         type="file"
-                        accept="image/*"
+                        accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
                         onChange={handlePhotoSelect}
-                        className="hidden"
+                        className="sr-only hidden"
+                        tabIndex={-1}
+                        aria-hidden="true"
                         disabled={isUploadingPhoto}
                       />
                       {isUploadingPhoto ? (
                         <div className="flex items-center gap-2 text-xs font-bold text-[#0B8F63]">
-                          <div className="w-4 h-4 border-2 border-[#0B8F63] border-t-transparent rounded-full animate-spin" />
-                          <span>Optimizing Photo...</span>
+                          <Loader2 className="w-4 h-4 text-[#0B8F63] animate-spin" />
+                          <span>Optimizing and attaching photo...</span>
                         </div>
                       ) : (
                         <>
@@ -776,14 +841,14 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                             <UploadCloud className="w-4 h-4" />
                           </div>
                           <span className="text-xs font-bold text-neutral-800 group-hover:text-[#0B8F63]">
-                            Click or tap to upload footwear photo
+                            Click or drag to upload footwear photo
                           </span>
                           <span className="text-[10px] text-neutral-500 mt-0.5">
                             Show future buyers your real shoe fit & quality
                           </span>
                         </>
                       )}
-                    </label>
+                    </div>
                   )}
                 </div>
 

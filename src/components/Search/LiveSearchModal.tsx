@@ -81,6 +81,10 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
       const randomTerm = detectedTerms[Math.floor(Math.random() * detectedTerms.length)];
       setQuery(randomTerm);
     }, 1200);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const filteredProducts = query.trim()

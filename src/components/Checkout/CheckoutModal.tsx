@@ -33,6 +33,7 @@ import { generateUPILink, getQRCodeImageUrl, cleanAndSanitizeUPIId, isValidUPIId
 import { generateOrderWhatsAppLink } from '../../utils/whatsapp';
 import { InvoiceModal } from '../Customer/InvoiceModal';
 import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
+import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { db } from '../../lib/firebase';
 import { getDoc, doc } from 'firebase/firestore';
 
@@ -483,12 +484,37 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  const handleScreenshotSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const screenshotFileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
+
+  const handleTriggerScreenshotPicker = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isUploadingScreenshot && screenshotFileInputRef.current) {
+      screenshotFileInputRef.current.click();
+    }
+  };
+
+  const handleScreenshotSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+    setIsUploadingScreenshot(true);
+    try {
+      await optimizeImageFile(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
       setPaymentScreenshotName(file.name);
       if (!paymentRef) {
         setPaymentRef(`IMG-${Date.now().toString().slice(-6)}`);
+      }
+    } catch (err) {
+      console.warn('Screenshot upload fallback:', err);
+      setPaymentScreenshotName(file.name);
+      if (!paymentRef) {
+        setPaymentRef(`IMG-${Date.now().toString().slice(-6)}`);
+      }
+    } finally {
+      setIsUploadingScreenshot(false);
+      if (screenshotFileInputRef.current) {
+        screenshotFileInputRef.current.value = '';
       }
     }
   };
@@ -1484,16 +1510,36 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           <span className="text-[11px] text-neutral-600 font-medium">
                             Optional Payment Screenshot:
                           </span>
-                          <label className="cursor-pointer px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 transition-colors">
-                            <Upload className="w-3.5 h-3.5 text-amber-700" />
-                            <span>{paymentScreenshotName ? 'Change Image' : 'Upload Screenshot'}</span>
+                          <div className="flex items-center gap-2">
                             <input
+                              ref={screenshotFileInputRef}
+                              id="payment-screenshot-file-input"
                               type="file"
-                              accept="image/*"
+                              accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
                               onChange={handleScreenshotSelect}
-                              className="hidden"
+                              className="sr-only hidden"
+                              tabIndex={-1}
+                              aria-hidden="true"
                             />
-                          </label>
+                            <button
+                              type="button"
+                              onClick={handleTriggerScreenshotPicker}
+                              disabled={isUploadingScreenshot}
+                              className="cursor-pointer px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 transition-colors"
+                            >
+                              {isUploadingScreenshot ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 text-amber-700 animate-spin" />
+                                  <span>Processing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="w-3.5 h-3.5 text-amber-700" />
+                                  <span>{paymentScreenshotName ? 'Change Screenshot' : 'Upload Screenshot'}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </div>
                         {paymentScreenshotName && (
                           <div className="mt-1.5 text-[11px] text-emerald-700 font-semibold flex items-center gap-1">

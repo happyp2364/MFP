@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   MapPin,
   Plus,
@@ -25,9 +25,14 @@ import {
   ArrowUp,
   ArrowDown,
   ExternalLink,
+  Upload,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { PhysicalStore, MobileCategoryIcon, StoreGalleryPhoto, StoreGalleryPhotoCategory } from '../../types';
+import { optimizeImageFile } from '../../utils/imageOptimizer';
 
 export const StoreManagementAdmin: React.FC = () => {
   const {
@@ -89,6 +94,93 @@ export const StoreManagementAdmin: React.FC = () => {
   const [newImageUrl, setNewImageUrl] = useState('');
   const [newImageCategory, setNewImageCategory] = useState<StoreGalleryPhotoCategory>('exterior');
   const [newImageTitle, setNewImageTitle] = useState('');
+
+  // Photo upload state
+  const [isUploadingGalleryPhoto, setIsUploadingGalleryPhoto] = useState(false);
+  const [galleryUploadError, setGalleryUploadError] = useState<string | null>(null);
+  const [isDraggingGallery, setIsDraggingGallery] = useState(false);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTriggerGalleryFilePicker = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setGalleryUploadError(null);
+    if (!isUploadingGalleryPhoto && galleryFileInputRef.current) {
+      galleryFileInputRef.current.click();
+    }
+  };
+
+  const processGalleryFiles = async (files: FileList | File[]) => {
+    setGalleryUploadError(null);
+    setIsUploadingGalleryPhoto(true);
+
+    const newUrls: string[] = [];
+    const newPhotos: StoreGalleryPhoto[] = [];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith('image/')) {
+          setGalleryUploadError('Please select valid image files (PNG, JPG, WEBP).');
+          continue;
+        }
+
+        const optimizedUrl = await optimizeImageFile(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
+        newUrls.push(optimizedUrl);
+        newPhotos.push({
+          id: `photo-${Date.now()}-${Math.random().toString(36).substr(2, 4)}-${i}`,
+          url: optimizedUrl,
+          title: newImageTitle.trim() || `Store Photo (${newImageCategory})`,
+          category: newImageCategory,
+          description: `Uploaded store photo for ${formData.name || 'Branch'}`,
+        });
+      }
+
+      if (newUrls.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          images: [...(prev.images || []), ...newUrls],
+          galleryPhotos: [...(prev.galleryPhotos || []), ...newPhotos],
+        }));
+        showToast(`📸 ${newUrls.length} store photo(s) added to gallery!`, 'success');
+        setNewImageTitle('');
+      }
+    } catch (err) {
+      console.error('Error optimizing gallery photos:', err);
+      setGalleryUploadError('Failed to process image files. Please try smaller files.');
+    } finally {
+      setIsUploadingGalleryPhoto(false);
+    }
+  };
+
+  const handleGalleryFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processGalleryFiles(e.target.files);
+    }
+    e.target.value = '';
+  };
+
+  const handleGalleryDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isUploadingGalleryPhoto) setIsDraggingGallery(true);
+  };
+
+  const handleGalleryDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingGallery(false);
+  };
+
+  const handleGalleryDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingGallery(false);
+    if (isUploadingGalleryPhoto) return;
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processGalleryFiles(e.dataTransfer.files);
+    }
+  };
 
   const ALL_SERVICES = [
     'Open Box Delivery',
@@ -748,72 +840,179 @@ export const StoreManagementAdmin: React.FC = () => {
                 </div>
               </div>
 
-              {/* Image Gallery URLs */}
+              {/* Store Gallery Photos */}
               <div>
-                <label className="block font-bold text-neutral-700 mb-1">Store Gallery Photos (Interior, Exterior, Staff, Display)</label>
-                <div className="space-y-2 bg-neutral-50 p-3 rounded-2xl border border-neutral-200">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <input
-                      type="text"
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      placeholder="Image URL (https://...)"
-                      className="sm:col-span-2 px-3 py-2 border border-neutral-200 bg-white rounded-xl focus:outline-none focus:border-emerald-500"
-                    />
-                    <select
-                      value={newImageCategory}
-                      onChange={(e) => setNewImageCategory(e.target.value as StoreGalleryPhotoCategory)}
-                      className="px-3 py-2 border border-neutral-200 bg-white rounded-xl focus:outline-none focus:border-emerald-500 font-bold"
-                    >
-                      <option value="exterior">🏢 Exterior View</option>
-                      <option value="interior">🏪 Interior Lounge</option>
-                      <option value="staff">👔 Staff & Team</option>
-                      <option value="display">👟 Displays & Stock</option>
-                    </select>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block font-bold text-neutral-800 text-xs">
+                    Store Gallery Photos (Interior, Exterior, Staff, Displays)
+                  </label>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 font-bold px-2 py-0.5 rounded border border-emerald-200">
+                    {(formData.images || []).length} photos attached
+                  </span>
+                </div>
+
+                <div className="space-y-3 bg-neutral-50 p-3.5 rounded-2xl border border-neutral-200">
+                  {/* Category & Title Controls */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-700 mb-1">Photo Category</label>
+                      <select
+                        value={newImageCategory}
+                        onChange={(e) => setNewImageCategory(e.target.value as StoreGalleryPhotoCategory)}
+                        className="w-full px-3 py-2 border border-neutral-200 bg-white rounded-xl focus:outline-none focus:border-emerald-500 font-bold text-xs"
+                      >
+                        <option value="exterior">🏢 Exterior View & Building</option>
+                        <option value="interior">🏪 Interior Lounge & Aisles</option>
+                        <option value="staff">👔 Staff, Trial & Cashier</option>
+                        <option value="display">👟 Shoes Display & Stock</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-neutral-700 mb-1">Caption / Title (Optional)</label>
+                      <input
+                        type="text"
+                        value={newImageTitle}
+                        onChange={(e) => setNewImageTitle(e.target.value)}
+                        placeholder="e.g. Front Entrance & Signboard"
+                        className="w-full px-3 py-2 border border-neutral-200 bg-white rounded-xl focus:outline-none focus:border-emerald-500 text-xs"
+                      >
+                      </input>
+                    </div>
                   </div>
 
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newImageTitle}
-                      onChange={(e) => setNewImageTitle(e.target.value)}
-                      placeholder="Photo Caption / Title (Optional)"
-                      className="flex-1 px-3 py-2 border border-neutral-200 bg-white rounded-xl focus:outline-none focus:border-emerald-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddImage}
-                      className="px-4 py-2 bg-neutral-900 text-white font-bold rounded-xl hover:bg-neutral-800 cursor-pointer text-xs shrink-0"
-                    >
-                      + Add Photo
-                    </button>
-                  </div>
+                  {/* Upload Error Banner */}
+                  {galleryUploadError && (
+                    <div className="flex items-center gap-2 p-2 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-semibold">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                      <span className="flex-1">{galleryUploadError}</span>
+                      <button
+                        type="button"
+                        onClick={() => setGalleryUploadError(null)}
+                        className="text-rose-500 hover:text-rose-700 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
-                    {(formData.images || []).map((img, i) => {
-                      const photoMeta = formData.galleryPhotos?.[i];
-                      return (
-                        <div key={i} className="relative group rounded-xl overflow-hidden h-20 border border-neutral-200 bg-black">
-                          <img src={img} alt="Store" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-1.5 flex flex-col justify-between">
-                            <span className="self-start text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-600 text-white">
-                              {photoMeta?.category || 'photo'}
-                            </span>
-                            <span className="text-[10px] text-white font-bold truncate">
-                              {photoMeta?.title || `Photo #${i + 1}`}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveImage(i)}
-                            className="absolute top-1 right-1 p-1 bg-rose-600 text-white rounded-full opacity-90 hover:opacity-100 cursor-pointer shadow-md"
-                          >
-                            ✕
-                          </button>
+                  {/* Main File Upload Dropzone */}
+                  <div
+                    onClick={handleTriggerGalleryFilePicker}
+                    onDragOver={handleGalleryDragOver}
+                    onDragEnter={handleGalleryDragOver}
+                    onDragLeave={handleGalleryDragLeave}
+                    onDrop={handleGalleryDrop}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleTriggerGalleryFilePicker(e as any);
+                      }
+                    }}
+                    className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 ${
+                      isDraggingGallery
+                        ? 'border-emerald-500 bg-emerald-50 scale-[1.01]'
+                        : 'border-neutral-300 hover:border-emerald-500 bg-white hover:bg-emerald-50/20'
+                    }`}
+                  >
+                    {isUploadingGalleryPhoto ? (
+                      <div className="flex items-center gap-2 py-2 text-emerald-800 text-xs font-bold">
+                        <Loader2 className="w-5 h-5 text-emerald-600 animate-spin" />
+                        <span>Compressing and attaching store photos...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                          <Upload className="w-5 h-5" />
                         </div>
-                      );
-                    })}
+                        <span className="text-xs font-bold text-neutral-800">
+                          Click or Drag Photos from Device to Upload
+                        </span>
+                        <span className="text-[10px] text-neutral-500">
+                          PNG, JPG, WEBP (Supports multiple photo selection)
+                        </span>
+                        <button
+                          type="button"
+                          className="mt-1 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-xs font-bold pointer-events-none"
+                        >
+                          Choose Photo(s) from Device
+                        </button>
+                      </>
+                    )}
+
+                    <input
+                      ref={galleryFileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
+                      onChange={handleGalleryFileInputChange}
+                      className="sr-only hidden"
+                      tabIndex={-1}
+                      aria-hidden="true"
+                    />
                   </div>
+
+                  {/* Direct URL Fallback */}
+                  <div className="pt-2 border-t border-neutral-200/70">
+                    <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1.5">
+                      Or Add by Direct Image URL:
+                    </span>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newImageUrl}
+                        onChange={(e) => setNewImageUrl(e.target.value)}
+                        placeholder="https://images.unsplash.com/... or direct image link"
+                        className="flex-1 px-3 py-2 border border-neutral-200 bg-white rounded-xl focus:outline-none focus:border-emerald-500 text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddImage}
+                        disabled={!newImageUrl.trim()}
+                        className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-40 text-white font-bold rounded-xl cursor-pointer text-xs shrink-0 flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add URL</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Uploaded Photos Grid */}
+                  {(formData.images || []).length > 0 && (
+                    <div className="pt-2">
+                      <span className="block text-[11px] font-bold text-neutral-700 mb-1.5">
+                        Gallery Preview ({formData.images?.length || 0})
+                      </span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {(formData.images || []).map((img, i) => {
+                          const photoMeta = formData.galleryPhotos?.[i];
+                          return (
+                            <div key={i} className="relative group rounded-xl overflow-hidden aspect-video border border-neutral-200 bg-black shadow-xs">
+                              <img src={img} alt="Store" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-1.5 flex flex-col justify-between">
+                                <span className="self-start text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-600 text-white">
+                                  {photoMeta?.category || 'photo'}
+                                </span>
+                                <span className="text-[10px] text-white font-bold truncate">
+                                  {photoMeta?.title || `Photo #${i + 1}`}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(i)}
+                                className="absolute top-1 right-1 p-1 bg-rose-600 text-white rounded-full opacity-90 hover:opacity-100 hover:scale-110 transition-transform cursor-pointer shadow-md"
+                                title="Delete Photo"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

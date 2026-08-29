@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { 
   Upload, Camera, Link2, Sparkles, Image as ImageIcon, Trash2, RotateCcw, 
-  Loader2, AlertCircle, CheckCircle2, FileImage, ShieldCheck
+  Loader2, AlertCircle, CheckCircle2, FileImage, ShieldCheck, RefreshCw
 } from 'lucide-react';
+import { optimizeImageFile } from '../../utils/imageOptimizer';
 
 // Default Coming Soon SVG (Fallback)
 export const CLEAN_IMAGE_COMING_SOON_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" fill="none"><rect width="600" height="600" fill="%23F3F4F6"/><rect x="2" y="2" width="596" height="596" rx="24" stroke="%23E5E7EB" stroke-width="4" stroke-dasharray="8 8"/><circle cx="300" cy="240" r="56" fill="%230B8F63" fill-opacity="0.1"/><path d="M280 220H320M300 200V240M270 255L285 240L300 255L315 240L330 255" stroke="%230B8F63" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="180" y="320" width="240" height="32" rx="16" fill="%230B8F63"/><text x="300" y="341" fill="white" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle" letter-spacing="1">REAL PRODUCT IMAGE COMING SOON</text><text x="300" y="390" fill="%236B7280" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle">Marudhar Fashion Point</text><text x="300" y="415" fill="%239CA3AF" font-family="sans-serif" font-size="11" text-anchor="middle">Authentic In-Store Inventory</text></svg>`;
@@ -215,9 +216,9 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
   onSaveConfig,
   defaultValue = CLEAN_IMAGE_COMING_SOON_SVG,
   label = "Image URL Settings",
-  description = "Support for pasting direct URLs, uploading files, capturing with camera, or generating with AI."
+  description = "Support for uploading files, pasting direct URLs, capturing with camera, or generating with AI."
 }) => {
-  const [activeTab, setActiveTab] = useState<'url' | 'upload' | 'camera' | 'ai' | 'preset'>('url');
+  const [activeTab, setActiveTab] = useState<'upload' | 'url' | 'camera' | 'ai' | 'preset'>('upload');
   const [urlInput, setUrlInput] = useState(value);
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<{ isValid: boolean; meta?: ImageMetaData; error?: string } | null>(null);
@@ -226,6 +227,14 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
+  // File upload state
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const uniqueId = useId().replace(/:/g, '_');
+  const uploadInputId = `admin-img-selector-${uniqueId}`;
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -264,27 +273,102 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
     return () => clearTimeout(delayDebounce);
   }, [urlInput]);
 
-  // Handle standard local file upload converting to base64
+  const handleTriggerUpload = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setUploadError(null);
+    if (!isUploadingFile && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const processSelectedFile = async (file: File) => {
+    setUploadError(null);
+
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/svg+xml'];
+    if (!file.type.startsWith('image/') && !validTypes.includes(file.type.toLowerCase())) {
+      setUploadError('Unsupported image format. Please choose PNG, JPG, WEBP, GIF, or SVG.');
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setUploadError(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Max size is 8MB.`);
+      return;
+    }
+
+    setIsUploadingFile(true);
+    try {
+      if (file.type === 'image/svg+xml') {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const dataUrl = ev.target?.result as string;
+          setUrlInput(dataUrl);
+          onChange(dataUrl);
+          if (onSaveConfig) {
+            onSaveConfig({
+              imageUrl: dataUrl,
+              lastUpdated: new Date().toISOString(),
+              updatedBy: 'Admin Portal',
+              imageSource: 'Uploaded SVG',
+            });
+          }
+          setIsUploadingFile(false);
+        };
+        reader.onerror = () => {
+          setUploadError('Failed to read SVG file.');
+          setIsUploadingFile(false);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const optimized = await optimizeImageFile(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
+        setUrlInput(optimized);
+        onChange(optimized);
+        if (onSaveConfig) {
+          onSaveConfig({
+            imageUrl: optimized,
+            lastUpdated: new Date().toISOString(),
+            updatedBy: 'Admin Portal',
+            imageSource: 'Uploaded File (Optimized)',
+          });
+        }
+        setIsUploadingFile(false);
+      }
+    } catch (err) {
+      console.error('File optimization error:', err);
+      setUploadError('Failed to process image. Please try another file.');
+      setIsUploadingFile(false);
+    }
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (file) {
+      processSelectedFile(file);
+    }
+    e.target.value = '';
+  };
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const dataUrl = event.target?.result as string;
-      setUrlInput(dataUrl);
-      onChange(dataUrl);
-      
-      if (onSaveConfig) {
-        onSaveConfig({
-          imageUrl: dataUrl,
-          lastUpdated: new Date().toISOString(),
-          updatedBy: 'Admin Portal',
-          imageSource: 'Uploaded File',
-        });
-      }
-    };
-    reader.readAsDataURL(file);
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isUploadingFile) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (isUploadingFile) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processSelectedFile(file);
+    }
   };
 
   // Start Video Stream for Capture
@@ -510,17 +594,72 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
             {/* TAB: Local Upload */}
             {activeTab === 'upload' && (
               <div className="text-center space-y-3">
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-neutral-300 rounded-xl p-4 cursor-pointer hover:border-[#0B8F63] transition-colors bg-white">
-                  <Upload className="w-6 h-6 text-neutral-400 mb-1" />
-                  <span className="text-xs font-bold text-neutral-700">Choose Image File</span>
-                  <span className="text-[10px] text-neutral-400 mt-0.5">Supports PNG, JPG, WEBP, GIF, SVG</span>
+                {uploadError && (
+                  <div className="flex items-center gap-2 p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold text-left">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                    <span className="flex-1">{uploadError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setUploadError(null)}
+                      className="text-rose-500 hover:text-rose-700 font-bold"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
+                <div
+                  onClick={handleTriggerUpload}
+                  onDragOver={handleDragOver}
+                  onDragEnter={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleTriggerUpload(e as any);
+                    }
+                  }}
+                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-5 cursor-pointer transition-all ${
+                    isDragging
+                      ? 'border-emerald-500 bg-emerald-50 scale-[1.01]'
+                      : 'border-neutral-300 hover:border-[#0B8F63] bg-white hover:bg-emerald-50/20'
+                  }`}
+                >
+                  {isUploadingFile ? (
+                    <div className="flex flex-col items-center gap-2 py-2">
+                      <Loader2 className="w-7 h-7 text-[#0B8F63] animate-spin" />
+                      <span className="text-xs font-bold text-neutral-800">Optimizing & Processing Image...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#0B8F63] flex items-center justify-center mb-2">
+                        <Upload className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-neutral-800">Click or Drag Photo to Upload</span>
+                      <span className="text-[10px] text-neutral-500 mt-0.5">Supports PNG, JPG, WEBP, GIF, SVG (Up to 8MB)</span>
+                      <button
+                        type="button"
+                        className="mt-2 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-[11px] font-bold pointer-events-none"
+                      >
+                        Choose File from Device
+                      </button>
+                    </>
+                  )}
+
                   <input
+                    id={uploadInputId}
+                    ref={fileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml,image/*"
                     onChange={handleFileUpload}
-                    className="hidden"
+                    className="sr-only hidden"
+                    tabIndex={-1}
+                    aria-hidden="true"
                   />
-                </label>
+                </div>
               </div>
             )}
 

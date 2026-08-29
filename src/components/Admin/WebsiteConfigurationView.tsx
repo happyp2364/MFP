@@ -233,6 +233,8 @@ export const WebsiteConfigurationView: React.FC = () => {
     showToast('📥 Website Configuration JSON exported!', 'success');
   };
 
+  const jsonConfigInputRef = useRef<HTMLInputElement>(null);
+
   const handleImportConfig = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -249,6 +251,8 @@ export const WebsiteConfigurationView: React.FC = () => {
         }
       } catch (err) {
         showToast('Failed to parse JSON file', 'error');
+      } finally {
+        if (jsonConfigInputRef.current) jsonConfigInputRef.current.value = '';
       }
     };
     reader.readAsText(file);
@@ -354,10 +358,23 @@ export const WebsiteConfigurationView: React.FC = () => {
           >
             <Download className="w-4 h-4" />
           </button>
-          <label className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs border border-slate-600 cursor-pointer" title="Import JSON backup">
+          <input
+            ref={jsonConfigInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImportConfig}
+            className="sr-only hidden"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+          <button
+            type="button"
+            onClick={() => jsonConfigInputRef.current?.click()}
+            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs border border-slate-600 cursor-pointer"
+            title="Import JSON backup"
+          >
             <Upload className="w-4 h-4" />
-            <input type="file" accept=".json" onChange={handleImportConfig} className="hidden" />
-          </label>
+          </button>
 
           {/* Reset */}
           <button

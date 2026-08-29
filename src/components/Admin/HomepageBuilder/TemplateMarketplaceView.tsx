@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Search,
   Sparkles,
@@ -159,6 +159,8 @@ export const TemplateMarketplaceView: React.FC<TemplateMarketplaceViewProps> = (
     }
   };
 
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
+
   // Import Preset JSON
   const handleImportPresetJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -186,6 +188,8 @@ export const TemplateMarketplaceView: React.FC<TemplateMarketplaceViewProps> = (
         }
       } catch {
         showToast('Error parsing JSON file', 'error');
+      } finally {
+        if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
       }
     };
     reader.readAsText(file);
@@ -272,10 +276,22 @@ export const TemplateMarketplaceView: React.FC<TemplateMarketplaceViewProps> = (
               <FolderPlus className="w-4 h-4 text-amber-400" /> Save Draft as Template
             </button>
 
-            <label className="px-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 text-xs font-bold rounded-xl cursor-pointer flex items-center gap-1.5 transition-colors">
+            <input
+              ref={jsonFileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportPresetJSON}
+              className="sr-only hidden"
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+            <button
+              type="button"
+              onClick={() => jsonFileInputRef.current?.click()}
+              className="px-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
               <Upload className="w-4 h-4" /> Import JSON
-              <input type="file" accept=".json" onChange={handleImportPresetJSON} className="hidden" />
-            </label>
+            </button>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Sparkles,
@@ -201,6 +201,45 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
       variants: updatedVariants,
       images: allUniqueImages
     }));
+  };
+
+  const colorGalleryFileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingColorGallery, setIsUploadingColorGallery] = useState(false);
+
+  const handleColorGalleryFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !selectedColorForGallery) return;
+
+    setIsUploadingColorGallery(true);
+    try {
+      const optimizedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type.startsWith('image/')) {
+          const optUrl = await optimizeImageFile(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
+          if (optUrl) {
+            optimizedUrls.push(optUrl);
+          }
+        }
+      }
+
+      if (optimizedUrls.length > 0) {
+        const existingImages = (productState.variants || [])
+          .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
+          ?.images || [];
+        const merged = [...existingImages, ...optimizedUrls];
+        updateColorGalleryImages(selectedColorForGallery, merged);
+        showToast(`Uploaded ${optimizedUrls.length} image(s) for ${selectedColorForGallery}!`, 'success');
+      }
+    } catch (err) {
+      console.error('Failed to process color variant photos', err);
+      showToast('Failed to process one or more images.', 'error');
+    } finally {
+      setIsUploadingColorGallery(false);
+      if (colorGalleryFileInputRef.current) {
+        colorGalleryFileInputRef.current.value = '';
+      }
+    }
   };
 
   // Auto-Save Draft logic for NEW products
@@ -1086,40 +1125,89 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                         </div>
                       </div>
 
-                      {/* Bulk URL Import */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">Bulk Paste Image URLs (One link per line):</label>
-                        <div className="flex gap-2">
-                          <textarea
-                            rows={2}
-                            value={bulkUrlInput}
-                            onChange={(e) => setBulkUrlInput(e.target.value)}
-                            placeholder="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=60"
-                            className="flex-1 bg-white border border-neutral-200 rounded-xl p-2 text-xs font-mono outline-none focus:ring-2 focus:ring-emerald-600"
+                      {/* Device File Upload & Bulk URL Import */}
+                      <div className="space-y-3">
+                        {/* Device File Upload */}
+                        <div className="p-3 bg-white rounded-xl border border-dashed border-emerald-300 hover:border-emerald-500 transition-colors flex items-center justify-between gap-3">
+                          <input
+                            ref={colorGalleryFileInputRef}
+                            id={`color_gallery_upload_${selectedColorForGallery}`}
+                            type="file"
+                            multiple
+                            accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
+                            onChange={handleColorGalleryFileUpload}
+                            className="sr-only hidden"
+                            tabIndex={-1}
+                            aria-hidden="true"
                           />
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                              <Upload className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-neutral-800 block">
+                                Upload Photos for {selectedColorForGallery || 'Selected Color'}
+                              </span>
+                              <span className="text-[10px] text-neutral-500 block">
+                                Select one or multiple images from your computer or phone
+                              </span>
+                            </div>
+                          </div>
                           <button
                             type="button"
-                            onClick={() => {
-                              const urls = bulkUrlInput
-                                .split(/[\n,]/)
-                                .map(u => u.trim())
-                                .filter(u => u.startsWith('http'));
-                              if (urls.length === 0) {
-                                showToast?.('Please enter valid HTTP/HTTPS image links.', 'error');
-                                return;
-                              }
-                              const existingImages = (productState.variants || [])
-                                .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
-                                ?.images || [];
-                              const merged = [...existingImages, ...urls];
-                              updateColorGalleryImages(selectedColorForGallery, merged);
-                              setBulkUrlInput('');
-                              showToast?.(`Added ${urls.length} images successfully!`, 'success');
-                            }}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-3.5 rounded-xl transition-colors self-end h-fit py-3"
+                            onClick={() => colorGalleryFileInputRef.current?.click()}
+                            disabled={isUploadingColorGallery}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-300 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
                           >
-                            Import
+                            {isUploadingColorGallery ? (
+                              <>
+                                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <span>Optimizing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Choose Images</span>
+                              </>
+                            )}
                           </button>
+                        </div>
+
+                        {/* Bulk URL Import */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">Or Bulk Paste Image URLs (One link per line):</label>
+                          <div className="flex gap-2">
+                            <textarea
+                              rows={2}
+                              value={bulkUrlInput}
+                              onChange={(e) => setBulkUrlInput(e.target.value)}
+                              placeholder="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=60"
+                              className="flex-1 bg-white border border-neutral-200 rounded-xl p-2 text-xs font-mono outline-none focus:ring-2 focus:ring-emerald-600"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const urls = bulkUrlInput
+                                  .split(/[\n,]/)
+                                  .map(u => u.trim())
+                                  .filter(u => u.startsWith('http'));
+                                if (urls.length === 0) {
+                                  showToast?.('Please enter valid HTTP/HTTPS image links.', 'error');
+                                  return;
+                                }
+                                const existingImages = (productState.variants || [])
+                                  .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
+                                  ?.images || [];
+                                const merged = [...existingImages, ...urls];
+                                updateColorGalleryImages(selectedColorForGallery, merged);
+                                setBulkUrlInput('');
+                                showToast?.(`Added ${urls.length} images successfully!`, 'success');
+                              }}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-3.5 rounded-xl transition-colors self-end h-fit py-3"
+                            >
+                              Import
+                            </button>
+                          </div>
                         </div>
                       </div>
 

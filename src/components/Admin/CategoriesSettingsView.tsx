@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Layers, Plus, Trash2, Edit2, ArrowUp, ArrowDown, Upload, Check, X, 
-  AlertTriangle, Sparkles, Smile, Footprints, Flame, Tag, ShoppingBag, Eye, EyeOff, Calendar, Filter, Smartphone, Palette, Image as ImageIcon
+  AlertTriangle, Sparkles, Smile, Footprints, Flame, Tag, ShoppingBag, Eye, EyeOff, Calendar, Filter, Smartphone, Palette, Image as ImageIcon, Loader2
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { CategoryHighlight, MobileCategoryIcon } from '../../types';
@@ -32,6 +32,8 @@ export const CategoriesSettingsView: React.FC = () => {
   const [newGalleryUrl, setNewGalleryUrl] = useState('');
   const [aiPromptInput, setAiPromptInput] = useState('');
   const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false);
+  const [isUploadingMobileFile, setIsUploadingMobileFile] = useState(false);
+  const mobileFileInputRef = useRef<HTMLInputElement>(null);
 
   // Family Highlights State
   const [editingCategory, setEditingCategory] = useState<CategoryHighlight | null>(null);
@@ -181,18 +183,38 @@ export const CategoriesSettingsView: React.FC = () => {
     await updateMobileCategories(reordered);
   };
 
+  const handleTriggerMobileFilePicker = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setError(null);
+    if (!isUploadingMobileFile && mobileFileInputRef.current) {
+      mobileFileInputRef.current.click();
+    }
+  };
+
   const handleMobileFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const compressed = await optimizeImageFile(file, { maxWidth: 800, maxHeight: 800 });
-        setMobileImage(compressed);
-        if (!mobileImages.includes(compressed)) {
-          setMobileImages([compressed, ...mobileImages]);
-        }
-      } catch (err) {
-        setError('Failed to compress image file.');
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file (PNG, JPG, WEBP, GIF, SVG).');
+      e.target.value = '';
+      return;
+    }
+
+    setIsUploadingMobileFile(true);
+    setError(null);
+    try {
+      const compressed = await optimizeImageFile(file, { maxWidth: 800, maxHeight: 800, quality: 0.85 });
+      setMobileImage(compressed);
+      if (!mobileImages.includes(compressed)) {
+        setMobileImages([compressed, ...mobileImages]);
       }
+    } catch (err) {
+      setError('Failed to compress image file. Please try another image.');
+    } finally {
+      setIsUploadingMobileFile(false);
+      e.target.value = '';
     }
   };
 
@@ -838,11 +860,29 @@ export const CategoriesSettingsView: React.FC = () => {
 
                       {/* File Upload & AI Generation Row */}
                       <div className="grid grid-cols-2 gap-2 pt-1">
-                        <label className="flex items-center justify-center gap-1.5 p-2 bg-white hover:bg-neutral-100 border border-neutral-200 rounded-xl cursor-pointer text-xs font-bold text-neutral-700">
-                          <Upload className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Upload File</span>
-                          <input type="file" accept="image/*" onChange={handleMobileFileUpload} className="hidden" />
-                        </label>
+                        <button
+                          type="button"
+                          onClick={handleTriggerMobileFilePicker}
+                          disabled={isUploadingMobileFile}
+                          className="flex items-center justify-center gap-1.5 p-2 bg-white hover:bg-neutral-100 border border-neutral-200 rounded-xl cursor-pointer text-xs font-bold text-neutral-700 disabled:opacity-50"
+                        >
+                          {isUploadingMobileFile ? (
+                            <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
+                          ) : (
+                            <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                          )}
+                          <span>{isUploadingMobileFile ? 'Compressing...' : 'Upload File'}</span>
+                        </button>
+                        <input
+                          id="mobile-category-file-input"
+                          ref={mobileFileInputRef}
+                          type="file"
+                          accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml,image/*"
+                          onChange={handleMobileFileUpload}
+                          className="sr-only hidden"
+                          tabIndex={-1}
+                          aria-hidden="true"
+                        />
 
                         <button
                           type="button"

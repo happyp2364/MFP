@@ -368,19 +368,27 @@ export const SoundSettingsView: React.FC<SoundSettingsViewProps> = ({
                       className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-neutral-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
 
-                    <label className="px-3 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-semibold cursor-pointer border border-neutral-300 flex items-center gap-1 shrink-0">
+                    <input
+                      id={`sound_file_${item.type}`}
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          handleFileUpload(item.type, e.target.files[0]);
+                          e.target.value = '';
+                        }
+                      }}
+                      className="sr-only hidden"
+                      tabIndex={-1}
+                      aria-hidden="true"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById(`sound_file_${item.type}`)?.click()}
+                      className="px-3 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-semibold cursor-pointer border border-neutral-300 flex items-center gap-1 shrink-0"
+                    >
                       <Upload className="w-3.5 h-3.5" /> Upload
-                      <input
-                        type="file"
-                        accept="audio/*"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            handleFileUpload(item.type, e.target.files[0]);
-                          }
-                        }}
-                        className="hidden"
-                      />
-                    </label>
+                    </button>
                   </div>
                 </div>
               </div>

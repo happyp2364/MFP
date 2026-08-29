@@ -1,14 +1,14 @@
-import { getPlatformConfig } from '../lib/platformConfig';
-
 export const generateOrganizationSchema = () => {
-  const config = getPlatformConfig();
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": config.platformDisplayName || config.platformName,
-    "url": typeof window !== 'undefined' ? window.location.origin : config.platformBaseUrl,
-    "logo": config.platformLogo || `${config.platformBaseUrl}/logo.png`,
-    "sameAs": []
+    "name": "Marudhar Fashion Point",
+    "url": window.location.origin,
+    "logo": `${window.location.origin}/logo.png`,
+    "sameAs": [
+      "https://www.facebook.com/marudharfashionpoint",
+      "https://www.instagram.com/marudharfashionpoint"
+    ]
   };
 };
 
@@ -54,8 +54,6 @@ export const generateLocalBusinessSchema = (store: any) => {
 
 export const generateProductSchema = (product: any) => {
   if (!product) return null;
-  const config = getPlatformConfig();
-  const platformTitle = config.platformName;
   return {
     "@context": "https://schema.org/",
     "@type": "Product",
@@ -66,11 +64,11 @@ export const generateProductSchema = (product: any) => {
     "mpn": product.id,
     "brand": {
       "@type": "Brand",
-      "name": product.brand || platformTitle
+      "name": product.brand || "Marudhar Fashion Point"
     },
     "offers": {
       "@type": "Offer",
-      "url": `${typeof window !== 'undefined' ? window.location.origin : config.platformBaseUrl}/product/${product.id}`,
+      "url": `${window.location.origin}/product/${product.id}`,
       "priceCurrency": "INR",
       "price": product.price,
       "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
@@ -78,7 +76,7 @@ export const generateProductSchema = (product: any) => {
       "availability": product.inStock !== false ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       "seller": {
         "@type": "Organization",
-        "name": platformTitle
+        "name": "Marudhar Fashion Point"
       }
     },
     "aggregateRating": product.rating ? {

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Sparkles, Loader2, CheckCircle } from 'lucide-react';
-import { getPlatformConfig } from '../../lib/platformConfig';
 
 export const AISEOAssistant: React.FC<{ onApply: (data: any) => void }> = ({ onApply }) => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -8,12 +7,11 @@ export const AISEOAssistant: React.FC<{ onApply: (data: any) => void }> = ({ onA
 
   const generateSEO = () => {
     setIsGenerating(true);
-    const platform = getPlatformConfig();
     setTimeout(() => {
       setResult({
-        title: `Premium Men's & Women's Footwear | ${platform.platformDisplayName}`,
-        description: "Discover exclusive handcrafted leather shoes, premium sports sneakers, and trendy casual footwear for men, women, and kids. Best quality guaranteed.",
-        keywords: `shoes, premium footwear, leather shoes, sports sneakers, ${platform.platformDisplayName}`
+        title: "Premium Men's & Women's Footwear | Marudhar Fashion Point",
+        description: "Discover exclusive handcrafted leather shoes, premium sports sneakers, and trendy casual footwear for men, women, and kids. Best quality guaranteed in Pipar City.",
+        keywords: "shoes, premium footwear, Pipar City, leather shoes, sports sneakers, Marudhar Fashion Point"
       });
       setIsGenerating(false);
     }, 2000);

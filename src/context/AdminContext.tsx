@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { AdminUser, AdminRole } from '../types';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 interface AdminContextType {
@@ -41,15 +39,15 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       ...role,
       id: `role_${Date.now()}`,
     };
-    await setDoc(getTenantDocWriteRef(db, 'admin_roles', newRole.id), newRole);
+    await setDoc(doc(db, 'admin_roles', newRole.id), newRole);
   };
 
   const updateAdminRole = async (id: string, role: Partial<AdminRole>) => {
-    await setDoc(getTenantDocWriteRef(db, 'admin_roles', id), role, { merge: true });
+    await setDoc(doc(db, 'admin_roles', id), role, { merge: true });
   };
 
   const deleteAdminRole = async (id: string) => {
-    await deleteDoc(getTenantDocWriteRef(db, 'admin_roles', id));
+    await deleteDoc(doc(db, 'admin_roles', id));
   };
 
   return (

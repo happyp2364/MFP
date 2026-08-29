@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { CustomerOrder, OrderStatus, PaymentMethodType, PaymentStatus, CartItem, ShippingAddressInfo } from '../types';
 import { saveOrderInFirestore, updateOrderStatusInFirestore, db } from '../lib/firebase';
 import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
-import { onTenantCollectionSnapshot } from '../lib/onSnapshotMultiTenant';
 import { getCurrentTenantId, filterDocsByTenant } from '../lib/tenantIsolation';
 
 interface OrderContextType {
@@ -23,42 +22,20 @@ interface OrderContextType {
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [activeTenant, setActiveTenant] = useState(getCurrentTenantId());
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
 
   useEffect(() => {
-    const handleTenantChange = () => {
-      setActiveTenant(getCurrentTenantId());
-    };
-    window.addEventListener('tenantChanged', handleTenantChange);
-    window.addEventListener('storage', handleTenantChange);
-    return () => {
-      window.removeEventListener('tenantChanged', handleTenantChange);
-      window.removeEventListener('storage', handleTenantChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    setOrders([]);
-
-    const unsub = onTenantCollectionSnapshot(
-      db,
-      'orders',
-      [orderBy('createdAt', 'desc'), limit(500)],
-      (snapshot) => {
-        const loaded: CustomerOrder[] = [];
-        snapshot.forEach((docSnap) => {
-          loaded.push({ id: docSnap.id, ...(docSnap.data() as any) } as CustomerOrder);
-        });
-        setOrders(loaded);
-      },
-      (err) => {
-        console.warn('Orders listener notice:', err);
-      }
-    );
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(500));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const loaded: CustomerOrder[] = [];
+      snapshot.forEach((docSnap) => {
+        loaded.push({ id: docSnap.id, ...docSnap.data() } as CustomerOrder);
+      });
+      setOrders(filterDocsByTenant(loaded, getCurrentTenantId()));
+    }, () => {});
 
     return () => unsub();
-  }, [activeTenant]);
+  }, []);
 
   const placeOrderAndPay = async (
     items: CartItem[],

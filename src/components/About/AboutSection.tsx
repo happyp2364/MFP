@@ -50,14 +50,14 @@ export const AboutSection: React.FC = () => {
         return (100000).toLocaleString('en-IN');
       case 'reviews':
         return reviews.length > 0
-          ? (reviews.reduce((acc: any, r: any) => acc + r.rating, 0) / reviews.length).toFixed(1)
+          ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
           : '4.9';
       default:
         return counter.value;
     }
   };
 
-  const filteredGallery = config.gallery.filter((item: any) => {
+  const filteredGallery = config.gallery.filter((item) => {
     if (!item.enabled) return false;
     if (selectedGalleryCategory === 'all') return true;
     return item.category === selectedGalleryCategory;
@@ -88,7 +88,7 @@ export const AboutSection: React.FC = () => {
 
         {/* Live Counters Stats Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {config.counters.filter((c: any) => c.enabled).map((counter: any) => (
+          {config.counters.filter((c) => c.enabled).map((counter) => (
             <div
               key={counter.id}
               className="bg-neutral-900/80 backdrop-blur-md border border-neutral-800 hover:border-amber-500/40 rounded-2xl p-4 text-center shadow-lg transition-all hover:-translate-y-1 group"
@@ -180,7 +180,7 @@ export const AboutSection: React.FC = () => {
               <div className="py-6 space-y-6">
                 <div>
                   <h3 className="text-lg font-bold text-amber-300 mb-2 font-serif-heading">
-                    The Store Legacy
+                    The Marudhar Legacy in Pipar City
                   </h3>
                   <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">
                     {config.businessStory}
@@ -216,7 +216,7 @@ export const AboutSection: React.FC = () => {
                     Why Families Choose Us
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {config.storeHighlights.map((hl: any, idx: any) => (
+                    {config.storeHighlights.map((hl, idx) => (
                       <div key={idx} className="flex items-center gap-2 text-xs text-neutral-200 bg-neutral-800/40 p-2.5 rounded-xl border border-neutral-800">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                         <span>{hl}</span>
@@ -235,7 +235,7 @@ export const AboutSection: React.FC = () => {
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {config.ownersAndTeam.filter((m: any) => m.enabled).map((member: any) => (
+                  {config.ownersAndTeam.filter((m) => m.enabled).map((member) => (
                     <div
                       key={member.id}
                       className="bg-neutral-800/80 border border-neutral-700/80 hover:border-amber-500/40 rounded-2xl p-4 space-y-3 transition-all"
@@ -265,7 +265,7 @@ export const AboutSection: React.FC = () => {
 
                         {member.socialLinks?.whatsapp && (
                           <a
-                            href={`https://wa.me/${member.socialLinks.whatsapp}?text=${encodeURIComponent(`Hello ${member.fullName}, I am inquiring about your store collections.`)}`}
+                            href={`https://wa.me/${member.socialLinks.whatsapp}?text=${encodeURIComponent(`Hello ${member.fullName}, I am inquiring about Marudhar Fashion Point collections.`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-[11px] font-bold rounded-lg border border-emerald-500/30 flex items-center gap-1 transition-colors"
@@ -288,7 +288,7 @@ export const AboutSection: React.FC = () => {
                 </h3>
 
                 <div className="relative border-l-2 border-amber-500/30 pl-6 ml-3 space-y-6">
-                  {config.timeline.filter((t: any) => t.enabled).map((item: any) => (
+                  {config.timeline.filter((t) => t.enabled).map((item) => (
                     <div key={item.id} className="relative group">
                       {/* Timeline Node Icon */}
                       <div className="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-amber-500 border-4 border-neutral-900 group-hover:scale-125 transition-transform" />
@@ -316,7 +316,7 @@ export const AboutSection: React.FC = () => {
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {config.achievements.filter((a: any) => a.enabled).map((ach: any) => (
+                  {config.achievements.filter((a) => a.enabled).map((ach) => (
                     <div key={ach.id} className="bg-neutral-800/80 border border-neutral-700/80 rounded-2xl p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -366,7 +366,7 @@ export const AboutSection: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {filteredGallery.map((photo: any) => (
+                  {filteredGallery.map((photo) => (
                     <div
                       key={photo.id}
                       onClick={() => setLightboxImage({ url: photo.imageUrl, title: photo.title, caption: photo.caption })}
@@ -395,7 +395,7 @@ export const AboutSection: React.FC = () => {
               </div>
 
               <a
-                href={generateGeneralInquiryWhatsAppLink(`Hello, I am viewing your About Us section and would like to ask a question.`)}
+                href={generateGeneralInquiryWhatsAppLink(`Hello Viju Bhai, I am viewing Marudhar Fashion Point About Us section and would like to ask a question.`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all shrink-0"

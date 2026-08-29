@@ -86,10 +86,10 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
   const filteredProducts = query.trim()
     ? products.filter(
         (p) =>
-          (p.name || '').toLowerCase().includes((query || '').toLowerCase()) ||
-          (p.category || '').toLowerCase().includes((query || '').toLowerCase()) ||
-          (p.subcategory || '').toLowerCase().includes((query || '').toLowerCase()) ||
-          (p.brand || '').toLowerCase().includes((query || '').toLowerCase())
+          p.name.toLowerCase().includes(query.toLowerCase()) ||
+          p.category.toLowerCase().includes(query.toLowerCase()) ||
+          p.subcategory.toLowerCase().includes(query.toLowerCase()) ||
+          p.brand.toLowerCase().includes(query.toLowerCase())
       )
     : [];
 
@@ -181,7 +181,7 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
           <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 animate-pulse">
             <Sparkles className="w-5 h-5 text-emerald-600 animate-spin" />
             <span className="text-xs font-bold text-emerald-900">
-              Analyzing photo using AI Vision... Matching shoe patterns!
+              Analyzing photo using Marudhar AI Vision... Matching shoe patterns!
             </span>
           </div>
         )}
@@ -229,7 +229,7 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
                           {p.name}
                         </div>
                         <div className="text-[10px] text-neutral-500 font-medium">
-                          {(p.category || 'General').toUpperCase()} • ₹{(p.price || 0).toLocaleString('en-IN')}
+                          {p.category.toUpperCase()} • ₹{p.price.toLocaleString('en-IN')}
                         </div>
                       </div>
                     </div>

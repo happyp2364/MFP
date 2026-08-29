@@ -7,8 +7,8 @@ export const SocialFollowCTA: React.FC = () => {
   const { socialMediaConfig, recordSocialClick } = useStore();
 
   const enabledPlatforms = (socialMediaConfig?.platforms || [])
-    .filter((p: any) => p.enabled)
-    .sort((a: any, b: any) => a.displayOrder - b.displayOrder);
+    .filter(p => p.enabled)
+    .sort((a, b) => a.displayOrder - b.displayOrder);
 
   return (
     <section className="py-16 bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 text-white relative overflow-hidden border-t border-b border-white/10">
@@ -20,12 +20,12 @@ export const SocialFollowCTA: React.FC = () => {
         {/* Top Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-bold text-amber-300 mb-6 shadow-lg animate-pulse">
           <Sparkles className="w-4 h-4 text-amber-400" />
-          <span>JOIN OUR EXCLUSIVE COMMUNITY</span>
+          <span>JOIN OUR MARUDHAR FASHION FAMILY</span>
         </div>
 
         {/* Heading & Subheading */}
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-black font-serif-heading tracking-tight text-white mb-4">
-          Stay Connected With Us
+          Stay Connected With Marudhar Fashion Point
         </h2>
         <p className="text-sm sm:text-base text-neutral-300 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
           Follow us for the latest fashion collections, premium footwear, offers, and exclusive updates.
@@ -34,7 +34,7 @@ export const SocialFollowCTA: React.FC = () => {
         {/* Animated Social Buttons Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
           {enabledPlatforms.length > 0 ? (
-            enabledPlatforms.map((plat: any) => {
+            enabledPlatforms.map((plat) => {
               const getHoverStyle = (effect: string) => {
                 switch (effect) {
                   case 'glow': return 'hover:shadow-[0_0_20px_rgba(255,255,255,0.4)]';

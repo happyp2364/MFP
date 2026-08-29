@@ -1,26 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { SEOMetadataConfig } from '../types';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
-import { getPlatformConfig } from '../lib/platformConfig';
-
-const platform = getPlatformConfig();
 
 export const DEFAULT_SEO_CONFIG: SEOMetadataConfig = {
-  globalTitleTemplate: `%s | ${platform.platformDisplayName}`,
-  globalDescription: `${platform.platformDisplayName} - Premium Multi-Tenant Store.`,
+  globalTitleTemplate: '%s | Marudhar Fashion Point',
+  globalDescription: 'Marudhar Fashion Point - Premium Sports & Luxury Footwear Store.',
   defaultOgImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=1200',
   googleAnalyticsId: 'G-MEASUREMENT_ID',
   googleSearchConsoleVerification: 'gsc_verification_code',
   googleBusinessProfileId: 'gbp_profile_id',
-  robotsTxtContent: `User-agent: *\nAllow: /\nSitemap: ${platform.platformBaseUrl}/sitemap.xml`,
-  businessName: platform.platformName,
-  businessCategory: 'E-commerce Platform',
-  foundedYear: '2024',
+  robotsTxtContent: 'User-agent: *\nAllow: /\nSitemap: https://marudharfashionpoint.com/sitemap.xml',
+  businessName: 'Marudhar Fashion Point',
+  businessCategory: 'Footwear Store',
+  foundedYear: '2015',
   contactNumber: '+919876543210',
-  businessAddress: 'Main Commercial Hub',
+  businessAddress: 'Marudhar Fashion Point, Main Market, City',
 };
 
 interface SEOContextType {
@@ -34,7 +29,7 @@ export const SEOProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [seoConfig, setSeoConfig] = useState<SEOMetadataConfig>(DEFAULT_SEO_CONFIG);
 
   useEffect(() => {
-    const unsub = onTenantDocSnapshot(db, 'settings', 'seo_config', (snapshot) => {
+    const unsub = onSnapshot(doc(db, 'settings', 'seo_config'), (snapshot) => {
       if (snapshot.exists()) {
         setSeoConfig(snapshot.data() as SEOMetadataConfig);
       }
@@ -46,7 +41,7 @@ export const SEOProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateSEOConfig = async (config: SEOMetadataConfig) => {
     setSeoConfig(config);
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'seo_config'), config, { merge: true });
+      await setDoc(doc(db, 'settings', 'seo_config'), config, { merge: true });
     } catch (e) {
       console.warn('Firestore SEO config sync failed', e);
     }

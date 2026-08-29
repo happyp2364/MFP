@@ -39,7 +39,6 @@ import { StoreLocatorPage } from './components/StoreLocator/StoreLocatorPage';
 import { ProductDetailPage } from './components/Products/ProductDetailPage';
 import { HomepageRenderer } from './components/Customer/HomepageRenderer';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { getPlatformConfig } from './lib/platformConfig';
 import { ScratchCardPopup } from './components/Promo/ScratchCardPopup';
 import { SpinWheelPopup } from './components/Promo/SpinWheelPopup';
 import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebration';
@@ -52,7 +51,7 @@ import { SEOHead } from './components/SEO/SEOHead';
 import { generateOrganizationSchema, generateLocalBusinessSchema, generateBreadcrumbSchema, generateFAQSchema } from './utils/seo';
 
 function AppContent() {
-  const { products, isAdmin, isAdminAuthLoading, toastMessage, productFeedConfig, seoConfig } = useStore();
+  const { products, isAdmin, toastMessage, productFeedConfig, seoConfig } = useStore();
   const { backgroundGradientClass } = useTheme();
 
   // --- STATE ---
@@ -70,7 +69,7 @@ function AppContent() {
     sortBy: 'featured',
   });
 
-  const [wishlistIds, setWishlistIds] = useState<string[]>(['nwd-m01', 'nwd-w01']);
+  const [wishlistIds, setWishlistIds] = useState<string[]>(['mfp-m01', 'mfp-w01']);
   const [cartItems, setCartItems] = useState<CartItem[]>(() => 
     products.length > 0 ? [
       {
@@ -143,41 +142,10 @@ function AppContent() {
     return () => window.removeEventListener('popstate', handleUrlChange);
   }, []);
 
-  // --- AUTOMATIC ADMIN ROUTE DETECTION FOR TENANT & PLATFORM ADMINS ---
-  React.useEffect(() => {
-    const checkAdminRoute = () => {
-      if (typeof window === 'undefined') return;
-      const path = window.location.pathname.toLowerCase();
-      const searchParams = new URLSearchParams(window.location.search);
-      const hash = window.location.hash.toLowerCase();
-
-      const adminParam = searchParams.get('admin');
-      const isAdminQuery = adminParam === 'true' || adminParam === '1' || searchParams.has('admin');
-      const isAdminPath = path === '/admin' || path.endsWith('/admin');
-      const isAdminHash = hash === '#admin' || hash === '#/admin' || hash.includes('admin=true');
-
-      if (isAdminQuery || isAdminPath || isAdminHash) {
-        if (isAdminAuthLoading) return; // Wait until authentication finishes resolving
-
-        if (isAdmin) {
-          setAdminDashboardOpen(true);
-          setAdminLoginOpen(false);
-        } else {
-          setAdminLoginOpen(true);
-          setAdminDashboardOpen(false);
-        }
-      }
-    };
-
-    checkAdminRoute();
-    window.addEventListener('popstate', checkAdminRoute);
-    return () => window.removeEventListener('popstate', checkAdminRoute);
-  }, [isAdmin, isAdminAuthLoading]);
-
   // Global hotkey shortcut to open Admin Login: Ctrl + Alt + A (or Cmd + Opt + A on Mac)
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.altKey && (e.key || '').toLowerCase() === 'a') {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'a') {
         e.preventDefault();
         setAdminLoginOpen(true);
       }
@@ -208,39 +176,6 @@ function AppContent() {
   }, [quickViewProduct, productRouteSlug]);
 
   // --- HANDLERS ---
-  const handleOpenAdminFlow = (tab?: string) => {
-    if (tab) {
-      setAdminActiveTab(tab as any);
-    } else {
-      setAdminActiveTab(undefined);
-    }
-
-    if (isAdminAuthLoading) {
-      // If auth is still resolving, show quick status and wait briefly
-      const interval = setInterval(() => {
-        if (!isAdminAuthLoading) {
-          clearInterval(interval);
-          if (isAdmin) {
-            setAdminDashboardOpen(true);
-            setAdminLoginOpen(false);
-          } else {
-            setAdminLoginOpen(true);
-            setAdminDashboardOpen(false);
-          }
-        }
-      }, 100);
-      setTimeout(() => clearInterval(interval), 2500);
-      return;
-    }
-
-    if (isAdmin) {
-      setAdminDashboardOpen(true);
-      setAdminLoginOpen(false);
-    } else {
-      setAdminLoginOpen(true);
-      setAdminDashboardOpen(false);
-    }
-  };
   const handleUpdateFilter = (updated: Partial<FilterState>) => {
     setFilterState((prev) => {
       const newFilters = { ...prev, ...updated };
@@ -310,7 +245,7 @@ function AppContent() {
     let variant = selectedVariant;
     if (!variant && product.variants && product.variants.length > 0) {
       variant = product.variants.find(
-        (v) => (v.color || '').toLowerCase() === (color || '').toLowerCase() && v.size.toString() === size.toString()
+        (v) => v.color.toLowerCase() === color.toLowerCase() && v.size.toString() === size.toString()
       );
     }
 
@@ -351,7 +286,7 @@ function AppContent() {
     let variant = selectedVariant;
     if (!variant && product.variants && product.variants.length > 0) {
       variant = product.variants.find(
-        (v) => (v.color || '').toLowerCase() === (chosenColor || '').toLowerCase() && v.size.toString() === chosenSize.toString()
+        (v) => v.color.toLowerCase() === chosenColor.toLowerCase() && v.size.toString() === chosenSize.toString()
       );
     }
 
@@ -409,16 +344,16 @@ function AppContent() {
   const availableSubcategories = useMemo(() => {
     let relevantProducts = products;
     if (filterState.category !== 'all') {
-      relevantProducts = products.filter((p: any) => p.category === filterState.category);
+      relevantProducts = products.filter((p) => p.category === filterState.category);
     }
     const subs = new Set<string>();
-    relevantProducts.forEach((p: any) => subs.add(p.subcategory));
+    relevantProducts.forEach((p) => subs.add(p.subcategory));
     return Array.from(subs);
   }, [filterState.category, products]);
 
   // --- FILTERED PRODUCTS ---
   const filteredProducts = useMemo(() => {
-    const rawFiltered = products.filter((p: any) => {
+    const rawFiltered = products.filter((p) => {
       // Gender Category
       if (filterState.category !== 'all' && p.category !== filterState.category) {
         return false;
@@ -439,13 +374,13 @@ function AppContent() {
 
       // Colors
       if (filterState.colors.length > 0) {
-        const hasColor = p.colors.some((c: any) => filterState.colors.includes(c.name));
+        const hasColor = p.colors.some((c) => filterState.colors.includes(c.name));
         if (!hasColor) return false;
       }
 
       // Sizes
       if (filterState.sizes.length > 0) {
-        const hasSize = p.sizes.some((sz: any) => filterState.sizes.includes(sz));
+        const hasSize = p.sizes.some((sz) => filterState.sizes.includes(sz));
         if (!hasSize) return false;
       }
 
@@ -457,19 +392,19 @@ function AppContent() {
       // Collection Filter
       if (filterState.collection) {
         const colMatch = p.collectionTags.some(
-          (tag: any) => (tag || '').toLowerCase() === (filterState.collection || '').toLowerCase()
+          (tag) => tag.toLowerCase() === filterState.collection.toLowerCase()
         );
         if (!colMatch) return false;
       }
 
       // Search Query
       if (filterState.searchQuery) {
-        const q = (filterState.searchQuery || '').toLowerCase();
+        const q = filterState.searchQuery.toLowerCase();
         const match =
-          (p.name || '').toLowerCase().includes(q) ||
-          (p.brand || '').toLowerCase().includes(q) ||
-          (p.subcategory || '').toLowerCase().includes(q) ||
-          (p.description || '').toLowerCase().includes(q);
+          p.name.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q) ||
+          p.subcategory.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q);
         if (!match) return false;
       }
 
@@ -503,7 +438,7 @@ function AppContent() {
 
   // Carousels Products (Limited to 8 products per homepage limit as requested)
   const bestSellers = useMemo(() => {
-    const raw = products.filter((p: any) => p.isBestSeller);
+    const raw = products.filter((p) => p.isBestSeller);
     const unique = deduplicateProducts(raw, productFeedConfig);
     if (unique.length === 0) {
       return products.slice(0, 8);
@@ -512,7 +447,7 @@ function AppContent() {
   }, [products, productFeedConfig]);
 
   const newArrivals = useMemo(() => {
-    const raw = products.filter((p: any) => p.isNewArrival);
+    const raw = products.filter((p) => p.isNewArrival);
     const unique = deduplicateProducts(raw, productFeedConfig);
     if (unique.length === 0) {
       return products.slice(4, 12);
@@ -521,7 +456,7 @@ function AppContent() {
   }, [products, productFeedConfig]);
 
   const featuredProducts = useMemo(() => {
-    const raw = products.filter((p: any) => p.isFeatured);
+    const raw = products.filter((p) => p.isFeatured);
     const unique = deduplicateProducts(raw, productFeedConfig);
     if (unique.length === 0) {
       return products.slice(0, 8);
@@ -530,7 +465,7 @@ function AppContent() {
   }, [products, productFeedConfig]);
 
   const trendingProducts = useMemo(() => {
-    const raw = products.filter((p: any) => p.isTrending);
+    const raw = products.filter((p) => p.isTrending);
     const unique = deduplicateProducts(raw, productFeedConfig);
     if (unique.length === 0) {
       return products.slice(8, 16);
@@ -538,14 +473,14 @@ function AppContent() {
     return unique.slice(0, 8);
   }, [products, productFeedConfig]);
   const wishlistedProducts = useMemo(
-    () => products.filter((p: any) => wishlistIds.includes(p.id)),
+    () => products.filter((p) => wishlistIds.includes(p.id)),
     [wishlistIds, products]
   );
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
       <SEOHead 
-        title={seoConfig?.globalTitleTemplate?.replace('%s', 'Home') || getPlatformConfig().platformDisplayName}
+        title={seoConfig?.globalTitleTemplate?.replace('%s', 'Home') || 'Marudhar Fashion Point'}
         description={seoConfig?.globalDescription}
         image={seoConfig?.defaultOgImage}
         schemas={[generateOrganizationSchema()]}
@@ -627,7 +562,7 @@ function AppContent() {
 
       {productRouteSlug !== null ? (
         <ProductDetailPage
-          product={activeRouteProduct || null}
+          product={activeRouteProduct}
           targetSlug={productRouteSlug}
           allProducts={products}
           onBackToHome={() => {
@@ -825,8 +760,22 @@ function AppContent() {
 
       {/* Premium Floating Admin Command Button */}
       <FloatingAdminButton
-        onOpenAdmin={() => handleOpenAdminFlow()}
-        onOpenAdminWithTab={(tab) => handleOpenAdminFlow(tab)}
+        onOpenAdmin={() => {
+          setAdminActiveTab(undefined);
+          if (isAdmin) {
+            setAdminDashboardOpen(true);
+          } else {
+            setAdminLoginOpen(true);
+          }
+        }}
+        onOpenAdminWithTab={(tab) => {
+          setAdminActiveTab(tab as any);
+          if (isAdmin) {
+            setAdminDashboardOpen(true);
+          } else {
+            setAdminLoginOpen(true);
+          }
+        }}
       />
 
       <SEOLiveScoreWidget />
@@ -1006,9 +955,7 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AdminErrorBoundary fallbackTitle="Storefront Experience Notice">
-        <AppContent />
-      </AdminErrorBoundary>
+      <AppContent />
     </ThemeProvider>
   );
 }

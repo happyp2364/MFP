@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { getPlatformConfig } from '../../lib/platformConfig';
 import {
   X,
   Sparkles,
@@ -48,10 +47,10 @@ interface SmartProductFormModalProps {
   onDuplicate?: (product: Product) => void;
 }
 
-const DRAFT_STORAGE_KEY = 'nwd_admin_product_draft_v2';
+const DRAFT_STORAGE_KEY = 'mfp_admin_product_draft_v2';
 
 const POPULAR_BRANDS = [
-  'House Brand',
+  'Marudhar Fashion',
   'Puma',
   'Nike',
   'Sparx',
@@ -95,17 +94,17 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const [colorCopySource, setColorCopySource] = useState<string>('');
 
   // Helper functions for auto-SKU and auto-barcode
-  const generateAutoSKU = (productName: any, color: any, size: any): string => {
-    const cleanName = (productName || '').toString().substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const cleanColor = (color || '').toString().substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const cleanSize = (size || '').toString().padStart(2, '0').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const generateAutoSKU = (productName: string, color: string, size: string): string => {
+    const cleanName = productName.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const cleanColor = color.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const cleanSize = size.padStart(2, '0').toUpperCase().replace(/[^A-Z0-9]/g, '');
     return `${cleanName}-${cleanColor}-${cleanSize}`;
   };
 
-  const generateAutoBarcode = (productId: any, color: any, size: any): string => {
-    const cleanId = (productId || '').toString().substring(0, 4).toUpperCase();
-    const cleanColor = (color || '').toString().substring(0, 2).toUpperCase();
-    const cleanSize = (size || '').toString().replace(/[^0-9]/g, '');
+  const generateAutoBarcode = (productId: string, color: string, size: string): string => {
+    const cleanId = productId.substring(0, 4).toUpperCase();
+    const cleanColor = color.substring(0, 2).toUpperCase();
+    const cleanSize = size.replace(/[^0-9]/g, '');
     return `890${cleanId}${cleanColor}${cleanSize}`.padEnd(13, '0').substring(0, 13);
   };
 
@@ -113,16 +112,13 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const regenerateVariantMatrix = () => {
     const newVariants: ProductVariant[] = [];
     const activeSizes = productState.sizeStocks 
-      ? productState.sizeStocks.filter(s => s && s.isAvailable).map(s => s.size) 
-      : (productState.sizes || []);
+      ? productState.sizeStocks.filter(s => s.isAvailable).map(s => s.size) 
+      : productState.sizes;
     
-    const colorsList = productState.colors || [];
-
-    colorsList.forEach(col => {
-      if (!col || !col.name) return;
+    productState.colors.forEach(col => {
       activeSizes.forEach(sz => {
         const existing = (productState.variants || []).find(
-          v => (v.color || '').toLowerCase() === (col.name || '').toLowerCase() && String(v.size) === String(sz)
+          v => v.color.toLowerCase() === col.name.toLowerCase() && v.size.toString() === sz.toString()
         );
         
         if (existing) {
@@ -133,13 +129,12 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
             size: sz
           });
         } else {
-          const cleanColName = (col.name || 'col').toString().replace(/\s+/g, '');
-          const varId = `${productState.id || 'prod'}_${cleanColName}_${sz}`;
-          const autoSku = generateAutoSKU(productState.name || 'NWD', col.name, sz);
+          const varId = `${productState.id || 'prod'}_${col.name.replace(/\s+/g, '')}_${sz}`;
+          const autoSku = generateAutoSKU(productState.name || 'MFP', col.name, sz);
           const autoBarcode = generateAutoBarcode(productState.id || '101', col.name, sz);
           
           const siblingImages = (productState.variants || [])
-            .find(v => (v.color || '').toLowerCase() === (col.name || '').toLowerCase() && v.images && v.images.length > 0)
+            .find(v => v.color.toLowerCase() === col.name.toLowerCase() && v.images && v.images.length > 0)
             ?.images || [];
 
           newVariants.push({
@@ -179,16 +174,13 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // Set default gallery color selection
   useEffect(() => {
     if (productState.colors && productState.colors.length > 0 && !selectedColorForGallery) {
-      const firstCol = productState.colors[0];
-      if (firstCol && firstCol.name) {
-        setSelectedColorForGallery(firstCol.name);
-      }
+      setSelectedColorForGallery(productState.colors[0].name);
     }
   }, [productState.colors, selectedColorForGallery]);
 
   const updateColorGalleryImages = (colorName: string, newImages: string[], videoUrl?: string, labels?: Record<string, string>) => {
     const updatedVariants = (productState.variants || []).map(v => {
-      if ((v.color || '').toLowerCase() === (colorName || '').toLowerCase()) {
+      if (v.color.toLowerCase() === colorName.toLowerCase()) {
         return {
           ...v,
           images: newImages,
@@ -291,13 +283,13 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // Toggle Size Availability
   const handleToggleSizeAvailable = (sizeStr: string) => {
     const updated = currentSizeStocks.map((st) => {
-      if (String(st.size) === String(sizeStr)) {
+      if (st.size === sizeStr) {
         return { ...st, isAvailable: !st.isAvailable };
       }
       return st;
     });
 
-    const activeSizes = updated.filter((s) => s.isAvailable).map((s) => String(s.size));
+    const activeSizes = updated.filter((s) => s.isAvailable).map((s) => s.size);
     setProductState({ ...productState, sizeStocks: updated, sizes: activeSizes });
   };
 
@@ -305,7 +297,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const handleSizeQuantityChange = (sizeStr: string, qty: number) => {
     const sanitized = Math.max(0, qty);
     const updated = currentSizeStocks.map((st) => {
-      if (String(st.size) === String(sizeStr)) {
+      if (st.size === sizeStr) {
         return {
           ...st,
           stockQuantity: sanitized,
@@ -321,7 +313,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // Bulk Size Actions
   const handleBulkSelectAllSizes = () => {
     const updated = standardSizeOptions.map((sz) => {
-      const existing = currentSizeStocks.find((s) => String(s.size) === String(sz));
+      const existing = currentSizeStocks.find((s) => s.size === sz);
       return {
         size: sz,
         isAvailable: true,
@@ -358,7 +350,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // COLOR MANAGEMENT
   const handleAddPresetColor = (colorObj: ProductColor) => {
     const exists = productState.colors.some(
-      (c) => (c.name || '').toLowerCase() === (colorObj.name || '').toLowerCase()
+      (c) => c.name.toLowerCase() === colorObj.name.toLowerCase()
     );
     if (exists) return;
 
@@ -412,8 +404,8 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     if (e) e.preventDefault();
     if (!isFormValid) return;
 
-    const cleanName = (productState.name || '').trim();
-    const catCode = (productState.category || 'X').charAt(0).toUpperCase();
+    const cleanName = productState.name.trim();
+    const catCode = productState.category.charAt(0).toUpperCase();
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const subCode = (productState.subcategory || 'GEN')
       .substring(0, 3)
@@ -423,7 +415,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     // Auto-generate technical fields in background
     const autoSku = productState.sku && productState.sku.trim().length > 0
       ? productState.sku
-      : `NWD-${catCode}${randomSuffix}-${subCode}`;
+      : `MFP-${catCode}${randomSuffix}-${subCode}`;
 
     const slugBase = cleanName
       .toLowerCase()
@@ -434,8 +426,8 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
       ? productState.slug
       : `${slugBase}-${Math.floor(100 + Math.random() * 900)}`;
 
-    const autoMetaTitle = `${cleanName} | ${getPlatformConfig().platformDisplayName}`;
-    const autoMetaDesc = `Buy ${cleanName} by ${productState.brand || getPlatformConfig().platformDisplayName} at ₹${productState.price}. Fast delivery & cash on delivery.`;
+    const autoMetaTitle = `${cleanName} | Marudhar Fashion Point`;
+    const autoMetaDesc = `Buy ${cleanName} by ${productState.brand || 'Marudhar Fashion Point'} at ₹${productState.price}. Fast delivery & cash on delivery.`;
 
     // Process sizes: if no sizes selected, leave as empty array or keep current
     const activeSizes = productState.sizes || [];
@@ -445,11 +437,11 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
       name: cleanName,
       brand: productState.brand ? productState.brand.trim() : '',
       description: productState.description ? productState.description.trim() : '',
-      rating: productState.rating && productState.rating > 0 ? productState.rating : 0,
-      reviewsCount: productState.reviewsCount && productState.reviewsCount > 0 ? productState.reviewsCount : 0,
+      rating: productState.rating && productState.rating > 0 ? productState.rating : undefined,
+      reviewsCount: productState.reviewsCount && productState.reviewsCount > 0 ? productState.reviewsCount : undefined,
       originalPrice: (productState.originalPrice && productState.originalPrice > productState.price)
         ? productState.originalPrice
-        : 0,
+        : undefined,
       discountPercent: (productState.originalPrice && productState.originalPrice > productState.price)
         ? Math.round(((productState.originalPrice - productState.price) / productState.originalPrice) * 100)
         : 0,
@@ -476,13 +468,13 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     onSave(finalProduct);
   };
 
-  const availableSubcategories = getSubcategoriesForProductFor(productState.category || 'men');
+  const availableSubcategories = getSubcategoriesForProductFor(productState.category);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" onClick={(e) => e.stopPropagation()}>
-      <div className="fixed inset-0 bg-black/75 backdrop-blur-md" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="fixed inset-0 bg-black/75 backdrop-blur-md" onClick={onClose} />
 
-      <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden z-10 max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden z-10 max-h-[92vh] flex flex-col">
         {/* HEADER */}
         <div className="bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 text-white p-4 sm:p-5 flex items-center justify-between border-b border-neutral-800 shrink-0">
           <div className="flex items-center gap-3">
@@ -665,7 +657,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. AirGlide Knit Running Shoes"
+                  placeholder="e.g. Marudhar AirGlide Knit Running Shoes"
                   value={productState.name}
                   onChange={(e) => setProductState({ ...productState, name: e.target.value })}
                   className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#0B8F63] font-bold text-neutral-900 text-xs"
@@ -676,7 +668,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                 <label className="font-extrabold text-neutral-800 block mb-1">Brand Name</label>
                 <input
                   type="text"
-                  placeholder="e.g. Nike, Sparx, Puma"
+                  placeholder="e.g. Marudhar Fashion, Nike, Sparx"
                   value={productState.brand}
                   onChange={(e) => setProductState({ ...productState, brand: e.target.value })}
                   className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#0B8F63] text-xs font-medium"
@@ -851,7 +843,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
               {standardSizeOptions.map((szStr) => {
-                const stockObj = currentSizeStocks.find((s) => String(s.size) === String(szStr)) || {
+                const stockObj = currentSizeStocks.find((s) => s.size === szStr) || {
                   size: szStr,
                   isAvailable: true,
                   inStock: true,
@@ -1038,7 +1030,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                             key={c.name}
                             onClick={() => setSelectedColorForGallery(c.name)}
                             className={`px-3 py-1.5 rounded-xl border-2 font-bold text-xs flex items-center gap-1.5 transition-all ${
-                              (selectedColorForGallery || '').toLowerCase() === (c.name || '').toLowerCase()
+                              selectedColorForGallery.toLowerCase() === c.name.toLowerCase()
                                 ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-600/15'
                                 : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
                             }`}
@@ -1066,7 +1058,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                           >
                             <option value="">Copy Gallery from...</option>
                             {productState.colors
-                              .filter(c => (c.name || '').toLowerCase() !== (selectedColorForGallery || '').toLowerCase())
+                              .filter(c => c.name.toLowerCase() !== selectedColorForGallery.toLowerCase())
                               .map(c => (
                                 <option key={c.name} value={c.name}>{c.name}</option>
                               ))
@@ -1078,7 +1070,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                               if (!colorCopySource) return;
                               // Find siblings' images
                               const sourceImages = (productState.variants || [])
-                                .find(v => (v.color || '').toLowerCase() === (colorCopySource || '').toLowerCase() && v.images && v.images.length > 0)
+                                .find(v => v.color.toLowerCase() === colorCopySource.toLowerCase() && v.images && v.images.length > 0)
                                 ?.images || [];
                               if (sourceImages.length > 0) {
                                 updateColorGalleryImages(selectedColorForGallery, sourceImages);
@@ -1117,7 +1109,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                                 return;
                               }
                               const existingImages = (productState.variants || [])
-                                .find(v => (v.color || '').toLowerCase() === (selectedColorForGallery || '').toLowerCase())
+                                .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
                                 ?.images || [];
                               const merged = [...existingImages, ...urls];
                               updateColorGalleryImages(selectedColorForGallery, merged);
@@ -1152,7 +1144,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                               'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&auto=format&fit=crop&q=60',
                             ];
                             const existingImages = (productState.variants || [])
-                              .find(v => (v.color || '').toLowerCase() === (selectedColorForGallery || '').toLowerCase())
+                              .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
                               ?.images || [];
                             const merged = [...existingImages, ...demoImages];
                             updateColorGalleryImages(selectedColorForGallery, merged);
@@ -1171,14 +1163,14 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                       <span className="text-[11px] font-extrabold text-neutral-700 block">
                         Gallery Portfolio ({
                           ((productState.variants || []).find(
-                            v => (v.color || '').toLowerCase() === (selectedColorForGallery || '').toLowerCase()
+                            v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
                           )?.images || []).length
                         } / 50 Images)
                       </span>
 
                       {(() => {
                         const activeImages = ((productState.variants || []).find(
-                          v => (v.color || '').toLowerCase() === (selectedColorForGallery || '').toLowerCase()
+                          v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
                         )?.images || []);
 
                         if (activeImages.length === 0) {
@@ -1193,7 +1185,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                             {activeImages.map((img, index) => {
                               const activeVarObj = (productState.variants || []).find(
-                                v => (v.color || '').toLowerCase() === (selectedColorForGallery || '').toLowerCase()
+                                v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase()
                               );
                               const labels = (activeVarObj as any)?.imageLabels || {};
                               const activeLabel = labels[img] || '';

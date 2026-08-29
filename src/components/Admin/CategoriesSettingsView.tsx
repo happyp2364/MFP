@@ -150,7 +150,7 @@ export const CategoriesSettingsView: React.FC = () => {
   const handleDeleteMobileCard = async (id: string) => {
     if (!window.confirm('Delete this front-view category card?')) return;
     try {
-      const newList = mobileCategories.filter((c: any) => c.id !== id);
+      const newList = mobileCategories.filter((c) => c.id !== id);
       await updateMobileCategories(newList);
       setEditingMobileCard(null);
       setIsMobileAddMode(false);
@@ -161,7 +161,7 @@ export const CategoriesSettingsView: React.FC = () => {
 
   const handleToggleMobileEnable = async (id: string) => {
     try {
-      const newList = mobileCategories.map((c: any) =>
+      const newList = mobileCategories.map((c) =>
         c.id === id ? { ...c, enabled: !c.enabled } : c
       );
       await updateMobileCategories(newList);
@@ -321,11 +321,11 @@ export const CategoriesSettingsView: React.FC = () => {
       const countByCategory: Record<string, number> = {};
       const countBySubcategory: Record<string, number> = {};
 
-      products.forEach((p: any) => {
+      products.forEach((p) => {
         const catKey = (p.category || 'general').toLowerCase();
         countByCategory[catKey] = (countByCategory[catKey] || 0) + 1;
         if (p.subcategory) {
-          const subKey = (p.subcategory || '').toLowerCase();
+          const subKey = p.subcategory.toLowerCase();
           countBySubcategory[subKey] = (countBySubcategory[subKey] || 0) + 1;
         }
       });
@@ -452,12 +452,12 @@ export const CategoriesSettingsView: React.FC = () => {
 
       let newHighlightsList = [...categoryHighlights];
       if (isAddMode) {
-        if (categoryHighlights.some((c: any) => c.id === formId)) {
+        if (categoryHighlights.some(c => c.id === formId)) {
           throw new Error('A category with this ID already exists.');
         }
         newHighlightsList.push(updatedItem);
       } else {
-        newHighlightsList = categoryHighlights.map((c: any) => c.id === formId ? updatedItem : c);
+        newHighlightsList = categoryHighlights.map(c => c.id === formId ? updatedItem : c);
       }
 
       await saveCategoryHighlights(newHighlightsList);
@@ -472,7 +472,7 @@ export const CategoriesSettingsView: React.FC = () => {
     setError(null);
     if (!window.confirm('Are you absolutely sure you want to delete this category?')) return;
     try {
-      const newHighlightsList = categoryHighlights.filter((c: any) => c.id !== id);
+      const newHighlightsList = categoryHighlights.filter(c => c.id !== id);
       await saveCategoryHighlights(newHighlightsList);
       if (editingCategory?.id === id || (isAddMode && formId === id)) {
         setIsAddMode(false);
@@ -486,7 +486,7 @@ export const CategoriesSettingsView: React.FC = () => {
   const handleToggleEnable = async (cat: CategoryHighlight) => {
     setError(null);
     try {
-      const updated = categoryHighlights.map((c: any) => 
+      const updated = categoryHighlights.map(c => 
         c.id === cat.id ? { ...c, enabled: c.enabled === false ? true : false } : c
       );
       await saveCategoryHighlights(updated);
@@ -617,7 +617,7 @@ export const CategoriesSettingsView: React.FC = () => {
               </div>
 
               <div className="divide-y divide-neutral-100 max-h-[700px] overflow-y-auto">
-                {mobileCategories.map((cat: any, idx: any) => (
+                {mobileCategories.map((cat, idx) => (
                   <div
                     key={cat.id}
                     className={`p-4 transition-colors flex items-center justify-between gap-4 ${
@@ -1005,7 +1005,7 @@ export const CategoriesSettingsView: React.FC = () => {
                 No categories defined. Click "Add Category" or "AI Category Suggestions" to get started!
               </div>
             ) : (
-              categoryHighlights.map((cat: any, idx: any) => {
+              categoryHighlights.map((cat, idx) => {
                 const IconComp = AVAILABLE_ICONS.find(i => i.name === cat.icon)?.component || Footprints;
 
                 return (
@@ -1128,7 +1128,7 @@ export const CategoriesSettingsView: React.FC = () => {
                     required
                     disabled={!isAddMode}
                     value={formId}
-                    onChange={(e) => setFormId((e.target.value || '').toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                    onChange={(e) => setFormId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
                     placeholder="e.g. mens_sports"
                     className="w-full bg-neutral-50 disabled:opacity-60 border border-neutral-200 rounded-xl p-2.5 font-mono focus:ring-2 focus:ring-[#0B8F63] outline-none"
                   />

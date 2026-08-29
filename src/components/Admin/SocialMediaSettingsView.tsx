@@ -116,9 +116,9 @@ export const SocialMediaSettingsView: React.FC = () => {
   const [whatsappRole, setWhatsappRole] = useState(socialMediaConfig.whatsappSupportRole || '');
 
   // Facebook Configs
-  const [fbPageName, setFbPageName] = useState(socialMediaConfig.facebookPageName || 'Official Store');
-  const [fbPageUrl, setFbPageUrl] = useState(socialMediaConfig.facebookPageUrl || '');
-  const [fbMessengerUrl, setFbMessengerUrl] = useState(socialMediaConfig.facebookMessengerUrl || '');
+  const [fbPageName, setFbPageName] = useState(socialMediaConfig.facebookPageName || 'Marudhar Fashion Point');
+  const [fbPageUrl, setFbPageUrl] = useState(socialMediaConfig.facebookPageUrl || 'https://facebook.com/marudharfashionpoint');
+  const [fbMessengerUrl, setFbMessengerUrl] = useState(socialMediaConfig.facebookMessengerUrl || 'https://m.me/marudharfashionpoint');
   const [fbLikeEnabled, setFbLikeEnabled] = useState(socialMediaConfig.facebookLikeButtonEnabled !== false);
   const [fbShareEnabled, setFbShareEnabled] = useState(socialMediaConfig.facebookShareButtonEnabled !== false);
   const [fbFeedEmbed, setFbFeedEmbed] = useState(socialMediaConfig.facebookFeedEmbed || '');
@@ -131,7 +131,7 @@ export const SocialMediaSettingsView: React.FC = () => {
   const [instaReviewEnabled, setInstaReviewEnabled] = useState(socialMediaConfig.instagramReviewIntegrationEnabled !== false);
 
   // YouTube Custom Options
-  const [ytChannelName, setYtChannelName] = useState(socialMediaConfig.youtubeChannelName || 'Official Store Channel');
+  const [ytChannelName, setYtChannelName] = useState(socialMediaConfig.youtubeChannelName || 'Marudhar Fashion Point');
   const [ytChannelUrl, setYtChannelUrl] = useState(socialMediaConfig.youtubeChannelUrl || '');
   const [ytSubscribeBtn, setYtSubscribeBtn] = useState(socialMediaConfig.youtubeSubscribeButtonText || 'Subscribe Now');
   const [ytShortsEnabled, setYtShortsEnabled] = useState(socialMediaConfig.youtubeShortsSectionEnabled !== false);
@@ -179,15 +179,15 @@ export const SocialMediaSettingsView: React.FC = () => {
   const dailyClicksData = useMemo(() => {
     return Object.entries(socialAnalytics.dailyClicks || {})
       .map(([date, clicks]) => ({ date, clicks }))
-      .sort((a: any, b: any) => a.date.localeCompare(b.date));
+      .sort((a, b) => a.date.localeCompare(b.date));
   }, [socialAnalytics]);
 
   const platformClicksData = useMemo(() => {
-    return (socialMediaConfig.platforms || []).map((plat: any) => ({
+    return (socialMediaConfig.platforms || []).map((plat) => ({
       name: plat.name,
       clicks: socialAnalytics.clickCount[plat.id] || 0,
       color: plat.iconColor
-    })).sort((a: any, b: any) => b.clicks - a.clicks);
+    })).sort((a, b) => b.clicks - a.clicks);
   }, [socialMediaConfig, socialAnalytics]);
 
   // Trigger manual simulation of refreshing feed metadata
@@ -195,7 +195,7 @@ export const SocialMediaSettingsView: React.FC = () => {
     setIsRefreshing(true);
     setTimeout(() => {
       // Add random likes/comments to show real-time synchronization
-      const updatedMedia = socialMediaConfig.instagramMedia.map((m: any) => ({
+      const updatedMedia = socialMediaConfig.instagramMedia.map(m => ({
         ...m,
         likes: m.likes + Math.floor(Math.random() * 45) + 5,
         comments: m.comments + Math.floor(Math.random() * 8) + 1,
@@ -242,7 +242,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleSavePlatform = async (platId: string) => {
     try {
-      const updatedPlatforms = socialMediaConfig.platforms.map((p: any) => {
+      const updatedPlatforms = socialMediaConfig.platforms.map((p) => {
         if (p.id === platId) {
           return {
             ...p,
@@ -287,7 +287,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleTogglePlatformActive = async (platId: string, currentVal: boolean) => {
     try {
-      const updated = socialMediaConfig.platforms.map((p: any) => 
+      const updated = socialMediaConfig.platforms.map(p => 
         p.id === platId ? { ...p, enabled: !currentVal } : p
       );
       await updateSocialMediaConfig({ platforms: updated });
@@ -300,7 +300,7 @@ export const SocialMediaSettingsView: React.FC = () => {
   const handleDeletePlatform = async (platId: string) => {
     if (!window.confirm('Are you sure you want to delete this platform from your configuration?')) return;
     try {
-      const updated = socialMediaConfig.platforms.filter((p: any) => p.id !== platId);
+      const updated = socialMediaConfig.platforms.filter(p => p.id !== platId);
       await updateSocialMediaConfig({ platforms: updated });
       showToast('Platform deleted successfully!');
     } catch (err: any) {
@@ -317,17 +317,17 @@ export const SocialMediaSettingsView: React.FC = () => {
 
     try {
       // Check for duplicate ID
-      if (socialMediaConfig.platforms.some((p: any) => p.id === (addId || '').trim().toLowerCase())) {
+      if (socialMediaConfig.platforms.some(p => p.id === addId.trim().toLowerCase())) {
         showToast('A platform with this ID already exists.', true);
         return;
       }
 
       const nextOrder = socialMediaConfig.platforms.length > 0 
-        ? Math.max(...socialMediaConfig.platforms.map((p: any) => p.displayOrder)) + 1 
+        ? Math.max(...socialMediaConfig.platforms.map(p => p.displayOrder)) + 1 
         : 1;
 
       const newPlat: SocialPlatformConfig = {
-        id: (addId || '').trim().toLowerCase(),
+        id: addId.trim().toLowerCase(),
         name: addName.trim(),
         enabled: true,
         username: addUsername.trim(),
@@ -390,7 +390,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleMovePlatform = async (index: number, direction: 'up' | 'down') => {
     try {
-      const list = [...socialMediaConfig.platforms].sort((a: any, b: any) => a.displayOrder - b.displayOrder);
+      const list = [...socialMediaConfig.platforms].sort((a,b) => a.displayOrder - b.displayOrder);
       const targetIndex = direction === 'up' ? index - 1 : index + 1;
       if (targetIndex < 0 || targetIndex >= list.length) return;
 
@@ -416,7 +416,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleSaveHighlight = async (id: string) => {
     try {
-      const updated = socialMediaConfig.instagramHighlights.map((h: any) => 
+      const updated = socialMediaConfig.instagramHighlights.map(h => 
         h.id === id ? { ...h, title: hlTitle, coverUrl: hlCover, linkUrl: hlLink } : h
       );
       await updateSocialMediaConfig({ instagramHighlights: updated });
@@ -433,7 +433,7 @@ export const SocialMediaSettingsView: React.FC = () => {
         id: 'hl-' + Date.now(),
         title: 'New Highlight',
         coverUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=120&q=80',
-        linkUrl: 'https://instagram.com/official_store'
+        linkUrl: 'https://instagram.com/marudhar_fashion_point'
       };
       const updated = [...socialMediaConfig.instagramHighlights, newHl];
       await updateSocialMediaConfig({ instagramHighlights: updated });
@@ -445,7 +445,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleDeleteHighlight = async (id: string) => {
     try {
-      const updated = socialMediaConfig.instagramHighlights.filter((h: any) => h.id !== id);
+      const updated = socialMediaConfig.instagramHighlights.filter(h => h.id !== id);
       await updateSocialMediaConfig({ instagramHighlights: updated });
       showToast('Story highlight deleted.');
     } catch (err) {
@@ -465,7 +465,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleSaveInstagramMedia = async (id: string) => {
     try {
-      const updated = socialMediaConfig.instagramMedia.map((m: any) => 
+      const updated = socialMediaConfig.instagramMedia.map(m => 
         m.id === id ? { 
           ...m, 
           caption: mediaCaption, 
@@ -492,7 +492,7 @@ export const SocialMediaSettingsView: React.FC = () => {
         caption: 'Royal traditional leather Mojari handmade in Pipar City. 👑✨ #mojari #weddingseason',
         likes: 150,
         comments: 12,
-        postUrl: 'https://instagram.com/official_store',
+        postUrl: 'https://instagram.com/marudhar_fashion_point',
         createdAt: 'Just now'
       };
       const updated = [...socialMediaConfig.instagramMedia, newItem];
@@ -505,7 +505,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleDeleteInstagramMedia = async (id: string) => {
     try {
-      const updated = socialMediaConfig.instagramMedia.filter((m: any) => m.id !== id);
+      const updated = socialMediaConfig.instagramMedia.filter(m => m.id !== id);
       await updateSocialMediaConfig({ instagramMedia: updated });
       showToast('Media post deleted.');
     } catch (err) {
@@ -526,7 +526,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleSaveVideo = async (id: string) => {
     try {
-      const updated = socialMediaConfig.youtubeVideos.map((v: any) => 
+      const updated = socialMediaConfig.youtubeVideos.map(v => 
         v.id === id ? {
           ...v,
           title: ytTitle,
@@ -566,7 +566,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleDeleteVideo = async (id: string) => {
     try {
-      const updated = socialMediaConfig.youtubeVideos.filter((v: any) => v.id !== id);
+      const updated = socialMediaConfig.youtubeVideos.filter(v => v.id !== id);
       await updateSocialMediaConfig({ youtubeVideos: updated });
       showToast('Video deleted.');
     } catch (err) {
@@ -866,7 +866,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     <YAxis stroke="#999" fontSize={10} />
                     <Tooltip />
                     <Bar dataKey="clicks" fill="#0B8F63" radius={[8, 8, 0, 0]}>
-                      {platformClicksData.map((entry: any, index: any) => (
+                      {platformClicksData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color || '#0B8F63'} />
                       ))}
                     </Bar>
@@ -897,7 +897,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                 type="text"
                 placeholder="discord"
                 value={addId}
-                onChange={(e: any) => setAddId(e.target.value)}
+                onChange={(e) => setAddId(e.target.value)}
                 className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none"
                 required
               />
@@ -908,7 +908,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                 type="text"
                 placeholder="Discord Server"
                 value={addName}
-                onChange={(e: any) => setAddName(e.target.value)}
+                onChange={(e) => setAddName(e.target.value)}
                 className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none"
                 required
               />
@@ -919,7 +919,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                 type="text"
                 placeholder="MessageSquareCode, Pin, or <svg>..."
                 value={addIcon}
-                onChange={(e: any) => setAddIcon(e.target.value)}
+                onChange={(e) => setAddIcon(e.target.value)}
                 className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none"
               />
             </div>
@@ -930,9 +930,9 @@ export const SocialMediaSettingsView: React.FC = () => {
               <label className="font-bold text-neutral-600 block mb-1">Username / ID Code</label>
               <input
                 type="text"
-                placeholder="official_store"
+                placeholder="marudhar_fashion"
                 value={addUsername}
-                onChange={(e: any) => setAddUsername(e.target.value)}
+                onChange={(e) => setAddUsername(e.target.value)}
                 className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none"
               />
             </div>
@@ -942,7 +942,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                 type="url"
                 placeholder="https://discord.gg/..."
                 value={addProfileUrl}
-                onChange={(e: any) => setAddProfileUrl(e.target.value)}
+                onChange={(e) => setAddProfileUrl(e.target.value)}
                 className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none"
                 required
               />
@@ -956,7 +956,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                 type="text"
                 placeholder="Join Discord Server"
                 value={addButtonText}
-                onChange={(e: any) => setAddButtonText(e.target.value)}
+                onChange={(e) => setAddButtonText(e.target.value)}
                 className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none"
               />
             </div>
@@ -966,7 +966,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                 type="text"
                 placeholder="Chat with footwear collectors live"
                 value={addLabel}
-                onChange={(e: any) => setAddLabel(e.target.value)}
+                onChange={(e) => setAddLabel(e.target.value)}
                 className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none"
               />
             </div>
@@ -976,20 +976,20 @@ export const SocialMediaSettingsView: React.FC = () => {
             <div>
               <label className="font-bold text-neutral-600 block mb-1">Brand Color (Hex)</label>
               <div className="flex gap-1.5 items-center">
-                <input type="color" value={addIconColor} onChange={(e: any) => setAddIconColor(e.target.value)} className="w-8 h-8 rounded border" />
-                <input type="text" value={addIconColor} onChange={(e: any) => setAddIconColor(e.target.value)} className="w-full bg-neutral-50 p-1.5 border rounded-lg text-[10px]" />
+                <input type="color" value={addIconColor} onChange={(e) => setAddIconColor(e.target.value)} className="w-8 h-8 rounded border" />
+                <input type="text" value={addIconColor} onChange={(e) => setAddIconColor(e.target.value)} className="w-full bg-neutral-50 p-1.5 border rounded-lg text-[10px]" />
               </div>
             </div>
             <div>
               <label className="font-bold text-neutral-600 block mb-1">Card Background Color (Hex)</label>
               <div className="flex gap-1.5 items-center">
-                <input type="color" value={addBgColor} onChange={(e: any) => setAddBgColor(e.target.value)} className="w-8 h-8 rounded border" />
-                <input type="text" value={addBgColor} onChange={(e: any) => setAddBgColor(e.target.value)} className="w-full bg-neutral-50 p-1.5 border rounded-lg text-[10px]" />
+                <input type="color" value={addBgColor} onChange={(e) => setAddBgColor(e.target.value)} className="w-8 h-8 rounded border" />
+                <input type="text" value={addBgColor} onChange={(e) => setAddBgColor(e.target.value)} className="w-full bg-neutral-50 p-1.5 border rounded-lg text-[10px]" />
               </div>
             </div>
             <div>
               <label className="font-bold text-neutral-600 block mb-1">Hover Interaction</label>
-              <select value={addHoverEffect} onChange={(e: any) => setAddHoverEffect(e.target.value as any)} className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none">
+              <select value={addHoverEffect} onChange={(e) => setAddHoverEffect(e.target.value as any)} className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none">
                 <option value="scale">Zoom scale</option>
                 <option value="glow">Neon Glow</option>
                 <option value="bounce">Bounce up</option>
@@ -999,7 +999,7 @@ export const SocialMediaSettingsView: React.FC = () => {
             </div>
             <div>
               <label className="font-bold text-neutral-600 block mb-1">Animation Behavior</label>
-              <select value={addAnimation} onChange={(e: any) => setAddAnimation(e.target.value as any)} className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none">
+              <select value={addAnimation} onChange={(e) => setAddAnimation(e.target.value as any)} className="w-full bg-neutral-50 p-2.5 border rounded-xl outline-none">
                 <option value="none">No motion</option>
                 <option value="bounce">Bounce idle</option>
                 <option value="pulse">Pulse scale</option>
@@ -1031,8 +1031,8 @@ export const SocialMediaSettingsView: React.FC = () => {
 
           <div className="grid grid-cols-1 gap-4">
             {(socialMediaConfig.platforms || [])
-              .sort((a: any, b: any) => a.displayOrder - b.displayOrder)
-              .map((plat: any, idx: any, sortedArr: any) => {
+              .sort((a,b) => a.displayOrder - b.displayOrder)
+              .map((plat, idx, sortedArr) => {
                 const isEditing = editingPlatformId === plat.id;
 
                 return (
@@ -1061,14 +1061,14 @@ export const SocialMediaSettingsView: React.FC = () => {
                                 <input
                                   type="text"
                                   value={editName}
-                                  onChange={(e: any) => setEditName(e.target.value)}
+                                  onChange={(e) => setEditName(e.target.value)}
                                   className="w-full bg-neutral-50 border p-1 rounded text-xs leading-none outline-none font-bold"
                                 />
                                 <label className="text-[9px] text-neutral-400 block font-bold uppercase">Icon Code/Lucide</label>
                                 <input
                                   type="text"
                                   value={editIcon}
-                                  onChange={(e: any) => setEditIcon(e.target.value)}
+                                  onChange={(e) => setEditIcon(e.target.value)}
                                   className="w-full bg-neutral-50 border p-1 rounded text-[10px] leading-none outline-none"
                                 />
                               </div>
@@ -1127,7 +1127,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                               <input
                                 type="text"
                                 value={editUsername}
-                                onChange={(e: any) => setEditUsername(e.target.value)}
+                                onChange={(e) => setEditUsername(e.target.value)}
                                 className="w-full bg-neutral-50 p-2 border rounded-lg outline-none focus:ring-1 focus:ring-[#0B8F63]"
                               />
                             </div>
@@ -1136,7 +1136,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                               <input
                                 type="text"
                                 value={editProfileUrl}
-                                onChange={(e: any) => setEditProfileUrl(e.target.value)}
+                                onChange={(e) => setEditProfileUrl(e.target.value)}
                                 className="w-full bg-neutral-50 p-2 border rounded-lg outline-none focus:ring-1 focus:ring-[#0B8F63]"
                               />
                             </div>
@@ -1145,7 +1145,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                               <input
                                 type="text"
                                 value={editButtonText}
-                                onChange={(e: any) => setEditButtonText(e.target.value)}
+                                onChange={(e) => setEditButtonText(e.target.value)}
                                 className="w-full bg-neutral-50 p-2 border rounded-lg outline-none"
                               />
                             </div>
@@ -1154,7 +1154,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                               <input
                                 type="text"
                                 value={editLabel}
-                                onChange={(e: any) => setEditLabel(e.target.value)}
+                                onChange={(e) => setEditLabel(e.target.value)}
                                 className="w-full bg-neutral-50 p-2 border rounded-lg outline-none"
                               />
                             </div>
@@ -1167,13 +1167,13 @@ export const SocialMediaSettingsView: React.FC = () => {
                                   <input 
                                     type="color" 
                                     value={editIconColor} 
-                                    onChange={(e: any) => setEditIconColor(e.target.value)} 
+                                    onChange={(e) => setEditIconColor(e.target.value)} 
                                     className="w-8 h-8 p-0 rounded-lg border"
                                   />
                                   <input 
                                     type="text" 
                                     value={editIconColor} 
-                                    onChange={(e: any) => setEditIconColor(e.target.value)} 
+                                    onChange={(e) => setEditIconColor(e.target.value)} 
                                     className="w-full bg-neutral-50 p-1 border rounded-lg text-[10px]"
                                   />
                                 </div>
@@ -1184,13 +1184,13 @@ export const SocialMediaSettingsView: React.FC = () => {
                                   <input 
                                     type="color" 
                                     value={editBgColor} 
-                                    onChange={(e: any) => setEditBgColor(e.target.value)} 
+                                    onChange={(e) => setEditBgColor(e.target.value)} 
                                     className="w-8 h-8 p-0 rounded-lg border"
                                   />
                                   <input 
                                     type="text" 
                                     value={editBgColor} 
-                                    onChange={(e: any) => setEditBgColor(e.target.value)} 
+                                    onChange={(e) => setEditBgColor(e.target.value)} 
                                     className="w-full bg-neutral-50 p-1 border rounded-lg text-[10px]"
                                   />
                                 </div>
@@ -1204,7 +1204,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                                 <input
                                   type="number"
                                   value={editDisplayOrder}
-                                  onChange={(e: any) => setEditDisplayOrder(parseInt(e.target.value) || 1)}
+                                  onChange={(e) => setEditDisplayOrder(parseInt(e.target.value) || 1)}
                                   className="w-full bg-neutral-50 p-2 border rounded-lg outline-none"
                                 />
                               </div>
@@ -1212,7 +1212,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                                 <label className="font-bold text-neutral-600 block mb-0.5">Hover effect</label>
                                 <select
                                   value={editHoverEffect}
-                                  onChange={(e: any) => setEditHoverEffect(e.target.value as any)}
+                                  onChange={(e) => setEditHoverEffect(e.target.value as any)}
                                   className="w-full bg-neutral-50 p-2 border rounded-lg outline-none"
                                 >
                                   <option value="scale">Zoom scale</option>
@@ -1226,7 +1226,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                                 <label className="font-bold text-neutral-600 block mb-0.5">Idle Animation</label>
                                 <select
                                   value={editAnimation}
-                                  onChange={(e: any) => setEditAnimation(e.target.value as any)}
+                                  onChange={(e) => setEditAnimation(e.target.value as any)}
                                   className="w-full bg-neutral-50 p-2 border rounded-lg outline-none"
                                 >
                                   <option value="none">No motion</option>
@@ -1268,63 +1268,63 @@ export const SocialMediaSettingsView: React.FC = () => {
                             {isEditing ? (
                               <>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editHeader} onChange={(e: any) => setEditHeader(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editHeader} onChange={(e) => setEditHeader(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Header</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editFooter} onChange={(e: any) => setEditFooter(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editFooter} onChange={(e) => setEditFooter(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Footer</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editFloating} onChange={(e: any) => setEditFloating(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editFloating} onChange={(e) => setEditFloating(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Floating Bubble</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editOnHome} onChange={(e: any) => setEditOnHome(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editOnHome} onChange={(e) => setEditOnHome(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Homepage</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editOnContact} onChange={(e: any) => setEditOnContact(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editOnContact} onChange={(e) => setEditOnContact(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Contact Page</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editOnProduct} onChange={(e: any) => setEditOnProduct(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editOnProduct} onChange={(e) => setEditOnProduct(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Product Details</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editOnMobile} onChange={(e: any) => setEditOnMobile(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editOnMobile} onChange={(e) => setEditOnMobile(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Mobile App</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editOnDesktop} onChange={(e: any) => setEditOnDesktop(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editOnDesktop} onChange={(e) => setEditOnDesktop(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Desktop Layout</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editTopBar} onChange={(e: any) => setEditTopBar(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editTopBar} onChange={(e) => setEditTopBar(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Top Bar</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editOnCheckout} onChange={(e: any) => setEditOnCheckout(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editOnCheckout} onChange={(e) => setEditOnCheckout(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Checkout Page</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editOnAboutUs} onChange={(e: any) => setEditOnAboutUs(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editOnAboutUs} onChange={(e) => setEditOnAboutUs(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>About Us</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editOnOrderSuccess} onChange={(e: any) => setEditOnOrderSuccess(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editOnOrderSuccess} onChange={(e) => setEditOnOrderSuccess(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Order Success</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editOnCustomerProfile} onChange={(e: any) => setEditOnCustomerProfile(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editOnCustomerProfile} onChange={(e) => setEditOnCustomerProfile(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>User Profile</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer">
-                                  <input type="checkbox" checked={editOnPopup} onChange={(e: any) => setEditOnPopup(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editOnPopup} onChange={(e) => setEditOnPopup(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Promo Popup</span>
                                 </label>
                                 <label className="flex items-center gap-1.5 font-semibold text-neutral-700 cursor-pointer col-span-2">
-                                  <input type="checkbox" checked={editOnCustomSection} onChange={(e: any) => setEditOnCustomSection(e.target.checked)} className="rounded text-[#0B8F63]" />
+                                  <input type="checkbox" checked={editOnCustomSection} onChange={(e) => setEditOnCustomSection(e.target.checked)} className="rounded text-[#0B8F63]" />
                                   <span>Custom Homepage Section</span>
                                 </label>
                               </>
@@ -1443,7 +1443,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                 <input
                   type="text"
                   value={instaFollowBtnText}
-                  onChange={(e: any) => setInstaFollowBtnText(e.target.value)}
+                  onChange={(e) => setInstaFollowBtnText(e.target.value)}
                   placeholder="Follow us on Instagram"
                   className="w-full bg-neutral-50 border p-2.5 rounded-xl"
                 />
@@ -1451,7 +1451,7 @@ export const SocialMediaSettingsView: React.FC = () => {
               <div className="pt-1">
                 <AdminImageSelector
                   value={instaProfilePic}
-                  onChange={(url: any) => setInstaProfilePic(url)}
+                  onChange={(url) => setInstaProfilePic(url)}
                   label="Instagram Custom Profile Picture"
                   description="Upload, paste URL, capture, or generate an Instagram profile image."
                 />
@@ -1460,15 +1460,15 @@ export const SocialMediaSettingsView: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 border-t pt-3 text-xs">
               <label className="flex items-center gap-2 font-bold text-neutral-700 cursor-pointer">
-                <input type="checkbox" checked={instaFeedEnabled} onChange={(e: any) => setInstaFeedEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
+                <input type="checkbox" checked={instaFeedEnabled} onChange={(e) => setInstaFeedEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
                 <span>Show Instagram Posts section on Home</span>
               </label>
               <label className="flex items-center gap-2 font-bold text-neutral-700 cursor-pointer">
-                <input type="checkbox" checked={instaGalleryEnabled} onChange={(e: any) => setInstaGalleryEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
+                <input type="checkbox" checked={instaGalleryEnabled} onChange={(e) => setInstaGalleryEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
                 <span>Show circular Highlights cover</span>
               </label>
               <label className="flex items-center gap-2 font-bold text-neutral-700 cursor-pointer">
-                <input type="checkbox" checked={instaReviewEnabled} onChange={(e: any) => setInstaReviewEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
+                <input type="checkbox" checked={instaReviewEnabled} onChange={(e) => setInstaReviewEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
                 <span>Integrate customer Instagram reviews</span>
               </label>
             </div>
@@ -1498,7 +1498,7 @@ export const SocialMediaSettingsView: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap gap-4 items-start pt-2">
-              {socialMediaConfig.instagramHighlights.map((hl: any) => {
+              {socialMediaConfig.instagramHighlights.map((hl) => {
                 const isEditing = editingHighlightId === hl.id;
 
                 return (
@@ -1518,21 +1518,21 @@ export const SocialMediaSettingsView: React.FC = () => {
                         <input
                           type="text"
                           value={hlTitle}
-                          onChange={(e: any) => setHlTitle(e.target.value)}
+                          onChange={(e) => setHlTitle(e.target.value)}
                           className="w-full text-[10px] p-1 border rounded text-center bg-white"
                           placeholder="Title"
                         />
                         <input
                           type="text"
                           value={hlCover}
-                          onChange={(e: any) => setHlCover(e.target.value)}
+                          onChange={(e) => setHlCover(e.target.value)}
                           className="w-full text-[9px] p-1 border rounded text-center bg-white"
                           placeholder="Cover URL"
                         />
                         <input
                           type="text"
                           value={hlLink}
-                          onChange={(e: any) => setHlLink(e.target.value)}
+                          onChange={(e) => setHlLink(e.target.value)}
                           className="w-full text-[9px] p-1 border rounded text-center bg-white"
                           placeholder="Link URL"
                         />
@@ -1582,7 +1582,7 @@ export const SocialMediaSettingsView: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-              {socialMediaConfig.instagramMedia.map((m: any) => {
+              {socialMediaConfig.instagramMedia.map((m) => {
                 const isEditing = editingMediaId === m.id;
 
                 return (
@@ -1607,14 +1607,14 @@ export const SocialMediaSettingsView: React.FC = () => {
                           <div className="space-y-1.5">
                             <textarea
                               value={mediaCaption}
-                              onChange={(e: any) => setMediaCaption(e.target.value)}
+                              onChange={(e) => setMediaCaption(e.target.value)}
                               className="w-full p-1 border rounded text-[10px] leading-tight bg-white h-16 resize-none"
                               placeholder="Caption text"
                             />
                             <div className="pt-1">
                               <AdminImageSelector
                                 value={mediaImgUrl}
-                                onChange={(url: any) => setMediaImgUrl(url)}
+                                onChange={(url) => setMediaImgUrl(url)}
                                 label="Post Image"
                                 description="Select, upload, paste, capture, or generate post image."
                               />
@@ -1623,14 +1623,14 @@ export const SocialMediaSettingsView: React.FC = () => {
                               <input
                                 type="number"
                                 value={mediaLikes}
-                                onChange={(e: any) => setMediaLikes(parseInt(e.target.value) || 0)}
+                                onChange={(e) => setMediaLikes(parseInt(e.target.value) || 0)}
                                 className="w-full p-1 border rounded text-[9px] bg-white"
                                 placeholder="Likes"
                               />
                               <input
                                 type="number"
                                 value={mediaComments}
-                                onChange={(e: any) => setMediaComments(parseInt(e.target.value) || 0)}
+                                onChange={(e) => setMediaComments(parseInt(e.target.value) || 0)}
                                 className="w-full p-1 border rounded text-[9px] bg-white"
                                 placeholder="Comments"
                               />
@@ -1638,7 +1638,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                             <input
                               type="text"
                               value={mediaUrl}
-                              onChange={(e: any) => setMediaUrl(e.target.value)}
+                              onChange={(e) => setMediaUrl(e.target.value)}
                               className="w-full p-1 border rounded text-[9px] bg-white"
                               placeholder="Post Link"
                             />
@@ -1697,8 +1697,8 @@ export const SocialMediaSettingsView: React.FC = () => {
                 <input
                   type="text"
                   value={ytChannelName}
-                  onChange={(e: any) => setYtChannelName(e.target.value)}
-                  placeholder="e.g. Official Store Channel"
+                  onChange={(e) => setYtChannelName(e.target.value)}
+                  placeholder="Marudhar Fashion Point Jodhpur"
                   className="w-full bg-neutral-50 border p-2.5 rounded-xl"
                 />
               </div>
@@ -1707,8 +1707,8 @@ export const SocialMediaSettingsView: React.FC = () => {
                 <input
                   type="text"
                   value={ytChannelUrl}
-                  onChange={(e: any) => setYtChannelUrl(e.target.value)}
-                  placeholder="https://youtube.com/@official_store"
+                  onChange={(e) => setYtChannelUrl(e.target.value)}
+                  placeholder="https://youtube.com/@marudhar"
                   className="w-full bg-neutral-50 border p-2.5 rounded-xl"
                 />
               </div>
@@ -1717,7 +1717,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                 <input
                   type="text"
                   value={ytSubscribeBtn}
-                  onChange={(e: any) => setYtSubscribeBtn(e.target.value)}
+                  onChange={(e) => setYtSubscribeBtn(e.target.value)}
                   placeholder="Subscribe now"
                   className="w-full bg-neutral-50 border p-2.5 rounded-xl"
                 />
@@ -1726,7 +1726,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
             <div className="flex gap-4 border-t pt-3 text-xs">
               <label className="flex items-center gap-2 font-bold text-neutral-700 cursor-pointer">
-                <input type="checkbox" checked={ytShortsEnabled} onChange={(e: any) => setYtShortsEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
+                <input type="checkbox" checked={ytShortsEnabled} onChange={(e) => setYtShortsEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
                 <span>Show circular Shorts section on bottom of YouTube layouts</span>
               </label>
             </div>
@@ -1755,7 +1755,7 @@ export const SocialMediaSettingsView: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {(socialMediaConfig.youtubeVideos || []).map((v: any) => {
+              {(socialMediaConfig.youtubeVideos || []).map((v) => {
                 const isEditing = editingVideoId === v.id;
 
                 return (
@@ -1779,14 +1779,14 @@ export const SocialMediaSettingsView: React.FC = () => {
                             <input
                               type="text"
                               value={ytTitle}
-                              onChange={(e: any) => setYtTitle(e.target.value)}
+                              onChange={(e) => setYtTitle(e.target.value)}
                               className="w-full p-1.5 border rounded text-[10px] bg-white font-bold"
                               placeholder="Video Title"
                             />
                             <input
                               type="text"
                               value={ytThumbnail}
-                              onChange={(e: any) => setYtThumbnail(e.target.value)}
+                              onChange={(e) => setYtThumbnail(e.target.value)}
                               className="w-full p-1.5 border rounded text-[9px] bg-white"
                               placeholder="Thumbnail URL"
                             />
@@ -1794,21 +1794,21 @@ export const SocialMediaSettingsView: React.FC = () => {
                               <input
                                 type="text"
                                 value={ytViews}
-                                onChange={(e: any) => setYtViews(e.target.value)}
+                                onChange={(e) => setYtViews(e.target.value)}
                                 className="w-full p-1 border rounded text-[9px] bg-white"
                                 placeholder="Views"
                               />
                               <input
                                 type="text"
                                 value={ytDuration}
-                                onChange={(e: any) => setYtDuration(e.target.value)}
+                                onChange={(e) => setYtDuration(e.target.value)}
                                 className="w-full p-1 border rounded text-[9px] bg-white"
                                 placeholder="Duration"
                               />
                               <input
                                 type="text"
                                 value={ytPublished}
-                                onChange={(e: any) => setYtPublished(e.target.value)}
+                                onChange={(e) => setYtPublished(e.target.value)}
                                 className="w-full p-1 border rounded text-[9px] bg-white"
                                 placeholder="Published at"
                               />
@@ -1816,7 +1816,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                             <input
                               type="text"
                               value={ytUrl}
-                              onChange={(e: any) => setYtUrl(e.target.value)}
+                              onChange={(e) => setYtUrl(e.target.value)}
                               className="w-full p-1.5 border rounded text-[9px] bg-white"
                               placeholder="YouTube Link Url"
                             />
@@ -1880,7 +1880,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     <input
                       type="text"
                       value={whatsappPhone}
-                      onChange={(e: any) => setWhatsappPhone(e.target.value)}
+                      onChange={(e) => setWhatsappPhone(e.target.value)}
                       placeholder="919876543210"
                       className="w-full bg-neutral-50 border p-2.5 rounded-xl font-mono"
                     />
@@ -1890,7 +1890,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     <input
                       type="text"
                       value={whatsappCountry}
-                      onChange={(e: any) => setWhatsappCountry(e.target.value)}
+                      onChange={(e) => setWhatsappCountry(e.target.value)}
                       placeholder="91"
                       className="w-full bg-neutral-50 border p-2.5 rounded-xl font-mono"
                     />
@@ -1902,7 +1902,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                   <input
                     type="text"
                     value={whatsappName}
-                    onChange={(e: any) => setWhatsappName(e.target.value)}
+                    onChange={(e) => setWhatsappName(e.target.value)}
                     placeholder="Viju Bhai (Founder)"
                     className="w-full bg-neutral-50 border p-2.5 rounded-xl"
                   />
@@ -1914,7 +1914,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     <input
                       type="text"
                       value={whatsappRole}
-                      onChange={(e: any) => setWhatsappRole(e.target.value)}
+                      onChange={(e) => setWhatsappRole(e.target.value)}
                       placeholder="Senior Sizing Consultant"
                       className="w-full bg-neutral-50 border p-2.5 rounded-xl"
                     />
@@ -1922,7 +1922,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                   <div className="pt-1">
                     <AdminImageSelector
                       value={whatsappAvatar}
-                      onChange={(url: any) => setWhatsappAvatar(url)}
+                      onChange={(url) => setWhatsappAvatar(url)}
                       label="Support Avatar"
                       description="Upload a photo, paste a valid URL, capture, or generate a custom profile picture."
                     />
@@ -1937,7 +1937,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     <input
                       type="text"
                       value={whatsappMsg}
-                      onChange={(e: any) => setWhatsappMsg(e.target.value)}
+                      onChange={(e) => setWhatsappMsg(e.target.value)}
                       className="w-full bg-neutral-50 border p-2.5 rounded-xl text-[11px]"
                     />
                   </div>
@@ -1947,7 +1947,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     <input
                       type="text"
                       value={whatsappDefaultMsg}
-                      onChange={(e: any) => setWhatsappDefaultMsg(e.target.value)}
+                      onChange={(e) => setWhatsappDefaultMsg(e.target.value)}
                       className="w-full bg-neutral-50 border p-2.5 rounded-xl text-[11px]"
                     />
                   </div>
@@ -1956,7 +1956,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     <label className="font-bold text-neutral-700 block mb-1">Product Sizing Inquiry Template</label>
                     <textarea
                       value={whatsappInquiryMsg}
-                      onChange={(e: any) => setWhatsappInquiryMsg(e.target.value)}
+                      onChange={(e) => setWhatsappInquiryMsg(e.target.value)}
                       className="w-full bg-neutral-50 border p-2 rounded-xl text-[11px] h-14"
                     />
                   </div>
@@ -1966,7 +1966,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     <input
                       type="text"
                       value={whatsappOrderMsg}
-                      onChange={(e: any) => setWhatsappOrderMsg(e.target.value)}
+                      onChange={(e) => setWhatsappOrderMsg(e.target.value)}
                       className="w-full bg-neutral-50 border p-2.5 rounded-xl text-[11px]"
                     />
                   </div>
@@ -1976,7 +1976,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     <input
                       type="text"
                       value={whatsappSupportMsg}
-                      onChange={(e: any) => setWhatsappSupportMsg(e.target.value)}
+                      onChange={(e) => setWhatsappSupportMsg(e.target.value)}
                       className="w-full bg-neutral-50 border p-2.5 rounded-xl text-[11px]"
                     />
                   </div>
@@ -1986,7 +1986,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     <input
                       type="text"
                       value={whatsappBulkMsg}
-                      onChange={(e: any) => setWhatsappBulkMsg(e.target.value)}
+                      onChange={(e) => setWhatsappBulkMsg(e.target.value)}
                       className="w-full bg-neutral-50 border p-2.5 rounded-xl text-[11px]"
                     />
                   </div>
@@ -1996,7 +1996,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     <input
                       type="text"
                       value={whatsappFestivalMsg}
-                      onChange={(e: any) => setWhatsappFestivalMsg(e.target.value)}
+                      onChange={(e) => setWhatsappFestivalMsg(e.target.value)}
                       className="w-full bg-neutral-50 border p-2.5 rounded-xl text-[11px]"
                     />
                   </div>
@@ -2007,7 +2007,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                       <input
                         type="text"
                         value={whatsappHours}
-                        onChange={(e: any) => setWhatsappHours(e.target.value)}
+                        onChange={(e) => setWhatsappHours(e.target.value)}
                         placeholder="10:00 AM - 9:00 PM IST"
                         className="w-full bg-neutral-50 border p-2.5 rounded-xl text-[11px]"
                       />
@@ -2017,7 +2017,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                       <input
                         type="text"
                         value={whatsappAutoReply}
-                        onChange={(e: any) => setWhatsappAutoReply(e.target.value)}
+                        onChange={(e) => setWhatsappAutoReply(e.target.value)}
                         className="w-full bg-neutral-50 border p-2.5 rounded-xl text-[11px]"
                       />
                     </div>
@@ -2036,8 +2036,8 @@ export const SocialMediaSettingsView: React.FC = () => {
                       <input
                         type="text"
                         value={fbPageName}
-                        onChange={(e: any) => setFbPageName(e.target.value)}
-                        placeholder="Official Store"
+                        onChange={(e) => setFbPageName(e.target.value)}
+                        placeholder="Marudhar Fashion Point"
                         className="w-full bg-neutral-50 border p-2.5 rounded-xl text-[10px]"
                       />
                     </div>
@@ -2046,7 +2046,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                       <input
                         type="text"
                         value={fbPageUrl}
-                        onChange={(e: any) => setFbPageUrl(e.target.value)}
+                        onChange={(e) => setFbPageUrl(e.target.value)}
                         placeholder="https://facebook.com/..."
                         className="w-full bg-neutral-50 border p-2.5 rounded-xl font-mono text-[10px]"
                       />
@@ -2058,7 +2058,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                       <input
                         type="text"
                         value={fbFeedEmbed}
-                        onChange={(e: any) => setFbFeedEmbed(e.target.value)}
+                        onChange={(e) => setFbFeedEmbed(e.target.value)}
                         placeholder="https://facebook.com/plugins/..."
                         className="w-full bg-neutral-50 border p-2.5 rounded-xl font-mono text-[10px]"
                       />
@@ -2068,7 +2068,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                       <input
                         type="text"
                         value={fbMessengerUrl}
-                        onChange={(e: any) => setFbMessengerUrl(e.target.value)}
+                        onChange={(e) => setFbMessengerUrl(e.target.value)}
                         placeholder="https://m.me/..."
                         className="w-full bg-neutral-50 border p-2.5 rounded-xl font-mono text-[10px]"
                       />
@@ -2076,11 +2076,11 @@ export const SocialMediaSettingsView: React.FC = () => {
                   </div>
                   <div className="flex gap-4 text-xs pt-1">
                     <label className="flex items-center gap-1.5 font-bold text-neutral-700 cursor-pointer">
-                      <input type="checkbox" checked={fbLikeEnabled} onChange={(e: any) => setFbLikeEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
+                      <input type="checkbox" checked={fbLikeEnabled} onChange={(e) => setFbLikeEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
                       <span>Enable Facebook Like Button</span>
                     </label>
                     <label className="flex items-center gap-1.5 font-bold text-neutral-700 cursor-pointer">
-                      <input type="checkbox" checked={fbShareEnabled} onChange={(e: any) => setFbShareEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
+                      <input type="checkbox" checked={fbShareEnabled} onChange={(e) => setFbShareEnabled(e.target.checked)} className="rounded text-[#0B8F63]" />
                       <span>Enable Facebook Share Button</span>
                     </label>
                   </div>
@@ -2164,7 +2164,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                   <label className="font-bold text-neutral-700 block mb-1">1. Select AI Marketing Action</label>
                   <select
                     value={aiAction}
-                    onChange={(e: any) => setAiAction(e.target.value as any)}
+                    onChange={(e) => setAiAction(e.target.value as any)}
                     className="w-full bg-neutral-50 border p-3 rounded-xl font-bold text-neutral-800 focus:ring-1 focus:ring-[#0B8F63] outline-none"
                   >
                     <option value="suggest_placement">Suggest Placements for High-CTR</option>
@@ -2181,11 +2181,11 @@ export const SocialMediaSettingsView: React.FC = () => {
                   <label className="font-bold text-neutral-700 block mb-1">2. Target Platform channel</label>
                   <select
                     value={aiPlatform}
-                    onChange={(e: any) => setAiPlatform(e.target.value)}
+                    onChange={(e) => setAiPlatform(e.target.value)}
                     className="w-full bg-neutral-50 border p-3 rounded-xl focus:ring-1 focus:ring-[#0B8F63] outline-none"
                   >
                     <option value="All">All Platforms (Unified Context)</option>
-                    {socialMediaConfig.platforms.map((p: any) => (
+                    {socialMediaConfig.platforms.map(p => (
                       <option key={p.id} value={p.name}>{p.name}</option>
                     ))}
                   </select>
@@ -2195,7 +2195,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                   <label className="font-bold text-neutral-700 block mb-1">3. Custom Sizing / Product context (Optional)</label>
                   <textarea
                     value={aiContextInput}
-                    onChange={(e: any) => setAiContextInput(e.target.value)}
+                    onChange={(e) => setAiContextInput(e.target.value)}
                     placeholder="e.g. Traditional leather Mojari, 10% discount coupon JODHPUR10, festival season Jodhpur style..."
                     className="w-full bg-neutral-50 border p-3 rounded-xl h-24 focus:ring-1 focus:ring-[#0B8F63] outline-none resize-none"
                   />
@@ -2215,7 +2215,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      <span>Ask AI Copilot</span>
+                      <span>Ask Marudhar AI Copilot</span>
                     </>
                   )}
                 </button>
@@ -2323,8 +2323,8 @@ export const SocialMediaSettingsView: React.FC = () => {
                   ) : (
                     <div className="flex flex-col items-center justify-center py-16 text-center text-neutral-500">
                       <Sparkles className="w-8 h-8 text-neutral-700 animate-pulse mb-3" />
-                      <p className="font-bold">Footwear Strategy Engine Idle</p>
-                      <p className="text-[11px] text-neutral-600 max-w-xs mt-1">Select an action and click Ask AI Copilot to generate real-time brand-growth advice.</p>
+                      <p className="font-bold">Marudhar Footwear Strategy Engine Idle</p>
+                      <p className="text-[11px] text-neutral-600 max-w-xs mt-1">Select an action and click Ask Marudhar AI Copilot to generate real-time brand-growth advice.</p>
                     </div>
                   )}
                 </div>

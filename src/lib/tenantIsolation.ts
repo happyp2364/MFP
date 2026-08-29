@@ -1,6 +1,4 @@
-import { buildWebsiteUrl, buildAdminLoginUrl } from './platformConfig';
-
-export const DEFAULT_TENANT_ID = 'nwd_store_001';
+export const DEFAULT_TENANT_ID = 'mfp_store_001';
 
 /**
  * Clean & Sanitize Website Slug: Lowercase, letters, numbers, and single hyphens only
@@ -55,21 +53,6 @@ export function isSlugAvailable(
   );
 }
 
-export function setTenantId(websiteId: string, slug?: string): void {
-  try {
-    const cleanSlug = slug || websiteId.replace(/^tenant-/, '');
-    localStorage.setItem(
-      'nwd_website_config_live',
-      JSON.stringify({ websiteId, slug: cleanSlug })
-    );
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('tenantChanged', { detail: { websiteId, slug: cleanSlug } }));
-    }
-  } catch (e) {
-    console.warn('Failed to save tenant ID to localStorage:', e);
-  }
-}
-
 /**
  * Dynamically resolves current websiteId from URL path or search query param
  * E.g. https://nwdstore.in/abc-shoes -> resolves to tenant with slug "abc-shoes"
@@ -81,7 +64,7 @@ export function resolveCurrentWebsiteFromUrl(tenants?: { id: string; slug?: stri
     const params = new URLSearchParams(window.location.search);
     const queryWebsiteId = params.get('websiteId') || params.get('slug') || params.get('tenantId');
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
-    const rawPathSlug = pathSegments.length > 0 ? (pathSegments[0] || '').toLowerCase() : null;
+    const rawPathSlug = pathSegments.length > 0 ? pathSegments[0].toLowerCase() : null;
     const reserved = ['admin', 'api', 'assets', 'static', 'login', 'dashboard', 'auth', 'settings', 'store-locator', 'product'];
     const pathSlug = rawPathSlug && !reserved.includes(rawPathSlug) ? rawPathSlug : null;
 
@@ -92,16 +75,20 @@ export function resolveCurrentWebsiteFromUrl(tenants?: { id: string; slug?: stri
         (t) => t.slug === targetIdentifier || t.id === targetIdentifier
       );
       if (matched) {
-        setTenantId(matched.id, matched.slug);
+        localStorage.setItem(
+          'mfp_website_config_live',
+          JSON.stringify({ websiteId: matched.id, slug: matched.slug })
+        );
         return matched.id;
       }
     }
 
     if (targetIdentifier) {
-      // If we don't have the tenants list yet to verify, construct the expected ID format
-      const assumedId = targetIdentifier.startsWith('tenant-') ? targetIdentifier : `tenant-${targetIdentifier}`;
-      setTenantId(assumedId, targetIdentifier);
-      return assumedId;
+      localStorage.setItem(
+        'mfp_website_config_live',
+        JSON.stringify({ websiteId: targetIdentifier, slug: targetIdentifier })
+      );
+      return targetIdentifier;
     }
   } catch {
     // Fallback on error
@@ -115,7 +102,7 @@ export function resolveCurrentWebsiteFromUrl(tenants?: { id: string; slug?: stri
  */
 export function getCurrentTenantId(): string {
   try {
-    const saved = localStorage.getItem('nwd_website_config_live');
+    const saved = localStorage.getItem('mfp_website_config_live');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed?.websiteId) return parsed.websiteId;
@@ -132,7 +119,7 @@ export function getCurrentTenantId(): string {
  */
 export function getCurrentTenantSlug(): string | null {
   try {
-    const saved = localStorage.getItem('nwd_website_config_live');
+    const saved = localStorage.getItem('mfp_website_config_live');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed?.slug) return parsed.slug;
@@ -209,27 +196,32 @@ export function validateTenantAccess(
   const target = targetWebsiteId || getCurrentTenantId();
   const userTenant = userWebsiteId || DEFAULT_TENANT_ID;
 
-  const normUserTenant = userTenant.startsWith('tenant-') ? userTenant : `tenant-${userTenant}`;
-  const normTarget = target.startsWith('tenant-') ? target : `tenant-${target}`;
-
-  return normUserTenant === normTarget;
+  return userTenant === target;
 }
 
 /**
- * Dynamically constructs the Website Public URL based on tenant config & platform base URL
- * Format: platformBaseUrl + "/" + websiteSlug
+ * Dynamically constructs the Website Public URL based on tenant config & current runtime host
+ * Generates: https://<main-domain>/<website-slug> e.g. https://nwdstore.in/abc-shoes
  */
 export function getWebsiteUrl(tenant: { id: string; slug?: string; domain?: string; customDomain?: string; websiteUrl?: string }): string {
+  if (tenant.websiteUrl) return tenant.websiteUrl;
   if (tenant.customDomain) return `https://${tenant.customDomain}`;
-  const slug = tenant.slug || tenant.id;
-  return buildWebsiteUrl(slug);
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nwdstore.in';
+  if (tenant.slug) {
+    return `${origin}/${tenant.slug}`;
+  }
+  return `${origin}?websiteId=${tenant.id}`;
 }
 
 /**
- * Dynamically constructs the Website Admin Login URL based on tenant config & platform base URL
+ * Dynamically constructs the Website Admin Login URL based on tenant config & current runtime host
  */
 export function getAdminLoginUrl(tenant: { id: string; slug?: string; domain?: string; customDomain?: string; adminLoginUrl?: string }): string {
-  if (tenant.customDomain) return `https://${tenant.customDomain}?admin=true`;
-  const slug = tenant.slug || tenant.id;
-  return buildAdminLoginUrl(slug);
+  if (tenant.adminLoginUrl) return tenant.adminLoginUrl;
+  if (tenant.customDomain) return `https://${tenant.customDomain}/admin`;
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://nwdstore.in';
+  if (tenant.slug) {
+    return `${origin}/${tenant.slug}?admin=true`;
+  }
+  return `${origin}?admin=true&websiteId=${tenant.id}`;
 }

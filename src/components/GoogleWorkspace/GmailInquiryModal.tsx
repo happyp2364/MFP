@@ -3,7 +3,6 @@ import { X, Mail, Send, CheckCircle2, AlertCircle, ShieldAlert, Sparkles, Messag
 import { auth, signInWithGoogle, getCachedAccessToken, handleFirestoreError, db } from '../../lib/firebase';
 import { sendGmailMessage, GmailSendResult } from '../../lib/googleWorkspace';
 import { collection, addDoc } from 'firebase/firestore';
-import { getTenantCollectionWriteRef } from '../../lib/firestoreMultiTenant';
 
 interface GmailInquiryModalProps {
   isOpen: boolean;
@@ -15,7 +14,7 @@ interface GmailInquiryModalProps {
 export const GmailInquiryModal: React.FC<GmailInquiryModalProps> = ({
   isOpen,
   onClose,
-  defaultSubject = 'Custom Shoe Inquiry',
+  defaultSubject = 'Custom Shoe Inquiry - Marudhar Fashion Point',
   defaultBody = '',
 }) => {
   const [user, setUser] = useState(auth.currentUser);
@@ -65,7 +64,7 @@ export const GmailInquiryModal: React.FC<GmailInquiryModalProps> = ({
     setErrorMsg(null);
 
     try {
-      const fullBody = `Inquiry Category: ${category}\nFrom: ${user?.displayName || 'Customer'} (${user?.email})\nPhone: +91 9782482250\n\nMessage:\n${message}\n\n---\nSent via Official Store Gmail Integration`;
+      const fullBody = `Inquiry Category: ${category}\nFrom: ${user?.displayName || 'Customer'} (${user?.email})\nPhone: +91 9782482250\n\nMessage:\n${message}\n\n---\nSent via Marudhar Fashion Point Gmail Integration`;
 
       // 1. Call Gmail API
       const res = await sendGmailMessage({
@@ -76,7 +75,7 @@ export const GmailInquiryModal: React.FC<GmailInquiryModalProps> = ({
 
       // 2. Save inquiry in Firestore
       try {
-        await addDoc(getTenantCollectionWriteRef(db, 'inquiries'), {
+        await addDoc(collection(db, 'inquiries'), {
           userId: user?.uid || 'guest',
           email: user?.email || '',
           name: user?.displayName || 'Valued Customer',

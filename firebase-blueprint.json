@@ -2,7 +2,7 @@
   "entities": {
     "products": {
       "title": "Store Products",
-      "description": "Footwear and clothing catalog items for NWD Platform",
+      "description": "Footwear and clothing catalog items for Marudhar Fashion Point",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -36,7 +36,7 @@
     },
     "storeInfo": {
       "title": "Store Settings",
-      "description": "NWD Platform operational details and contact info",
+      "description": "Marudhar Fashion Point operational details and contact info",
       "type": "object",
       "properties": {
         "name": { "type": "string" },

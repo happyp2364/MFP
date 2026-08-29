@@ -1,17 +1,15 @@
 import React, { useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
-import { getPlatformConfig } from '../../lib/platformConfig';
 
 export const SEOSchemaInjector: React.FC = () => {
   const { seoConfig } = useStore();
 
   useEffect(() => {
-    const platform = getPlatformConfig();
     // Generate JSON-LD Schema
     const schema = {
       "@context": "https://schema.org",
       "@type": "ShoeStore", // Specific type of LocalBusiness
-      "name": seoConfig.businessName || platform.platformDisplayName,
+      "name": seoConfig.businessName || "Marudhar Fashion Point",
       "image": [
         seoConfig.defaultOgImage || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
       ],
@@ -48,7 +46,8 @@ export const SEOSchemaInjector: React.FC = () => {
         }
       ],
       "sameAs": [
-        seoConfig.gbpUrl
+        seoConfig.gbpUrl,
+        "https://www.instagram.com/marudharfashionpoint/"
       ].filter(Boolean)
     };
 

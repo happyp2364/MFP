@@ -105,7 +105,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   };
 
   const activeVariantWithImages = product.variants?.find(
-    (v) => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.images && v.images.length > 0
+    (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
   );
   
   const displayImages = activeVariantWithImages?.images || product.images || [];
@@ -119,8 +119,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     : rawImageSrc;
 
   const currentPrice = getProductPrice(product, selectedSize, selectedColor);
-  const isVariantSelected = Boolean(product.variants?.find(v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && String(v.size) === String(selectedSize)));
-  const activeVariant = product.variants?.find(v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && String(v.size) === String(selectedSize));
+  const isVariantSelected = Boolean(product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize));
+  const activeVariant = product.variants?.find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize);
   const originalPrice = isVariantSelected && activeVariant ? activeVariant.originalPrice : product.originalPrice;
 
   return (
@@ -152,7 +152,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                   <ImageOff className="w-7 h-7" />
                 </div>
                 <span className="text-xs font-bold text-neutral-800 tracking-wide uppercase">Real Product Image Coming Soon</span>
-                <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Official Product Showcase</span>
+                <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Marudhar Fashion Point</span>
               </div>
             ) : (
               <img
@@ -254,11 +254,11 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             {/* Price Box */}
             <div className="flex items-baseline gap-3">
               <span className="font-serif-heading font-extrabold text-3xl text-neutral-900">
-                ₹{(currentPrice || 0).toLocaleString('en-IN')}
+                ₹{currentPrice.toLocaleString('en-IN')}
               </span>
               {originalPrice > currentPrice && (
                 <span className="text-base text-neutral-400 line-through">
-                  ₹{(originalPrice || 0).toLocaleString('en-IN')}
+                  ₹{originalPrice.toLocaleString('en-IN')}
                 </span>
               )}
               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">

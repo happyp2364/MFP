@@ -21,14 +21,14 @@ export const AIMarketingGrowthView: React.FC = () => {
   };
 
   const handleSocialToneChange = (tone: any) => {
-    setLocalConfig((prev: any) => ({
+    setLocalConfig(prev => ({
       ...prev,
       socialMediaTone: tone
     }));
   };
 
   const toggleEngagement = (key: keyof typeof localConfig.customerEngagement) => {
-    setLocalConfig((prev: any) => ({
+    setLocalConfig(prev => ({
       ...prev,
       customerEngagement: {
         ...prev.customerEngagement,
@@ -38,7 +38,7 @@ export const AIMarketingGrowthView: React.FC = () => {
   };
 
   const toggleRecommendation = (key: keyof typeof localConfig.recommendationEngine) => {
-    setLocalConfig((prev: any) => ({
+    setLocalConfig(prev => ({
       ...prev,
       recommendationEngine: {
         ...prev.recommendationEngine,

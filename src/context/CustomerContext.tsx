@@ -3,8 +3,6 @@ import { SoundConfig, CustomerSoundSettings, SoundType } from '../types';
 import { DEFAULT_SOUND_CONFIG, DEFAULT_CUSTOMER_SOUND_SETTINGS } from '../data/mockData';
 import { playSound, applyAudioCustomerSettings } from '../utils/audio';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 interface CustomerContextType {
@@ -16,7 +14,7 @@ interface CustomerContextType {
 }
 
 const STORAGE_KEYS = {
-  SOUND_CONFIG: 'nwd_sound_config_live',
+  SOUND_CONFIG: 'mfp_sound_config_live',
 };
 
 const CustomerContext = createContext<CustomerContextType | undefined>(undefined);
@@ -34,7 +32,7 @@ export const CustomerProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [customerSoundSettings, setCustomerSoundSettings] = useState<CustomerSoundSettings>(DEFAULT_CUSTOMER_SOUND_SETTINGS);
 
   useEffect(() => {
-    const unsub = onTenantDocSnapshot(db, 'settings', 'sound_config', (snapshot) => {
+    const unsub = onSnapshot(doc(db, 'settings', 'sound_config'), (snapshot) => {
       if (snapshot.exists()) {
         setSoundConfig(snapshot.data() as SoundConfig);
       }
@@ -47,7 +45,7 @@ export const CustomerProvider: React.FC<{ children: ReactNode }> = ({ children }
     setSoundConfig(config);
     localStorage.setItem(STORAGE_KEYS.SOUND_CONFIG, JSON.stringify(config));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'sound_config'), config, { merge: true });
+      await setDoc(doc(db, 'settings', 'sound_config'), config, { merge: true });
     } catch (e) {
       console.warn('Firestore sound config sync failed', e);
     }

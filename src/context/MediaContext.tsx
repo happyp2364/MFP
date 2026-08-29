@@ -6,8 +6,6 @@ import {
 } from '../types';
 import { DEFAULT_INSTAGRAM_CONFIG, DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG, DEFAULT_SOCIAL_ANALYTICS } from '../data/mockData';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 interface MediaContextType {
@@ -20,9 +18,9 @@ interface MediaContextType {
 }
 
 const STORAGE_KEYS = {
-  INSTAGRAM_CONFIG: 'nwd_instagram_config_live',
-  SOCIAL_MEDIA_CONFIG: 'nwd_social_media_config_live_v2',
-  SOCIAL_ANALYTICS: 'nwd_social_analytics_live_v2',
+  INSTAGRAM_CONFIG: 'mfp_instagram_config_live',
+  SOCIAL_MEDIA_CONFIG: 'mfp_social_media_config_live_v2',
+  SOCIAL_ANALYTICS: 'mfp_social_analytics_live_v2',
 };
 
 const MediaContext = createContext<MediaContextType | undefined>(undefined);
@@ -56,11 +54,11 @@ export const MediaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   });
 
   useEffect(() => {
-    const unsubInsta = onTenantDocSnapshot(db, 'settings', 'instagram_config', (snapshot) => {
+    const unsubInsta = onSnapshot(doc(db, 'settings', 'instagram_config'), (snapshot) => {
       if (snapshot.exists()) setInstagramConfig(snapshot.data() as InstagramConfig);
     }, () => {});
 
-    const unsubSocial = onTenantDocSnapshot(db, 'settings', 'social_media', (snapshot) => {
+    const unsubSocial = onSnapshot(doc(db, 'settings', 'social_media'), (snapshot) => {
       if (snapshot.exists()) setSocialMediaConfig(snapshot.data() as SocialMediaCenterConfig);
     }, () => {});
 
@@ -74,7 +72,7 @@ export const MediaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setInstagramConfig(config);
     localStorage.setItem(STORAGE_KEYS.INSTAGRAM_CONFIG, JSON.stringify(config));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'instagram_config'), config, { merge: true });
+      await setDoc(doc(db, 'settings', 'instagram_config'), config, { merge: true });
     } catch (e) {
       console.warn('Firestore instagram config sync failed', e);
     }
@@ -84,7 +82,7 @@ export const MediaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setSocialMediaConfig(config);
     localStorage.setItem(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, JSON.stringify(config));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'social_media'), config, { merge: true });
+      await setDoc(doc(db, 'settings', 'social_media'), config, { merge: true });
     } catch (e) {
       console.warn('Firestore social media config sync failed', e);
     }

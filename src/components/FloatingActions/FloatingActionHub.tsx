@@ -33,12 +33,12 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
 
   // Extract other active floating platforms except WhatsApp (which is treated as a primary floating button below)
   const floatingPlatforms = (socialMediaConfig?.platforms || [])
-    .filter((p: any) => p.enabled && p.showAsFloating && p.id !== 'whatsapp')
-    .sort((a: any, b: any) => a.displayOrder - b.displayOrder);
+    .filter(p => p.enabled && p.showAsFloating && p.id !== 'whatsapp')
+    .sort((a, b) => a.displayOrder - b.displayOrder);
 
   // Predefined custom WhatsApp details
   const waMessage = socialMediaConfig?.whatsappPredefinedMessage || '';
-  const waSupportName = socialMediaConfig?.whatsappSupportName || 'NWD Support';
+  const waSupportName = socialMediaConfig?.whatsappSupportName || 'MFP Support';
   const waSupportRole = socialMediaConfig?.whatsappSupportRole || 'Live Agent';
   const waSupportAvatar = socialMediaConfig?.whatsappSupportAvatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=64&q=80';
   const waUrl = generateGeneralInquiryWhatsAppLink(waMessage);
@@ -54,7 +54,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
       {expandedSocials && (
         <div className="flex flex-col items-end gap-3 mb-1 pointer-events-auto animate-in slide-in-from-bottom-4 fade-in duration-300">
           {floatingPlatforms.length > 0 ? (
-            floatingPlatforms.map((plat: any) => {
+            floatingPlatforms.map((plat) => {
               const getHoverStyle = (effect: string) => {
                 switch (effect) {
                   case 'glow': return 'hover:shadow-[0_0_15px_rgba(255,255,255,0.7)]';
@@ -95,7 +95,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
               {/* Fallback legacy links if none configured */}
               <div className="group relative flex items-center gap-2">
                 <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
-                  Follow on Instagram
+                  Instagram @marudhar_fashion_point
                 </span>
                 <a
                   href={storeInfo.instagram}

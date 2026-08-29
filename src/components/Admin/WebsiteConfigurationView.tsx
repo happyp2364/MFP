@@ -42,7 +42,6 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { WebsiteConfig, SocialLinkItem, PhysicalStore } from '../../types';
 import { DEFAULT_WEBSITE_CONFIG } from '../../data/defaultWebsiteConfig';
-import { mergeWithDefaultConfig } from '../../context/WebsiteIdentityContext';
 
 type ConfigSection =
   | 'identity'
@@ -91,7 +90,7 @@ export const WebsiteConfigurationView: React.FC = () => {
   const { websiteConfig, updateWebsiteConfig, showToast, physicalStores, addPhysicalStore, updatePhysicalStore, deletePhysicalStore } = useStore();
 
   const [activeSection, setActiveSection] = useState<ConfigSection>('identity');
-  const [formData, setFormData] = useState<WebsiteConfig>(() => mergeWithDefaultConfig(websiteConfig));
+  const [formData, setFormData] = useState<WebsiteConfig>(websiteConfig || DEFAULT_WEBSITE_CONFIG);
   const [searchQuery, setSearchQuery] = useState('');
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -106,15 +105,15 @@ export const WebsiteConfigurationView: React.FC = () => {
   // Keep local form in sync with context when context changes externally
   useEffect(() => {
     if (websiteConfig) {
-      setFormData(mergeWithDefaultConfig(websiteConfig));
+      setFormData(websiteConfig);
     }
   }, [websiteConfig]);
 
   // Update dirty state
   const handleFieldChange = (section: keyof WebsiteConfig, field: string, value: any) => {
-    setFormData((prev: any) => {
+    setFormData((prev) => {
       // Save current state to history stack before modifying
-      setHistoryStack((h: any) => [...h.slice(-20), prev]);
+      setHistoryStack((h) => [...h.slice(-20), prev]);
       setRedoStack([]);
 
       const updatedSection = {
@@ -137,9 +136,9 @@ export const WebsiteConfigurationView: React.FC = () => {
   const handleUndo = () => {
     if (historyStack.length === 0) return;
     const previous = historyStack[historyStack.length - 1];
-    setRedoStack((r: any) => [formData, ...r]);
+    setRedoStack((r) => [formData, ...r]);
     setFormData(previous);
-    setHistoryStack((h: any) => h.slice(0, -1));
+    setHistoryStack((h) => h.slice(0, -1));
     setIsDirty(true);
     showToast('⏪ Undo action applied', 'info');
   };
@@ -148,9 +147,9 @@ export const WebsiteConfigurationView: React.FC = () => {
   const handleRedo = () => {
     if (redoStack.length === 0) return;
     const next = redoStack[0];
-    setHistoryStack((h: any) => [...h, formData]);
+    setHistoryStack((h) => [...h, formData]);
     setFormData(next);
-    setRedoStack((r: any) => r.slice(1));
+    setRedoStack((r) => r.slice(1));
     setIsDirty(true);
     showToast('⏩ Redo action applied', 'info');
   };
@@ -158,7 +157,7 @@ export const WebsiteConfigurationView: React.FC = () => {
   // Reset to defaults
   const handleResetToDefaults = () => {
     if (window.confirm('Are you sure you want to reset all Website Configuration settings to default values?')) {
-      setHistoryStack((h: any) => [...h, formData]);
+      setHistoryStack((h) => [...h, formData]);
       setFormData(DEFAULT_WEBSITE_CONFIG);
       setIsDirty(true);
       showToast('🔄 Reset to default values', 'info');
@@ -171,7 +170,7 @@ export const WebsiteConfigurationView: React.FC = () => {
     try {
       await updateWebsiteConfig(formData);
       setIsDirty(false);
-      setVersionHistory((prev: any) => [formData, ...prev.slice(0, 10)]);
+      setVersionHistory((prev) => [formData, ...prev.slice(0, 10)]);
       showToast('✅ Website Configuration updated instantly across all channels!', 'success');
     } catch (err) {
       console.error('Error saving website configuration:', err);
@@ -207,14 +206,14 @@ export const WebsiteConfigurationView: React.FC = () => {
   };
 
   const handleUpdateSocialLink = (id: string, updated: Partial<SocialLinkItem>) => {
-    const updatedLinks = (formData.socialMedia?.links || []).map((item: any) =>
+    const updatedLinks = (formData.socialMedia?.links || []).map((item) =>
       item.id === id ? { ...item, ...updated } : item
     );
     handleFieldChange('socialMedia', 'links', updatedLinks);
   };
 
   const handleDeleteSocialLink = (id: string) => {
-    const updatedLinks = (formData.socialMedia?.links || []).filter((item: any) => item.id !== id);
+    const updatedLinks = (formData.socialMedia?.links || []).filter((item) => item.id !== id);
     handleFieldChange('socialMedia', 'links', updatedLinks);
   };
 
@@ -223,7 +222,7 @@ export const WebsiteConfigurationView: React.FC = () => {
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(formData, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `${(formData?.businessIdentity?.businessName || 'Website').replace(/\s+/g, '_')}_WebsiteConfig.json`);
+    downloadAnchor.setAttribute('download', `${formData.businessIdentity.businessName.replace(/\s+/g, '_')}_WebsiteConfig.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -234,7 +233,7 @@ export const WebsiteConfigurationView: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event: any) => {
+    reader.onload = (event) => {
       try {
         const imported = JSON.parse(event.target?.result as string);
         if (imported.businessIdentity) {
@@ -253,9 +252,9 @@ export const WebsiteConfigurationView: React.FC = () => {
 
   // Filter sections by search query
   const filteredSections = SECTIONS.filter(
-    (s: any) =>
-      (s.title || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-      (s.description || '').toLowerCase().includes((searchQuery || '').toLowerCase())
+    (s) =>
+      s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -276,7 +275,7 @@ export const WebsiteConfigurationView: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Live Store Identity for <strong className="text-amber-400">{formData?.businessIdentity?.businessName || 'Your Business'}</strong>
+              Live Store Identity for <strong className="text-amber-400">{formData.businessIdentity.businessName || 'Your Business'}</strong>
             </p>
           </div>
         </div>
@@ -290,7 +289,7 @@ export const WebsiteConfigurationView: React.FC = () => {
               type="text"
               placeholder="Search setting..."
               value={searchQuery}
-              onChange={(e: any) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-3 py-1.5 text-xs bg-slate-900 border border-slate-700/80 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 w-40 md:w-52"
             />
             {searchQuery && (
@@ -397,7 +396,7 @@ export const WebsiteConfigurationView: React.FC = () => {
           <div className="px-3 py-2 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
             Configuration Modules ({filteredSections.length})
           </div>
-          {filteredSections.map((sec: any) => {
+          {filteredSections.map((sec) => {
             const Icon = sec.icon;
             const isActive = activeSection === sec.id;
             return (
@@ -450,8 +449,8 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.businessIdentity.businessName}
-                    onChange={(e: any) => handleFieldChange('businessIdentity', 'businessName', e.target.value)}
-                    placeholder="e.g. Royal Footwear Store"
+                    onChange={(e) => handleFieldChange('businessIdentity', 'businessName', e.target.value)}
+                    placeholder="e.g. Marudhar Fashion Point"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -460,8 +459,8 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.businessIdentity.displayName}
-                    onChange={(e: any) => handleFieldChange('businessIdentity', 'displayName', e.target.value)}
-                    placeholder="e.g. Royal Footwear"
+                    onChange={(e) => handleFieldChange('businessIdentity', 'displayName', e.target.value)}
+                    placeholder="e.g. Marudhar Fashion Point"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -470,8 +469,8 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.businessIdentity.legalName}
-                    onChange={(e: any) => handleFieldChange('businessIdentity', 'legalName', e.target.value)}
-                    placeholder="e.g. Royal Footwear Pvt Ltd"
+                    onChange={(e) => handleFieldChange('businessIdentity', 'legalName', e.target.value)}
+                    placeholder="e.g. Marudhar Fashion Point Pvt Ltd"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -480,8 +479,8 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.businessIdentity.brandName}
-                    onChange={(e: any) => handleFieldChange('businessIdentity', 'brandName', e.target.value)}
-                    placeholder="e.g. Royal"
+                    onChange={(e) => handleFieldChange('businessIdentity', 'brandName', e.target.value)}
+                    placeholder="e.g. Marudhar"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -490,7 +489,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.businessIdentity.tagline}
-                    onChange={(e: any) => handleFieldChange('businessIdentity', 'tagline', e.target.value)}
+                    onChange={(e) => handleFieldChange('businessIdentity', 'tagline', e.target.value)}
                     placeholder="e.g. Style for Every Step."
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -500,7 +499,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={2}
                     value={formData.businessIdentity.shortDescription}
-                    onChange={(e: any) => handleFieldChange('businessIdentity', 'shortDescription', e.target.value)}
+                    onChange={(e) => handleFieldChange('businessIdentity', 'shortDescription', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -509,7 +508,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={4}
                     value={formData.businessIdentity.businessStory}
-                    onChange={(e: any) => handleFieldChange('businessIdentity', 'businessStory', e.target.value)}
+                    onChange={(e) => handleFieldChange('businessIdentity', 'businessStory', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -518,7 +517,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.businessIdentity.establishedYear}
-                    onChange={(e: any) => handleFieldChange('businessIdentity', 'establishedYear', e.target.value)}
+                    onChange={(e) => handleFieldChange('businessIdentity', 'establishedYear', e.target.value)}
                     placeholder="2010"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -528,7 +527,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.businessIdentity.gstNumber}
-                    onChange={(e: any) => handleFieldChange('businessIdentity', 'gstNumber', e.target.value)}
+                    onChange={(e) => handleFieldChange('businessIdentity', 'gstNumber', e.target.value)}
                     placeholder="08AAAAA0000A1Z5"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none font-mono"
                   />
@@ -538,7 +537,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.businessIdentity.panNumber}
-                    onChange={(e: any) => handleFieldChange('businessIdentity', 'panNumber', e.target.value)}
+                    onChange={(e) => handleFieldChange('businessIdentity', 'panNumber', e.target.value)}
                     placeholder="ABCDE1234F"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none font-mono"
                   />
@@ -548,7 +547,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.businessIdentity.ownerName}
-                    onChange={(e: any) => handleFieldChange('businessIdentity', 'ownerName', e.target.value)}
+                    onChange={(e) => handleFieldChange('businessIdentity', 'ownerName', e.target.value)}
                     placeholder="Vijay Parihar"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -564,7 +563,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                     <input
                       type="text"
                       value={formData.businessIdentity.logoUrl}
-                      onChange={(e: any) => handleFieldChange('businessIdentity', 'logoUrl', e.target.value)}
+                      onChange={(e) => handleFieldChange('businessIdentity', 'logoUrl', e.target.value)}
                       placeholder="/logo.png"
                       className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                     />
@@ -574,7 +573,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                     <input
                       type="text"
                       value={formData.businessIdentity.faviconUrl}
-                      onChange={(e: any) => handleFieldChange('businessIdentity', 'faviconUrl', e.target.value)}
+                      onChange={(e) => handleFieldChange('businessIdentity', 'faviconUrl', e.target.value)}
                       placeholder="/favicon.ico"
                       className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                     />
@@ -603,7 +602,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.contactDetails.phone}
-                    onChange={(e: any) => handleFieldChange('contactDetails', 'phone', e.target.value)}
+                    onChange={(e) => handleFieldChange('contactDetails', 'phone', e.target.value)}
                     placeholder="+91 9782482250"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -613,7 +612,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.contactDetails.whatsappNumber}
-                    onChange={(e: any) => handleFieldChange('contactDetails', 'whatsappNumber', e.target.value)}
+                    onChange={(e) => handleFieldChange('contactDetails', 'whatsappNumber', e.target.value)}
                     placeholder="919782482250"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -623,7 +622,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.contactDetails.customerCareNumber}
-                    onChange={(e: any) => handleFieldChange('contactDetails', 'customerCareNumber', e.target.value)}
+                    onChange={(e) => handleFieldChange('contactDetails', 'customerCareNumber', e.target.value)}
                     placeholder="+91 9782482250"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -633,7 +632,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.contactDetails.tollFreeNumber}
-                    onChange={(e: any) => handleFieldChange('contactDetails', 'tollFreeNumber', e.target.value)}
+                    onChange={(e) => handleFieldChange('contactDetails', 'tollFreeNumber', e.target.value)}
                     placeholder="1800-123-4567"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -643,8 +642,8 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="email"
                     value={formData.contactDetails.email}
-                    onChange={(e: any) => handleFieldChange('contactDetails', 'email', e.target.value)}
-                    placeholder="store@nwd.app"
+                    onChange={(e) => handleFieldChange('contactDetails', 'email', e.target.value)}
+                    placeholder="marudharfashionpoint@gmail.com"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -653,8 +652,8 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="email"
                     value={formData.contactDetails.supportEmail}
-                    onChange={(e: any) => handleFieldChange('contactDetails', 'supportEmail', e.target.value)}
-                    placeholder="support@nwd.app"
+                    onChange={(e) => handleFieldChange('contactDetails', 'supportEmail', e.target.value)}
+                    placeholder="support@marudharfashionpoint.com"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -663,8 +662,8 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.contactDetails.websiteUrl}
-                    onChange={(e: any) => handleFieldChange('contactDetails', 'websiteUrl', e.target.value)}
-                    placeholder="https://nwd.app"
+                    onChange={(e) => handleFieldChange('contactDetails', 'websiteUrl', e.target.value)}
+                    placeholder="https://marudharfashionpoint.com"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -691,7 +690,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={2}
                     value={formData.address.shopAddress}
-                    onChange={(e: any) => handleFieldChange('address', 'shopAddress', e.target.value)}
+                    onChange={(e) => handleFieldChange('address', 'shopAddress', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -700,7 +699,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.address.landmark}
-                    onChange={(e: any) => handleFieldChange('address', 'landmark', e.target.value)}
+                    onChange={(e) => handleFieldChange('address', 'landmark', e.target.value)}
                     placeholder="Near Jojri Nadi & Mistri Market"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -710,7 +709,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.address.city}
-                    onChange={(e: any) => handleFieldChange('address', 'city', e.target.value)}
+                    onChange={(e) => handleFieldChange('address', 'city', e.target.value)}
                     placeholder="Pipar City"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -720,7 +719,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.address.district}
-                    onChange={(e: any) => handleFieldChange('address', 'district', e.target.value)}
+                    onChange={(e) => handleFieldChange('address', 'district', e.target.value)}
                     placeholder="Jodhpur"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -730,7 +729,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.address.state}
-                    onChange={(e: any) => handleFieldChange('address', 'state', e.target.value)}
+                    onChange={(e) => handleFieldChange('address', 'state', e.target.value)}
                     placeholder="Rajasthan"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -740,7 +739,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.address.pinCode}
-                    onChange={(e: any) => handleFieldChange('address', 'pinCode', e.target.value)}
+                    onChange={(e) => handleFieldChange('address', 'pinCode', e.target.value)}
                     placeholder="342601"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none font-mono"
                   />
@@ -750,7 +749,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.address.country}
-                    onChange={(e: any) => handleFieldChange('address', 'country', e.target.value)}
+                    onChange={(e) => handleFieldChange('address', 'country', e.target.value)}
                     placeholder="India"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -760,7 +759,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.address.googleMapsLink}
-                    onChange={(e: any) => handleFieldChange('address', 'googleMapsLink', e.target.value)}
+                    onChange={(e) => handleFieldChange('address', 'googleMapsLink', e.target.value)}
                     placeholder="https://maps.google.com/?q=..."
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -792,7 +791,7 @@ export const WebsiteConfigurationView: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                {(formData.socialMedia?.links || []).map((link: any, idx: any) => (
+                {(formData.socialMedia?.links || []).map((link, idx) => (
                   <div key={link.id} className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div className="flex items-center space-x-3 w-full md:w-auto">
                       <span className="p-2 bg-slate-800 text-amber-400 font-bold text-xs rounded-lg">{idx + 1}</span>
@@ -800,14 +799,14 @@ export const WebsiteConfigurationView: React.FC = () => {
                         <input
                           type="text"
                           value={link.platform}
-                          onChange={(e: any) => handleUpdateSocialLink(link.id, { platform: e.target.value })}
+                          onChange={(e) => handleUpdateSocialLink(link.id, { platform: e.target.value })}
                           placeholder="Platform Name (e.g. Instagram)"
                           className="px-2.5 py-1 text-xs font-semibold bg-slate-900 border border-slate-700 rounded text-white mb-1 w-full"
                         />
                         <input
                           type="text"
                           value={link.url}
-                          onChange={(e: any) => handleUpdateSocialLink(link.id, { url: e.target.value })}
+                          onChange={(e) => handleUpdateSocialLink(link.id, { url: e.target.value })}
                           placeholder="https://..."
                           className="px-2.5 py-1 text-xs bg-slate-900 border border-slate-700 rounded text-slate-300 w-full"
                         />
@@ -818,7 +817,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                       <input
                         type="text"
                         value={link.username}
-                        onChange={(e: any) => handleUpdateSocialLink(link.id, { username: e.target.value })}
+                        onChange={(e) => handleUpdateSocialLink(link.id, { username: e.target.value })}
                         placeholder="@username"
                         className="px-2.5 py-1 text-xs bg-slate-900 border border-slate-700 rounded text-slate-400 w-32"
                       />
@@ -826,7 +825,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                         <input
                           type="checkbox"
                           checked={link.enabled}
-                          onChange={(e: any) => handleUpdateSocialLink(link.id, { enabled: e.target.checked })}
+                          onChange={(e) => handleUpdateSocialLink(link.id, { enabled: e.target.checked })}
                           className="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0"
                         />
                         <span>Active</span>
@@ -862,7 +861,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <label className="block text-xs font-medium text-slate-300 mb-1">Store Status</label>
                   <select
                     value={formData.storeSettings.storeStatus}
-                    onChange={(e: any) => handleFieldChange('storeSettings', 'storeStatus', e.target.value as 'open' | 'closed')}
+                    onChange={(e) => handleFieldChange('storeSettings', 'storeStatus', e.target.value as 'open' | 'closed')}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   >
                     <option value="open">🟢 Open for Business</option>
@@ -874,7 +873,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.storeSettings.businessHours}
-                    onChange={(e: any) => handleFieldChange('storeSettings', 'businessHours', e.target.value)}
+                    onChange={(e) => handleFieldChange('storeSettings', 'businessHours', e.target.value)}
                     placeholder="Monday - Sunday: 9:00 AM - 9:30 PM"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -884,7 +883,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.storeSettings.holidayCalendar}
-                    onChange={(e: any) => handleFieldChange('storeSettings', 'holidayCalendar', e.target.value)}
+                    onChange={(e) => handleFieldChange('storeSettings', 'holidayCalendar', e.target.value)}
                     placeholder="Open 365 Days a Year"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -894,7 +893,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.storeSettings.emergencyNotice}
-                    onChange={(e: any) => handleFieldChange('storeSettings', 'emergencyNotice', e.target.value)}
+                    onChange={(e) => handleFieldChange('storeSettings', 'emergencyNotice', e.target.value)}
                     placeholder="e.g. Special Festive Discount active this weekend!"
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
@@ -922,7 +921,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.seo.metaTitle}
-                    onChange={(e: any) => handleFieldChange('seo', 'metaTitle', e.target.value)}
+                    onChange={(e) => handleFieldChange('seo', 'metaTitle', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -931,7 +930,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={3}
                     value={formData.seo.metaDescription}
-                    onChange={(e: any) => handleFieldChange('seo', 'metaDescription', e.target.value)}
+                    onChange={(e) => handleFieldChange('seo', 'metaDescription', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -940,7 +939,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={4}
                     value={formData.seo.structuredDataJson}
-                    onChange={(e: any) => handleFieldChange('seo', 'structuredDataJson', e.target.value)}
+                    onChange={(e) => handleFieldChange('seo', 'structuredDataJson', e.target.value)}
                     className="w-full px-3.5 py-2 text-xs font-mono bg-slate-950 border border-slate-700 rounded-xl text-amber-300 focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -968,13 +967,13 @@ export const WebsiteConfigurationView: React.FC = () => {
                     <input
                       type="color"
                       value={formData.branding.primaryColor}
-                      onChange={(e: any) => handleFieldChange('branding', 'primaryColor', e.target.value)}
+                      onChange={(e) => handleFieldChange('branding', 'primaryColor', e.target.value)}
                       className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0"
                     />
                     <input
                       type="text"
                       value={formData.branding.primaryColor}
-                      onChange={(e: any) => handleFieldChange('branding', 'primaryColor', e.target.value)}
+                      onChange={(e) => handleFieldChange('branding', 'primaryColor', e.target.value)}
                       className="w-full px-3 py-2 text-xs font-mono bg-slate-950 border border-slate-700 rounded-xl text-white"
                     />
                   </div>
@@ -985,13 +984,13 @@ export const WebsiteConfigurationView: React.FC = () => {
                     <input
                       type="color"
                       value={formData.branding.secondaryColor}
-                      onChange={(e: any) => handleFieldChange('branding', 'secondaryColor', e.target.value)}
+                      onChange={(e) => handleFieldChange('branding', 'secondaryColor', e.target.value)}
                       className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0"
                     />
                     <input
                       type="text"
                       value={formData.branding.secondaryColor}
-                      onChange={(e: any) => handleFieldChange('branding', 'secondaryColor', e.target.value)}
+                      onChange={(e) => handleFieldChange('branding', 'secondaryColor', e.target.value)}
                       className="w-full px-3 py-2 text-xs font-mono bg-slate-950 border border-slate-700 rounded-xl text-white"
                     />
                   </div>
@@ -1002,13 +1001,13 @@ export const WebsiteConfigurationView: React.FC = () => {
                     <input
                       type="color"
                       value={formData.branding.accentColor}
-                      onChange={(e: any) => handleFieldChange('branding', 'accentColor', e.target.value)}
+                      onChange={(e) => handleFieldChange('branding', 'accentColor', e.target.value)}
                       className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0"
                     />
                     <input
                       type="text"
                       value={formData.branding.accentColor}
-                      onChange={(e: any) => handleFieldChange('branding', 'accentColor', e.target.value)}
+                      onChange={(e) => handleFieldChange('branding', 'accentColor', e.target.value)}
                       className="w-full px-3 py-2 text-xs font-mono bg-slate-950 border border-slate-700 rounded-xl text-white"
                     />
                   </div>
@@ -1035,7 +1034,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                 <input
                   type="text"
                   value={formData.footer.copyrightText}
-                  onChange={(e: any) => handleFieldChange('footer', 'copyrightText', e.target.value)}
+                  onChange={(e) => handleFieldChange('footer', 'copyrightText', e.target.value)}
                   className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                 />
               </div>
@@ -1061,7 +1060,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={4}
                     value={formData.legal.privacyPolicy}
-                    onChange={(e: any) => handleFieldChange('legal', 'privacyPolicy', e.target.value)}
+                    onChange={(e) => handleFieldChange('legal', 'privacyPolicy', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -1070,7 +1069,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={4}
                     value={formData.legal.termsAndConditions}
-                    onChange={(e: any) => handleFieldChange('legal', 'termsAndConditions', e.target.value)}
+                    onChange={(e) => handleFieldChange('legal', 'termsAndConditions', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -1079,7 +1078,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={3}
                     value={formData.legal.refundPolicy}
-                    onChange={(e: any) => handleFieldChange('legal', 'refundPolicy', e.target.value)}
+                    onChange={(e) => handleFieldChange('legal', 'refundPolicy', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -1106,7 +1105,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.emails.supportName}
-                    onChange={(e: any) => handleFieldChange('emails', 'supportName', e.target.value)}
+                    onChange={(e) => handleFieldChange('emails', 'supportName', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -1115,7 +1114,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="email"
                     value={formData.emails.supportEmail}
-                    onChange={(e: any) => handleFieldChange('emails', 'supportEmail', e.target.value)}
+                    onChange={(e) => handleFieldChange('emails', 'supportEmail', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -1124,7 +1123,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={3}
                     value={formData.emails.emailSignature}
-                    onChange={(e: any) => handleFieldChange('emails', 'emailSignature', e.target.value)}
+                    onChange={(e) => handleFieldChange('emails', 'emailSignature', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -1151,7 +1150,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={2}
                     value={formData.whatsApp.greeting}
-                    onChange={(e: any) => handleFieldChange('whatsApp', 'greeting', e.target.value)}
+                    onChange={(e) => handleFieldChange('whatsApp', 'greeting', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -1160,7 +1159,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={2}
                     value={formData.whatsApp.autoReply}
-                    onChange={(e: any) => handleFieldChange('whatsApp', 'autoReply', e.target.value)}
+                    onChange={(e) => handleFieldChange('whatsApp', 'autoReply', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -1187,7 +1186,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <span>AI Assistant Auto-Sync Status: ACTIVE</span>
                 </div>
                 <p>
-                  The AI Mascot is currently reading business identity from <strong>{formData?.businessIdentity?.businessName || 'Your Business'}</strong>, phone <strong>{formData?.contactDetails?.phone || ''}</strong>, and address <strong>{formData?.address?.city || ''}</strong>.
+                  The AI Mascot is currently reading business identity from <strong>{formData.businessIdentity.businessName}</strong>, phone <strong>{formData.contactDetails.phone}</strong>, and address <strong>{formData.address.city}</strong>.
                 </p>
               </div>
 
@@ -1196,7 +1195,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                 <textarea
                   rows={4}
                   value={formData.aiPet.customPrompts}
-                  onChange={(e: any) => handleFieldChange('aiPet', 'customPrompts', e.target.value)}
+                  onChange={(e) => handleFieldChange('aiPet', 'customPrompts', e.target.value)}
                   className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                 />
               </div>
@@ -1222,7 +1221,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.invoices.logoUrl}
-                    onChange={(e: any) => handleFieldChange('invoices', 'logoUrl', e.target.value)}
+                    onChange={(e) => handleFieldChange('invoices', 'logoUrl', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -1231,7 +1230,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <input
                     type="text"
                     value={formData.invoices.gstNumber}
-                    onChange={(e: any) => handleFieldChange('invoices', 'gstNumber', e.target.value)}
+                    onChange={(e) => handleFieldChange('invoices', 'gstNumber', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none font-mono"
                   />
                 </div>
@@ -1240,7 +1239,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                   <textarea
                     rows={2}
                     value={formData.invoices.footerText}
-                    onChange={(e: any) => handleFieldChange('invoices', 'footerText', e.target.value)}
+                    onChange={(e) => handleFieldChange('invoices', 'footerText', e.target.value)}
                     className="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-700 rounded-xl text-white focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -1271,7 +1270,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                     <p className="text-xs text-slate-500 mt-1">Add physical store locations to enable the customer Store Locator.</p>
                   </div>
                 ) : (
-                  physicalStores.map((st: any) => (
+                  physicalStores.map((st) => (
                     <div key={st.id} className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between">
                       <div>
                         <div className="text-sm font-bold text-white">{st.name}</div>
@@ -1311,7 +1310,7 @@ export const WebsiteConfigurationView: React.FC = () => {
                     <p className="text-xs text-slate-500 mt-1">Snapshots are automatically created whenever you save configuration changes.</p>
                   </div>
                 ) : (
-                  versionHistory.map((ver: any, idx: any) => (
+                  versionHistory.map((ver, idx) => (
                     <div key={idx} className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between">
                       <div>
                         <div className="text-sm font-bold text-white">Snapshot #{versionHistory.length - idx}</div>
@@ -1355,20 +1354,20 @@ export const WebsiteConfigurationView: React.FC = () => {
             <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
               <div className="flex items-center space-x-3 border-b border-slate-800 pb-3">
                 <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-bold text-amber-400 text-lg">
-                  {formData?.businessIdentity?.businessName?.[0] || 'M'}
+                  {formData.businessIdentity.businessName?.[0] || 'M'}
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">{formData?.businessIdentity?.displayName || 'Storefront Title'}</h4>
-                  <p className="text-xs text-slate-400">{formData?.businessIdentity?.tagline || 'Tagline'}</p>
+                  <h4 className="text-sm font-bold text-white">{formData.businessIdentity.displayName || 'Storefront Title'}</h4>
+                  <p className="text-xs text-slate-400">{formData.businessIdentity.tagline || 'Tagline'}</p>
                 </div>
               </div>
 
               <div className="text-xs space-y-2 text-slate-300">
-                <p><strong>Phone:</strong> {formData?.contactDetails?.phone || ''}</p>
-                <p><strong>Email:</strong> {formData?.contactDetails?.email || ''}</p>
-                <p><strong>Address:</strong> {formData?.address?.shopAddress || ''}</p>
-                <p><strong>GST:</strong> {formData?.businessIdentity?.gstNumber || ''}</p>
-                <p><strong>Copyright:</strong> {formData?.footer?.copyrightText || ''}</p>
+                <p><strong>Phone:</strong> {formData.contactDetails.phone}</p>
+                <p><strong>Email:</strong> {formData.contactDetails.email}</p>
+                <p><strong>Address:</strong> {formData.address.shopAddress}</p>
+                <p><strong>GST:</strong> {formData.businessIdentity.gstNumber}</p>
+                <p><strong>Copyright:</strong> {formData.footer.copyrightText}</p>
               </div>
             </div>
 

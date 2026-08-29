@@ -43,13 +43,13 @@ export const ReviewsSettingsView: React.FC = () => {
 
   // Master lists filter
   const filteredReviews = useMemo(() => {
-    return reviews.filter((rev: any) => {
+    return reviews.filter((rev) => {
       // Search term
       const matchesSearch = 
-        (rev.author || '').toLowerCase().includes((searchQuery || '').toLowerCase()) || 
-        (rev.comment || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-        (rev.location && (rev.location || '').toLowerCase().includes((searchQuery || '').toLowerCase())) ||
-        (rev.productBought && (rev.productBought || '').toLowerCase().includes((searchQuery || '').toLowerCase()));
+        rev.author.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        rev.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (rev.location && rev.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (rev.productBought && rev.productBought.toLowerCase().includes(searchQuery.toLowerCase()));
 
       if (!matchesSearch) return false;
 
@@ -202,7 +202,7 @@ export const ReviewsSettingsView: React.FC = () => {
   // Bulk actions
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedIds(filteredReviews.map((r: any) => r.id));
+      setSelectedIds(filteredReviews.map(r => r.id));
     } else {
       setSelectedIds([]);
     }
@@ -253,7 +253,7 @@ export const ReviewsSettingsView: React.FC = () => {
         comment: newComment,
         date: new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }),
         verified: true,
-        productBought: newProduct || 'Footwear',
+        productBought: newProduct || 'Marudhar Footwear',
         approved: true,
       });
       setIsAddMode(false);
@@ -425,7 +425,7 @@ export const ReviewsSettingsView: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredReviews.map((rev: any) => {
+                filteredReviews.map((rev) => {
                   const isEditing = editingReviewId === rev.id;
                   const isReplying = replyReviewId === rev.id;
 

@@ -72,11 +72,11 @@ export const AIShoePetSettingsView: React.FC = () => {
 
   const [speechMessages, setSpeechMessages] = useState<string[]>(
     petShoeConfig?.speechMessages || [
-      'Welcome to our store! 👟✨',
+      'Welcome to Marudhar Fashion Point! 👟✨',
       'Step into pure luxury & comfort! 👞',
       'Handcrafted Leather & Sports Drops! 🔥',
       'Need help? Tap to explore our top picks! 😊',
-      'Your #1 Fashion Companion 👑',
+      'Pipar City’s #1 Fashion Companion 👑',
     ]
   );
   const [newMessageText, setNewMessageText] = useState('');

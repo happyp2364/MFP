@@ -21,8 +21,9 @@ export const AuditProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  // Fetch audit logs lazily or manually to prevent unauthorized errors on mount.
-  // useEffect(() => { refreshAuditLogs(); }, []);
+  useEffect(() => {
+    refreshAuditLogs();
+  }, []);
 
   return (
     <AuditContext.Provider value={{ auditLogs, refreshAuditLogs }}>

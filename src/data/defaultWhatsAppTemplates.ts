@@ -56,7 +56,7 @@ export const WHATSAPP_VARIABLES_LIST = [
   { key: '{customerPhone}', label: 'Customer Phone', sample: '+91 98765 43210', category: 'Customer' },
   { key: '{customerEmail}', label: 'Customer Email', sample: 'rajesh@example.com', category: 'Customer' },
   { key: '{productName}', label: 'Product Name', sample: 'One8 Emerald Leather Loafers', category: 'Product' },
-  { key: '{productBrand}', label: 'Product Brand', sample: 'Royal Collection', category: 'Product' },
+  { key: '{productBrand}', label: 'Product Brand', sample: 'Marudhar Royal', category: 'Product' },
   { key: '{productCategory}', label: 'Product Category', sample: 'Men Leather Loafers', category: 'Product' },
   { key: '{productPrice}', label: 'Product Price', sample: '₹2,499', category: 'Product' },
   { key: '{discountAmount}', label: 'Discount Amount', sample: '₹500', category: 'Pricing' },
@@ -71,14 +71,14 @@ export const WHATSAPP_VARIABLES_LIST = [
   { key: '{city}', label: 'City', sample: 'Jodhpur', category: 'Shipping' },
   { key: '{state}', label: 'State', sample: 'Rajasthan', category: 'Shipping' },
   { key: '{pincode}', label: 'Pincode', sample: '342001', category: 'Shipping' },
-  { key: '{orderId}', label: 'Order ID', sample: 'ORD-984210', category: 'Order' },
+  { key: '{orderId}', label: 'Order ID', sample: 'MFP-984210', category: 'Order' },
   { key: '{date}', label: 'Order Date', sample: '30/07/2026', category: 'Order' },
   { key: '{time}', label: 'Order Time', sample: '02:45 PM', category: 'Order' },
-  { key: '{shopName}', label: 'Shop Name', sample: 'Official Store', category: 'Store' },
+  { key: '{shopName}', label: 'Shop Name', sample: 'Marudhar Fashion Point', category: 'Store' },
   { key: '{shopPhone}', label: 'Shop Phone', sample: '+91 97824 82250', category: 'Store' },
   { key: '{shopWhatsApp}', label: 'Shop WhatsApp', sample: '+91 97824 82250', category: 'Store' },
-  { key: '{website}', label: 'Store URL', sample: 'https://nwd-phi.vercel.app', category: 'Store' },
-  { key: '{productURL}', label: 'Product Link', sample: 'https://nwd-phi.vercel.app/#product-one8-loafers', category: 'Product' },
+  { key: '{website}', label: 'Store URL', sample: 'https://marudharfashion.com', category: 'Store' },
+  { key: '{productURL}', label: 'Product Link', sample: 'https://marudharfashion.com/#product-one8-loafers', category: 'Product' },
 ];
 
 const DEFAULT_ADVANCED_OPTIONS = {
@@ -88,7 +88,7 @@ const DEFAULT_ADVANCED_OPTIONS = {
   showCustomerAddress: true,
   showPaymentDetails: true,
   showDeliveryNotes: true,
-  customThankYouMessage: '✨ Thank you for choosing our store! We appreciate your trust.',
+  customThankYouMessage: '✨ Thank you for choosing Marudhar Fashion Point! We appreciate your trust.',
   storePoliciesNote: '📋 Store Policy: 100% Authentic Quality Assured. Verified Before Dispatch.',
   returnExchangeNote: '🔄 Size Exchange available within 7 days of delivery.',
 };

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useStore } from '../../context/StoreContext';
-import { getPlatformConfig } from '../../lib/platformConfig';
 
 export interface SEOHeadProps {
   title?: string;
@@ -23,14 +22,13 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   canonicalUrl,
 }) => {
   const { seoConfig } = useStore();
-  const platform = getPlatformConfig();
 
-  const finalTitle = title || seoConfig?.globalTitleTemplate?.replace('%s', 'Home') || `${platform.platformDisplayName} - Premium Store`;
-  const finalDescription = description || seoConfig?.globalDescription || `Discover the finest collection of products at ${platform.platformDisplayName}. Shop latest trends online with fast delivery.`;
+  const finalTitle = title || seoConfig?.globalTitleTemplate?.replace('%s', 'Home') || 'Marudhar Fashion Point - Premium Footwear';
+  const finalDescription = description || seoConfig?.globalDescription || 'Discover the finest collection of premium footwear at Marudhar Fashion Point. Shop latest trends in men, women, and kids shoes.';
   const finalImage = image || seoConfig?.defaultOgImage || '/logo.png';
   
   const currentUrl = url || (typeof window !== 'undefined' ? window.location.href : '');
-  const siteName = platform.platformDisplayName;
+  const siteName = 'Marudhar Fashion Point';
   const fullTitle = finalTitle.includes(siteName) ? finalTitle : `${finalTitle} | ${siteName}`;
   const finalCanonicalUrl = canonicalUrl || (typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '');
 

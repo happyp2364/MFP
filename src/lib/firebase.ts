@@ -21,7 +21,6 @@ import {
 } from 'firebase/auth';
 import {
   getFirestore,
-  setLogLevel,
   doc,
   getDoc,
   setDoc,
@@ -38,15 +37,11 @@ import {
 import firebaseConfig from '../../firebase-applet-config.json';
 import { CustomerProfile, MarketingConsent, MarketingSubscriber, MarketingCampaign } from '../types';
 import { scopeDoc, getCurrentTenantId } from './tenantIsolation';
-import { resolveTenantCollection, getTenantCollectionWriteRef, getTenantDocWriteRef } from './firestoreMultiTenant';
 
 // Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = firebaseConfig.firestoreDatabaseId ? getFirestore(app, firebaseConfig.firestoreDatabaseId) : getFirestore(app);
-
-// Suppress Firestore timestamp mismatch warnings
-setLogLevel('silent');
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined);
 
 // Enable persistent auth session across page reloads & tabs
 setPersistence(auth, browserLocalPersistence).catch((err) => {
@@ -65,7 +60,7 @@ enableIndexedDbPersistence(db).catch((err) => {
 // Connection test on load
 async function testFirestoreConnection() {
   try {
-    await getDoc(getTenantDocWriteRef(db, '_connection_test_', 'test'));
+    await getDoc(doc(db, '_connection_test_', 'test'));
     console.log('Firestore connection verified');
   } catch (err: any) {
     if (err?.code === 'permission-denied') {
@@ -160,7 +155,7 @@ googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.file');
 googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.metadata.readonly');
 
 // In-memory token store for Google Workspace API calls
-let cachedAccessToken: string | null = localStorage.getItem('nwd_google_access_token');
+let cachedAccessToken: string | null = localStorage.getItem('mfp_google_access_token');
 
 export function getCachedAccessToken(): string | null {
   return cachedAccessToken;
@@ -169,15 +164,15 @@ export function getCachedAccessToken(): string | null {
 export function setCachedAccessToken(token: string | null) {
   cachedAccessToken = token;
   if (token) {
-    localStorage.setItem('nwd_google_access_token', token);
+    localStorage.setItem('mfp_google_access_token', token);
   } else {
-    localStorage.removeItem('nwd_google_access_token');
+    localStorage.removeItem('mfp_google_access_token');
   }
 }
 
 // Synchronize or create Customer Profile in Firestore (/users/{uid})
 export async function syncCustomerProfileInFirestore(user: FirebaseUser): Promise<CustomerProfile> {
-  const userRef = getTenantDocWriteRef(db, 'users', user.uid);
+  const userRef = doc(db, 'users', user.uid);
   let existingSnap = null;
   try {
     existingSnap = await getDoc(userRef);
@@ -239,7 +234,7 @@ export async function syncCustomerProfileInFirestore(user: FirebaseUser): Promis
 export function isUnauthorizedDomainError(err: any): boolean {
   if (!err) return false;
   const code = err.code || '';
-  const msg = typeof err.message === 'string' ? (err.message || '').toLowerCase() : '';
+  const msg = typeof err.message === 'string' ? err.message.toLowerCase() : '';
   return (
     code === 'auth/unauthorized-domain' ||
     msg.includes('unauthorized-domain') ||
@@ -377,24 +372,24 @@ export async function recordAuditLog(
     action,
     category,
     details,
-    userEmail: auth.currentUser?.email || 'admin@nwd.app',
+    userEmail: auth.currentUser?.email || 'admin@marudharfashionpoint.com',
     status,
     ipAddress: '127.0.0.1 (Client Applet)',
   });
 
   // 1. Save to local storage cache for instant UI rendering
   try {
-    const cached = localStorage.getItem('nwd_audit_logs');
+    const cached = localStorage.getItem('mfp_audit_logs');
     const logs: AuditLogItem[] = cached ? JSON.parse(cached) : [];
     logs.unshift(logItem);
-    localStorage.setItem('nwd_audit_logs', JSON.stringify(logs.slice(0, 100)));
+    localStorage.setItem('mfp_audit_logs', JSON.stringify(logs.slice(0, 100)));
   } catch (e) {
     console.warn('Could not cache audit log in localStorage:', e);
   }
 
   // 2. Persist to Firestore auditLogs collection
   try {
-    await addDoc(getTenantCollectionWriteRef(db, 'auditLogs'), logItem);
+    await addDoc(collection(db, 'auditLogs'), logItem);
   } catch (err) {
     handleFirestoreError(err, OperationType.CREATE, 'auditLogs');
   }
@@ -404,7 +399,7 @@ export async function recordAuditLog(
 
 export async function fetchRemoteAuditLogs(): Promise<AuditLogItem[]> {
   try {
-    const q = query(await resolveTenantCollection(db, 'auditLogs'), orderBy('timestamp', 'desc'), limit(50));
+    const q = query(collection(db, 'auditLogs'), orderBy('timestamp', 'desc'), limit(50));
     const snap = await getDocs(q);
     const logs: AuditLogItem[] = [];
     snap.forEach((docSnap) => {
@@ -418,7 +413,7 @@ export async function fetchRemoteAuditLogs(): Promise<AuditLogItem[]> {
       console.warn('Audit logs fetch notice:', e);
     }
     // Fallback to local storage
-    const cached = localStorage.getItem('nwd_audit_logs');
+    const cached = localStorage.getItem('mfp_audit_logs');
     return cached ? JSON.parse(cached) : [];
   }
 }
@@ -702,9 +697,9 @@ export async function changeAdminPasswordFirebase(
 
 // Default Payment Gateway & UPI Settings
 export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
-  merchantName: 'Multi-Store Platform Store',
-  upiId: 'store@upi',
-  upiName: 'Store Payment',
+  merchantName: 'Marudhar Fashion Point',
+  upiId: 'marudharfashion@upi',
+  upiName: 'Marudhar Fashion Point',
   qrCodeCustomImage: '',
   qrCodeUrl: '',
   paymentInstructions: 'Scan the QR code using any UPI app (Google Pay, PhonePe, Paytm, BHIM) to make instant payment. Enter your transaction ID after payment.',
@@ -751,10 +746,10 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
 // Fetch Payment Settings from Firestore
 export async function fetchPaymentSettingsFromFirestore(): Promise<import('../types').PaymentSettings> {
   try {
-    const docRef = getTenantDocWriteRef(db, 'paymentSettings', 'config');
+    const docRef = doc(db, 'paymentSettings', 'config');
     const snap = await getDoc(docRef);
     if (snap.exists()) {
-      return { ...DEFAULT_PAYMENT_SETTINGS, ...(snap.data() as object) } as import('../types').PaymentSettings;
+      return { ...DEFAULT_PAYMENT_SETTINGS, ...snap.data() } as import('../types').PaymentSettings;
     }
   } catch (err) {
     try {
@@ -771,7 +766,7 @@ export async function savePaymentSettingsInFirestore(
   settings: import('../types').PaymentSettings
 ): Promise<boolean> {
   try {
-    const docRef = getTenantDocWriteRef(db, 'paymentSettings', 'config');
+    const docRef = doc(db, 'paymentSettings', 'config');
     // Direct merge update to single document
     await setDoc(docRef, settings, { merge: true });
 
@@ -799,12 +794,12 @@ export async function savePaymentSettingsInFirestore(
 export async function saveOrderInFirestore(order: import('../types').CustomerOrder): Promise<boolean> {
   try {
     const scopedOrder = scopeDoc(order);
-    const docRef = getTenantDocWriteRef(db, 'orders', order.id);
+    const docRef = doc(db, 'orders', order.id);
     await setDoc(docRef, scopedOrder);
 
     // Create persistent Admin Notification in Firestore collection
     const notifId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    const notifRef = getTenantDocWriteRef(db, 'notifications', notifId);
+    const notifRef = doc(db, 'notifications', notifId);
     await setDoc(notifRef, scopeDoc({
       id: notifId,
       orderId: order.id,
@@ -819,7 +814,7 @@ export async function saveOrderInFirestore(order: import('../types').CustomerOrd
     // If order is linked to a logged-in user, also sync to customer's order history array
     if (order.userId) {
       try {
-        const userRef = getTenantDocWriteRef(db, 'users', order.userId);
+        const userRef = doc(db, 'users', order.userId);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const profile = userSnap.data() as import('../types').CustomerProfile;
@@ -857,7 +852,7 @@ export async function updateOrderStatusInFirestore(
   note?: string
 ): Promise<boolean> {
   try {
-    const docRef = getTenantDocWriteRef(db, 'orders', orderId);
+    const docRef = doc(db, 'orders', orderId);
     const snap = await getDoc(docRef);
     if (!snap.exists()) return false;
 
@@ -881,7 +876,7 @@ export async function updateOrderStatusInFirestore(
     // Also sync to user profile orderHistory if userId present
     if (existing.userId) {
       try {
-        const userRef = getTenantDocWriteRef(db, 'users', existing.userId);
+        const userRef = doc(db, 'users', existing.userId);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const profile = userSnap.data() as import('../types').CustomerProfile;
@@ -915,7 +910,7 @@ export async function updateOrderStatusInFirestore(
 // Fetch Remote Orders from Firestore
 export async function fetchRemoteOrders(): Promise<import('../types').CustomerOrder[]> {
   try {
-    const q = query(await resolveTenantCollection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100));
     const snap = await getDocs(q);
     const list: import('../types').CustomerOrder[] = [];
     snap.forEach((d) => {
@@ -935,7 +930,7 @@ export async function fetchRemoteOrders(): Promise<import('../types').CustomerOr
 // Save Transaction Record
 export async function saveTransactionInFirestore(tx: import('../types').TransactionRecord): Promise<boolean> {
   try {
-    const docRef = getTenantDocWriteRef(db, 'transactions', tx.id);
+    const docRef = doc(db, 'transactions', tx.id);
     await setDoc(docRef, tx);
     return true;
   } catch (err) {
@@ -953,7 +948,7 @@ export async function createAdminNotificationInFirestore(
   notif: import('../types').AdminNotification
 ): Promise<boolean> {
   try {
-    const docRef = getTenantDocWriteRef(db, 'notifications', notif.id);
+    const docRef = doc(db, 'notifications', notif.id);
     await setDoc(docRef, notif);
     return true;
   } catch (err) {
@@ -1006,7 +1001,7 @@ export async function saveMarketingConsentInFirestore(
   try {
     // 1. Update user profile if authenticated
     if (currentUser?.uid) {
-      const userRef = getTenantDocWriteRef(db, 'users', currentUser.uid);
+      const userRef = doc(db, 'users', currentUser.uid);
       console.log('[DEBUG] Firestore Path (users):', `users/${currentUser.uid}`);
       await setDoc(userRef, { marketingConsent: fullConsentPayload }, { merge: true });
       console.log('[DEBUG] Firestore Response (users): SUCCESS');
@@ -1014,8 +1009,8 @@ export async function saveMarketingConsentInFirestore(
 
     // 2. Upsert subscriber entry in marketingSubscribers collection
     if (email) {
-      const subId = (email || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
-      const subRef = getTenantDocWriteRef(db, 'marketingSubscribers', subId);
+      const subId = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const subRef = doc(db, 'marketingSubscribers', subId);
       console.log('[DEBUG] Firestore Path (marketingSubscribers):', `marketingSubscribers/${subId}`);
       const subscriberDoc: MarketingSubscriber = {
         id: subId,
@@ -1049,7 +1044,7 @@ export async function saveMarketingConsentInFirestore(
  */
 export async function fetchMarketingSubscribersFromFirestore(): Promise<MarketingSubscriber[]> {
   try {
-    const q = query(await resolveTenantCollection(db, 'marketingSubscribers'), limit(200));
+    const q = query(collection(db, 'marketingSubscribers'), limit(200));
     const snap = await getDocs(q);
     const subscribers: MarketingSubscriber[] = [];
     snap.forEach((d) => {
@@ -1071,7 +1066,7 @@ export async function fetchMarketingSubscribersFromFirestore(): Promise<Marketin
  */
 export async function fetchMarketingCampaignsFromFirestore(): Promise<MarketingCampaign[]> {
   try {
-    const q = query(await resolveTenantCollection(db, 'marketingCampaigns'), orderBy('createdAt', 'desc'), limit(100));
+    const q = query(collection(db, 'marketingCampaigns'), orderBy('createdAt', 'desc'), limit(100));
     const snap = await getDocs(q);
     const list: MarketingCampaign[] = [];
     snap.forEach((d) => {
@@ -1095,7 +1090,7 @@ export async function saveMarketingCampaignInFirestore(
   campaign: MarketingCampaign
 ): Promise<boolean> {
   try {
-    const docRef = getTenantDocWriteRef(db, 'marketingCampaigns', campaign.id);
+    const docRef = doc(db, 'marketingCampaigns', campaign.id);
     await setDoc(docRef, campaign, { merge: true });
     return true;
   } catch (err) {
@@ -1113,7 +1108,7 @@ export async function saveMarketingCampaignInFirestore(
  */
 export async function deleteMarketingCampaignFromFirestore(campaignId: string): Promise<boolean> {
   try {
-    const docRef = getTenantDocWriteRef(db, 'marketingCampaigns', campaignId);
+    const docRef = doc(db, 'marketingCampaigns', campaignId);
     await deleteDoc(docRef);
     return true;
   } catch (err) {

@@ -28,29 +28,29 @@ export const ReportsAnalyticsView: React.FC = () => {
   const [chartType, setChartType] = useState<'area' | 'bar'>('area');
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const todayOrders = orders.filter((o: any) => o.createdAt.startsWith(todayStr));
-  const todayRevenue = todayOrders.reduce((sum: any, o: any) => sum + o.totalAmount, 0);
+  const todayOrders = orders.filter((o) => o.createdAt.startsWith(todayStr));
+  const todayRevenue = todayOrders.reduce((sum, o) => sum + o.totalAmount, 0);
 
   const pendingCount = orders.filter(
-    (o: any) => o.orderStatus === 'PENDING' || o.orderStatus === 'ACCEPTED'
+    (o) => o.orderStatus === 'PENDING' || o.orderStatus === 'ACCEPTED'
   ).length;
-  const completedCount = orders.filter((o: any) => o.orderStatus === 'DELIVERED').length;
-  const cancelledCount = orders.filter((o: any) => o.orderStatus === 'CANCELLED').length;
+  const completedCount = orders.filter((o) => o.orderStatus === 'DELIVERED').length;
+  const cancelledCount = orders.filter((o) => o.orderStatus === 'CANCELLED').length;
 
   const totalRevenue = orders
-    .filter((o: any) => o.orderStatus !== 'CANCELLED')
-    .reduce((sum: any, o: any) => sum + o.totalAmount, 0);
+    .filter((o) => o.orderStatus !== 'CANCELLED')
+    .reduce((sum, o) => sum + o.totalAmount, 0);
 
   // Low Stock Items (< 5 in any size or marked out of stock)
-  const lowStockProducts = products.filter((p: any) => {
+  const lowStockProducts = products.filter((p) => {
     if (!p.inStock) return true;
-    if (p.sizeStocks && p.sizeStocks.some((ss: any) => ss.stockQuantity < 5)) return true;
+    if (p.sizeStocks && p.sizeStocks.some((ss) => ss.stockQuantity < 5)) return true;
     return false;
   });
 
   // Monthly Sales Aggregation
   const monthlyDataMap: Record<string, number> = {};
-  orders.forEach((o: any) => {
+  orders.forEach((o) => {
     if (o.orderStatus === 'CANCELLED') return;
     const month = new Date(o.createdAt).toLocaleDateString('en-IN', { month: 'short' });
     monthlyDataMap[month] = (monthlyDataMap[month] || 0) + o.totalAmount;
@@ -64,9 +64,9 @@ export const ReportsAnalyticsView: React.FC = () => {
 
   // Category Distribution
   const categoryData = [
-    { name: "Men's Wear", value: products.filter((p: any) => p.category === 'men').length, color: '#0B8F63' },
-    { name: "Women's Wear", value: products.filter((p: any) => p.category === 'women').length, color: '#D97706' },
-    { name: "Kids' Collection", value: products.filter((p: any) => p.category === 'kids').length, color: '#2563EB' },
+    { name: "Men's Wear", value: products.filter((p) => p.category === 'men').length, color: '#0B8F63' },
+    { name: "Women's Wear", value: products.filter((p) => p.category === 'women').length, color: '#D97706' },
+    { name: "Kids' Collection", value: products.filter((p) => p.category === 'kids').length, color: '#2563EB' },
   ];
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -254,7 +254,7 @@ export const ReportsAnalyticsView: React.FC = () => {
             </p>
           ) : (
             <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
-              {lowStockProducts.map((p: any) => (
+              {lowStockProducts.map((p) => (
                 <div
                   key={p.id}
                   className="p-2.5 bg-amber-50/60 rounded-xl border border-amber-200 flex items-center justify-between"

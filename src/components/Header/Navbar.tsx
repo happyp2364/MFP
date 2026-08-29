@@ -203,9 +203,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {/* Mega Dropdown */}
                   {megaMenuOpen && (
                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-[720px] bg-white rounded-2xl shadow-2xl border border-neutral-100 p-6 grid grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
-                      {(megaMenuCategories?.filter((cat: any) => cat.enabled && !cat.hidden) || [])
-                        .sort((a: any, b: any) => a.displayOrder - b.displayOrder)
-                        .map((category: any) => {
+                      {(megaMenuCategories?.filter(cat => cat.enabled && !cat.hidden) || [])
+                        .sort((a, b) => a.displayOrder - b.displayOrder)
+                        .map((category) => {
                           const genderName = category.name.toUpperCase();
                           const gender: GenderCategory = genderName.includes("WOMEN") ? 'women' : genderName.includes("MEN") ? 'men' : genderName.includes("KID") ? 'kids' : 'all';
                           return (
@@ -216,17 +216,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                               </div>
                               <div className="space-y-4">
                                 {category.sections
-                                  ?.sort((a: any, b: any) => a.displayOrder - b.displayOrder)
-                                  .map((section: any) => (
+                                  ?.sort((a, b) => a.displayOrder - b.displayOrder)
+                                  .map((section) => (
                                     <div key={section.id} className="space-y-2">
                                       {category.sections.length > 1 && (
                                         <h5 className="font-semibold text-[10px] text-neutral-400 uppercase tracking-wider">{section.title}</h5>
                                       )}
                                       <ul className="space-y-1.5 text-xs text-neutral-600">
                                         {section.subcategories
-                                          ?.filter((sub: any) => sub.enabled)
-                                          .sort((a: any, b: any) => a.displayOrder - b.displayOrder)
-                                          .map((sub: any) => (
+                                          ?.filter(sub => sub.enabled)
+                                          .sort((a, b) => a.displayOrder - b.displayOrder)
+                                          .map((sub) => (
                                             <li key={sub.id}>
                                               <button
                                                 onClick={() => {
@@ -434,7 +434,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         onOpenRewardsModal={() => {
           if (onOpenRewardsModal) onOpenRewardsModal();
         }}
-        onSelectCategory={(cat: any) => {
+        onSelectCategory={(cat) => {
           if (cat === 'men' || cat === 'women' || cat === 'kids' || cat === 'all') {
             handleCategoryClick(cat as GenderCategory);
           } else {

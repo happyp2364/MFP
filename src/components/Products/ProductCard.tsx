@@ -81,7 +81,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const activeVariantWithImages = useMemo(() => {
     return product.variants?.find(
       (v) =>
-        (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() &&
+        v.color.toLowerCase() === selectedColor.toLowerCase() &&
         v.images &&
         v.images.length > 0
     );
@@ -100,7 +100,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   // Compute prices dynamically
   const computedPrice = getProductPrice(product, selectedSize, selectedColor);
   const activeVariant = product.variants?.find(
-    (v) => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && String(v.size) === String(selectedSize)
+    (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize
   );
   const originalPrice = activeVariant?.originalPrice || product.originalPrice || product.price;
   const currentPrice = computedPrice || product.price;
@@ -143,7 +143,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       navigator
         .share({
           title: product.name,
-          text: `Check out ${product.name}!`,
+          text: `Check out ${product.name} on Marudhar Fashion Point!`,
           url: shareUrl,
         })
         .catch(() => {});
@@ -286,7 +286,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <ImageOff className="w-6 h-6" />
             </div>
             <span className="text-xs font-bold text-neutral-800 tracking-wide uppercase">Real Image Coming Soon</span>
-            <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Official Product Showcase</span>
+            <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Marudhar Fashion Point</span>
           </div>
         ) : (
           <img
@@ -541,11 +541,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <div className="flex items-baseline justify-between">
             <div className="flex items-baseline gap-2">
               <span className="font-extrabold text-lg text-neutral-900 tracking-tight">
-                ₹{(currentPrice || 0).toLocaleString('en-IN')}
+                ₹{currentPrice.toLocaleString('en-IN')}
               </span>
               {originalPrice > currentPrice && (
                 <span className="text-xs text-neutral-400 line-through">
-                  ₹{(originalPrice || 0).toLocaleString('en-IN')}
+                  ₹{originalPrice.toLocaleString('en-IN')}
                 </span>
               )}
             </div>

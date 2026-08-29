@@ -2,8 +2,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { AboutUsConfig } from '../types';
 import { DEFAULT_ABOUT_US_CONFIG } from '../data/defaultAboutUs';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 interface PolicyContextType {
@@ -12,7 +10,7 @@ interface PolicyContextType {
 }
 
 const STORAGE_KEYS = {
-  ABOUT_US_CONFIG: 'nwd_about_us_config_live',
+  ABOUT_US_CONFIG: 'mfp_about_us_config_live',
 };
 
 const PolicyContext = createContext<PolicyContextType | undefined>(undefined);
@@ -28,7 +26,7 @@ export const PolicyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   });
 
   useEffect(() => {
-    const unsub = onTenantDocSnapshot(db, 'settings', 'about_us', (snapshot) => {
+    const unsub = onSnapshot(doc(db, 'settings', 'about_us'), (snapshot) => {
       if (snapshot.exists()) {
         setAboutUsConfig(snapshot.data() as AboutUsConfig);
       }
@@ -41,7 +39,7 @@ export const PolicyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setAboutUsConfig(config);
     localStorage.setItem(STORAGE_KEYS.ABOUT_US_CONFIG, JSON.stringify(config));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'about_us'), config, { merge: true });
+      await setDoc(doc(db, 'settings', 'about_us'), config, { merge: true });
     } catch (e) {
       console.warn('Firestore about us config sync failed', e);
     }

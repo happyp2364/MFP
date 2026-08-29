@@ -74,7 +74,7 @@ export const SocialIconRenderer: React.FC<SocialIconRendererProps> = ({
   const identifier = (iconNameOrUrl || platformId || '').trim();
 
   // 1. Check if raw SVG code
-  if ((identifier || '').toLowerCase().startsWith('<svg')) {
+  if (identifier.toLowerCase().startsWith('<svg')) {
     return (
       <div 
         className={`${className} flex items-center justify-center`}
@@ -104,6 +104,6 @@ export const SocialIconRenderer: React.FC<SocialIconRendererProps> = ({
   }
 
   // 3. Lucide mapping
-  const LucideIcon = LUCIDE_MAP[identifier] || LUCIDE_MAP[(identifier || '').toLowerCase()] || Share2;
+  const LucideIcon = LUCIDE_MAP[identifier] || LUCIDE_MAP[identifier.toLowerCase()] || Share2;
   return <LucideIcon className={className} style={style} />;
 };

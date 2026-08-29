@@ -11,11 +11,11 @@ export function getCartItemPrice(item: CartItem): number {
 /**
  * Resolves the unit price for a given product and its selected size and color.
  */
-export function getProductPrice(product: Product, size?: string | number, color?: string): number {
+export function getProductPrice(product: Product, size?: string, color?: string): number {
   if (!product) return 0;
   if (product.variants && product.variants.length > 0 && color) {
     const matchingVariant = product.variants.find(
-      (v) => (v.color || '').toLowerCase() === (color || '').toLowerCase() && (!size || String(v.size) === String(size))
+      (v) => v.color.toLowerCase() === color.toLowerCase() && (!size || v.size === size)
     );
     if (matchingVariant && matchingVariant.price !== undefined) {
       return matchingVariant.price;
@@ -27,11 +27,11 @@ export function getProductPrice(product: Product, size?: string | number, color?
 /**
  * Resolves the original price for a given product and its selected size and color.
  */
-export function getProductOriginalPrice(product: Product, size?: string | number, color?: string): number {
+export function getProductOriginalPrice(product: Product, size?: string, color?: string): number {
   if (!product) return 0;
   if (product.variants && product.variants.length > 0 && color) {
     const matchingVariant = product.variants.find(
-      (v) => (v.color || '').toLowerCase() === (color || '').toLowerCase() && (!size || String(v.size) === String(size))
+      (v) => v.color.toLowerCase() === color.toLowerCase() && (!size || v.size === size)
     );
     if (matchingVariant && matchingVariant.originalPrice !== undefined) {
       return matchingVariant.originalPrice;
@@ -74,7 +74,7 @@ export function getProductImage(product: Product, color?: string): string {
   if (!product) return '';
   if (product.variants && product.variants.length > 0 && color) {
     const matchingColorVar = product.variants.find(
-      (v) => (v.color || '').toLowerCase() === (color || '').toLowerCase() && v.images && v.images.length > 0
+      (v) => v.color.toLowerCase() === color.toLowerCase() && v.images && v.images.length > 0
     );
     if (matchingColorVar && matchingColorVar.images && matchingColorVar.images.length > 0) {
       return matchingColorVar.images[0];
@@ -94,7 +94,7 @@ export function getCartItemImage(item: CartItem): string {
   // Try to find if any variant has images for this color
   if (item.product.variants && item.product.variants.length > 0) {
     const matchingColorVar = item.product.variants.find(
-      (v) => (v.color || '').toLowerCase() === (item.selectedColor || '').toLowerCase() && v.images && v.images.length > 0
+      (v) => v.color.toLowerCase() === item.selectedColor.toLowerCase() && v.images && v.images.length > 0
     );
     if (matchingColorVar && matchingColorVar.images && matchingColorVar.images.length > 0) {
       return matchingColorVar.images[0];
@@ -108,14 +108,11 @@ export function getCartItemImage(item: CartItem): string {
  */
 export function groupVariantsByColor(variants: ProductVariant[]): Record<string, ProductVariant[]> {
   const groups: Record<string, ProductVariant[]> = {};
-  if (!Array.isArray(variants)) return groups;
   for (const v of variants) {
-    if (!v) continue;
-    const colorKey = (v.color || 'Default').toString();
-    if (!groups[colorKey]) {
-      groups[colorKey] = [];
+    if (!groups[v.color]) {
+      groups[v.color] = [];
     }
-    groups[colorKey].push(v);
+    groups[v.color].push(v);
   }
   return groups;
 }
@@ -123,19 +120,19 @@ export function groupVariantsByColor(variants: ProductVariant[]): Record<string,
 /**
  * Auto-generates a SKU following the convention (e.g., brand-color-size or CPM-BLK-08)
  */
-export function generateAutoSKU(productName: any, color: any, size: any): string {
-  const cleanName = (productName || '').toString().substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const cleanColor = (color || '').toString().substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const cleanSize = (size || '').toString().padStart(2, '0').toUpperCase().replace(/[^A-Z0-9]/g, '');
+export function generateAutoSKU(productName: string, color: string, size: string): string {
+  const cleanName = productName.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const cleanColor = color.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const cleanSize = size.padStart(2, '0').toUpperCase().replace(/[^A-Z0-9]/g, '');
   return `${cleanName}-${cleanColor}-${cleanSize}`;
 }
 
 /**
  * Auto-generates a mock or placeholder barcode for a variant
  */
-export function generateAutoBarcode(productId: any, color: any, size: any): string {
-  const cleanId = (productId || '').toString().substring(0, 4).toUpperCase();
-  const cleanColor = (color || '').toString().substring(0, 2).toUpperCase();
-  const cleanSize = (size || '').toString().replace(/[^0-9]/g, '');
+export function generateAutoBarcode(productId: string, color: string, size: string): string {
+  const cleanId = productId.substring(0, 4).toUpperCase();
+  const cleanColor = color.substring(0, 2).toUpperCase();
+  const cleanSize = size.replace(/[^0-9]/g, '');
   return `890${cleanId}${cleanColor}${cleanSize}`.padEnd(13, '0').substring(0, 13);
 }

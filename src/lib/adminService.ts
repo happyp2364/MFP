@@ -7,7 +7,6 @@ import {
   getDocs,
   query,
   orderBy,
-  where,
   updateDoc,
 } from 'firebase/firestore';
 import { User as FirebaseUser } from 'firebase/auth';
@@ -26,7 +25,6 @@ import {
   createFullPermissionMatrix,
   getDeviceInfo,
 } from './adminPermissions';
-import { getPlatformConfig, buildWebsiteUrl, buildAdminLoginUrl } from './platformConfig';
 
 const SUPER_ADMIN_EMAIL = 'vpcreation2002@gmail.com';
 export const SUPER_ADMIN_EMAILS = ['vpcreation2002@gmail.com', 'vishalpparihar2002@gmail.com'];
@@ -47,7 +45,7 @@ export async function ensureSuperAdminExists(
     if (snap.exists()) {
       const data = snap.data() as AdminUser;
       // Ensure super_admin role and active status for main owner
-      if ((targetEmail || '').toLowerCase() === (SUPER_ADMIN_EMAIL || '').toLowerCase() && data.roleId !== 'super_admin') {
+      if (targetEmail.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() && data.roleId !== 'super_admin') {
         const updated: AdminUser = {
           ...data,
           roleId: 'super_admin',
@@ -144,18 +142,12 @@ export async function fetchTenants(): Promise<Tenant[]> {
     
     // Return mock data if none exist (since we don't have a provisioning flow setting up a tenant yet)
     if (tenants.length === 0) {
-       const config = getPlatformConfig();
-       const defaultSlug = 'main-store';
        return [{
          id: 'tenant-default',
-         slug: defaultSlug,
-         name: `${config.platformDisplayName} Primary Instance`,
-         domain: 'main-store.platform.app',
-         websiteUrl: buildWebsiteUrl(defaultSlug, config),
-         adminLoginUrl: buildAdminLoginUrl(defaultSlug, config),
+         name: 'Marudhar Fashion Point Primary Instance',
+         domain: 'marudharfashionpoint.com',
          ownerId: 'vpcreation2002',
          ownerEmail: 'vpcreation2002@gmail.com',
-         adminGoogleEmail: 'vpcreation2002@gmail.com',
          status: 'active',
          plan: 'enterprise',
          createdAt: new Date().toISOString(),
@@ -171,38 +163,8 @@ export async function fetchTenants(): Promise<Tenant[]> {
 
 export async function saveTenant(tenant: Tenant): Promise<void> {
   const tenantRef = doc(db, 'tenants', tenant.id);
-  const websiteRef = doc(db, 'websites', tenant.id);
-  
   try {
     await setDoc(tenantRef, tenant, { merge: true });
-    
-    // Provision Website module synchronization
-    const websiteData = {
-      websiteId: tenant.id,
-      websiteSlug: tenant.slug || tenant.id,
-      websiteUrl: tenant.websiteUrl || '',
-      businessName: tenant.name,
-      ownerEmail: tenant.ownerEmail,
-      ownerUid: tenant.ownerId || '',
-      createdAt: tenant.createdAt || new Date().toISOString(),
-      status: tenant.status || 'active',
-      enabledModules: ['storefront', 'admin'],
-    };
-    
-    await setDoc(websiteRef, websiteData, { merge: true });
-    
-    if (tenant.ownerId) {
-      const adminRef = doc(db, 'admin_users', tenant.ownerId);
-      await setDoc(adminRef, {
-        uid: tenant.ownerId,
-        email: tenant.ownerEmail,
-        websiteId: tenant.id,
-        ownerUid: tenant.ownerId,
-        roleId: 'admin',
-        createdAt: new Date().toISOString()
-      }, { merge: true });
-    }
-
     recordAuditLog(
       'Tenant Profile Updated',
       'SECURITY',
@@ -212,76 +174,6 @@ export async function saveTenant(tenant: Tenant): Promise<void> {
   } catch (err) {
     console.warn('Failed to save tenant:', err);
     throw err;
-  }
-}
-
-// Permanently delete website tenant and associated website record
-export async function deleteTenant(tenantId: string): Promise<{ success: boolean; message: string }> {
-  console.log('[DELETE DIAGNOSTIC] 1. Initiating deleteTenant:', {
-    tenantId,
-    tenantDocPath: `tenants/${tenantId}`,
-    websiteDocPath: `websites/${tenantId}`
-  });
-  try {
-    const tenantRef = doc(db, 'tenants', tenantId);
-    console.log('[DELETE DIAGNOSTIC] 2. Executing deleteDoc for tenant:', tenantRef.path);
-    await deleteDoc(tenantRef);
-    console.log('[DELETE DIAGNOSTIC] 2. SUCCESS: Deleted tenant doc:', tenantRef.path);
-
-    const websiteRef = doc(db, 'websites', tenantId);
-    console.log('[DELETE DIAGNOSTIC] 3. Executing deleteDoc for website:', websiteRef.path);
-    await deleteDoc(websiteRef);
-    console.log('[DELETE DIAGNOSTIC] 3. SUCCESS: Deleted website doc:', websiteRef.path);
-
-    let associatedAdminUids: string[] = [];
-    try {
-      const adminUsersCol = collection(db, 'admin_users');
-      const q = query(adminUsersCol, where('websiteId', '==', tenantId));
-      console.log('[DELETE DIAGNOSTIC] 4. Querying admin_users where websiteId ==', tenantId);
-      const snap = await getDocs(q);
-      associatedAdminUids = snap.docs.map(d => d.id);
-      console.log('[DELETE DIAGNOSTIC] 4. Found associated admin_users UIDs:', associatedAdminUids);
-
-      for (const d of snap.docs) {
-        const data = d.data() as AdminUser;
-        if (data.roleId !== 'super_admin' && (data.email || '').toLowerCase() !== 'vpcreation2002@gmail.com') {
-          console.log('[DELETE DIAGNOSTIC] Deleting admin_users doc path:', d.ref.path, 'UID:', d.id);
-          await deleteDoc(d.ref);
-          console.log('[DELETE DIAGNOSTIC] SUCCESS: Deleted admin_users doc:', d.ref.path);
-        }
-      }
-    } catch (e: any) {
-      console.warn('[DELETE DIAGNOSTIC] 4. Non-fatal notice in admin_users query/delete:', {
-        code: e?.code,
-        message: e?.message,
-        e
-      });
-    }
-
-    recordAuditLog(
-      'Tenant Permanently Deleted',
-      'SECURITY',
-      `Deleted tenant & website instance ID: ${tenantId}`,
-      'WARNING'
-    );
-
-    console.log('[DELETE DIAGNOSTIC] 5. Complete deleteTenant process finished successfully for tenantId:', tenantId);
-    return { success: true, message: `Website tenant "${tenantId}" permanently deleted successfully.` };
-  } catch (err: any) {
-    console.error('[DELETE DIAGNOSTIC] CRITICAL FAILURE in deleteTenant:', {
-      tenantId,
-      tenantDocPath: `tenants/${tenantId}`,
-      websiteDocPath: `websites/${tenantId}`,
-      code: err?.code,
-      message: err?.message,
-      err
-    });
-    try {
-      handleFirestoreError(err, OperationType.DELETE, `tenants/${tenantId}`);
-    } catch (e) {
-      console.warn('Delete tenant notice:', e);
-    }
-    return { success: false, message: err?.message || 'Failed to delete website tenant.' };
   }
 }
 
@@ -387,7 +279,7 @@ export async function toggleAdminStatus(
 
     // Failsafe: Prevent disabling primary Super Admin or sole Super Admin
     if (
-      (adminData.email || '').toLowerCase() === (SUPER_ADMIN_EMAIL || '').toLowerCase() ||
+      adminData.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
       adminData.roleId === 'super_admin'
     ) {
       const allAdmins = await fetchAdminUsers();
@@ -447,7 +339,7 @@ export async function deleteAdminUser(
 
     // Failsafe: Cannot delete primary Super Admin or last remaining Super Admin
     if (
-      (adminData.email || '').toLowerCase() === (SUPER_ADMIN_EMAIL || '').toLowerCase() ||
+      adminData.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
       adminData.roleId === 'super_admin'
     ) {
       const allAdmins = await fetchAdminUsers();
@@ -605,250 +497,5 @@ export async function deleteCustomRole(
       console.warn('Delete custom role notice:', e);
     }
     return { success: false, message: err?.message || 'Failed to delete custom role.' };
-  }
-}
-export async function syncAdminWebsiteLink(adminUser: AdminUser, websiteId: string): Promise<void> {
-  if (adminUser.roleId === 'super_admin') return;
-  const existingAssigned = adminUser.assignedWebsiteId || adminUser.websiteId;
-  const targetWebsiteId = (existingAssigned && existingAssigned !== 'tenant-default') ? existingAssigned : websiteId;
-  try {
-    const adminRef = doc(db, 'admin_users', adminUser.uid);
-    await setDoc(adminRef, { assignedWebsiteId: targetWebsiteId, websiteId: targetWebsiteId }, { merge: true });
-
-    const websiteRef = doc(db, 'websites', targetWebsiteId);
-    const snap = await getDoc(websiteRef);
-    if (snap.exists()) {
-      const data = snap.data();
-      if (!data.ownerUid && data.ownerEmail === adminUser.email) {
-        await setDoc(websiteRef, { ownerUid: adminUser.uid, adminUid: adminUser.uid }, { merge: true });
-      }
-    }
-  } catch (err) {
-    console.warn('Failed to sync admin website link:', err);
-  }
-}
-
-
-
-export async function provisionNewWebsite(tenantData: Partial<import('../types').Tenant> & { 
-  ownerName: string;
-  ownerGoogleEmail: string;
-  phone: string;
-  country: string;
-  state: string;
-  city: string;
-  pincode: string;
-  businessCategory: string;
-  defaultTheme: string;
-  primaryColor: string;
-  secondaryColor: string;
-  enabledModules: Record<string, boolean>;
-}): Promise<{ tenant: import('../types').Tenant, secretCode: string }> {
-  const newId = tenantData.slug ? `tenant-${tenantData.slug}` : `tenant-${Date.now()}`;
-  const ownerUid = `owner-${Date.now()}`;
-  const secretCode = `NWD-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-  
-  const config = getPlatformConfig();
-  const platformHost = (() => {
-    try { return new URL(config.platformBaseUrl).hostname; } catch { return 'platform.app'; }
-  })();
-
-  const webUrl = tenantData.websiteUrl || (tenantData.slug ? buildWebsiteUrl(tenantData.slug) : undefined);
-  const adminUrl = tenantData.adminLoginUrl || (tenantData.slug ? buildAdminLoginUrl(tenantData.slug) : undefined);
-
-  const newTenant: import('../types').Tenant = {
-    id: newId,
-    slug: tenantData.slug,
-    name: tenantData.name || 'Untitled Website',
-    domain: tenantData.domain || `${tenantData.slug || newId}.${platformHost}`,
-    websiteUrl: webUrl,
-    adminLoginUrl: adminUrl,
-    ownerEmail: tenantData.ownerEmail || 'owner@example.com',
-    adminGoogleEmail: tenantData.ownerGoogleEmail || tenantData.ownerEmail || 'owner@example.com',
-    ownerName: tenantData.ownerName || 'Store Owner',
-    ownerId: ownerUid,
-    status: 'pending_activation',
-    plan: tenantData.plan || 'free',
-    createdAt: new Date().toISOString(),
-    databaseSize: 0,
-    businessCategory: tenantData.businessCategory,
-  };
-
-  console.log("Firebase Connection Info:");
-  console.log("projectId:", db.app.options.projectId);
-  console.log("appId:", db.app.options.appId);
-  console.log("authDomain:", db.app.options.authDomain);
-  console.log("currentUser UID:", auth.currentUser?.uid);
-
-  const executeWrite = async (collectionName: string, docPath: string, action: () => Promise<void>) => {
-    console.log("Writing:", docPath);
-    try {
-      await action();
-      console.log("Successfully wrote to:", docPath);
-    } catch (error: any) {
-      console.error("Provisioning Error:", error);
-      if (error.code) { // checking if it's like a FirebaseError
-        console.error("error.code:", error.code);
-        console.error("error.message:", error.message);
-        console.error("error.stack:", error.stack);
-      }
-      throw new Error(
-        `Collection Name: ${collectionName}\n` +
-        `Document Path: ${docPath}\n` +
-        `Firebase Error Code: ${error.code || 'UNKNOWN'}\n` +
-        `Firebase Error Message: ${error.message || String(error)}`
-      );
-    }
-  };
-
-  const tenantRef = doc(db, 'tenants', newTenant.id);
-  const websiteRef = doc(db, 'websites', newTenant.id);
-  
-  // 1. Write tenants/{tenantId}
-  await executeWrite('tenants', `tenants/${newTenant.id}`, async () => {
-    await setDoc(tenantRef, newTenant, { merge: true });
-  });
-
-  // 2. Write websites/{websiteId} doc
-  const websiteData = {
-    websiteId: newTenant.id,
-    websiteSlug: newTenant.slug || newTenant.id,
-    websiteUrl: newTenant.websiteUrl || '',
-    businessName: newTenant.name,
-    ownerEmail: newTenant.ownerEmail,
-    ownerUid: ownerUid,
-    createdAt: newTenant.createdAt || new Date().toISOString(),
-    status: 'pending',
-    enabledModules: Object.entries(tenantData.enabledModules).filter(([_, enabled]) => enabled).map(([key]) => key),
-    secretCode: secretCode,
-    theme: {
-      id: tenantData.defaultTheme,
-      primaryColor: tenantData.primaryColor,
-      secondaryColor: tenantData.secondaryColor,
-    }
-  };
-  await executeWrite('websites', `websites/${newTenant.id}`, async () => {
-    await setDoc(websiteRef, websiteData, { merge: true });
-  });
-  
-  // 3. Write admin user link
-  const adminRef = doc(db, 'admin_users', ownerUid);
-  await executeWrite('admin_users', `admin_users/${ownerUid}`, async () => {
-    await setDoc(adminRef, {
-      uid: ownerUid,
-      email: newTenant.ownerEmail,
-      websiteId: newTenant.id,
-      ownerUid: ownerUid,
-      roleId: 'admin',
-      status: 'pending_activation',
-      secretCode: secretCode,
-      createdAt: new Date().toISOString()
-    }, { merge: true });
-  });
-
-  // 4. Seed default documents
-  const collectionsToSeed = [
-    'settings', 'homepage', 'theme', 'social', 'payment', 
-    'categories', 'notifications', 'analytics', 'products', 
-    'orders', 'reviews', 'customers', 'staff', 'managers', 
-    'media', 'seo'
-  ];
-
-  for (const col of collectionsToSeed) {
-    const docPath = `websites/${newTenant.id}/${col}/default`;
-    const colRef = doc(db, `websites/${newTenant.id}/${col}`, 'default');
-    await executeWrite(col, docPath, async () => {
-      await setDoc(colRef, {
-        initializedAt: new Date().toISOString(),
-        _type: 'system_default'
-      }, { merge: true });
-    });
-  }
-
-  try {
-    recordAuditLog(
-      'New Website Provisioned',
-      'SECURITY',
-      `Provisioned website: ${newTenant.name} with slug: ${newTenant.slug}`,
-      'SUCCESS'
-    );
-  } catch (err) {
-    console.warn("Non-fatal: Failed to record audit log:", err);
-  }
-
-  return { tenant: newTenant, secretCode };
-}
-/**
- * Initiates a full Firestore backup for a specific websiteId, archiving all core collections
- * into a single document in the 'backups' collection.
- */
-export async function createWebsiteBackup(websiteId: string, adminEmail: string, notes: string = ''): Promise<{ success: boolean; backupId?: string; message?: string }> {
-  try {
-    const timestamp = Date.now();
-    const backupId = `backup_${websiteId}_${timestamp}`;
-    const backupRef = doc(db, 'backups', backupId);
-    
-    // Define the collections we want to back up
-    const collectionsToBackup = [
-      'products', 'orders', 'users', 'reviews', 'settings', 'homepage', 'categories',
-      'payment', 'animations', 'mascot', 'social', 'theme', 'about', 'coupons',
-      'product_gallery', 'product_variants', 'product_ai_metadata', 'storeInfo'
-    ];
-
-    const backupData: any = {
-      id: backupId,
-      websiteId,
-      createdAt: new Date().toISOString(),
-      timestamp,
-      createdBy: adminEmail,
-      notes,
-      collections: {}
-    };
-
-    // Since we are using top-level collections with websiteId filtering, or website/{id}/collections
-    // Based on firestore rules, it looks like most data might be top-level or scoped by websiteId.
-    // Let's fetch using collectionGroup or query.
-    // If they are subcollections of /websites/{websiteId}, we fetch them that way.
-    
-    for (const coll of collectionsToBackup) {
-      // Assuming subcollections of /websites/{websiteId}/{coll}
-      const collRef = collection(db, 'websites', websiteId, coll);
-      const snap = await getDocs(collRef);
-      backupData.collections[coll] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    }
-    
-    // Also backup top-level things that have websiteId = websiteId
-    // e.g. products, orders
-    const topLevelCollections = ['products', 'orders', 'users', 'reviews'];
-    for (const topColl of topLevelCollections) {
-       if (!backupData.collections[topColl] || backupData.collections[topColl].length === 0) {
-         const topRef = collection(db, topColl);
-         const q = query(topRef, where('websiteId', '==', websiteId));
-         const snap = await getDocs(q);
-         if (!snap.empty) {
-            backupData.collections[topColl] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-         }
-       }
-    }
-
-    await setDoc(backupRef, backupData);
-
-    await recordAuditLog(
-      'Website Backup Created',
-      'BACKUP',
-      `Full backup created for website: ${websiteId} by ${adminEmail}`,
-      'SUCCESS'
-    );
-
-    return { success: true, backupId, message: 'Backup created successfully.' };
-  } catch (error: any) {
-    console.error('Backup creation failed:', error);
-    await recordAuditLog(
-      'Website Backup Failed',
-      'BACKUP',
-      `Backup failed for website: ${websiteId}. Error: ${error.message}`,
-      'DANGER'
-    );
-    return { success: false, message: error.message };
   }
 }

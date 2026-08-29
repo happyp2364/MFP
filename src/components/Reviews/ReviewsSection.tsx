@@ -13,7 +13,7 @@ export interface ReviewsSectionProps {
 export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
   productId,
   title = "Loved by 15,000+ Families",
-  subtitle = "Real reviews from real customers who trust our store for wedding footwear, school shoes, and daily fashion."
+  subtitle = "Real reviews from real customers who trust Marudhar Fashion Point for wedding footwear, school shoes, and daily fashion."
 }) => {
   const {
     reviews,
@@ -56,7 +56,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
   const activeReviews = useMemo(() => {
     if (!productId) return reviews;
     return reviews.filter(
-      (r: any) => (r.productBought || '').toLowerCase() === (productId || '').toLowerCase() || r.id === productId
+      (r) => r.productBought?.toLowerCase() === productId.toLowerCase() || r.id === productId
     );
   }, [reviews, productId]);
 
@@ -64,13 +64,13 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 
   const averageRatingNumber = useMemo(() => {
     if (activeReviews.length === 0) return 5.0;
-    const sum = activeReviews.reduce((acc: any, r: any) => acc + (r.rating || 5), 0);
+    const sum = activeReviews.reduce((acc, r) => acc + (r.rating || 5), 0);
     return Math.round((sum / activeReviews.length) * 10) / 10;
   }, [activeReviews]);
 
   const starCounts = useMemo(() => {
     const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    activeReviews.forEach((r: any) => {
+    activeReviews.forEach((r) => {
       const rating = Math.min(5, Math.max(1, Math.round(r.rating || 5)));
       counts[rating] = (counts[rating] || 0) + 1;
     });
@@ -79,21 +79,21 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 
   const recommendationPercent = useMemo(() => {
     if (activeReviews.length === 0) return 100;
-    const positive = activeReviews.filter((r: any) => (r.rating || 5) >= 4).length;
+    const positive = activeReviews.filter((r) => (r.rating || 5) >= 4).length;
     return Math.round((positive / activeReviews.length) * 100);
   }, [activeReviews]);
 
   const verifiedCount = useMemo(() => {
-    return activeReviews.filter((r: any) => r.verified).length;
+    return activeReviews.filter((r) => r.verified).length;
   }, [activeReviews]);
 
   const photosCount = useMemo(() => {
-    return activeReviews.filter((r: any) => Boolean(r.productImage)).length;
+    return activeReviews.filter((r) => Boolean(r.productImage)).length;
   }, [activeReviews]);
 
   // Apply UI filters for displayed review list
   const displayedReviews = useMemo(() => {
-    return activeReviews.filter((r: any) => {
+    return activeReviews.filter((r) => {
       if (selectedRatingFilter !== 'ALL' && Math.round(r.rating || 5) !== selectedRatingFilter) {
         return false;
       }
@@ -141,8 +141,8 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 
     // 1. From customerProfile order history
     if (customerProfile?.orderHistory) {
-      customerProfile.orderHistory.forEach((order: any) => {
-        order.items?.forEach((item: any) => {
+      customerProfile.orderHistory.forEach((order) => {
+        order.items?.forEach((item) => {
           if (item.product?.name) {
             itemsMap.set(item.product.name, item.product.id || item.product.name);
           }
@@ -152,14 +152,14 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 
     // 2. From global orders matching customer email or uid
     if (orders && (customerUser?.uid || customerUser?.email)) {
-      orders.forEach((order: any) => {
+      orders.forEach((order) => {
         const matchesUser =
           (customerUser?.uid && order.userId === customerUser.uid) ||
           (customerUser?.email &&
             order.customerEmail &&
-            (order.customerEmail || '').toLowerCase() === (customerUser.email || '').toLowerCase());
+            order.customerEmail.toLowerCase() === customerUser.email.toLowerCase());
         if (matchesUser) {
-          order.items?.forEach((item: any) => {
+          order.items?.forEach((item) => {
             if (item.product?.name) {
               itemsMap.set(item.product.name, item.product.id || item.product.name);
             }
@@ -168,7 +168,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
       });
     }
 
-    return Array.from(itemsMap.keys()).map((name: any) => ({ name }));
+    return Array.from(itemsMap.keys()).map((name) => ({ name }));
   }, [isAuthenticated, customerProfile, orders, customerUser]);
 
   // Sync author name & initial product when modal opens or customer signs in
@@ -206,7 +206,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
     const finalProductName =
       selectedProduct === 'custom'
         ? customProduct
-        : selectedProduct || 'Footwear';
+        : selectedProduct || 'Marudhar Footwear';
 
     setIsSubmitting(true);
     try {
@@ -283,7 +283,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-center sm:justify-start gap-1">
-                {[1, 2, 3, 4, 5].map((star: any) => (
+                {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
                     className={`w-5 h-5 ${
@@ -312,7 +312,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 
           {/* Right: Dynamic Star Breakdown Mini Bars */}
           <div className="w-full lg:w-72 space-y-2 pt-4 lg:pt-0 border-t lg:border-t-0 border-neutral-800/80">
-            {[5, 4, 3, 2, 1].map((star: any) => {
+            {[5, 4, 3, 2, 1].map((star) => {
               const count = starCounts[star] || 0;
               const percentage = totalReviewsCount > 0 ? Math.round((count / totalReviewsCount) * 100) : 0;
               return (
@@ -354,7 +354,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
             >
               All ({totalReviewsCount})
             </button>
-            {[5, 4, 3, 2, 1].map((star: any) => (
+            {[5, 4, 3, 2, 1].map((star) => (
               <button
                 key={star}
                 onClick={() => setSelectedRatingFilter(selectedRatingFilter === star ? 'ALL' : star)}
@@ -409,7 +409,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
           </div>
         ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {displayedReviews.map((rev: any) => (
+          {displayedReviews.map((rev) => (
             <div
               key={rev.id}
               className="bg-[#F7F7F7] p-6 rounded-3xl border border-neutral-200/70 hover:shadow-xl hover:border-[#0B8F63]/30 transition-all duration-300 flex flex-col justify-between space-y-4"
@@ -418,7 +418,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                 {/* Stars & Verified */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-0.5">
-                    {[...Array(5)].map((_: any, i: any) => (
+                    {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
                         className={`w-4 h-4 ${
@@ -576,7 +576,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                 </div>
                 <h3 className="font-bold text-xl text-neutral-900">Thank You for Your Review!</h3>
                 <p className="text-xs text-neutral-600 max-w-xs mx-auto">
-                  Your feedback has been published as a verified customer review.
+                  Your feedback has been published as a verified customer review for Marudhar Fashion Point.
                 </p>
               </div>
             ) : (
@@ -606,7 +606,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                     type="text"
                     required
                     value={newAuthor}
-                    onChange={(e: any) => setNewAuthor(e.target.value)}
+                    onChange={(e) => setNewAuthor(e.target.value)}
                     placeholder="e.g. Vikram Singh"
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-[#0B8F63] outline-none"
                   />
@@ -618,7 +618,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                   <input
                     type="text"
                     value={newLocation}
-                    onChange={(e: any) => setNewLocation(e.target.value)}
+                    onChange={(e) => setNewLocation(e.target.value)}
                     placeholder="e.g. Station Road, City"
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-[#0B8F63] outline-none"
                   />
@@ -639,10 +639,10 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                   {purchasedProducts.length > 0 ? (
                     <select
                       value={selectedProduct}
-                      onChange={(e: any) => setSelectedProduct(e.target.value)}
+                      onChange={(e) => setSelectedProduct(e.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-[#0B8F63] outline-none font-medium"
                     >
-                      {purchasedProducts.map((p: any) => (
+                      {purchasedProducts.map((p) => (
                         <option key={p.name} value={p.name}>
                           ✓ {p.name} (Verified Purchase)
                         </option>
@@ -652,10 +652,10 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                   ) : (
                     <select
                       value={selectedProduct}
-                      onChange={(e: any) => setSelectedProduct(e.target.value)}
+                      onChange={(e) => setSelectedProduct(e.target.value)}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-[#0B8F63] outline-none font-medium"
                     >
-                      {products.map((p: any) => (
+                      {products.map((p) => (
                         <option key={p.id} value={p.name}>
                           {p.name}
                         </option>
@@ -670,7 +670,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                       type="text"
                       required
                       value={customProduct}
-                      onChange={(e: any) => setCustomProduct(e.target.value)}
+                      onChange={(e) => setCustomProduct(e.target.value)}
                       placeholder="Enter product name (e.g. Royal Leather Jutti)"
                       className="w-full mt-2 bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-[#0B8F63] outline-none"
                     />
@@ -681,7 +681,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                 <div>
                   <label className="font-bold text-neutral-700 block mb-1">Rating *</label>
                   <div className="flex items-center gap-1.5 p-3 bg-neutral-50 border border-neutral-200/80 rounded-xl">
-                    {[1, 2, 3, 4, 5].map((star: any) => {
+                    {[1, 2, 3, 4, 5].map((star) => {
                       const isActive = star <= (hoveredRating || newRating);
                       return (
                         <button
@@ -715,7 +715,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                     required
                     rows={3}
                     value={newComment}
-                    onChange={(e: any) => setNewComment(e.target.value)}
+                    onChange={(e) => setNewComment(e.target.value)}
                     placeholder="Share details about comfort, size fit, craftsmanship, or customer service..."
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs focus:ring-2 focus:ring-[#0B8F63] outline-none resize-none"
                   />
@@ -829,7 +829,7 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                   <p className="text-xs text-emerald-400 font-semibold">{previewPhotoModal.product}</p>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  {[...Array(5)].map((_: any, i: any) => (
+                  {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
                       className={`w-3.5 h-3.5 ${

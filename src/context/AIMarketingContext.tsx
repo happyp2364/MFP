@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AIMarketingGrowthConfig } from '../types';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 export const DEFAULT_AI_MARKETING_GROWTH_CONFIG: AIMarketingGrowthConfig = {
@@ -39,7 +37,7 @@ export const AIMarketingProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [aiMarketingGrowthConfig, setAiMarketingGrowthConfig] = useState<AIMarketingGrowthConfig>(DEFAULT_AI_MARKETING_GROWTH_CONFIG);
 
   useEffect(() => {
-    const unsub = onTenantDocSnapshot(db, 'settings', 'ai_marketing_growth', (snapshot) => {
+    const unsub = onSnapshot(doc(db, 'settings', 'ai_marketing_growth'), (snapshot) => {
       if (snapshot.exists()) {
         setAiMarketingGrowthConfig(snapshot.data() as AIMarketingGrowthConfig);
       }
@@ -51,7 +49,7 @@ export const AIMarketingProvider: React.FC<{ children: ReactNode }> = ({ childre
   const updateAIMarketingGrowthConfig = async (config: AIMarketingGrowthConfig) => {
     setAiMarketingGrowthConfig(config);
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'ai_marketing_growth'), config, { merge: true });
+      await setDoc(doc(db, 'settings', 'ai_marketing_growth'), config, { merge: true });
     } catch (e) {
       console.warn('Firestore AI marketing growth config sync failed', e);
     }

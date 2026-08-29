@@ -27,7 +27,7 @@ export function generateProductWhatsAppLink(
 
   const payload: WhatsAppPayloadData = {
     productName: product.name,
-    productBrand: product.brand || 'Royal Collection',
+    productBrand: product.brand || 'Marudhar Royal',
     productCategory: product.category,
     productPrice: currentPrice,
     finalPrice: currentPrice * quantity,

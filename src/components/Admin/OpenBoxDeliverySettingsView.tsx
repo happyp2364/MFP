@@ -85,10 +85,10 @@ export const OpenBoxDeliverySettingsView: React.FC = () => {
   ];
 
   // Filtered products for selection
-  const filteredProducts = products.filter((p: any) =>
-    (p.name || '').toLowerCase().includes((productSearch || '').toLowerCase()) ||
-    (p.category || '').toLowerCase().includes((productSearch || '').toLowerCase()) ||
-    (p.sku && (p.sku || '').toLowerCase().includes((productSearch || '').toLowerCase()))
+  const filteredProducts = products.filter((p) =>
+    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+    p.category.toLowerCase().includes(productSearch.toLowerCase()) ||
+    (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase()))
   );
 
   const toggleCategorySelection = (catId: string) => {
@@ -434,7 +434,7 @@ export const OpenBoxDeliverySettingsView: React.FC = () => {
                 </div>
 
                 <div className="max-h-48 overflow-y-auto space-y-1 pr-1 border border-neutral-200/60 rounded-lg p-2 bg-white">
-                  {filteredProducts.map((prod: any) => {
+                  {filteredProducts.map((prod) => {
                     const checked = (formConfig.applicableProductIds || []).includes(prod.id);
                     return (
                       <div
@@ -529,7 +529,7 @@ export const OpenBoxDeliverySettingsView: React.FC = () => {
                   </div>
                   <div className="min-w-0 flex-1">
                     <span className="text-xs font-bold text-neutral-800 block truncate">
-                      {products[0]?.name || 'AirGlide Running Shoes'}
+                      {products[0]?.name || 'Marudhar AirGlide Running Shoes'}
                     </span>
                     <span className="text-xs font-extrabold text-[#0B8F63]">
                       ₹{products[0]?.price || 1499}

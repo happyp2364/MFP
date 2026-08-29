@@ -35,7 +35,6 @@ import { InvoiceModal } from '../Customer/InvoiceModal';
 import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 import { db } from '../../lib/firebase';
 import { getDoc, doc } from 'firebase/firestore';
-import { getTenantDocWriteRef } from '../../lib/firestoreMultiTenant';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -142,15 +141,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setCouponCodeInput('');
     
     // Clear any potential stored flags just in case
-    localStorage.removeItem('nwd_checkout_stale_success');
-    localStorage.removeItem('nwd_last_order_id');
-    localStorage.removeItem('nwd_payment_success');
-    localStorage.removeItem('nwd_checkout_session');
+    localStorage.removeItem('mfp_checkout_stale_success');
+    localStorage.removeItem('mfp_last_order_id');
+    localStorage.removeItem('mfp_payment_success');
+    localStorage.removeItem('mfp_checkout_session');
     
-    sessionStorage.removeItem('nwd_checkout_stale_success');
-    sessionStorage.removeItem('nwd_last_order_id');
-    sessionStorage.removeItem('nwd_payment_success');
-    sessionStorage.removeItem('nwd_checkout_session');
+    sessionStorage.removeItem('mfp_checkout_stale_success');
+    sessionStorage.removeItem('mfp_last_order_id');
+    sessionStorage.removeItem('mfp_payment_success');
+    sessionStorage.removeItem('mfp_checkout_session');
   };
 
   // Perform full validation check
@@ -182,7 +181,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           return false;
         }
 
-        const prodRef = getTenantDocWriteRef(db, 'products', item.product.id);
+        const prodRef = doc(db, 'products', item.product.id);
         const prodSnap = await getDoc(prodRef);
 
         if (!prodSnap.exists()) {
@@ -203,7 +202,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         }
 
         if (item.selectedSize && liveProduct.sizeStocks && liveProduct.sizeStocks.length > 0) {
-          const sizeStock = liveProduct.sizeStocks.find((s: any) => String(s.size) === String(item.selectedSize));
+          const sizeStock = liveProduct.sizeStocks.find((s) => s.size === item.selectedSize);
           if (sizeStock) {
             if (!sizeStock.inStock || !sizeStock.isAvailable) {
               setErrorMessage(`Size "${item.selectedSize}" for product "${liveProduct.name}" is out of stock.`);
@@ -267,7 +266,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         }
 
         try {
-          const orderRef = getTenantDocWriteRef(db, 'orders', completedOrderId);
+          const orderRef = doc(db, 'orders', completedOrderId);
           const orderSnap = await getDoc(orderRef);
           if (!orderSnap.exists()) {
             console.error('Security Gate: order document does not exist in Firestore.');
@@ -287,7 +286,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Pre-fill address if customer has default saved address
   useEffect(() => {
     if (customerProfile?.savedAddresses && customerProfile.savedAddresses.length > 0) {
-      const def = customerProfile.savedAddresses.find((a: any) => a.isDefault) || customerProfile.savedAddresses[0];
+      const def = customerProfile.savedAddresses.find((a) => a.isDefault) || customerProfile.savedAddresses[0];
       setShippingInfo({
         name: def.name || customerProfile.name || '',
         phone: def.phone || customerProfile.phoneNumber || '',
@@ -299,7 +298,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         landmark: '',
       });
     } else if (customerProfile) {
-      setShippingInfo((prev: any) => ({
+      setShippingInfo((prev) => ({
         ...prev,
         name: customerProfile.name || prev.name,
         email: customerProfile.email || prev.email,
@@ -337,7 +336,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const result = validateCoupon(cleanCode, cartItems);
 
     if (result.valid) {
-      const matchedCoupon = coupons.find((c: any) => c.code.toUpperCase() === cleanCode)!;
+      const matchedCoupon = coupons.find(c => c.code.toUpperCase() === cleanCode)!;
       setAppliedCoupon(matchedCoupon);
       setDiscountAmount(result.discountAmount || 0);
       setFreeShippingPromo(!!result.freeShipping);
@@ -372,17 +371,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   useEffect(() => {
     if (isOpen && coupons && coupons.length > 0 && !appliedCoupon) {
       // Prioritize scratched coupon code if found in local storage
-      const scratchedCode = localStorage.getItem('nwd_scratched_coupon');
+      const scratchedCode = localStorage.getItem('mfp_scratched_coupon');
       if (scratchedCode) {
         const valResult = validateCoupon(scratchedCode, cartItems);
         if (valResult.valid) {
           handleApplyCoupon(scratchedCode);
-          localStorage.removeItem('nwd_scratched_coupon');
+          localStorage.removeItem('mfp_scratched_coupon');
           return;
         }
       }
 
-      const autoCoupons = coupons.filter((c: any) => c.status === 'active' && c.autoApply);
+      const autoCoupons = coupons.filter(c => c.status === 'active' && c.autoApply);
       let bestCoupon: import('../../types').PromoCoupon | null = null;
       let bestDiscount = -1;
 
@@ -406,7 +405,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   if (!isOpen) return null;
 
   // Price calculations
-  const subtotal = cartItems.reduce((acc: any, item: any) => acc + getCartItemPrice(item) * item.quantity, 0);
+  const subtotal = cartItems.reduce((acc, item) => acc + getCartItemPrice(item) * item.quantity, 0);
   const baseShippingFee = subtotal >= (paymentSettings.freeShippingMinAmount || 999) ? 0 : paymentSettings.flatShippingRate || 0;
   const shippingFee = freeShippingPromo ? 0 : baseShippingFee;
 
@@ -422,7 +421,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const totalAmount = Math.max(0, subtotal - discountAmount + shippingFee + taxAmount + convenienceFee);
 
   // Dynamic UPI Link & QR Image
-  const dynamicOrderId = completedOrderId || `NWD${1025 + Math.floor(Math.random() * 8000)}`;
+  const dynamicOrderId = completedOrderId || `MFP${1025 + Math.floor(Math.random() * 8000)}`;
   const sanitizedUpiId = cleanAndSanitizeUPIId(paymentSettings.upiId);
   const isUpiValid = isValidUPIIdFormat(sanitizedUpiId);
 
@@ -520,7 +519,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve: any) => {
+    return new Promise((resolve) => {
       if ((window as any).Razorpay) {
         resolve(true);
         return;
@@ -595,17 +594,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     try {
       // Step 1: Gateway Handshake
-      await new Promise((res: any) => setTimeout(res, 400));
+      await new Promise((res) => setTimeout(res, 400));
       setVerificationProgress(40);
       setVerificationStageText('Validating Payment Reference & Signature Integrity...');
 
       // Step 2: Anti-Replay Check
-      await new Promise((res: any) => setTimeout(res, 400));
+      await new Promise((res) => setTimeout(res, 400));
       setVerificationProgress(70);
       setVerificationStageText('Checking Anti-Replay Ledger & Anti-Fraud Locks...');
 
       // Step 3: Execute Secure Verification & Order Placement
-      await new Promise((res: any) => setTimeout(res, 400));
+      await new Promise((res) => setTimeout(res, 400));
       setVerificationProgress(90);
       setVerificationStageText('Confirming Settlement Authorization...');
 
@@ -637,9 +636,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         setCompletedOrderId(res.orderId);
 
         // Find newly created order object for invoice & WhatsApp
-        const matchedOrder = orders.find((o: any) => o.id === res.orderId) || {
+        const matchedOrder = orders.find((o) => o.id === res.orderId) || {
           id: res.orderId,
-          orderNumber: parseInt(res.orderId.replace('#NWD', ''), 10) || 1025,
+          orderNumber: parseInt(res.orderId.replace('#MFP', ''), 10) || 1025,
           userId: customerProfile?.uid,
           customerName: shippingInfo.name,
           customerPhone: shippingInfo.phone,
@@ -727,7 +726,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           key: activeKeyId,
           amount: Math.round(totalAmount * 100),
           currency: 'INR',
-          name: storeInfo.name || 'Official Store',
+          name: storeInfo.name || 'Marudhar Fashion Point',
           description: `Order ${gatewayOrderId}`,
           order_id: gatewayOrderId.startsWith('order_') ? gatewayOrderId : undefined,
           handler: async function (response: any) {
@@ -786,7 +785,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 Secure Payment & Checkout
               </h2>
               <p className="text-xs text-amber-200/70">
-                {storeInfo.name || 'Official Store'} • Bank-Level Encryption
+                Marudhar Fashion Point • Bank-Level Encryption
               </p>
             </div>
           </div>
@@ -893,7 +892,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="text"
                   required
                   value={shippingInfo.name}
-                  onChange={(e: any) => setShippingInfo({ ...shippingInfo, name: e.target.value })}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, name: e.target.value })}
                   placeholder="Rahul Sharma"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
@@ -905,7 +904,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="tel"
                   required
                   value={shippingInfo.phone}
-                  onChange={(e: any) => setShippingInfo({ ...shippingInfo, phone: e.target.value })}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, phone: e.target.value })}
                   placeholder="+91 98290 12345"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
@@ -917,7 +916,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="email"
                   required
                   value={shippingInfo.email}
-                  onChange={(e: any) => setShippingInfo({ ...shippingInfo, email: e.target.value })}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, email: e.target.value })}
                   placeholder="customer@example.com"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
@@ -931,7 +930,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="text"
                   required
                   value={shippingInfo.street}
-                  onChange={(e: any) => setShippingInfo({ ...shippingInfo, street: e.target.value })}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, street: e.target.value })}
                   placeholder="House No. 12, Main Market Road"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
@@ -943,7 +942,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="text"
                   required
                   value={shippingInfo.city}
-                  onChange={(e: any) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
@@ -954,7 +953,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="text"
                   required
                   value={shippingInfo.state}
-                  onChange={(e: any) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
@@ -965,7 +964,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="text"
                   required
                   value={shippingInfo.pincode}
-                  onChange={(e: any) => setShippingInfo({ ...shippingInfo, pincode: e.target.value })}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, pincode: e.target.value })}
                   placeholder="311001"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
@@ -978,7 +977,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <input
                   type="text"
                   value={shippingInfo.landmark}
-                  onChange={(e: any) => setShippingInfo({ ...shippingInfo, landmark: e.target.value })}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, landmark: e.target.value })}
                   placeholder="Near Clock Tower"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
@@ -991,7 +990,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <input
                   type="checkbox"
                   checked={checkoutConsent.email || checkoutConsent.push || checkoutConsent.whatsApp}
-                  onChange={(e: any) => {
+                  onChange={(e) => {
                     const checked = e.target.checked;
                     setCheckoutConsent({ accepted: checked, email: checked, push: checked, whatsApp: checked, updatedAt: new Date().toISOString() });
                   }}
@@ -1008,7 +1007,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <input
                       type="checkbox"
                       checked={checkoutConsent.email}
-                      onChange={(e: any) => setCheckoutConsent({ ...checkoutConsent, email: e.target.checked })}
+                      onChange={(e) => setCheckoutConsent({ ...checkoutConsent, email: e.target.checked })}
                       className="w-3.5 h-3.5 text-amber-600 rounded"
                     />
                     <span>📧 Email</span>
@@ -1017,7 +1016,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <input
                       type="checkbox"
                       checked={checkoutConsent.push}
-                      onChange={(e: any) => setCheckoutConsent({ ...checkoutConsent, push: e.target.checked })}
+                      onChange={(e) => setCheckoutConsent({ ...checkoutConsent, push: e.target.checked })}
                       className="w-3.5 h-3.5 text-amber-600 rounded"
                     />
                     <span>🔔 Website Push</span>
@@ -1026,7 +1025,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <input
                       type="checkbox"
                       checked={checkoutConsent.whatsApp}
-                      onChange={(e: any) => setCheckoutConsent({ ...checkoutConsent, whatsApp: e.target.checked })}
+                      onChange={(e) => setCheckoutConsent({ ...checkoutConsent, whatsApp: e.target.checked })}
                       className="w-3.5 h-3.5 text-emerald-600 rounded"
                     />
                     <span className="text-emerald-800 font-bold">💬 WhatsApp VIP</span>
@@ -1059,7 +1058,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="text"
                   placeholder="Enter Coupon Code"
                   value={couponCodeInput}
-                  onChange={(e: any) => setCouponCodeInput(e.target.value)}
+                  onChange={(e) => setCouponCodeInput(e.target.value)}
                   disabled={!!appliedCoupon}
                   className="flex-1 bg-neutral-50 border border-neutral-300 rounded-xl px-3 py-2 text-xs font-mono font-bold uppercase placeholder-neutral-400 outline-none focus:ring-1 focus:ring-emerald-600 disabled:opacity-75 disabled:bg-neutral-100"
                 />
@@ -1094,15 +1093,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               )}
 
               {/* Available Coupons & Intelligent Recommendation engine */}
-              {coupons && coupons.filter((c: any) => c.status === 'active' && c.visibility === 'public').length > 0 && (
+              {coupons && coupons.filter(c => c.status === 'active' && c.visibility === 'public').length > 0 && (
                 <div className="space-y-2">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
                     Recommended Deals For You
                   </div>
                   <div className="flex flex-col gap-2 max-h-36 overflow-y-auto pr-1">
                     {coupons
-                      .filter((c: any) => c.status === 'active' && c.visibility === 'public')
-                      .map((coupon: any) => {
+                      .filter(c => c.status === 'active' && c.visibility === 'public')
+                      .map((coupon) => {
                         const check = validateCoupon(coupon.code, cartItems);
                         const isCurrentlyApplied = appliedCoupon?.code === coupon.code;
                         
@@ -1176,7 +1175,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* Price Summary */}
             <div className="mt-4 p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-1.5">
               <div className="flex justify-between text-neutral-600">
-                <span>Subtotal ({cartItems.reduce((a: any, b: any) => a + b.quantity, 0)} items)</span>
+                <span>Subtotal ({cartItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
                 <span>₹{subtotal.toLocaleString()}</span>
               </div>
               {discountAmount > 0 && (
@@ -1373,7 +1372,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         />
                         <div className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-amber-950 font-bold">
                           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                          <span>{paymentSettings.merchantName || storeInfo.name || 'Official Store'}</span>
+                          <span>{paymentSettings.merchantName || 'Marudhar Fashion Point'}</span>
                         </div>
                       </div>
 
@@ -1473,7 +1472,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         <input
                           type="text"
                           value={paymentRef}
-                          onChange={(e: any) => setPaymentRef(e.target.value)}
+                          onChange={(e) => setPaymentRef(e.target.value)}
                           placeholder="Enter 12-digit UTR (e.g. 420918239012)"
                           className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
                         />
@@ -1518,7 +1517,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     type="text"
                     maxLength={19}
                     value={cardNumber}
-                    onChange={(e: any) => setCardNumber(e.target.value)}
+                    onChange={(e) => setCardNumber(e.target.value)}
                     placeholder="4532 •••• •••• 8921"
                     className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
                   />
@@ -1531,7 +1530,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <input
                     type="text"
                     value={cardName}
-                    onChange={(e: any) => setCardName(e.target.value)}
+                    onChange={(e) => setCardName(e.target.value)}
                     placeholder="RAHUL SHARMA"
                     className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase"
                   />
@@ -1546,7 +1545,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       type="text"
                       maxLength={5}
                       value={cardExpiry}
-                      onChange={(e: any) => setCardExpiry(e.target.value)}
+                      onChange={(e) => setCardExpiry(e.target.value)}
                       placeholder="12/28"
                       className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none text-center font-mono"
                     />
@@ -1558,7 +1557,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       type="password"
                       maxLength={4}
                       value={cardCvv}
-                      onChange={(e: any) => setCardCvv(e.target.value)}
+                      onChange={(e) => setCardCvv(e.target.value)}
                       placeholder="•••"
                       className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none text-center font-mono"
                     />
@@ -1587,7 +1586,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     'Axis Bank',
                     'Kotak Bank',
                     'Punjab National Bank',
-                  ].map((b: any) => (
+                  ].map((b) => (
                     <button
                       key={b}
                       type="button"
@@ -1610,7 +1609,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-3 text-xs">
                 <label className="block text-neutral-600 font-medium">Select Wallet *</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {['Paytm Wallet', 'Amazon Pay', 'PhonePe Wallet', 'Mobikwik'].map((w: any) => (
+                  {['Paytm Wallet', 'Amazon Pay', 'PhonePe Wallet', 'Mobikwik'].map((w) => (
                     <button
                       key={w}
                       type="button"

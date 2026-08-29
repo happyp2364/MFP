@@ -1,6 +1,6 @@
 /**
  * Enterprise Security Utility
- * Platform Security Hardening Suite
+ * Marudhar Fashion Point - Security Hardening Suite
  */
 
 // 1. XSS & Input Sanitization
@@ -73,7 +73,7 @@ export const validateFileUpload = (file: File): FileValidationResult => {
   }
 
   // MIME Type Check
-  if (!ALLOWED_MIME_TYPES.includes((file.type || '').toLowerCase())) {
+  if (!ALLOWED_MIME_TYPES.includes(file.type.toLowerCase())) {
     return {
       isValid: false,
       error: `Invalid file type (${file.type}). Only JPG, PNG, WEBP, and SVG images are permitted.`,

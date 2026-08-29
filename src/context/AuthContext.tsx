@@ -10,16 +10,13 @@ import {
   syncCustomerProfileInFirestore,
   recordAuditLog,
 } from '../lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential, User as FirebaseUser } from 'firebase/auth';
-import { recordAdminLoginHistory, fetchAdminUsers, saveAdminUser, syncAdminWebsiteLink } from '../lib/adminService';
-import { getCurrentTenantId, setTenantId } from '../lib/tenantIsolation';
-import { getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
+import { recordAdminLoginHistory, fetchAdminUsers, saveAdminUser } from '../lib/adminService';
 
 interface AuthContextType {
   isAdmin: boolean;
   isSuperAdmin: boolean;
-  isAdminAuthLoading: boolean;
   currentAdminUser: AdminUser | null;
   customerUser: FirebaseUser | null;
   customerProfile: CustomerProfile | null;
@@ -44,14 +41,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [customerUser, setCustomerUser] = useState<FirebaseUser | null>(null);
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
   const [isCustomerAuthLoading, setIsCustomerAuthLoading] = useState<boolean>(true);
-  const [isAdminAuthLoading, setIsAdminAuthLoading] = useState<boolean>(true);
   const [customerAuthError, setCustomerAuthError] = useState<string | null>(null);
   const [isTwoFactorEnabled, setIsTwoFactorEnabled] = useState<boolean>(false);
 
   const isSuperAdmin = Boolean(
     currentAdminUser?.roleId === 'super_admin' ||
-    (currentAdminUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' ||
-    (currentAdminUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com'
+    currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+    currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
   );
 
   const isAdmin = Boolean(
@@ -74,13 +70,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (adminSnap.exists()) {
         const adminData = adminSnap.data() as AdminUser;
         if (adminData.status === 'disabled') return null;
-        const assignedId = adminData.assignedWebsiteId || adminData.websiteId;
         return {
           ...adminData,
           uid: firebaseUser.uid,
           email: adminData.email || firebaseUser.email || '',
-          assignedWebsiteId: assignedId,
-          websiteId: assignedId,
         };
       }
     } catch (err) {
@@ -91,32 +84,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const allAdmins = await fetchAdminUsers();
       const matched = allAdmins.find(
-        (a) => (a.email || '').toLowerCase() === userEmailLower && a.status !== 'disabled'
+        (a) => a.email?.toLowerCase() === userEmailLower && a.status !== 'disabled'
       );
       if (matched) {
-        const assignedId = matched.assignedWebsiteId || matched.websiteId;
         const updatedAdminUser: AdminUser = {
           ...matched,
           uid: firebaseUser.uid,
-          id: firebaseUser.uid, 
           email: matched.email || firebaseUser.email || '',
-          assignedWebsiteId: assignedId,
-          websiteId: assignedId,
-          status: 'active',
         };
-        // Persist matched UID in background and delete old placeholder if different
-        (async () => {
-          try {
-            await saveAdminUser(updatedAdminUser);
-            if (matched.uid !== firebaseUser.uid) {
-              const { deleteDoc, doc } = await import('firebase/firestore');
-              const { db } = await import('../lib/firebase');
-              await deleteDoc(doc(db, 'admin_users', matched.uid));
-            }
-          } catch (e) {
-            console.warn('Sync admin UID error:', e);
-          }
-        })();
+        // Persist matched UID in background
+        saveAdminUser(updatedAdminUser).catch((e) => console.warn('Sync admin UID error:', e));
         return updatedAdminUser;
       }
     } catch (err) {
@@ -159,13 +136,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
           const adminUser = await resolveAdminUser(user);
           if (adminUser) {
-            const assignedId = adminUser.assignedWebsiteId || adminUser.websiteId;
-            if (assignedId && adminUser.roleId !== 'super_admin') {
-              const currentActive = getCurrentTenantId();
-              if (currentActive !== assignedId) {
-                setTenantId(assignedId);
-              }
-            }
             setCurrentAdminUser(adminUser);
           } else {
             setCurrentAdminUser(null);
@@ -173,13 +143,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (err) {
           console.warn('Failed to resolve admin user on auth state change:', err);
           setCurrentAdminUser(null);
-        } finally {
-          setIsAdminAuthLoading(false);
         }
       } else {
         setCustomerProfile(null);
         setCurrentAdminUser(null);
-        setIsAdminAuthLoading(false);
       }
     });
     return () => unsub();
@@ -191,28 +158,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (res.user) {
         let adminUser = await resolveAdminUser(res.user);
         if (!adminUser) {
-          const emailLower = (email || '').toLowerCase();
+          const emailLower = email.toLowerCase();
           const isSuper = emailLower === 'vpcreation2002@gmail.com' || emailLower === 'vishalpparihar2002@gmail.com';
-          if (isSuper) {
-            adminUser = {
-              uid: res.user.uid,
-              id: res.user.uid,
-              email: res.user.email || email,
-              name: res.user.displayName || 'Super Admin',
-              roleId: 'super_admin',
-              roleName: 'Super Admin',
-              status: 'active',
-              createdAt: new Date().toISOString(),
-              createdBy: 'system',
-            };
-            await saveAdminUser(adminUser);
-          } else {
-             console.warn('Denying activation: Email does not match any invited admin.');
-             await logoutUser();
-             return false;
-          }
+          adminUser = {
+            uid: res.user.uid,
+            id: res.user.uid,
+            email: res.user.email || email,
+            name: res.user.displayName || (isSuper ? 'Super Admin' : 'Website Administrator'),
+            roleId: isSuper ? 'super_admin' : 'admin',
+            roleName: isSuper ? 'Super Admin' : 'Administrator',
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            createdBy: 'system',
+          };
+          await saveAdminUser(adminUser);
         }
-        await syncAdminWebsiteLink(adminUser, getCurrentTenantId());
         setCurrentAdminUser(adminUser);
         await recordAdminLoginHistory(res.user.uid, res.user.email || email, 'password', 'success');
         return true;
@@ -232,26 +192,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!adminUser) {
           const emailLower = (result.user.email || '').toLowerCase();
           const isSuper = emailLower === 'vpcreation2002@gmail.com' || emailLower === 'vishalpparihar2002@gmail.com';
-          if (isSuper) {
-            adminUser = {
-              uid: result.user.uid,
-              id: result.user.uid,
-              email: result.user.email || '',
-              name: result.user.displayName || 'Super Admin',
-              roleId: 'super_admin',
-              roleName: 'Super Admin',
-              status: 'active',
-              createdAt: new Date().toISOString(),
-              createdBy: 'system',
-            };
-            await saveAdminUser(adminUser);
-          } else {
-            console.warn('Denying activation: Email does not match any invited admin.');
-            await logoutUser();
-            return false;
-          }
+          adminUser = {
+            uid: result.user.uid,
+            id: result.user.uid,
+            email: result.user.email || '',
+            name: result.user.displayName || (isSuper ? 'Super Admin' : 'Website Administrator'),
+            roleId: isSuper ? 'super_admin' : 'admin',
+            roleName: isSuper ? 'Super Admin' : 'Administrator',
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            createdBy: 'system',
+          };
+          await saveAdminUser(adminUser);
         }
-        await syncAdminWebsiteLink(adminUser, getCurrentTenantId());
         setCurrentAdminUser(adminUser);
         await recordAdminLoginHistory(result.user.uid, result.user.email || '', 'google', 'success');
         return true;
@@ -320,7 +273,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         isAdmin,
         isSuperAdmin,
-        isAdminAuthLoading,
         currentAdminUser,
         customerUser,
         customerProfile,

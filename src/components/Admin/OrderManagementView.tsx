@@ -43,12 +43,12 @@ export const OrderManagementView: React.FC = () => {
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<CustomerOrder | null>(null);
 
   // Filter orders
-  const filteredOrders = orders.filter((o: any) => {
+  const filteredOrders = orders.filter((o) => {
     const matchesSearch =
-      (o.id || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-      (o.customerName || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       o.customerPhone.includes(searchQuery) ||
-      (o.customerEmail || '').toLowerCase().includes((searchQuery || '').toLowerCase());
+      o.customerEmail.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = selectedStatusFilter === 'ALL' || o.orderStatus === selectedStatusFilter;
 
@@ -71,7 +71,7 @@ export const OrderManagementView: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by Order ID (#NWD1025), Name, Phone, Email..."
+              placeholder="Search by Order ID (#MFP1025), Name, Phone, Email..."
               className="w-full pl-9 pr-3 py-2 border border-neutral-300 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
             />
           </div>
@@ -96,7 +96,7 @@ export const OrderManagementView: React.FC = () => {
           </button>
 
           {STATUS_OPTIONS.map((opt) => {
-            const count = orders.filter((o: any) => o.orderStatus === opt.value).length;
+            const count = orders.filter((o) => o.orderStatus === opt.value).length;
             return (
               <button
                 key={opt.value}
@@ -123,7 +123,7 @@ export const OrderManagementView: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredOrders.map((order: any) => {
+          {filteredOrders.map((order) => {
             const isExpanded = expandedOrderId === order.id;
             const currentStatusOpt = STATUS_OPTIONS.find((s) => s.value === order.orderStatus);
 
@@ -241,10 +241,10 @@ export const OrderManagementView: React.FC = () => {
                     {/* Ordered Products Table */}
                     <div>
                       <p className="font-bold text-amber-900 text-[11px] uppercase tracking-wider mb-2">
-                        Ordered Items ({order.items.reduce((a: any, b: any) => a + b.quantity, 0)})
+                        Ordered Items ({order.items.reduce((a, b) => a + b.quantity, 0)})
                       </p>
                       <div className="space-y-2">
-                        {order.items.map((item: any, idx: any) => {
+                        {order.items.map((item, idx) => {
                           const itemPrice = getProductPrice(item.product, item.selectedSize, item.selectedColor);
                           const itemImage = getProductImage(item.product, item.selectedColor);
                           return (

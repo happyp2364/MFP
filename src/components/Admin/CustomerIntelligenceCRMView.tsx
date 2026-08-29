@@ -18,7 +18,7 @@ export const CustomerIntelligenceCRMView: React.FC = () => {
   const customers = useMemo(() => {
     const customerMap = new Map<string, any>();
     
-    orders.forEach((order: any) => {
+    orders.forEach(order => {
       const email = order.customerEmail || order.customerPhone || 'Unknown';
       if (!customerMap.has(email)) {
         customerMap.set(email, {
@@ -64,10 +64,10 @@ export const CustomerIntelligenceCRMView: React.FC = () => {
   }, [orders]);
 
   const filteredCustomers = customers.filter(c => 
-    (c.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
-    (c.email || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.phone?.includes(searchTerm) ||
-    (c.city || '').toLowerCase().includes((searchTerm || '').toLowerCase())
+    c.city.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -161,7 +161,7 @@ export const CustomerIntelligenceCRMView: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
-                          {cust.segments.map((seg: any, idx: any) => (
+                          {cust.segments.map((seg, idx) => (
                             <span key={idx} className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                               seg === 'VIP' ? 'bg-amber-100 text-amber-700' :
                               seg === 'High Value' ? 'bg-purple-100 text-purple-700' :

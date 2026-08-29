@@ -11,8 +11,6 @@ import { DEFAULT_WHATSAPP_TEMPLATES_CONFIG } from '../data/defaultWhatsAppTempla
 import { DEFAULT_OPEN_BOX_DELIVERY_CONFIG } from '../types';
 import { DEFAULT_PAYMENT_SETTINGS } from '../data/mockData';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 export const DEFAULT_PRODUCT_FEED_CONFIG: ProductFeedConfig = {
@@ -46,10 +44,10 @@ interface AppConfigContextType {
 const AppConfigContext = createContext<AppConfigContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  PRODUCT_FEED_CONFIG: 'nwd_product_feed_config_live',
-  BUTTON_THEME_CONFIG: 'nwd_button_theme_config_live',
-  PAYMENT_SETTINGS: 'nwd_payment_settings_live',
-  OPEN_BOX_DELIVERY_CONFIG: 'nwd_open_box_delivery_config_live',
+  PRODUCT_FEED_CONFIG: 'mfp_product_feed_config_live',
+  BUTTON_THEME_CONFIG: 'mfp_button_theme_config_live',
+  PAYMENT_SETTINGS: 'mfp_payment_settings_live',
+  OPEN_BOX_DELIVERY_CONFIG: 'mfp_open_box_delivery_config_live',
 };
 
 export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -95,35 +93,35 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   // Firestore subscriptions for remote config sync
   useEffect(() => {
-    const unsubFeed = onTenantDocSnapshot(db, 'settings', 'product_feed', (snapshot) => {
+    const unsubFeed = onSnapshot(doc(db, 'settings', 'product_feed'), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as ProductFeedConfig;
         setProductFeedConfig((prev) => ({ ...prev, ...data }));
       }
     }, () => {});
 
-    const unsubButton = onTenantDocSnapshot(db, 'settings', 'button_theme', (snapshot) => {
+    const unsubButton = onSnapshot(doc(db, 'settings', 'button_theme'), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as ButtonThemeConfig;
         setButtonThemeConfig((prev) => ({ ...prev, ...data }));
       }
     }, () => {});
 
-    const unsubPayment = onTenantDocSnapshot(db, 'settings', 'payment_settings', (snapshot) => {
+    const unsubPayment = onSnapshot(doc(db, 'settings', 'payment_settings'), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as PaymentSettings;
         setPaymentSettings((prev) => ({ ...prev, ...data }));
       }
     }, () => {});
 
-    const unsubWhatsApp = onTenantDocSnapshot(db, 'settings', 'whatsapp_templates', (snapshot) => {
+    const unsubWhatsApp = onSnapshot(doc(db, 'settings', 'whatsapp_templates'), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as WhatsAppTemplatesConfig;
         setWhatsappTemplatesConfig((prev) => ({ ...prev, ...data }));
       }
     }, () => {});
 
-    const unsubOpenBox = onTenantDocSnapshot(db, 'settings', 'open_box_delivery', (snapshot) => {
+    const unsubOpenBox = onSnapshot(doc(db, 'settings', 'open_box_delivery'), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as OpenBoxDeliveryConfig;
         setOpenBoxDeliveryConfig((prev) => ({ ...prev, ...data }));
@@ -144,7 +142,7 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
     setProductFeedConfig(merged);
     localStorage.setItem(STORAGE_KEYS.PRODUCT_FEED_CONFIG, JSON.stringify(merged));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'product_feed'), merged, { merge: true });
+      await setDoc(doc(db, 'settings', 'product_feed'), merged, { merge: true });
     } catch (e) {
       console.warn('Firestore feed config sync failed', e);
     }
@@ -155,7 +153,7 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
     setButtonThemeConfig(merged);
     localStorage.setItem(STORAGE_KEYS.BUTTON_THEME_CONFIG, JSON.stringify(merged));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'button_theme'), merged, { merge: true });
+      await setDoc(doc(db, 'settings', 'button_theme'), merged, { merge: true });
     } catch (e) {
       console.warn('Firestore button theme sync failed', e);
     }
@@ -164,7 +162,7 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
   const updateWhatsAppTemplatesConfig = async (newConfig: WhatsAppTemplatesConfig) => {
     setWhatsappTemplatesConfig(newConfig);
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'whatsapp_templates'), newConfig, { merge: true });
+      await setDoc(doc(db, 'settings', 'whatsapp_templates'), newConfig, { merge: true });
     } catch (e) {
       console.warn('Firestore whatsapp config sync failed', e);
     }
@@ -173,7 +171,7 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
   const resetWhatsAppTemplatesToDefault = async () => {
     setWhatsappTemplatesConfig(DEFAULT_WHATSAPP_TEMPLATES_CONFIG);
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'whatsapp_templates'), DEFAULT_WHATSAPP_TEMPLATES_CONFIG);
+      await setDoc(doc(db, 'settings', 'whatsapp_templates'), DEFAULT_WHATSAPP_TEMPLATES_CONFIG);
     } catch (e) {
       console.warn('Firestore whatsapp reset sync failed', e);
     }
@@ -183,7 +181,7 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
     setOpenBoxDeliveryConfig(newConfig);
     localStorage.setItem(STORAGE_KEYS.OPEN_BOX_DELIVERY_CONFIG, JSON.stringify(newConfig));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'open_box_delivery'), newConfig, { merge: true });
+      await setDoc(doc(db, 'settings', 'open_box_delivery'), newConfig, { merge: true });
     } catch (e) {
       console.warn('Firestore open box config sync failed', e);
     }
@@ -193,7 +191,7 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
     setPaymentSettings(newSettings);
     localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(newSettings));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'payment_settings'), newSettings, { merge: true });
+      await setDoc(doc(db, 'settings', 'payment_settings'), newSettings, { merge: true });
     } catch (e) {
       console.warn('Firestore payment settings sync failed', e);
     }

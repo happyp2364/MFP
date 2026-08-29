@@ -1,8 +1,17 @@
 {
   "version": 2,
+  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/((?!api/|assets/|.*\\..*).*)",
+      "source": "/product/:id*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/products/:id*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]

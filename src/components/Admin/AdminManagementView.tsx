@@ -73,7 +73,7 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const isSuperAdmin = currentUser?.roleId === 'super_admin' || (currentUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' || (currentUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com';
+  const isSuperAdmin = currentUser?.roleId === 'super_admin' || currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
 
   if (!isSuperAdmin) {
     return (
@@ -127,19 +127,17 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
   };
 
   useEffect(() => {
-    if (isSuperAdmin) {
-      loadData();
-    }
-  }, [isSuperAdmin]);
+    loadData();
+  }, []);
 
   const allRoles = [...BUILTIN_ROLES, ...customRoles];
 
   // Filtered Admins
   const filteredAdmins = admins.filter((admin) => {
     const matchesSearch =
-      (admin.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
-      (admin.email || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
-      (admin.roleName || '').toLowerCase().includes((searchTerm || '').toLowerCase());
+      admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (admin.roleName || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesRole = roleFilter === 'all' || admin.roleId === roleFilter;
     const matchesStatus = statusFilter === 'all' || admin.status === statusFilter;
@@ -149,7 +147,7 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
 
   // Admin Actions Handlers
   const handleCreateAdmin = async (adminData: Partial<AdminUser>, password?: string) => {
-    const currentAdminEmail = currentUser?.email || 'admin@nwd.app';
+    const currentAdminEmail = currentUser?.email || 'admin@marudharfashionpoint.com';
     const uid = `admin-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
     const newAdmin: AdminUser = {
@@ -234,7 +232,7 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
   const handleDeleteAdmin = async (admin: AdminUser) => {
     if (
       !window.confirm(
-        `Are you sure you want to permanently delete admin account "${admin.name || admin.email || 'Admin'}" (${admin.email})?`
+        `Are you sure you want to permanently delete admin account "${admin.name}" (${admin.email})?`
       )
     ) {
       return;
@@ -507,17 +505,17 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
                     filteredAdmins.map((admin) => {
                       const isSuper =
                         admin.roleId === 'super_admin' ||
-                        (admin.email || '').toLowerCase() === 'vpcreation2002@gmail.com';
+                        admin.email.toLowerCase() === 'vpcreation2002@gmail.com';
 
                       return (
                         <tr key={admin.uid} className="hover:bg-neutral-900/50 transition-colors">
                           <td className="p-4">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 font-bold flex items-center justify-center uppercase shrink-0">
-                                {(admin.name || admin.email || 'A').charAt(0).toUpperCase()}
+                                {admin.name.charAt(0) || 'A'}
                               </div>
                               <div>
-                                <span className="font-bold text-white block">{admin.name || admin.email || 'Admin User'}</span>
+                                <span className="font-bold text-white block">{admin.name}</span>
                                 <span className="text-[11px] text-neutral-400 font-mono">{admin.email}</span>
                               </div>
                             </div>

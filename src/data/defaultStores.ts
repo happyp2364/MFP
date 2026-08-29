@@ -3,7 +3,7 @@ import { PhysicalStore } from '../types';
 export const DEFAULT_PHYSICAL_STORES: PhysicalStore[] = [
   {
     id: 'store-jodhpur-flagship',
-    name: 'Flagship Store Jodhpur',
+    name: 'Marudhar Fashion Point — Flagship Store Jodhpur',
     slug: 'jodhpur-flagship',
     rating: 4.9,
     reviewsCount: 482,
@@ -81,7 +81,7 @@ export const DEFAULT_PHYSICAL_STORES: PhysicalStore[] = [
   },
   {
     id: 'store-jaipur-pinkcity',
-    name: 'Pink City Hub Jaipur',
+    name: 'Marudhar Fashion Point — Pink City Hub Jaipur',
     slug: 'jaipur-pinkcity',
     rating: 4.8,
     reviewsCount: 320,
@@ -150,7 +150,7 @@ export const DEFAULT_PHYSICAL_STORES: PhysicalStore[] = [
   },
   {
     id: 'store-udaipur-lakecity',
-    name: 'Lake City Store Udaipur',
+    name: 'Marudhar Fashion Point — Lake City Store Udaipur',
     slug: 'udaipur-lakecity',
     rating: 4.9,
     reviewsCount: 210,
@@ -205,7 +205,7 @@ export const DEFAULT_PHYSICAL_STORES: PhysicalStore[] = [
   },
   {
     id: 'store-ahmedabad-cgroad',
-    name: 'CG Road Mall Store Ahmedabad',
+    name: 'Marudhar Fashion Point — CG Road Mall Store Ahmedabad',
     slug: 'ahmedabad-cgroad',
     rating: 4.8,
     reviewsCount: 390,

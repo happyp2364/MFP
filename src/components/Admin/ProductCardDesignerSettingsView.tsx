@@ -22,7 +22,7 @@ import { ProductCard } from '../Products/ProductCard';
 const SAMPLE_PREVIEW_PRODUCT: Product = {
   id: 'sample-preview-product-1',
   name: 'MBH Royal Velvet Designer Sneakers',
-  brand: 'ROYAL LUXURY',
+  brand: 'MARUDHAR LUXURY',
   price: 2499,
   originalPrice: 4999,
   category: 'men',

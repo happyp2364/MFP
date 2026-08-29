@@ -2,10 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Product, Review } from '../types';
 import { PRODUCTS_DATA, REVIEWS_DATA } from '../data/mockData';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
-import { limit, setDoc, deleteDoc } from 'firebase/firestore';
-import { scopeDoc, getCurrentTenantId } from '../lib/tenantIsolation';
+import { collection, limit, onSnapshot, query, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { scopeDoc, getCurrentTenantId, filterDocsByTenant } from '../lib/tenantIsolation';
 
 interface ProductContextType {
   products: Product[];
@@ -20,112 +18,89 @@ interface ProductContextType {
   voteHelpfulReview: (id: string) => Promise<void>;
 }
 
+const STORAGE_KEYS = {
+  PRODUCTS: 'mfp_products_catalog_live',
+  REVIEWS: 'mfp_reviews_live',
+};
+
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [activeTenant, setActiveTenant] = useState(getCurrentTenantId());
-  const [products, setProducts] = useState<Product[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+      return saved ? JSON.parse(saved) : PRODUCTS_DATA;
+    } catch {
+      return PRODUCTS_DATA;
+    }
+  });
+
+  const [reviews, setReviews] = useState<Review[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.REVIEWS);
+      return saved ? JSON.parse(saved) : REVIEWS_DATA;
+    } catch {
+      return REVIEWS_DATA;
+    }
+  });
 
   useEffect(() => {
-    const handleTenantChange = () => {
-      setActiveTenant(getCurrentTenantId());
-    };
-    window.addEventListener('tenantChanged', handleTenantChange);
-    window.addEventListener('storage', handleTenantChange);
-    return () => {
-      window.removeEventListener('tenantChanged', handleTenantChange);
-      window.removeEventListener('storage', handleTenantChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    const currentId = getCurrentTenantId();
-
-    // Clear state before subscribing to the target tenant's collection
-    setProducts([]);
-    setReviews([]);
-
-    const unsubProducts = onTenantCollectionSnapshot(
-      db,
-      'products',
-      [limit(500)],
-      (snapshot) => {
+    const unsubProducts = onSnapshot(query(collection(db, 'products'), limit(500)), (snapshot) => {
+      if (!snapshot.empty) {
         const loaded: Product[] = [];
         snapshot.forEach((docSnap) => {
-          loaded.push({ id: docSnap.id, ...(docSnap.data() as any) } as Product);
+          loaded.push({ id: docSnap.id, ...docSnap.data() } as Product);
         });
-
-        if (loaded.length === 0 && (currentId === 'nwd_store_001' || currentId === 'tenant-default')) {
-          setProducts(PRODUCTS_DATA);
-        } else {
-          setProducts(loaded);
-        }
-      },
-      (err) => {
-        console.warn('Products listener notice:', err);
+        setProducts(filterDocsByTenant(loaded, getCurrentTenantId()));
       }
-    );
+    }, () => {});
 
-    const unsubReviews = onTenantCollectionSnapshot(
-      db,
-      'reviews',
-      [],
-      (snapshot) => {
+    const unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
+      if (!snapshot.empty) {
         const loaded: Review[] = [];
         snapshot.forEach((docSnap) => {
-          loaded.push({ id: docSnap.id, ...(docSnap.data() as any) } as Review);
+          loaded.push({ id: docSnap.id, ...docSnap.data() } as Review);
         });
-
-        if (loaded.length === 0 && (currentId === 'nwd_store_001' || currentId === 'tenant-default')) {
-          setReviews(REVIEWS_DATA);
-        } else {
-          setReviews(loaded);
-        }
-      },
-      (err) => {
-        console.warn('Reviews listener notice:', err);
+        setReviews(filterDocsByTenant(loaded, getCurrentTenantId()));
       }
-    );
+    }, () => {});
 
     return () => {
       unsubProducts();
       unsubReviews();
     };
-  }, [activeTenant]);
+  }, []);
 
   const addProduct = async (p: Omit<Product, 'id'>) => {
-    const activeId = getCurrentTenantId();
-    const scopedPayload = scopeDoc({ ...p, id: `prod_${Date.now()}` }, activeId);
+    const scopedPayload = scopeDoc({ ...p, id: `prod_${Date.now()}` });
     const newProduct: Product = scopedPayload;
-    
-    // Optimistic UI update
-    setProducts((prev) => [newProduct, ...prev]);
-
+    const updated = [newProduct, ...products];
+    setProducts(updated);
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'products', newProduct.id, activeId), scopedPayload);
+      await setDoc(doc(db, 'products', newProduct.id), scopedPayload);
     } catch (e) {
       console.warn('Firestore add product failed', e);
     }
   };
 
   const updateProduct = async (id: string, p: Partial<Product>) => {
-    const activeId = getCurrentTenantId();
-    setProducts((prev) => prev.map((item) => (item.id === id ? { ...item, ...p } : item)));
-
+    const updated = products.map((item) => (item.id === id ? { ...item, ...p } : item));
+    setProducts(updated);
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'products', id, activeId), p, { merge: true });
+      await setDoc(doc(db, 'products', id), p, { merge: true });
     } catch (e) {
       console.warn('Firestore update product failed', e);
     }
   };
 
   const deleteProduct = async (id: string) => {
-    const activeId = getCurrentTenantId();
-    setProducts((prev) => prev.filter((item) => item.id !== id));
-
+    const updated = products.filter((item) => item.id !== id);
+    setProducts(updated);
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
     try {
-      await deleteDoc(getTenantDocWriteRef(db, 'products', id, activeId));
+      await deleteDoc(doc(db, 'products', id));
     } catch (e) {
       console.warn('Firestore delete product failed', e);
     }
@@ -139,65 +114,46 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const addReview = async (r: Omit<Review, 'id' | 'date'>) => {
-    const activeId = getCurrentTenantId();
-    const scopedPayload = scopeDoc(
-      {
-        ...r,
-        id: `rev_${Date.now()}`,
-        date: new Date().toISOString(),
-        helpfulCount: 0,
-      },
-      activeId
-    );
+    const scopedPayload = scopeDoc({
+      ...r,
+      id: `rev_${Date.now()}`,
+      date: new Date().toISOString(),
+      helpfulCount: 0,
+    });
     const newReview: Review = scopedPayload;
-    setReviews((prev) => [newReview, ...prev]);
-
+    const updated = [newReview, ...reviews];
+    setReviews(updated);
+    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'reviews', newReview.id, activeId), scopedPayload);
+      await setDoc(doc(db, 'reviews', newReview.id), scopedPayload);
     } catch (e) {
       console.warn('Firestore add review failed', e);
     }
   };
 
   const updateReview = async (id: string, r: Partial<Review>) => {
-    const activeId = getCurrentTenantId();
-    setReviews((prev) => prev.map((item) => (item.id === id ? { ...item, ...r } : item)));
-
-    try {
-      await setDoc(getTenantDocWriteRef(db, 'reviews', id, activeId), r, { merge: true });
-    } catch (e) {
-      console.warn('Firestore update review failed', e);
-    }
+    const updated = reviews.map((item) => (item.id === id ? { ...item, ...r } : item));
+    setReviews(updated);
+    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
   };
 
   const deleteReview = async (id: string) => {
-    const activeId = getCurrentTenantId();
-    setReviews((prev) => prev.filter((item) => item.id !== id));
-
+    const updated = reviews.filter((item) => item.id !== id);
+    setReviews(updated);
+    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
     try {
-      await deleteDoc(getTenantDocWriteRef(db, 'reviews', id, activeId));
+      await deleteDoc(doc(db, 'reviews', id));
     } catch (e) {
       console.warn('Firestore delete review failed', e);
     }
   };
 
   const voteHelpfulReview = async (id: string) => {
-    const activeId = getCurrentTenantId();
-    const target = reviews.find((r) => r.id === id);
-    if (target) {
-      const newCount = (target.helpfulCount || 0) + 1;
-      setReviews((prev) => prev.map((rev) => (rev.id === id ? { ...rev, helpfulCount: newCount } : rev)));
-
-      try {
-        await setDoc(
-          getTenantDocWriteRef(db, 'reviews', id, activeId),
-          { helpfulCount: newCount },
-          { merge: true }
-        );
-      } catch (e) {
-        console.warn('Firestore vote review failed', e);
-      }
-    }
+    const updated = reviews.map((rev) =>
+      rev.id === id ? { ...rev, helpfulCount: (rev.helpfulCount || 0) + 1 } : rev
+    );
+    setReviews(updated);
+    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
   };
 
   return (

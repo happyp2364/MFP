@@ -26,7 +26,7 @@ export const FLOATING_SNEAKER_DEFAULT_SECTION: HomepageSection = {
     bgWordColor: '#1c1917',
     
     // Headings & Copy
-    smallHeading: '2026 EDITION • EXCLUSIVE LUXURY',
+    smallHeading: '2026 EDITION • MARUDHAR LUXURY',
     mainHeading: 'AURA GLIDE GLASS SNEAKER',
     description: 'Hand-crafted luxury runner engineered with soft cream flyknit weave, ivory suede overlays, and translucent glassmorphism cushioning.',
     
@@ -144,7 +144,7 @@ export const MBH_SHOE_CAROUSEL_DEFAULT_SECTION: HomepageSection = {
         buyNowLink: '/products',
         viewDetailsText: 'VIEW DETAILS',
         showWishlist: true,
-        productId: 'nwd-m01',
+        productId: 'mfp-m01',
         floatingBadges: [
           { title: 'Ultralight Flyknit', value: '280g' },
           { title: 'Glass Air Cushion', value: 'Cloud Feel' },
@@ -164,7 +164,7 @@ export const MBH_SHOE_CAROUSEL_DEFAULT_SECTION: HomepageSection = {
         buyNowLink: '/products',
         viewDetailsText: 'VIEW DETAILS',
         showWishlist: true,
-        productId: 'nwd-m02',
+        productId: 'mfp-m02',
         floatingBadges: [
           { title: 'Genuine Velvet Leather', value: 'Handmade' },
           { title: 'Memory Foam Sole', value: 'Orthotic' },
@@ -184,7 +184,7 @@ export const MBH_SHOE_CAROUSEL_DEFAULT_SECTION: HomepageSection = {
         buyNowLink: '/products',
         viewDetailsText: 'VIEW DETAILS',
         showWishlist: true,
-        productId: 'nwd-m03',
+        productId: 'mfp-m03',
         floatingBadges: [
           { title: 'High Rebound TPR', value: 'Shock Proof' },
           { title: 'Breathable Upper', value: 'All Day' },
@@ -213,7 +213,7 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
     contentData: {
       messages: [
         '✨ FREE Express Delivery Across India on Orders Above ₹999!',
-        '⚡ Flash Offer: Extra 10% OFF on UPI & Online Payments (Code: EXCLUSIVE10)',
+        '⚡ Flash Offer: Extra 10% OFF on UPI & Online Payments (Code: MARUDHAR10)',
         '📦 Open Box Delivery Available - Inspect Before Payment!',
         '🏬 Visit Us: Railway Station Road, Pipar City, Jodhpur, Rajasthan',
       ],
@@ -470,7 +470,7 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
     },
     contentData: {
       coupons: [
-        { code: 'EXCLUSIVE10', title: '10% Instant UPI Discount', minSpend: '₹499', badge: 'POPULAR' },
+        { code: 'MARUDHAR10', title: '10% Instant UPI Discount', minSpend: '₹499', badge: 'POPULAR' },
         { code: 'WELCOME200', title: '₹200 Flat Off on First Purchase', minSpend: '₹1,200', badge: 'NEW USER' },
         { code: 'ROYAL500', title: '₹500 OFF on Genuine Leather Loafers', minSpend: '₹2,500', badge: 'LEATHER' },
       ],
@@ -479,8 +479,8 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
   {
     id: 'sec_why_choose_us',
     type: 'why_choose_us',
-    title: 'Why Shop With Us?',
-    subtitle: 'Your most trusted footwear destination',
+    title: 'Why Shop at Marudhar Fashion Point?',
+    subtitle: 'Pipar City’s most trusted footwear destination since 1998',
     enabled: true,
     visibleDevices: ['desktop', 'tablet', 'mobile'],
     styling: {
@@ -517,7 +517,7 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
     id: 'sec_instagram_feed',
     type: 'instagram_feed',
     title: 'Follow Us on Instagram',
-    subtitle: '@official_store • Tag #StoreStyle to get featured',
+    subtitle: '@marudhar_fashion_point • Tag #MarudharStyle to get featured',
     enabled: true,
     visibleDevices: ['desktop', 'tablet', 'mobile'],
     styling: {
@@ -571,7 +571,7 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
 
 export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
   id: 'homepage_default',
-  name: 'Premium Floating Sneaker Storefront',
+  name: 'Marudhar Premium Floating Sneaker Storefront',
   presetName: 'Premium Floating Sneaker Glass',
   themeMode: 'glassmorphic',
   sections: DEFAULT_HOMEPAGE_SECTIONS,
@@ -671,14 +671,14 @@ export const HOMEPAGE_PRESETS: HomepagePreset[] = [
     },
   },
   {
-    id: 'preset_royal_heritage',
-    name: '👑 Royal Heritage',
-    description: 'Traditional elegance with gold accents, rich jutti highlights, and high-trust badges.',
+    id: 'preset_marudhar_royal',
+    name: '👑 Marudhar Royal Heritage',
+    description: 'Traditional Rajasthan elegance with gold accents, rich jutti highlights, and high-trust badges.',
     previewColor: '#0F172A',
     badge: 'HERITAGE',
     config: {
-      name: 'Royal Heritage',
-      presetName: 'Royal Heritage',
+      name: 'Marudhar Royal Heritage',
+      presetName: 'Marudhar Royal Heritage',
       themeMode: 'luxury',
       sections: DEFAULT_HOMEPAGE_SECTIONS,
     },

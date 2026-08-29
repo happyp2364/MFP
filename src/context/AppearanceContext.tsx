@@ -18,8 +18,6 @@ import { DEFAULT_HERO_CONTENT, ANNOUNCEMENT_ITEMS, CATEGORY_HIGHLIGHTS, TRENDING
 import { DEFAULT_MOBILE_CATEGORY_ICONS } from '../data/defaultMobileCategories';
 import { DEFAULT_PRODUCT_CARD_CONFIG, DEFAULT_TRENDING_SHOES_CONFIG, DEFAULT_PRICE_POINT_CONFIG } from '../types';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 interface AppearanceContextType {
@@ -73,11 +71,11 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const [pricePointConfig, setPricePointConfig] = useState<PricePointCollectionConfig>(DEFAULT_PRICE_POINT_CONFIG);
 
   useEffect(() => {
-    const unsubHero = onTenantDocSnapshot(db, 'settings', 'hero_content', (snapshot) => {
+    const unsubHero = onSnapshot(doc(db, 'settings', 'hero_content'), (snapshot) => {
       if (snapshot.exists()) setHeroContent(snapshot.data() as HeroContent);
     }, () => {});
 
-    const unsubTopAnnounce = onTenantDocSnapshot(db, 'settings', 'top_announcement_bar', (snapshot) => {
+    const unsubTopAnnounce = onSnapshot(doc(db, 'settings', 'top_announcement_bar'), (snapshot) => {
       if (snapshot.exists()) setTopAnnouncementBarConfig(snapshot.data() as TopAnnouncementBarConfig);
     }, () => {});
 
@@ -90,7 +88,7 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const updateHomepageConfig = async (newConfig: HomepageConfig) => {
     setHomepageConfig(newConfig);
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'homepage_config'), newConfig, { merge: true });
+      await setDoc(doc(db, 'settings', 'homepage_config'), newConfig, { merge: true });
     } catch (e) {
       console.warn('Firestore homepage config sync failed', e);
     }
@@ -102,7 +100,7 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const updateHeroContent = async (content: HeroContent) => {
     setHeroContent(content);
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'hero_content'), content, { merge: true });
+      await setDoc(doc(db, 'settings', 'hero_content'), content, { merge: true });
     } catch (e) {
       console.warn('Firestore hero content sync failed', e);
     }
@@ -129,7 +127,7 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const updateTopAnnouncementBarConfig = async (config: TopAnnouncementBarConfig) => {
     setTopAnnouncementBarConfig(config);
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'top_announcement_bar'), config, { merge: true });
+      await setDoc(doc(db, 'settings', 'top_announcement_bar'), config, { merge: true });
     } catch (e) {
       console.warn('Firestore top announcement bar sync failed', e);
     }

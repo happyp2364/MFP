@@ -2,8 +2,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { PhysicalStore } from '../types';
 import { DEFAULT_PHYSICAL_STORES } from '../data/defaultStores';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 interface StoreLocatorContextType {
@@ -15,7 +13,7 @@ interface StoreLocatorContextType {
 }
 
 const STORAGE_KEYS = {
-  PHYSICAL_STORES: 'nwd_physical_stores_live',
+  PHYSICAL_STORES: 'mfp_physical_stores_live',
 };
 
 const StoreLocatorContext = createContext<StoreLocatorContextType | undefined>(undefined);
@@ -31,7 +29,7 @@ export const StoreLocatorProvider: React.FC<{ children: ReactNode }> = ({ childr
   });
 
   useEffect(() => {
-    const unsub = onTenantDocSnapshot(db, 'settings', 'physical_stores', (snapshot) => {
+    const unsub = onSnapshot(doc(db, 'settings', 'physical_stores'), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data().stores as PhysicalStore[];
         if (Array.isArray(data)) setPhysicalStores(data);
@@ -45,7 +43,7 @@ export const StoreLocatorProvider: React.FC<{ children: ReactNode }> = ({ childr
     setPhysicalStores(stores);
     localStorage.setItem(STORAGE_KEYS.PHYSICAL_STORES, JSON.stringify(stores));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'physical_stores'), { stores }, { merge: true });
+      await setDoc(doc(db, 'settings', 'physical_stores'), { stores }, { merge: true });
     } catch (e) {
       console.warn('Firestore physical stores sync failed', e);
     }

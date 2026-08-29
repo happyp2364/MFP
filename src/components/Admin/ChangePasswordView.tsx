@@ -57,7 +57,7 @@ export const ChangePasswordView: React.FC<ChangePasswordViewProps> = ({
   const hasUppercase = /[A-Z]/.test(newPassword);
   const hasLowercase = /[a-z]/.test(newPassword);
   const hasNumber = /[0-9]/.test(newPassword);
-  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};'':"\\|,.<>\/?]/.test(newPassword);
+  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword);
   const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
 
   // Calculate password strength score (0 to 5)

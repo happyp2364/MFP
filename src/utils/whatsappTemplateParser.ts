@@ -11,7 +11,6 @@ import {
 } from '../data/defaultWhatsAppTemplates';
 import { STORE_INFO } from '../data/mockData';
 import { getProductSKU, getProductUrl } from './productUtils';
-import { getPlatformConfig, getPlatformBaseUrl } from '../lib/platformConfig';
 
 export interface WhatsAppPayloadData {
   customerName?: string;
@@ -48,7 +47,7 @@ export interface WhatsAppPayloadData {
 
 export function getStoredWhatsAppConfig(): WhatsAppTemplatesConfig {
   try {
-    const raw = localStorage.getItem('nwd_whatsapp_templates_config');
+    const raw = localStorage.getItem('mfp_whatsapp_templates_config');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.templates) && parsed.activeCategoryMap) {
@@ -88,7 +87,7 @@ export function getActiveTemplateForCategory(
 
 export function getActiveStorePhone(): string {
   try {
-    const saved = localStorage.getItem('nwd_store_info_live');
+    const saved = localStorage.getItem('mfp_store_info_live');
     if (saved) {
       const parsed = JSON.parse(saved);
       const phone = parsed.whatsappNumber || parsed.phone;
@@ -106,18 +105,17 @@ export function renderWhatsAppMessageText(
   template: WhatsAppTemplate,
   payload: WhatsAppPayloadData
 ): string {
-  const config = getPlatformConfig();
-  const shopName = payload.shopName || STORE_INFO.name || config.platformName;
+  const shopName = payload.shopName || STORE_INFO.name || 'Marudhar Fashion Point';
   const shopPhone = payload.shopPhone || STORE_INFO.phone || '+91 97824 82250';
   const shopWhatsApp = payload.shopWhatsApp || STORE_INFO.whatsappNumber || '+91 97824 82250';
-  const website = payload.website || (typeof window !== 'undefined' ? window.location.origin : config.platformBaseUrl);
+  const website = payload.website || (typeof window !== 'undefined' ? window.location.origin : 'https://marudharfashion.com');
 
   const replacements: Record<string, string> = {
     '{customerName}': payload.customerName || 'Customer',
     '{customerPhone}': payload.customerPhone || 'N/A',
     '{customerEmail}': payload.customerEmail || 'N/A',
     '{productName}': payload.productName || 'Featured Fashion Item',
-    '{productBrand}': payload.productBrand || 'Royal Quality',
+    '{productBrand}': payload.productBrand || 'Marudhar Royal',
     '{productCategory}': payload.productCategory || 'Footwear',
     '{productPrice}': typeof payload.productPrice === 'number' ? `₹${payload.productPrice.toLocaleString('en-IN')}` : (payload.productPrice || 'N/A'),
     '{discountAmount}': typeof payload.discountAmount === 'number' ? `₹${payload.discountAmount.toLocaleString('en-IN')}` : (payload.discountAmount || '₹0'),
@@ -132,7 +130,7 @@ export function renderWhatsAppMessageText(
     '{city}': payload.city || 'Jodhpur',
     '{state}': payload.state || 'Rajasthan',
     '{pincode}': payload.pincode || '342001',
-    '{orderId}': payload.orderId || `NWD-${Date.now().toString().slice(-6)}`,
+    '{orderId}': payload.orderId || `MFP-${Date.now().toString().slice(-6)}`,
     '{date}': payload.date || new Date().toLocaleDateString('en-IN'),
     '{time}': payload.time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
     '{shopName}': shopName,
@@ -160,7 +158,7 @@ export function renderWhatsAppMessageText(
       rendered += `\n\n🎟️ *Applied Coupon:* ${payload.couponCode} (${payload.couponDiscount || 'Discount Applied'})`;
     }
     if (opts.showCustomerAddress && payload.deliveryAddress && !rendered.includes(payload.deliveryAddress)) {
-      rendered += `\n\n📍 *Shipping Address:*\n${payload.deliveryAddress}, ${payload.city || '}, ${payload.state || '} - ${payload.pincode || ''}`;
+      rendered += `\n\n📍 *Shipping Address:*\n${payload.deliveryAddress}, ${payload.city || ''}, ${payload.state || ''} - ${payload.pincode || ''}`;
     }
     if (opts.showPaymentDetails && payload.paymentMethod && !rendered.includes(payload.paymentMethod)) {
       rendered += `\n\n💳 *Payment Details:* ${payload.paymentMethod}`;
@@ -200,7 +198,7 @@ export function buildSamplePayloadForPreview(category: WhatsAppTemplateActionCat
     customerPhone: '+91 98765 43210',
     customerEmail: 'rajesh.sharma@example.com',
     productName: 'Royal Handcrafted Velvet Loafers',
-    productBrand: 'Royal Heritage',
+    productBrand: 'Marudhar Heritage',
     productCategory: 'Men Luxury Footwear',
     productPrice: 2999,
     discountAmount: 500,
@@ -215,14 +213,14 @@ export function buildSamplePayloadForPreview(category: WhatsAppTemplateActionCat
     city: 'Jodhpur',
     state: 'Rajasthan',
     pincode: '342001',
-    orderId: 'NWD-892410',
+    orderId: 'MFP-892410',
     date: new Date().toLocaleDateString('en-IN'),
     time: '03:30 PM',
-    shopName: 'Footwear Store',
+    shopName: 'Marudhar Fashion Point',
     shopPhone: '+91 97824 82250',
     shopWhatsApp: '+91 97824 82250',
-    website: typeof window !== 'undefined' ? window.location.origin : getPlatformBaseUrl(),
-    productURL: `${getPlatformBaseUrl()}/#product-velvet-loafers`,
+    website: typeof window !== 'undefined' ? window.location.origin : 'https://marudharfashion.com',
+    productURL: 'https://marudharfashion.com/#product-velvet-loafers',
     productImageLink: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80',
     deliveryNotes: 'Please deliver after 2 PM',
   };

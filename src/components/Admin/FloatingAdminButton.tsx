@@ -14,8 +14,6 @@ import {
   Sliders,
   LogOut,
   ChevronRight,
-  Loader2,
-  ChevronUp,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
@@ -24,16 +22,24 @@ interface FloatingAdminButtonProps {
   onOpenAdminWithTab: (tab: string) => void;
 }
 
+interface Ripple {
+  x: number;
+  y: number;
+  id: number;
+}
+
 export const FloatingAdminButton: React.FC<FloatingAdminButtonProps> = ({
   onOpenAdmin,
   onOpenAdminWithTab,
 }) => {
-  const { isAdmin, isAdminAuthLoading, logoutAdmin } = useStore();
+  const { isAdmin, logoutAdmin } = useStore();
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const [isBusy, setIsBusy] = useState(false);
+  const [ripples, setRipples] = useState<Ripple[]>([]);
   
   const lastScrollY = useRef(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressActive = useRef(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Auto Hide on Scroll Down, Reappear on Scroll Up
@@ -41,9 +47,11 @@ export const FloatingAdminButton: React.FC<FloatingAdminButtonProps> = ({
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       if (currentScrollY > lastScrollY.current && currentScrollY > 120) {
+        // Scrolling down
         setIsVisible(false);
-        setShowQuickMenu(false);
+        setShowQuickMenu(false); // Auto close menu if scrolling down
       } else {
+        // Scrolling up
         setIsVisible(true);
       }
       lastScrollY.current = currentScrollY;
@@ -69,25 +77,46 @@ export const FloatingAdminButton: React.FC<FloatingAdminButtonProps> = ({
     };
   }, [showQuickMenu]);
 
-  // Check if URL suggests admin intent
-  const isUrlAdmin = typeof window !== 'undefined' && (
-    window.location.search.includes('admin=true') ||
-    window.location.pathname.includes('/admin')
-  );
+  // If user is not logged in as Admin, do not render the FAB
+  if (!isAdmin) return null;
 
-  // If user is not admin AND auth is not loading AND URL doesn't request admin, return null
-  if (!isAdmin && !isAdminAuthLoading && !isUrlAdmin) return null;
+  // Handle Ripple Effect
+  const handleCreateRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const id = Date.now();
+    setRipples((prev) => [...prev, { x, y, id }]);
+  };
 
-  const handlePrimaryClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isBusy) return;
+  // Long Press Handlers
+  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
+    isLongPressActive.current = false;
+    timerRef.current = setTimeout(() => {
+      isLongPressActive.current = true;
+      setShowQuickMenu(true);
+      // Optional: trigger device vibration for haptic feedback
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+    }, 500); // 500ms threshold for long press
+  };
 
-    setIsBusy(true);
-    try {
+  const handleTouchEnd = (e: React.TouchEvent<HTMLButtonElement> | React.MouseEvent<HTMLButtonElement>) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    if (!isLongPressActive.current) {
+      // It's a single tap!
+      handleCreateRipple(e as React.MouseEvent<HTMLButtonElement>);
       onOpenAdmin();
-    } finally {
-      setTimeout(() => setIsBusy(false), 300);
+    }
+  };
+
+  const handleTouchMove = () => {
+    // If they drag, cancel the long press
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
     }
   };
 
@@ -105,6 +134,7 @@ export const FloatingAdminButton: React.FC<FloatingAdminButtonProps> = ({
 
   return (
     <div className="fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end">
+      
       {/* Quick Admin Menu Panel */}
       <AnimatePresence>
         {showQuickMenu && (
@@ -115,7 +145,6 @@ export const FloatingAdminButton: React.FC<FloatingAdminButtonProps> = ({
             exit={{ opacity: 0, scale: 0.85, y: 15 }}
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
             className="mb-3 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border border-neutral-200/80 dark:border-neutral-800/85 rounded-2xl shadow-2xl overflow-hidden w-64 max-h-[80vh] overflow-y-auto z-50 pointer-events-auto"
-            onClick={(e) => e.stopPropagation()}
           >
             {/* Quick Menu Header */}
             <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/30">
@@ -128,10 +157,7 @@ export const FloatingAdminButton: React.FC<FloatingAdminButtonProps> = ({
               {menuItems.map((item, idx) => (
                 <button
                   key={idx}
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                  onClick={() => {
                     onOpenAdminWithTab(item.tab);
                     setShowQuickMenu(false);
                   }}
@@ -151,10 +177,7 @@ export const FloatingAdminButton: React.FC<FloatingAdminButtonProps> = ({
 
               {/* Logout Option */}
               <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
+                onClick={() => {
                   logoutAdmin();
                   setShowQuickMenu(false);
                 }}
@@ -176,47 +199,54 @@ export const FloatingAdminButton: React.FC<FloatingAdminButtonProps> = ({
       {/* Floating Action Button (FAB) */}
       <AnimatePresence>
         {isVisible && (
-          <div className="flex items-center gap-1 bg-amber-500/95 dark:bg-amber-600/95 backdrop-blur-md border border-amber-400/30 shadow-2xl rounded-full p-1 transition-all duration-300">
-            <motion.button
-              type="button"
-              initial={{ opacity: 0, scale: 0.6 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.6 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handlePrimaryClick}
-              disabled={isBusy}
-              className="flex items-center gap-2 px-3.5 py-2 text-neutral-900 dark:text-white select-none cursor-pointer group font-black text-xs uppercase tracking-wider"
-              title="Open Admin Dashboard"
-            >
-              <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
-                {isAdminAuthLoading ? (
-                  <Loader2 className="w-4 h-4 text-neutral-900 dark:text-white animate-spin" />
-                ) : (
-                  <>
-                    <ShieldAlert className="w-5 h-5 text-neutral-900 dark:text-white group-hover:rotate-12 transition-transform duration-300" />
-                    <Settings className="w-2.5 h-2.5 text-neutral-900 dark:text-white absolute -bottom-0.5 -right-0.5 animate-[spin_8s_linear_infinite]" />
-                  </>
-                )}
-              </div>
-              <span>Admin</span>
-            </motion.button>
-
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowQuickMenu(!showQuickMenu);
+          <motion.button
+            initial={{ opacity: 0, scale: 0.6, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.6, y: 20 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onMouseDown={handleTouchStart}
+            onMouseUp={handleTouchEnd}
+            onMouseLeave={handleTouchMove}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchMove}
+            className="flex items-center gap-2.5 px-4.5 py-3 rounded-full bg-amber-500/95 dark:bg-amber-600/95 backdrop-blur-md border border-amber-400/30 shadow-2xl hover:bg-amber-500 dark:hover:bg-amber-600 text-neutral-900 dark:text-white transition-all duration-300 relative overflow-hidden select-none cursor-pointer group"
+            title="Admin Dashboard (Hold for Quick Menu)"
+            style={{ touchAction: 'none' }}
+          >
+            {/* Dynamic CSS Ripple Elements */}
+            {ripples.map((ripple) => (
+              <motion.span
+                key={ripple.id}
+                initial={{ scale: 0, opacity: 0.6 }}
+                animate={{ scale: 15, opacity: 0 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                onAnimationComplete={() => {
+                  setRipples((prev) => prev.filter((r) => r.id !== ripple.id));
                 }}
-                className="p-1.5 hover:bg-black/10 rounded-full text-neutral-900 dark:text-white transition-colors"
-                title="Quick Menu"
-              >
-                <ChevronUp className={`w-4 h-4 transition-transform duration-200 ${showQuickMenu ? 'rotate-180' : ''}`} />
-              </button>
-            )}
-          </div>
+                className="absolute bg-white/40 rounded-full pointer-events-none"
+                style={{
+                  left: ripple.x,
+                  top: ripple.y,
+                  width: 16,
+                  height: 16,
+                  transform: 'translate(-50%, -50%)',
+                }}
+              />
+            ))}
+
+            {/* Premium Icon Concept: Shield with a rotating gear inside */}
+            <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
+              <ShieldAlert className="w-5 h-5 text-neutral-900 dark:text-white group-hover:rotate-12 transition-transform duration-300" />
+              <Settings className="w-2.5 h-2.5 text-neutral-900 dark:text-white absolute -bottom-0.5 -right-0.5 animate-[spin_8s_linear_infinite]" />
+            </div>
+
+            {/* Admin Label */}
+            <span className="text-xs font-black uppercase tracking-widest text-neutral-900 dark:text-white">
+              Admin
+            </span>
+          </motion.button>
         )}
       </AnimatePresence>
     </div>

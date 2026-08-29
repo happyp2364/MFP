@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { getPlatformConfig } from '../../lib/platformConfig';
 import {
   Crown,
   ShieldCheck,
@@ -58,18 +57,13 @@ import {
   saveAdminUser,
   fetchTenants,
   saveTenant,
-  deleteTenant,
 } from '../../lib/adminService';
 import { sendAdminPasswordResetEmail, recordAuditLog } from '../../lib/firebase';
 import { SuperAdminSecurityVerificationModal } from './SuperAdminSecurityVerificationModal';
 import { CreateAdminModal } from './CreateAdminModal';
 import { ProvisionWebsiteModal } from './ProvisionWebsiteModal';
-import { FeatureReleaseManagerView } from './FeatureReleaseManagerView';
-import { PlatformConfigManagerView } from './PlatformConfigManagerView';
 import { WebsiteDirectoryManager } from './WebsiteDirectoryManager';
 import { TenantSecurityVerificationView } from './TenantSecurityVerificationView';
-import { TenantFeatureThemeControlView } from './TenantFeatureThemeControlView';
-import { TenantFeatureManager } from './TenantFeatureManager';
 
 interface SuperAdminConsoleViewProps {
   currentUser: AdminUser | null;
@@ -82,14 +76,14 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   auditLogs = [],
   onRefreshAuditLogs,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'tenants' | 'tenant_control' | 'tenant_feature_manager' | 'platform_config' | 'feature_releases' | 'security' | 'audit_log' | 'verification'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'admins' | 'tenants' | 'security' | 'audit_log' | 'verification'>('overview');
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const isSuperAdmin = currentUser?.roleId === 'super_admin' || (currentUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' || (currentUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com';
+  const isSuperAdmin = currentUser?.roleId === 'super_admin' || currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
 
   if (!isSuperAdmin) {
     return (
@@ -162,8 +156,8 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   // Filtered Admins
   const filteredAdmins = admins.filter((admin) => {
     const matchesSearch =
-      (admin.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
-      (admin.email || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (admin.phoneNumber || '').includes(searchTerm);
 
     const matchesStatus = statusFilter === 'all' || admin.status === statusFilter;
@@ -228,7 +222,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
     const nextStatus = admin.status === 'active' ? 'disabled' : 'active';
     triggerSuperAdminVerification(
       `${nextStatus === 'disabled' ? 'Suspend' : 'Reactivate'} Admin Account`,
-      `Authorizing status change for website owner "${admin.name || admin.email || 'Admin'}".`,
+      `Authorizing status change for website owner "${admin.name}".`,
       `${admin.email} -> ${nextStatus.toUpperCase()}`,
       async () => {
         const res = await toggleAdminStatus(
@@ -249,7 +243,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   const handleForceLogoutAdmin = (admin: AdminUser) => {
     triggerSuperAdminVerification(
       'Force Logout Session',
-      `Terminating active login session for website owner "${admin.name || admin.email || 'Admin'}".`,
+      `Terminating active login session for website owner "${admin.name}".`,
       `User: ${admin.email}`,
       async () => {
         const res = await forceLogoutAdminUser(
@@ -269,7 +263,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   const handleResetAdminPassword = (admin: AdminUser) => {
     triggerSuperAdminVerification(
       'Reset Admin Password',
-      `Sending official password reset email to website owner "${admin.name || admin.email || 'Admin'}".`,
+      `Sending official password reset email to website owner "${admin.name}".`,
       `Email: ${admin.email}`,
       async () => {
         const res = await sendAdminPasswordResetEmail(admin.email);
@@ -285,7 +279,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
   const handleDeleteAdminPermanently = (admin: AdminUser) => {
     triggerSuperAdminVerification(
       'PERMANENTLY DELETE ADMIN ACCOUNT',
-      `WARNING: This will permanently purge admin account "${admin.name || admin.email || 'Admin'}" (${admin.email}). This cannot be undone.`,
+      `WARNING: This will permanently purge admin account "${admin.name}" (${admin.email}). This cannot be undone.`,
       `UID: ${admin.uid}`,
       async () => {
         const res = await deleteAdminUser(
@@ -540,54 +534,6 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('tenant_control')}
-          className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
-            activeTab === 'tenant_control'
-              ? 'border-amber-500 text-amber-400 font-extrabold'
-              : 'border-transparent text-neutral-400 hover:text-white'
-          }`}
-        >
-          <Sliders className="w-4 h-4 text-amber-400" />
-          <span>Tenant Feature & Theme Control</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('tenant_feature_manager')}
-          className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
-            activeTab === 'tenant_feature_manager'
-              ? 'border-amber-500 text-amber-400 font-extrabold'
-              : 'border-transparent text-neutral-400 hover:text-white'
-          }`}
-        >
-          <Sliders className="w-4 h-4 text-sky-400" />
-          <span>Tenant Feature Manager</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('platform_config')}
-          className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
-            activeTab === 'platform_config'
-              ? 'border-amber-500 text-amber-400 font-extrabold'
-              : 'border-transparent text-neutral-400 hover:text-white'
-          }`}
-        >
-          <Sliders className="w-4 h-4 text-emerald-400" />
-          <span>Platform Configuration</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('feature_releases')}
-          className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
-            activeTab === 'feature_releases'
-              ? 'border-amber-500 text-amber-400 font-extrabold'
-              : 'border-transparent text-neutral-400 hover:text-white'
-          }`}
-        >
-          <Sliders className="w-4 h-4 text-amber-400" />
-          <span>Feature Releases & Governance</span>
-        </button>
-
-        <button
           onClick={() => setActiveTab('security')}
           className={`px-5 py-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${
             activeTab === 'security'
@@ -630,33 +576,6 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
       {activeTab === 'verification' && (
         <div className="animate-in fade-in duration-300">
           <TenantSecurityVerificationView />
-        </div>
-      )}
-
-      {/* ========================================== */}
-      {/* TENANT FEATURE & THEME CONTROL             */}
-      {/* ========================================== */}
-      {activeTab === 'tenant_control' && (
-        <div className="animate-in fade-in duration-300">
-          <TenantFeatureThemeControlView
-            tenants={tenants}
-            admins={admins}
-            currentUser={currentUser}
-            onRefresh={loadData}
-          />
-        </div>
-      )}
-
-      {/* ========================================== */}
-      {/* TENANT FEATURE MANAGER                     */}
-      {/* ========================================== */}
-      {activeTab === 'tenant_feature_manager' && (
-        <div className="animate-in fade-in duration-300">
-          <TenantFeatureManager
-            tenants={tenants}
-            currentUser={currentUser}
-            onRefresh={loadData}
-          />
         </div>
       )}
 
@@ -1000,7 +919,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
                 <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden text-xs">
                   <div className="flex justify-between items-center p-3 border-b border-neutral-800">
                     <span className="text-neutral-500 font-bold">Platform Name</span>
-                    <span className="text-white font-bold">{getPlatformConfig().platformName}</span>
+                    <span className="text-white font-bold">Marudhar Fashion Enterprise</span>
                   </div>
                   <div className="flex justify-between items-center p-3 border-b border-neutral-800">
                     <span className="text-neutral-500 font-bold">Platform Version</span>
@@ -1016,7 +935,7 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
                   </div>
                   <div className="flex justify-between items-center p-3">
                     <span className="text-neutral-500 font-bold">Firebase Project</span>
-                    <span className="text-neutral-300 font-mono">nwd-studio-platform</span>
+                    <span className="text-neutral-300 font-mono">ai-studio-marudharfashionp</span>
                   </div>
                 </div>
               </div>
@@ -1093,17 +1012,17 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
                     filteredAdmins.map((admin) => {
                       const isPrimarySuper =
                         admin.roleId === 'super_admin' ||
-                        (admin.email || '').toLowerCase() === 'vpcreation2002@gmail.com';
+                        admin.email.toLowerCase() === 'vpcreation2002@gmail.com';
 
                       return (
                         <tr key={admin.uid} className="hover:bg-neutral-900/50 transition-colors">
                           <td className="p-4">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 font-bold flex items-center justify-center uppercase shrink-0">
-                                {isPrimarySuper ? '👑' : (admin.name || admin.email || 'A').charAt(0).toUpperCase()}
+                                {isPrimarySuper ? '👑' : admin.name.charAt(0) || 'A'}
                               </div>
                               <div>
-                                <span className="font-bold text-white block">{admin.name || admin.email || 'Admin User'}</span>
+                                <span className="font-bold text-white block">{admin.name}</span>
                                 <span className="text-[11px] text-neutral-400 font-mono">{admin.email}</span>
                                 {admin.phoneNumber && (
                                   <span className="text-[10px] text-neutral-500 block">{admin.phoneNumber}</span>
@@ -1239,39 +1158,8 @@ export const SuperAdminConsoleView: React.FC<SuperAdminConsoleViewProps> = ({
             await saveTenant(t);
             await loadData();
           }}
-          onDeleteTenant={async (tenantId) => {
-            const res = await deleteTenant(tenantId);
-            if (res.success) {
-              showToast('success', res.message);
-              await loadData();
-            } else {
-              showToast('error', res.message);
-            }
-          }}
           showToast={showToast}
           triggerSuperAdminVerification={triggerSuperAdminVerification}
-        />
-      )}
-
-      {/* ========================================== */}
-      {/* SECTION 3.5: PLATFORM CONFIGURATION        */}
-      {/* ========================================== */}
-      {activeTab === 'platform_config' && (
-        <PlatformConfigManagerView
-          showToast={showToast}
-          isSuperAdmin={isSuperAdmin}
-        />
-      )}
-
-      {/* ========================================== */}
-      {/* SECTION 4: FEATURE RELEASES & GOVERNANCE    */}
-      {/* ========================================== */}
-      {activeTab === 'feature_releases' && (
-        <FeatureReleaseManagerView
-          tenants={tenants}
-          onUpdateTenants={loadData}
-          showToast={showToast}
-          isSuperAdmin={isSuperAdmin}
         />
       )}
 

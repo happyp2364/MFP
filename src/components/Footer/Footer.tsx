@@ -43,8 +43,8 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
 
   // Get active and ordered footer platforms
   const footerPlatforms = (socialMediaConfig?.platforms || [])
-    .filter((p: any) => p.enabled && p.showFooter)
-    .sort((a: any, b: any) => a.displayOrder - b.displayOrder);
+    .filter(p => p.enabled && p.showFooter)
+    .sort((a, b) => a.displayOrder - b.displayOrder);
 
   return (
     <footer className="bg-[#121816] text-white pt-16 pb-12 relative overflow-hidden">
@@ -58,7 +58,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
           <div className="space-y-2 text-center lg:text-left max-w-xl">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0B8F63]/20 text-[#0B8F63] text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
-              Join Store Family Club
+              Join Marudhar Family Club
             </div>
             <h3 className="font-serif-heading text-2xl sm:text-3xl font-bold">
               Get Exclusive Special Offers & New Arrival Alerts
@@ -73,7 +73,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
               type="email"
               required
               value={newsletterEmail}
-              onChange={(e: any) => setNewsletterEmail(e.target.value)}
+              onChange={(e) => setNewsletterEmail(e.target.value)}
               placeholder="Enter your email or WhatsApp number"
               className="bg-neutral-900 border border-white/10 rounded-2xl px-4 py-3 text-xs text-white placeholder-neutral-500 outline-none focus:border-[#0B8F63] flex-1"
             />
@@ -112,7 +112,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
               {footerPlatforms.length > 0 ? (
-                footerPlatforms.map((plat: any) => {
+                footerPlatforms.map((plat) => {
                   const getHoverStyle = (effect: string) => {
                     switch (effect) {
                       case 'glow': return 'hover:shadow-[0_0_15px_rgba(255,255,255,0.5)]';

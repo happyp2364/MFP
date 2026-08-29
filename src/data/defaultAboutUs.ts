@@ -1,16 +1,16 @@
 import { AboutUsConfig } from '../types';
 
 export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
-  businessName: "Official Store",
-  establishmentYear: "2015",
-  experienceYears: "10+",
-  tagline: "Pioneering Quality Footwear & Family Fashion Heritage",
-  shopDescription: "A premier destination for high-performance athletic shoes, handcrafted leather mojaris, and designer family footwear. Built on trust, personal service, and uncompromised quality.",
-  businessStory: "Originated with a singular mission: to bring authentic, high-grade footwear to families at fair prices. From a modest shopfront in the main market, our dedication to cushion comfort, durable stitching, and honest customer care transformed us into a multi-category showroom serving thousands of households.",
-  familyBusinessInfo: "As a proud enterprise, every customer is welcomed like family. Our leadership team personally evaluates every consignment—testing sole density, leather flexibility, and arch support—before it reaches our retail display.",
-  mission: "To deliver style, ergonomic cushion comfort, and long-lasting footwear to every member of the family with warm personal care and transparent pricing.",
-  vision: "To set the golden standard for family footwear retail, blending traditional craftsmanship with modern footwear technology and digital convenience.",
-  journey: "Evolved into a top-rated footwear landmark. Through WhatsApp direct ordering and online cataloging, we now ship authentic quality nationwide.",
+  businessName: "Marudhar Fashion Point",
+  establishmentYear: "2010",
+  experienceYears: "16+",
+  tagline: "Pioneering Quality Footwear & Family Fashion Heritage Since 2010",
+  shopDescription: "Marudhar Fashion Point is Pipar City's premier destination for high-performance athletic shoes, handcrafted royal Rajasthani mojaris, and designer family footwear. Built on trust, personal service, and uncompromised quality.",
+  businessStory: "Founded in 2010 by Viju Bhai in Pipar City, Marudhar Fashion Point originated with a singular mission: to bring authentic, high-grade footwear to families across Rajasthan at fair prices. From a modest shopfront in the main market, our dedication to orthopedic cushion comfort, durable stitching, and honest customer care transformed us into a multi-category showroom serving over 50,000 households.",
+  familyBusinessInfo: "As a proud multi-generational family enterprise, every customer is welcomed like family. Viju Bhai and our leadership team personally evaluate every consignment—testing sole density, leather flexibility, and arch support—before it reaches our retail display.",
+  mission: "To deliver royal style, ergonomic cushion comfort, and long-lasting footwear to every member of the family with warm personal care and transparent pricing.",
+  vision: "To set the golden standard for family footwear retail in Western Rajasthan, blending traditional Rajasthani craftsmanship with modern footwear technology and digital convenience.",
+  journey: "What began as a 100 sq. ft. footwear counter in 2010 has evolved into Pipar City's top-rated footwear landmark. Through WhatsApp direct ordering and online cataloging, we now ship authentic Marudhar quality nationwide.",
   storeHighlights: [
     "100% Quality & Fit Guarantee on Every Pair",
     "Handcrafted Royal Leather Juttis & Mojaris",
@@ -26,17 +26,17 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       fullName: "Viju Bhai Choudhary",
       position: "Founder & Managing Director",
       roleType: "owner",
-      shortIntro: "Founder and visionary driving our customer-first culture, personal sizing guarantee, and royal quality standards.",
+      shortIntro: "Founder and visionary driving Marudhar Fashion Point's customer-first culture, personal sizing guarantee, and royal quality standards.",
       experience: "18+ Years Retail Expertise",
       specialization: "Royal Wedding Mojaris & Customer Relationships",
       profilePhoto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80",
       contactNumber: "+91 98290 12345",
-      email: "vijubhai@officialstore.com",
+      email: "vijubhai@marudharfashion.com",
       signature: "Viju Bhai",
       socialLinks: {
-        instagram: "https://instagram.com/official_store",
-        facebook: "https://facebook.com/official_store",
-        youtube: "https://youtube.com/@official_store",
+        instagram: "https://instagram.com/marudhar_fashion_point",
+        facebook: "https://facebook.com/marudharfashionpoint",
+        youtube: "https://youtube.com/@marudharfashionpoint",
         whatsapp: "919829012345"
       },
       enabled: true,
@@ -53,10 +53,10 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       specialization: "Athletic Shoe Tech & Inventory Logistics",
       profilePhoto: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80",
       contactNumber: "+91 98290 54321",
-      email: "rajesh@officialstore.com",
+      email: "rajesh@marudharfashion.com",
       socialLinks: {
         whatsapp: "919829054321",
-        instagram: "https://instagram.com/official_store"
+        instagram: "https://instagram.com/marudhar_fashion_point"
       },
       enabled: true,
       featured: true,
@@ -72,7 +72,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       specialization: "Bridal Collections & Kids Sizing Ergonomics",
       profilePhoto: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80",
       socialLinks: {
-        instagram: "https://instagram.com/official_store"
+        instagram: "https://instagram.com/marudhar_fashion_point"
       },
       enabled: true,
       featured: false,
@@ -163,7 +163,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       id: "ach_2",
       type: "certificate",
       title: "50,000+ Verified Customers Benchmark",
-      issuerOrPublisher: "Local Business Association",
+      issuerOrPublisher: "Marudhar Business Association",
       year: "2024",
       description: "Recognized for serving 50,000+ satisfied families across Jodhpur and Pali districts.",
       imageUrl: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80",
@@ -260,7 +260,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       id: "gal_1",
       category: "shop_outside",
       title: "Main Store Front",
-      caption: "Exterior showroom in Pipar City Main Market.",
+      caption: "Marudhar Fashion Point exterior showroom in Pipar City Main Market.",
       imageUrl: "https://images.unsplash.com/photo-1533867617858-e7b97e060509?auto=format&fit=crop&w=800&q=80",
       enabled: true,
       displayOrder: 1
@@ -312,10 +312,10 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
     }
   ],
   socialLinks: {
-    instagram: "https://instagram.com/official_store",
-    facebook: "https://facebook.com/official_store",
-    youtube: "https://youtube.com/@official_store",
+    instagram: "https://instagram.com/marudhar_fashion_point",
+    facebook: "https://facebook.com/marudharfashionpoint",
+    youtube: "https://youtube.com/@marudharfashionpoint",
     whatsapp: "919829012345",
-    website: "https://nwd-phi.vercel.app"
+    website: "https://marudharfashionpoint.com"
   }
 };

@@ -81,10 +81,10 @@ export const PricePointSettingsView: React.FC = () => {
   };
 
   const filteredProductsForPicker = products.filter(
-    (p: any) =>
-      (p.name || '').toLowerCase().includes((productSearch || '').toLowerCase()) ||
-      (p.brand || '').toLowerCase().includes((productSearch || '').toLowerCase()) ||
-      (p.category || '').toLowerCase().includes((productSearch || '').toLowerCase())
+    (p) =>
+      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      p.brand.toLowerCase().includes(productSearch.toLowerCase()) ||
+      p.category.toLowerCase().includes(productSearch.toLowerCase())
   );
 
   return (
@@ -367,7 +367,7 @@ export const PricePointSettingsView: React.FC = () => {
                   </span>
                   <div className="space-y-1.5">
                     {form.selectedProductIds.map((id, index) => {
-                      const p = products.find((prod: any) => prod.id === id);
+                      const p = products.find((prod) => prod.id === id);
                       if (!p) return null;
                       return (
                         <div
@@ -420,7 +420,7 @@ export const PricePointSettingsView: React.FC = () => {
 
               {/* Product Grid Picker */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-80 overflow-y-auto p-1 border border-neutral-200 rounded-2xl">
-                {filteredProductsForPicker.map((prod: any) => {
+                {filteredProductsForPicker.map((prod) => {
                   const isSelected = form.selectedProductIds?.includes(prod.id);
                   return (
                     <div

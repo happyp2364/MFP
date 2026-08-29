@@ -1,6 +1,6 @@
 {
-  "name": "NWD Platform",
-  "description": "White-label enterprise fashion and footwear e-commerce platform with multi-tenant website generation, WhatsApp ordering, and catalog management.",
+  "name": "Marudhar Fashion Point",
+  "description": "Premium Fashion & Footwear website for Marudhar Fashion Point with WhatsApp ordering, rich catalog, and modern luxury design.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

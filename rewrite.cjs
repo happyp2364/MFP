@@ -339,7 +339,7 @@ const replacement = `{activeTab === 'overview' && (
                 <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden text-xs">
                   <div className="flex justify-between items-center p-3 border-b border-neutral-800">
                     <span className="text-neutral-500 font-bold">Platform Name</span>
-                    <span className="text-white font-bold">NWD Enterprise</span>
+                    <span className="text-white font-bold">Marudhar Fashion Enterprise</span>
                   </div>
                   <div className="flex justify-between items-center p-3 border-b border-neutral-800">
                     <span className="text-neutral-500 font-bold">Platform Version</span>

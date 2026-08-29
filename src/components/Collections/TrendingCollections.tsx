@@ -33,7 +33,7 @@ export const TrendingCollections: React.FC<TrendingCollectionsProps> = ({
 
         {/* Collections Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {trendingCollections.map((col: any) => (
+          {trendingCollections.map((col) => (
             <div
               key={col.id}
               onClick={() => onSelectCollection(col.id)}

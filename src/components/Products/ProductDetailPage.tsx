@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { getPlatformConfig } from '../../lib/platformConfig';
 import {
   ArrowLeft,
   Heart,
@@ -94,7 +93,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
         // Find sizes for this color and set the first in-stock or available size
         const sizesForFirstColor = product.variants.filter(
-          v => (v.color || '').toLowerCase() === (firstColor || '').toLowerCase() && v.status === 'active'
+          v => v.color.toLowerCase() === firstColor.toLowerCase() && v.status === 'active'
         );
         const inStockSizes = sizesForFirstColor.filter(v => v.stock > 0);
         if (inStockSizes.length > 0) {
@@ -115,10 +114,10 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   useEffect(() => {
     if (product && product.variants && product.variants.length > 0 && selectedColor) {
       const sizesForColor = product.variants.filter(
-        v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.status === 'active'
+        v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.status === 'active'
       );
       // If selectedSize is not available in new color, pick one
-      const exists = sizesForColor.some(v => String(v.size) === String(selectedSize));
+      const exists = sizesForColor.some(v => v.size === selectedSize);
       if (!exists && sizesForColor.length > 0) {
         const inStock = sizesForColor.filter(v => v.stock > 0);
         setSelectedSize(inStock.length > 0 ? inStock[0].size : sizesForColor[0].size);
@@ -129,7 +128,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   // Find current active variant
   const activeVariant = product?.variants?.find(
     (v) =>
-      (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() &&
+      v.color.toLowerCase() === selectedColor.toLowerCase() &&
       v.size.toString() === selectedSize.toString()
   );
 
@@ -143,7 +142,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     ? Array.from(
         new Set(
           product.variants
-            .filter((v) => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase())
+            .filter((v) => v.color.toLowerCase() === selectedColor.toLowerCase())
             .flatMap((v) => v.images || [])
         )
       ).filter(Boolean) as string[]
@@ -198,7 +197,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-12 animate-in fade-in duration-300">
         <SEOHead 
-          title={`Product Not Found | ${getPlatformConfig().platformDisplayName}`} 
+          title="Product Not Found - Marudhar Fashion Point" 
           description="The product you are looking for could not be found."
         />
         {/* Back Navigation */}
@@ -287,7 +286,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     ? Array.from(
         new Map(
           product.variants.map((v) => [
-            (v.color || '').toLowerCase(),
+            v.color.toLowerCase(),
             { name: v.color, hex: v.colorCode || '#FFFFFF' }
           ])
         ).values()
@@ -296,7 +295,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   const sizeStocks = product.variants && product.variants.length > 0
     ? product.variants
-        .filter((v) => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.status === 'active')
+        .filter((v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.status === 'active')
         .map((v) => ({
           size: v.size,
           inStock: v.stock > 0,
@@ -310,7 +309,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     : isProductCompletelyOutOfStock(product);
 
   const selectedSizeInfo = product.variants && product.variants.length > 0
-    ? sizeStocks.find(s => String(s.size) === String(selectedSize))
+    ? sizeStocks.find(s => s.size === selectedSize)
     : getSizeStockInfo(product, selectedSize);
 
   const isSelectedSizeOutOfStock = selectedSizeInfo
@@ -370,8 +369,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 animate-in fade-in duration-300">
       <SEOHead 
-        title={`${product.name} | ${getPlatformConfig().platformDisplayName}`}
-        description={product.description || `Buy ${product.name} at ${getPlatformConfig().platformDisplayName}. Best price ₹${product.price}. Genuine quality & fast delivery.`}
+        title={`${product.name} | Marudhar Fashion Point`}
+        description={product.description || `Buy ${product.name} at Marudhar Fashion Point. Best price ₹${product.price}. Genuine quality & fast delivery.`}
         image={product.images?.[0]}
         url={getProductUrl(product)}
         type="product"
@@ -410,7 +409,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           {/* Main Display Image */}
           {(() => {
             const activeVarWithImages = product?.variants?.find(
-              (v) => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.images && v.images.length > 0
+              (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
             );
             const imageLabels = (activeVarWithImages as any)?.imageLabels || {};
             const activeLabel = imageLabels[rawImageSrc] || '';
@@ -428,7 +427,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       <ImageOff className="w-8 h-8" />
                     </div>
                     <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Product Image Coming Soon</span>
-                    <span className="text-[10px] font-medium text-neutral-400">Official Product Showcase</span>
+                    <span className="text-[10px] font-medium text-neutral-400">Marudhar Fashion Point</span>
                   </div>
                 ) : (
                   <img
@@ -482,7 +481,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
               {displayImages.map((img, idx) => {
                 const activeVarWithImages = product?.variants?.find(
-                  (v) => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.images && v.images.length > 0
+                  (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
                 );
                 const imageLabels = (activeVarWithImages as any)?.imageLabels || {};
                 const currentLabel = imageLabels[img] || '';
@@ -595,11 +594,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200/80 space-y-1">
             <div className="flex items-baseline gap-3">
               <span className="font-serif-heading font-extrabold text-3xl sm:text-4xl text-neutral-900">
-                ₹{(displayPrice || 0).toLocaleString('en-IN')}
+                ₹{displayPrice.toLocaleString('en-IN')}
               </span>
               {displayOriginalPrice > displayPrice && (
                 <span className="text-lg text-neutral-400 line-through">
-                  ₹{(displayOriginalPrice || 0).toLocaleString('en-IN')}
+                  ₹{displayOriginalPrice.toLocaleString('en-IN')}
                 </span>
               )}
               {displayDiscountPercent > 0 && (
@@ -740,7 +739,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <span className="text-[10px] text-neutral-300">
                     {displayPrice >= (paymentSettings.freeShippingMinAmount || 999)
                       ? 'Eligible for Free Standard Delivery'
-                      : `Add ₹${((paymentSettings.freeShippingMinAmount || 999) - (displayPrice || 0)).toLocaleString()} for Free Delivery`}
+                      : `Add ₹${((paymentSettings.freeShippingMinAmount || 999) - displayPrice).toLocaleString()} for Free Delivery`}
                   </span>
                 </div>
               </div>

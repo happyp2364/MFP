@@ -2,8 +2,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { PromoCoupon, MarketingCampaign, MarketingSubscriber } from '../types';
 import { db, saveMarketingConsentInFirestore } from '../lib/firebase';
 import { collection, limit, onSnapshot, orderBy, query, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { onTenantCollectionSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 
 interface MarketingContextType {
   coupons: PromoCoupon[];
@@ -31,26 +29,26 @@ export const MarketingProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [subscribers, setSubscribers] = useState<MarketingSubscriber[]>([]);
 
   useEffect(() => {
-    const unsubCoupons = onTenantCollectionSnapshot(db, 'coupons', [], (snapshot) => {
+    const unsubCoupons = onSnapshot(collection(db, 'coupons'), (snapshot) => {
       const loaded: PromoCoupon[] = [];
       snapshot.forEach((docSnap) => {
-        loaded.push({ id: docSnap.id, ...(docSnap.data() as any) } as PromoCoupon);
+        loaded.push({ id: docSnap.id, ...docSnap.data() } as PromoCoupon);
       });
       setCoupons(loaded);
     }, () => {});
 
-    const unsubSubscribers = onTenantCollectionSnapshot(db, 'marketingSubscribers', [limit(200)], (snapshot) => {
+    const unsubSubscribers = onSnapshot(query(collection(db, 'marketingSubscribers'), limit(200)), (snapshot) => {
       const loaded: MarketingSubscriber[] = [];
       snapshot.forEach((docSnap) => {
-        loaded.push({ id: docSnap.id, ...(docSnap.data() as any) } as MarketingSubscriber);
+        loaded.push({ id: docSnap.id, ...docSnap.data() } as MarketingSubscriber);
       });
       setSubscribers(loaded);
     }, () => {});
 
-    const unsubCampaigns = onTenantCollectionSnapshot(db, 'marketingCampaigns', [orderBy('createdAt', 'desc'), limit(100)], (snapshot) => {
+    const unsubCampaigns = onSnapshot(query(collection(db, 'marketingCampaigns'), orderBy('createdAt', 'desc'), limit(100)), (snapshot) => {
       const loaded: MarketingCampaign[] = [];
       snapshot.forEach((docSnap) => {
-        loaded.push({ id: docSnap.id, ...(docSnap.data() as any) } as MarketingCampaign);
+        loaded.push({ id: docSnap.id, ...docSnap.data() } as MarketingCampaign);
       });
       setCampaigns(loaded);
     }, () => {});
@@ -66,7 +64,7 @@ export const MarketingProvider: React.FC<{ children: ReactNode }> = ({ children 
     const newCoupon: PromoCoupon = { ...c, id: `c_${Date.now()}`, usageCount: 0 };
     setCoupons((prev) => [newCoupon, ...prev]);
     try {
-      await setDoc(getTenantDocWriteRef(db, 'coupons', newCoupon.id), newCoupon);
+      await setDoc(doc(db, 'coupons', newCoupon.id), newCoupon);
     } catch (e) {
       console.warn('Firestore add coupon failed', e);
     }
@@ -75,7 +73,7 @@ export const MarketingProvider: React.FC<{ children: ReactNode }> = ({ children 
   const updateCoupon = async (id: string, c: Partial<PromoCoupon>) => {
     setCoupons((prev) => prev.map((item) => (item.id === id ? { ...item, ...c } : item)));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'coupons', id), c, { merge: true });
+      await setDoc(doc(db, 'coupons', id), c, { merge: true });
     } catch (e) {
       console.warn('Firestore update coupon failed', e);
     }
@@ -84,7 +82,7 @@ export const MarketingProvider: React.FC<{ children: ReactNode }> = ({ children 
   const deleteCoupon = async (id: string) => {
     setCoupons((prev) => prev.filter((item) => item.id !== id));
     try {
-      await deleteDoc(getTenantDocWriteRef(db, 'coupons', id));
+      await deleteDoc(doc(db, 'coupons', id));
     } catch (e) {
       console.warn('Firestore delete coupon failed', e);
     }
@@ -138,7 +136,7 @@ export const MarketingProvider: React.FC<{ children: ReactNode }> = ({ children 
   const saveCampaign = async (c: MarketingCampaign) => {
     setCampaigns((prev) => [c, ...prev.filter((p) => p.id !== c.id)]);
     try {
-      await setDoc(getTenantDocWriteRef(db, 'marketingCampaigns', c.id), c);
+      await setDoc(doc(db, 'marketingCampaigns', c.id), c);
     } catch (e) {
       console.warn('Firestore campaign save failed', e);
     }
@@ -147,7 +145,7 @@ export const MarketingProvider: React.FC<{ children: ReactNode }> = ({ children 
   const deleteCampaign = async (id: string) => {
     setCampaigns((prev) => prev.filter((c) => c.id !== id));
     try {
-      await deleteDoc(getTenantDocWriteRef(db, 'marketingCampaigns', id));
+      await deleteDoc(doc(db, 'marketingCampaigns', id));
     } catch (e) {
       console.warn('Firestore campaign delete failed', e);
     }
@@ -166,7 +164,7 @@ export const MarketingProvider: React.FC<{ children: ReactNode }> = ({ children 
       const updated = { ...target, preferences: consent };
       setSubscribers((prev) => prev.map((s) => (s.id === id ? updated : s)));
       try {
-        await setDoc(getTenantDocWriteRef(db, 'marketingSubscribers', id), updated);
+        await setDoc(doc(db, 'marketingSubscribers', id), updated);
       } catch (e) {
         console.warn('Firestore subscriber sync failed', e);
       }

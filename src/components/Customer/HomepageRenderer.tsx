@@ -38,7 +38,7 @@ export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
   onSelectProduct,
   onNavigateCategory,
 }) => {
-  const { homepageConfig, products, reviews, categoryHighlights, storeInfo } = useStore();
+  const { homepageConfig, products, reviews, categoryHighlights } = useStore();
   const config = previewConfig || homepageConfig;
 
   if (!config || !Array.isArray(config.sections) || config.sections.length === 0) {
@@ -46,11 +46,11 @@ export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
   }
 
   // Filter only enabled sections
-  const activeSections = config.sections.filter((s: any) => s.enabled);
+  const activeSections = config.sections.filter((s) => s.enabled);
 
   return (
     <div className="w-full space-y-8 pb-12">
-      {activeSections.map((section: any, idx: any) => (
+      {activeSections.map((section, idx) => (
         <SectionItem
           key={`${section.id}-${idx}`}
           section={section}
@@ -88,7 +88,7 @@ function getCategoryCoverImage(catItem: any, products: Product[]): string {
   const catFilter = (catItem.categoryFilter || catItem.title || catItem.name || '').toLowerCase();
   const subFilter = (catItem.subcategoryFilter || '').toLowerCase();
 
-  const matchingProducts = products.filter((p: any) => {
+  const matchingProducts = products.filter((p) => {
     const pCat = (p.category || '').toLowerCase();
     const pSub = (p.subcategory || '').toLowerCase();
     const pName = (p.name || '').toLowerCase();
@@ -101,12 +101,12 @@ function getCategoryCoverImage(catItem: any, products: Product[]): string {
   // 2. Highest selling product
   if (matchingProducts.length > 0) {
     const sorted = [...matchingProducts].sort(
-      (a: any, b: any) => (b.reviewsCount || 0) - (a.reviewsCount || 0)
+      (a, b) => (b.reviewsCount || 0) - (a.reviewsCount || 0)
     );
     if (sorted[0]?.images?.[0]) return sorted[0].images[0];
 
     // 3. Featured product
-    const featured = matchingProducts.find((p: any) => p.isBestSeller || p.isFeatured || p.isTrending);
+    const featured = matchingProducts.find((p) => p.isBestSeller || p.isFeatured || p.isTrending);
     if (featured?.images?.[0]) return featured.images[0];
 
     if (matchingProducts[0]?.images?.[0]) return matchingProducts[0].images[0];
@@ -114,11 +114,11 @@ function getCategoryCoverImage(catItem: any, products: Product[]): string {
 
   // Check overall store products matching footwear category/gender
   if (catFilter.includes('women')) {
-    const wShoe = products.find((p: any) => p.category === 'women' && p.images?.length);
+    const wShoe = products.find((p) => p.category === 'women' && p.images?.length);
     if (wShoe?.images[0]) return wShoe.images[0];
   }
   if (catFilter.includes('kid')) {
-    const kShoe = products.find((p: any) => p.category === 'kids' && p.images?.length);
+    const kShoe = products.find((p) => p.category === 'kids' && p.images?.length);
     if (kShoe?.images[0]) return kShoe.images[0];
   }
 
@@ -232,7 +232,7 @@ const SectionItem: React.FC<SectionItemProps> = ({
       const filteredCat = data.category;
       let items = products;
       if (filteredCat && filteredCat !== 'ALL') {
-        items = items.filter((p: any) => (p.category || '').toLowerCase() === (filteredCat || '').toLowerCase());
+        items = items.filter((p) => p.category?.toLowerCase() === filteredCat.toLowerCase());
       }
       const displayProducts = items.slice(0, limit);
 
@@ -257,11 +257,11 @@ const SectionItem: React.FC<SectionItemProps> = ({
 
             {/* Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
-              {displayProducts.map((prod: any) => (
+              {displayProducts.map((prod) => (
                 <ProductCard
                   key={prod.id}
                   product={prod}
-                  onQuickView={(p: any) => onSelectProduct && onSelectProduct(p)}
+                  onQuickView={(p) => onSelectProduct && onSelectProduct(p)}
                   onToggleWishlist={() => {}}
                   isWishlisted={false}
                 />
@@ -294,11 +294,11 @@ const SectionItem: React.FC<SectionItemProps> = ({
 
             {/* Flash Sale Products */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {displayProducts.map((prod: any) => (
+              {displayProducts.map((prod) => (
                 <ProductCard
                   key={prod.id}
                   product={prod}
-                  onQuickView={(p: any) => onSelectProduct && onSelectProduct(p)}
+                  onQuickView={(p) => onSelectProduct && onSelectProduct(p)}
                   onToggleWishlist={() => {}}
                   isWishlisted={false}
                 />
@@ -454,7 +454,7 @@ const SectionItem: React.FC<SectionItemProps> = ({
               {displayReviews.map((rev: any, idx: number) => (
                 <div key={rev.id || idx} className="p-5 bg-white rounded-2xl border border-neutral-200 shadow-xs space-y-3">
                   <div className="flex items-center gap-1 text-amber-400">
-                    {[...Array(5)].map((_: any, i: any) => (
+                    {[...Array(5)].map((_, i) => (
                       <Star key={i} className="w-4 h-4 fill-amber-400" />
                     ))}
                   </div>
@@ -526,7 +526,7 @@ const HeroCarousel: React.FC<{ slides: any[] }> = ({ slides }) => {
   useEffect(() => {
     if (slides.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrent((prev: any) => (prev + 1) % slides.length);
+      setCurrent((prev) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(interval);
   }, [slides.length]);
@@ -558,7 +558,7 @@ const HeroCarousel: React.FC<{ slides: any[] }> = ({ slides }) => {
 
       {slides.length > 1 && (
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
-          {slides.map((_: any, i: any) => (
+          {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
@@ -619,7 +619,7 @@ const FaqAccordion: React.FC<{ faqs: any[]; title?: string; subtitle?: string }>
       </div>
 
       <div className="space-y-3">
-        {faqs.map((faq: any, idx: any) => {
+        {faqs.map((faq, idx) => {
           const isOpen = openIdx === idx;
           return (
             <div key={idx} className="border border-neutral-200 rounded-2xl overflow-hidden bg-white shadow-xs">
@@ -647,7 +647,6 @@ const FloatingSneakerHeroSection: React.FC<{
   section: HomepageSection;
   onNavigateCategory?: (cat: string) => void;
 }> = ({ section, onNavigateCategory }) => {
-  const { storeInfo } = useStore();
   const data = section.contentData || {};
   const styling = section.styling || {};
 
@@ -669,7 +668,7 @@ const FloatingSneakerHeroSection: React.FC<{
   }, [mainImage]);
 
   const bgWord = (data.backgroundWord || 'SPORT').toUpperCase();
-  const smallHeading = data.smallHeading || `2026 EDITION • ${(storeInfo?.name || 'PREMIUM').toUpperCase()} LUXURY`;
+  const smallHeading = data.smallHeading || '2026 EDITION • MARUDHAR LUXURY';
   const mainHeading = data.mainHeading || 'AIR GLIDE PRO RUNNER';
   const description =
     data.description ||
@@ -715,11 +714,11 @@ const FloatingSneakerHeroSection: React.FC<{
       {/* Top Glassmorphic Navigation Bar */}
       <div className="relative z-20 px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-black/5 bg-white/30 backdrop-blur-md">
         <div className="flex items-center gap-2">
-          <span className="w-8 h-8 rounded-full bg-neutral-900 text-white font-black text-xs flex items-center justify-center shadow-md animate-pulse">
-            {(storeInfo?.name || 'P')[0].toUpperCase()}
+          <span className="w-8 h-8 rounded-full bg-neutral-900 text-white font-black text-xs flex items-center justify-center shadow-md">
+            M
           </span>
           <span className="text-xs font-black tracking-widest text-neutral-900 uppercase">
-            {storeInfo?.name ? `${storeInfo.name.toUpperCase()} LUXURY` : 'PREMIUM LUXURY SNEAKERS'}
+            MARUDHAR LUXURY SNEAKERS
           </span>
         </div>
 
@@ -901,9 +900,9 @@ const MBHShoeCarouselHeroSection: React.FC<{
   onSelectProduct?: (p: Product) => void;
   onNavigateCategory?: (cat: string) => void;
 }> = ({ section, products = [], onSelectProduct, onNavigateCategory }) => {
-  const { storeInfo, showToast } = useStore();
   const data = section.contentData || {};
   const styling = section.styling || {};
+  const { showToast } = useStore();
 
   const slides = Array.isArray(data.slides) && data.slides.length > 0
     ? data.slides
@@ -946,17 +945,17 @@ const MBHShoeCarouselHeroSection: React.FC<{
   useEffect(() => {
     if (!autoPlay || isHovered || slides.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentIndex((prev: any) => (prev + 1) % slides.length);
+      setCurrentIndex((prev) => (prev + 1) % slides.length);
     }, autoPlayInterval);
     return () => clearInterval(timer);
   }, [autoPlay, autoPlayInterval, isHovered, slides.length]);
 
   const handlePrev = () => {
-    setCurrentIndex((prev: any) => (prev === 0 ? slides.length - 1 : prev - 1));
+    setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev: any) => (prev + 1) % slides.length);
+    setCurrentIndex((prev) => (prev + 1) % slides.length);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -982,7 +981,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
 
   const handleToggleWishlist = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsWishlisted((prev: any) => {
+    setIsWishlisted((prev) => {
       const next = !prev[idx];
       showToast(
         next ? `Added "${activeSlide.productName}" to Wishlist` : `Removed from Wishlist`,
@@ -994,9 +993,9 @@ const MBHShoeCarouselHeroSection: React.FC<{
 
   const handleBuyNow = () => {
     const linked = products.find(
-      (p: any) =>
+      (p) =>
         p.id === activeSlide.productId ||
-        (p.name || '').toLowerCase() === (activeSlide.productName || '').toLowerCase()
+        p.name.toLowerCase() === activeSlide.productName.toLowerCase()
     );
     if (linked && onSelectProduct) {
       onSelectProduct(linked);
@@ -1007,9 +1006,9 @@ const MBHShoeCarouselHeroSection: React.FC<{
 
   const handleViewDetails = () => {
     const linked = products.find(
-      (p: any) =>
+      (p) =>
         p.id === activeSlide.productId ||
-        (p.name || '').toLowerCase() === (activeSlide.productName || '').toLowerCase()
+        p.name.toLowerCase() === activeSlide.productName.toLowerCase()
     );
     if (linked && onSelectProduct) {
       onSelectProduct(linked);
@@ -1079,11 +1078,11 @@ const MBHShoeCarouselHeroSection: React.FC<{
         } backdrop-blur-md`}
       >
         <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-xl bg-amber-500 text-black font-black text-xs flex items-center justify-center shadow-md animate-pulse">
-            {(storeInfo?.name || 'S')[0].toUpperCase()}
+          <span className="w-8 h-8 rounded-xl bg-amber-500 text-black font-black text-xs flex items-center justify-center shadow-md">
+            MBH
           </span>
           <span className="text-xs font-black tracking-widest uppercase">
-            {storeInfo?.name ? storeInfo.name.toUpperCase() : 'PREMIUM FOOTWEAR'}
+            MARUDHAR FASHION POINT
           </span>
         </div>
 
@@ -1158,7 +1157,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
 
             {activeSlide.showWishlist !== false && (
               <button
-                onClick={(e: any) => handleToggleWishlist(currentIndex, e)}
+                onClick={(e) => handleToggleWishlist(currentIndex, e)}
                 className={`p-3.5 rounded-2xl border transition-all ${
                   isWishlisted[currentIndex]
                     ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-105'

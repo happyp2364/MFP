@@ -36,7 +36,6 @@ import {
   Product,
 } from '../../types';
 import { sendBrowserWebPushNotification } from '../../utils/pushNotifications';
-import { getPlatformBaseUrl } from '../../lib/platformConfig';
 
 const EMAIL_CATEGORIES: { id: CampaignCategory; label: string }[] = [
   { id: 'DAILY_OFFERS', label: 'Daily Offers' },
@@ -64,8 +63,8 @@ const WHATSAPP_TEMPLATES = [
     category: 'FESTIVAL_OFFERS',
     language: 'en_US',
     status: 'APPROVED',
-    body: 'Namaste {{1}}! Our store brings you the {{2}} Festival Offer! Get up to {{3}} off on top footwear. Shop now: {{4}}',
-    exampleParams: ['Rahul', 'Diwali Special', '40%', 'https://nwd-phi.vercel.app'],
+    body: 'Namaste {{1}}! Marudhar Fashion Point brings you the {{2}} Festival Offer! Get up to {{3}} off on top footwear. Shop now: {{4}}',
+    exampleParams: ['Rahul', 'Diwali Special', '40%', 'https://marudharfashionpoint.com'],
   },
   {
     id: 'wa_tpl_flash_02',
@@ -74,7 +73,7 @@ const WHATSAPP_TEMPLATES = [
     language: 'en_US',
     status: 'APPROVED',
     body: 'Exclusive Alert for {{1}}! ⚡ Flash Sale on handcrafted leather & sports shoes. Use code {{2}} at checkout: {{3}}. Reply STOP to unsubscribe.',
-    exampleParams: ['Priya', 'FLASH20', 'https://nwd-phi.vercel.app'],
+    exampleParams: ['Priya', 'FLASH20', 'https://marudharfashionpoint.com'],
   },
   {
     id: 'wa_tpl_stock_03',
@@ -82,8 +81,8 @@ const WHATSAPP_TEMPLATES = [
     category: 'BACK_IN_STOCK',
     language: 'en_US',
     status: 'APPROVED',
-    body: 'Hi {{1}}, your favorite product {{2}} is back in stock at our store! Grab it before it runs out: {{3}}',
-    exampleParams: ['Ankit', 'One8 Burgundy Sneaker', 'https://nwd-phi.vercel.app'],
+    body: 'Hi {{1}}, your favorite product {{2}} is back in stock at Marudhar Fashion Point! Grab it before it runs out: {{3}}',
+    exampleParams: ['Ankit', 'One8 Burgundy Sneaker', 'https://marudharfashionpoint.com'],
   },
 ];
 
@@ -119,44 +118,44 @@ export const MarketingCenterView: React.FC = () => {
   const [pushMessage, setPushMessage] = useState('');
   const [htmlBody, setHtmlBody] = useState('');
   const [selectedWaTemplate, setSelectedWaTemplate] = useState(WHATSAPP_TEMPLATES[0].id);
-  const [targetLink, setTargetLink] = useState(storeInfo?.contactDetails?.websiteUrl || getPlatformBaseUrl());
+  const [targetLink, setTargetLink] = useState('https://marudharfashionpoint.com');
   const [sendOption, setSendOption] = useState<'IMMEDIATE' | 'SCHEDULED'>('IMMEDIATE');
   const [scheduledDateTime, setScheduledDateTime] = useState('');
 
   // Stats
   const totalSubscribers = subscribers.length;
-  const emailSubscribers = subscribers.filter((s: any) => s.preferences.email).length;
-  const pushSubscribers = subscribers.filter((s: any) => s.preferences.push).length;
-  const whatsAppSubscribers = subscribers.filter((s: any) => s.preferences.whatsApp).length;
+  const emailSubscribers = subscribers.filter((s) => s.preferences.email).length;
+  const pushSubscribers = subscribers.filter((s) => s.preferences.push).length;
+  const whatsAppSubscribers = subscribers.filter((s) => s.preferences.whatsApp).length;
 
-  const sentCampaigns = campaigns.filter((c: any) => c.status === 'SENT');
+  const sentCampaigns = campaigns.filter((c) => c.status === 'SENT');
   const avgOpenRate =
     sentCampaigns.length > 0
       ? Math.round(
-          sentCampaigns.reduce((acc: any, c: any) => acc + (c.deliveredCount > 0 ? (c.openCount / c.deliveredCount) * 100 : 0), 0) /
+          sentCampaigns.reduce((acc, c) => acc + (c.deliveredCount > 0 ? (c.openCount / c.deliveredCount) * 100 : 0), 0) /
             sentCampaigns.length
         )
       : 84;
   const avgClickRate =
     sentCampaigns.length > 0
       ? Math.round(
-          sentCampaigns.reduce((acc: any, c: any) => acc + (c.deliveredCount > 0 ? (c.clickCount / c.deliveredCount) * 100 : 0), 0) /
+          sentCampaigns.reduce((acc, c) => acc + (c.deliveredCount > 0 ? (c.clickCount / c.deliveredCount) * 100 : 0), 0) /
             sentCampaigns.length
         )
       : 42;
 
   // Filtered Campaigns
-  const filteredCampaigns = campaigns.filter((c: any) => {
-    const matchesSearch = (c.title || '').toLowerCase().includes((searchTerm || '').toLowerCase());
+  const filteredCampaigns = campaigns.filter((c) => {
+    const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesChannel = channelFilter === 'ALL' || c.channel === channelFilter;
     const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter;
     return matchesSearch && matchesChannel && matchesStatus;
   });
 
   // Filtered Subscribers
-  const filteredSubscribers = subscribers.filter((s: any) => {
-    const term = (searchTerm || '').toLowerCase();
-    const matchesSearch = (s.name || '').toLowerCase().includes(term) || (s.email || '').toLowerCase().includes(term) || (s.phoneNumber || '').includes(term);
+  const filteredSubscribers = subscribers.filter((s) => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = s.name.toLowerCase().includes(term) || s.email.toLowerCase().includes(term) || (s.phoneNumber || '').includes(term);
     const matchesChannel =
       channelFilter === 'ALL' ||
       (channelFilter === 'EMAIL' && s.preferences.email) ||
@@ -170,7 +169,7 @@ export const MarketingCenterView: React.FC = () => {
     setSelectedProduct(p);
     setEmailSubject(`Exclusive Offer: ${p.name} - Limited Stock Drop!`);
     setPushMessage(`🔥 ${p.name} is now available at ₹${p.price.toLocaleString('en-IN')}! Tap to view details.`);
-    setTargetLink(`${storeInfo?.contactDetails?.websiteUrl || getPlatformBaseUrl()}?product=${p.id}`);
+    setTargetLink(`https://marudharfashionpoint.com?product=${p.id}`);
     setHtmlBody(`
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #faf8f5; border: 1px solid #e5dccb; border-radius: 16px; padding: 24px;">
         <div style="text-align: center; padding-bottom: 16px; border-bottom: 2px solid #78350f;">
@@ -194,7 +193,7 @@ export const MarketingCenterView: React.FC = () => {
             ${p.description || 'Crafted with premium materials for unmatched comfort, durability, and contemporary style.'}
           </p>
 
-          <a href="${storeInfo?.contactDetails?.websiteUrl || getPlatformBaseUrl()}?product=${p.id}" style="display: inline-block; background: #78350f; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 32px; border-radius: 8px; font-size: 15px;">
+          <a href="https://marudharfashionpoint.com?product=${p.id}" style="display: inline-block; background: #78350f; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 32px; border-radius: 8px; font-size: 15px;">
             Shop Exclusive Drop Now
           </a>
         </div>
@@ -260,7 +259,7 @@ export const MarketingCenterView: React.FC = () => {
     setPushMessage('');
     setHtmlBody('');
     setSelectedProduct(null);
-    setTargetLink(storeInfo?.contactDetails?.websiteUrl || getPlatformBaseUrl());
+    setTargetLink('https://marudharfashionpoint.com');
     setSendOption('IMMEDIATE');
     setScheduledDateTime('');
   };
@@ -274,7 +273,7 @@ export const MarketingCenterView: React.FC = () => {
 
   const handleExportCSV = () => {
     const headers = ['ID', 'Name', 'Email', 'Phone Number', 'Email OptIn', 'Push OptIn', 'WhatsApp OptIn', 'Subscribed At'];
-    const rows = subscribers.map((s: any) => [
+    const rows = subscribers.map((s) => [
       s.id,
       `"${s.name.replace(/"/g, '""')}"`,
       s.email,
@@ -285,12 +284,12 @@ export const MarketingCenterView: React.FC = () => {
       s.subscribedAt,
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((r: any) => r.join(','))].join('\n');
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `nwd_marketing_subscribers_${Date.now()}.csv`);
+    link.setAttribute('download', `marudhar_marketing_subscribers_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -363,7 +362,7 @@ export const MarketingCenterView: React.FC = () => {
             </div>
             <div className="text-2xl font-bold text-white">{sentCampaigns.length}</div>
             <div className="text-[11px] text-amber-200/60 mt-1">
-              {campaigns.filter((c: any) => c.status === 'SCHEDULED').length} Scheduled
+              {campaigns.filter((c) => c.status === 'SCHEDULED').length} Scheduled
             </div>
           </div>
 
@@ -475,7 +474,7 @@ export const MarketingCenterView: React.FC = () => {
             </div>
           ) : (
             <div className="divide-y divide-neutral-100">
-              {filteredCampaigns.map((campaign: any) => (
+              {filteredCampaigns.map((campaign) => (
                 <div key={campaign.id} className="p-5 hover:bg-amber-50/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-1 max-w-xl">
                     <div className="flex items-center space-x-2">
@@ -606,7 +605,7 @@ export const MarketingCenterView: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredSubscribers.map((sub: any) => (
+                  filteredSubscribers.map((sub) => (
                     <tr key={sub.id} className="hover:bg-neutral-50/50">
                       <td className="px-5 py-3 font-bold text-neutral-900">{sub.name}</td>
                       <td className="px-5 py-3 space-y-0.5">
@@ -706,7 +705,7 @@ export const MarketingCenterView: React.FC = () => {
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   <span>Opt-In Policy Compliance: Active</span>
                 </div>
-                <div className="text-[11px] text-emerald-200/60">WABA Account ID: 84582-NWD-WABA</div>
+                <div className="text-[11px] text-emerald-200/60">WABA Account ID: 84582-MFP-WABA</div>
               </div>
             </div>
           </div>
@@ -837,13 +836,13 @@ export const MarketingCenterView: React.FC = () => {
                 </label>
                 <select
                   onChange={(e) => {
-                    const found = products.find((p: any) => p.id === e.target.value);
+                    const found = products.find((p) => p.id === e.target.value);
                     if (found) handleSelectProduct(found);
                   }}
                   className="w-full px-3.5 py-2 text-xs border border-neutral-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 >
                   <option value="">-- Choose a product to feature (Optional) --</option>
-                  {products.map((p: any) => (
+                  {products.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} (₹{p.price.toLocaleString('en-IN')})
                     </option>

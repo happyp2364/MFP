@@ -8,8 +8,6 @@ import {
 } from '../types';
 import { STORE_INFO } from '../data/mockData';
 import { db } from '../lib/firebase';
-import { onTenantCollectionSnapshot, onTenantDocSnapshot } from '../lib/onSnapshotMultiTenant';
-import { getTenantCollectionWriteRef, getTenantDocWriteRef } from '../lib/firestoreMultiTenant';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 import { DEFAULT_HERO_CONTENT } from '../data/mockData';
@@ -28,7 +26,7 @@ interface PlatformContextType {
 const PlatformContext = createContext<PlatformContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  STORE_INFO: 'nwd_store_info_live',
+  STORE_INFO: 'mfp_store_info_live',
 };
 
 export const PlatformProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -44,7 +42,7 @@ export const PlatformProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [publishedVersions, setPublishedVersions] = useState<PublishedVersionHistory[]>([]);
 
   useEffect(() => {
-    const unsubStoreInfo = onTenantDocSnapshot(db, 'settings', 'store_info', (snapshot) => {
+    const unsubStoreInfo = onSnapshot(doc(db, 'settings', 'store_info'), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as StoreInfo;
         setPublishedStoreInfo(data);
@@ -60,7 +58,7 @@ export const PlatformProvider: React.FC<{ children: ReactNode }> = ({ children }
     setPublishedStoreInfo(info);
     localStorage.setItem(STORAGE_KEYS.STORE_INFO, JSON.stringify(info));
     try {
-      await setDoc(getTenantDocWriteRef(db, 'settings', 'store_info'), info, { merge: true });
+      await setDoc(doc(db, 'settings', 'store_info'), info, { merge: true });
     } catch (e) {
       console.warn('Firestore store info sync failed', e);
     }

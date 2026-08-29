@@ -148,7 +148,7 @@ export const TemplateMarketplaceView: React.FC<TemplateMarketplaceViewProps> = (
       downloadAnchor.setAttribute('href', dataStr);
       downloadAnchor.setAttribute(
         'download',
-        `homepage_template_${(preset.name || '').toLowerCase().replace(/\s+/g, '_')}.json`
+        `homepage_template_${preset.name.toLowerCase().replace(/\s+/g, '_')}.json`
       );
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
@@ -215,13 +215,13 @@ export const TemplateMarketplaceView: React.FC<TemplateMarketplaceViewProps> = (
 
     // Filter by Search
     if (searchQuery.trim()) {
-      const q = (searchQuery || '').toLowerCase();
+      const q = searchQuery.toLowerCase();
       result = result.filter(
         (p) =>
-          (p.name || '').toLowerCase().includes(q) ||
-          (p.description || '').toLowerCase().includes(q) ||
-          (p.badge || '').toLowerCase().includes(q) ||
-          p.tags?.some((t) => (t || '').toLowerCase().includes(q))
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.badge.toLowerCase().includes(q) ||
+          p.tags?.some((t) => t.toLowerCase().includes(q))
       );
     }
 

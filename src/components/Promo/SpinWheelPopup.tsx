@@ -21,7 +21,7 @@ export const SpinWheelPopup: React.FC<SpinWheelPopupProps> = ({ currentPath }) =
   useEffect(() => {
     if (!spinWheelConfig?.enabled) return;
 
-    const lastSpun = localStorage.getItem('nwd_wheel_last_spun');
+    const lastSpun = localStorage.getItem('mfp_wheel_last_spun');
     if (lastSpun) {
       const daysSince = (Date.now() - parseInt(lastSpun)) / (1000 * 60 * 60 * 24);
       if (daysSince < (spinWheelConfig.canSpinAgainDays || 7)) return;
@@ -42,7 +42,7 @@ export const SpinWheelPopup: React.FC<SpinWheelPopupProps> = ({ currentPath }) =
 
     // Select winner
     const sections = spinWheelConfig.sections;
-    const totalProb = sections.reduce((sum: any, s: any) => sum + s.probability, 0);
+    const totalProb = sections.reduce((sum, s) => sum + s.probability, 0);
     let rand = Math.random() * totalProb;
     
     let winnerIdx = 0;
@@ -65,9 +65,9 @@ export const SpinWheelPopup: React.FC<SpinWheelPopupProps> = ({ currentPath }) =
       setResult(winner);
       setIsSpinning(false);
       setHasSpun(true);
-      localStorage.setItem('nwd_wheel_last_spun', Date.now().toString());
+      localStorage.setItem('mfp_wheel_last_spun', Date.now().toString());
       if (winner.couponCode) {
-        localStorage.setItem('nwd_active_coupon', winner.couponCode);
+        localStorage.setItem('mfp_active_coupon', winner.couponCode);
         recordEngagementMetric('couponsWon');
       }
       if (spinWheelConfig.celebrationEnabled) {
@@ -106,13 +106,13 @@ export const SpinWheelPopup: React.FC<SpinWheelPopupProps> = ({ currentPath }) =
               transition={{ duration: 5, ease: [0.15, 0, 0.15, 1] }}
               className="w-full h-full rounded-full border-[12px] border-neutral-800 shadow-2xl relative overflow-hidden flex items-center justify-center"
               style={{
-                background: `conic-gradient(${spinWheelConfig.sections.map((s: any, i: any) => {
+                background: `conic-gradient(${spinWheelConfig.sections.map((s, i) => {
                   const angle = 360 / spinWheelConfig.sections.length;
                   return `${s.color} ${i * angle}deg ${(i + 1) * angle}deg`;
                 }).join(', ')})`,
               }}
             >
-              {spinWheelConfig.sections.map((s: any, i: any) => {
+              {spinWheelConfig.sections.map((s, i) => {
                 const angle = (360 / spinWheelConfig.sections.length);
                 const rotation = i * angle;
                 return (

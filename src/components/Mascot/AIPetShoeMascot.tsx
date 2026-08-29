@@ -467,7 +467,7 @@ export const AIPetShoeMascot: React.FC = () => {
     // Trigger Speech Bubble
     if (petShoeConfig?.enableSpeechBubbles !== false) {
       const msgs = petShoeConfig?.speechMessages || [
-        'Welcome to our store! 👟✨',
+        'Welcome to Marudhar Fashion Point! 👟✨',
         'Step into pure luxury & comfort! 👞',
         'Handcrafted Leather & Sports Drops! 🔥',
         'Need help? Tap to explore our top picks! 😊',
@@ -614,7 +614,7 @@ export const AIPetShoeMascot: React.FC = () => {
           height: `${renderSize * 0.75}px`,
           transform: `rotate(${tiltDeg}deg)`,
         }}
-        title="Tap me! I'm your AI Shopping Assistant 👟✨"
+        title="Tap me! I'm your Marudhar Fashion Point Mascot 👟✨"
       >
         {/* Golden / Custom Aura Glow Effect */}
         {petShoeConfig?.glowEnabled !== false && (
@@ -703,7 +703,7 @@ export const AIPetShoeMascot: React.FC = () => {
         <div className="relative w-full h-full group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
           <img
             src={shoeImgUrl}
-            alt="Store AI Mascot Shoe"
+            alt="Marudhar Fashion Point Mascot Shoe"
             className="w-full h-full object-contain filter drop-shadow-[0_18px_28px_rgba(0,0,0,0.5)] transition-all duration-300"
             referrerPolicy="no-referrer"
             loading="lazy"

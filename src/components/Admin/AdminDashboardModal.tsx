@@ -95,7 +95,6 @@ import { WebsiteConfigurationView } from './WebsiteConfigurationView';
 import { WebsiteManagementView } from './WebsiteManagementView';
 import { SuperAdminConsoleView } from './SuperAdminConsoleView';
 import { MapPin, Users, Volume2, Crown } from 'lucide-react';
-import { validateTenantAccess, getCurrentTenantId } from '../../lib/tenantIsolation';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -155,57 +154,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     restoreStoreBackup,
   } = store;
 
-  
   const isSuperAdminUser = Boolean(
     store.isSuperAdmin ||
     currentAdminUser?.roleId === 'super_admin' ||
-    (currentAdminUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' ||
-    (currentAdminUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com'
+    currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' ||
+    currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com'
   );
 
-  const userAssignedWebsite = currentAdminUser?.assignedWebsiteId || currentAdminUser?.websiteId;
-
-  const hasTenantAccess = currentAdminUser ? validateTenantAccess(
-    currentAdminUser.roleId,
-    userAssignedWebsite,
-    getCurrentTenantId(),
-    currentAdminUser.email
-  ) : false;
-
-  if (currentAdminUser) {
-    console.log('[TENANT ADMIN AUTH DEBUG]', {
-      uid: currentAdminUser?.uid,
-      email: currentAdminUser?.email,
-      roleId: currentAdminUser?.roleId,
-      assignedWebsiteId: currentAdminUser?.assignedWebsiteId,
-      websiteId: currentAdminUser?.websiteId,
-      resolvedTenantId: getCurrentTenantId(),
-      hasTenantAccess,
-      pathname: typeof window !== 'undefined' ? window.location.pathname : '',
-      search: typeof window !== 'undefined' ? window.location.search : ''
-    });
-  }
-
-  if (isOpen && !hasTenantAccess && currentAdminUser) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-        <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl">
-          <div className="w-20 h-20 bg-rose-500/10 border border-rose-500/30 rounded-full flex items-center justify-center mx-auto text-rose-500">
-            <ShieldAlert className="w-10 h-10" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-black text-white">Access Denied</h2>
-            <p className="text-neutral-400 text-sm">You do not have permission to access the administration panel for this website.</p>
-          </div>
-          <div className="flex gap-4 justify-center">
-            <button onClick={onClose} className="px-6 py-3 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-xl transition">Return</button>
-            <button onClick={() => { logoutAdmin(); onClose(); }} className="px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl transition">Sign Out</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-const canAccessTab = (tab: string) => {
+  const canAccessTab = (tab: string) => {
     if (tab === 'super_admin_console' || tab === 'admin_management') {
       return isSuperAdminUser;
     }
@@ -221,16 +177,13 @@ const canAccessTab = (tab: string) => {
     if (initialTab && isOpen) {
       setActiveTab(initialTab);
     }
-    if (isOpen) {
-      refreshAuditLogs();
-    }
-  }, [initialTab, isOpen, refreshAuditLogs]);
+  }, [initialTab, isOpen]);
   const [saveNotification, setSaveNotification] = useState<string | null>(null);
   const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
 
   const isGoogleUser = auth.currentUser?.providerData.some((p) => p.providerId === 'google.com');
 
-  const unreadNotifCount = notifications.filter((n: any) => !n.read).length;
+  const unreadNotifCount = notifications.filter((n) => !n.read).length;
 
   // Search & Filters for Products
   const [adminSearch, setAdminSearch] = useState('');
@@ -306,8 +259,8 @@ const canAccessTab = (tab: string) => {
 
     const items = announcementsText
       .split('\n')
-      .map((s: any) => s.trim())
-      .filter((s: any) => s.length > 0);
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
     await setAnnouncementsList(items);
 
     showNotification('✅ Homepage and store information synchronized live with Firebase!');
@@ -316,7 +269,7 @@ const canAccessTab = (tab: string) => {
   // Duplicate Product Handler
   const handleDuplicateProduct = (p: Product) => {
     const randomSuffix = Math.floor(Math.random() * 1000);
-    const newSku = `${p.sku || 'NWD'}-COPY-${randomSuffix}`;
+    const newSku = `${p.sku || 'MFP'}-COPY-${randomSuffix}`;
     const newSlug = `${p.slug || 'product'}-copy-${randomSuffix}`;
     const duplicatedProduct: Product = {
       ...p,
@@ -366,28 +319,28 @@ const canAccessTab = (tab: string) => {
   };
 
   // Filtered Products for Admin
-  const adminFilteredProducts = products.filter((p: any) => {
+  const adminFilteredProducts = products.filter((p) => {
     if (selectedCategoryFilter !== 'all' && p.category !== selectedCategoryFilter) return false;
     if (adminSearch.trim()) {
-      const q = (adminSearch || '').toLowerCase();
+      const q = adminSearch.toLowerCase();
       return (
-        (p.name || '').toLowerCase().includes(q) ||
-        (p.brand || '').toLowerCase().includes(q) ||
-        (p.subcategory || '').toLowerCase().includes(q)
+        p.name.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q) ||
+        p.subcategory.toLowerCase().includes(q)
       );
     }
     return true;
   });
 
   // Filtered Audit Logs
-  const filteredAuditLogs = auditLogs.filter((log: any) => {
+  const filteredAuditLogs = auditLogs.filter((log) => {
     if (auditCategoryFilter !== 'ALL' && log.category !== auditCategoryFilter) return false;
     if (auditSearch.trim()) {
-      const q = (auditSearch || '').toLowerCase();
+      const q = auditSearch.toLowerCase();
       return (
-        (log.action || '').toLowerCase().includes(q) ||
-        (log.details || '').toLowerCase().includes(q) ||
-        (log.userEmail || '').toLowerCase().includes(q)
+        log.action.toLowerCase().includes(q) ||
+        log.details.toLowerCase().includes(q) ||
+        log.userEmail.toLowerCase().includes(q)
       );
     }
     return true;
@@ -398,7 +351,7 @@ const canAccessTab = (tab: string) => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(auditLogs, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `nwd_security_audit_logs_${Date.now()}.json`);
+    downloadAnchor.setAttribute("download", `marudhar_security_audit_logs_${Date.now()}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -410,7 +363,7 @@ const canAccessTab = (tab: string) => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snapshot, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `nwd_store_backup_${Date.now()}.json`);
+    downloadAnchor.setAttribute("download", `marudhar_store_backup_${Date.now()}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -446,21 +399,12 @@ const canAccessTab = (tab: string) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-neutral-950/80 backdrop-blur-2xl animate-in fade-in duration-300 ${
-          editingProduct ? 'pointer-events-none opacity-50' : ''
-        }`}
-        onClick={() => {
-          if (!editingProduct) {
-            onClose();
-          }
-        }}
+        className="fixed inset-0 bg-neutral-950/80 backdrop-blur-2xl animate-in fade-in duration-300"
+        onClick={onClose}
       />
 
       {/* Main Admin Panel Container */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-6xl bg-[#F8FAFC]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 h-[92vh] flex flex-col"
-      >
+      <div className="relative w-full max-w-6xl bg-[#F8FAFC]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 h-[92vh] flex flex-col">
         
         {/* Top Admin Header Bar */}
         <div className="bg-[#121816] text-white p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/10 shrink-0">
@@ -478,7 +422,7 @@ const canAccessTab = (tab: string) => {
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400">
-                Single Admin Direct Synchronization
+                Marudhar Fashion Point • Single Admin Direct Synchronization
               </p>
             </div>
           </div>
@@ -537,7 +481,7 @@ const canAccessTab = (tab: string) => {
           <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-2.5 sm:p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto scrollbar-none touch-pan-x">
             
             {/* Super Admin Exclusive Console */}
-            {(currentAdminUser?.roleId === 'super_admin' || (currentAdminUser?.email || '').toLowerCase() === 'vpcreation2002@gmail.com' || (currentAdminUser?.email || '').toLowerCase() === 'vishalpparihar2002@gmail.com') && (
+            {(currentAdminUser?.roleId === 'super_admin' || currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com') && (
               <button
                 onClick={() => setActiveTab('super_admin_console')}
                 className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap text-left border ${
@@ -1142,15 +1086,12 @@ const canAccessTab = (tab: string) => {
                     </select>
 
                     <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
+                      onClick={() => {
                         setIsCreatingProduct(true);
                         setEditingProduct({
                           id: '',
                           name: '',
-                          brand: storeInfo?.storeName || 'Store Brand',
+                          brand: 'Marudhar Fashion',
                           category: 'men',
                           subcategory: 'Sports Shoes',
                           price: 1499,
@@ -1166,7 +1107,7 @@ const canAccessTab = (tab: string) => {
                           inStock: true,
                         });
                       }}
-                      className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+                      className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 transition-all shrink-0"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Add Product</span>
@@ -1188,22 +1129,22 @@ const canAccessTab = (tab: string) => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 font-medium">
-                        {adminFilteredProducts.map((p: any) => (
+                        {adminFilteredProducts.map((p) => (
                           <tr key={p.id} className="hover:bg-neutral-50/80 transition-colors">
                             <td className="p-3.5">
                               <div className="flex items-center gap-3">
                                 <img
-                                  src={(p.images && p.images[0]) || 'https://via.placeholder.com/150'}
-                                  alt={p.name || 'Product'}
+                                  src={p.images[0]}
+                                  alt={p.name}
                                   className="w-10 h-10 rounded-lg object-cover bg-neutral-100 border border-neutral-200 shrink-0"
                                 />
                                 <div>
                                   <div className="font-bold text-neutral-900">{p.name}</div>
                                   <div className="text-[10px] text-neutral-500 flex items-center gap-1.5 mt-0.5">
                                     <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.2 font-mono font-bold rounded">
-                                      SKU: {p.sku || (p.id || '').toString().toUpperCase()}
+                                      SKU: {p.sku || p.id.toUpperCase()}
                                     </span>
-                                    <span>• {p.brand || 'NWD'}</span>
+                                    <span>• {p.brand}</span>
                                   </div>
                                 </div>
                               </div>
@@ -1346,7 +1287,7 @@ const canAccessTab = (tab: string) => {
                             </td>
                           </tr>
                         ) : (
-                          filteredAuditLogs.map((log: any) => (
+                          filteredAuditLogs.map((log) => (
                             <tr key={log.id} className="hover:bg-neutral-50 transition-colors">
                               <td className="p-3.5 font-mono text-[10px] text-neutral-500 whitespace-nowrap">
                                 {new Date(log.timestamp).toLocaleString()}
@@ -1503,7 +1444,7 @@ const canAccessTab = (tab: string) => {
                     <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 space-y-2">
                       <div className="font-bold">2FA Status: ACTIVE</div>
                       <p className="text-[11px]">
-                        Authenticator Secret Key: <code className="bg-white px-2 py-0.5 rounded border border-emerald-300 font-mono font-bold">NWD-ADMIN-SEC-2026-X9</code>
+                        Authenticator Secret Key: <code className="bg-white px-2 py-0.5 rounded border border-emerald-300 font-mono font-bold">MFP-ADMIN-SEC-2026-X9</code>
                       </p>
                       <p className="text-[10px] text-emerald-700">Backup codes have been recorded in audit history.</p>
                     </div>
@@ -1788,7 +1729,7 @@ const canAccessTab = (tab: string) => {
                         type="text"
                         value={storeInfoForm.headerLogoText || ''}
                         onChange={(e) => setStoreInfoForm({ ...storeInfoForm, headerLogoText: e.target.value })}
-                        placeholder="Leave blank to use default brand"
+                        placeholder="Leave blank to use 'Marudhar Point'"
                         className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
                       />
                     </div>
@@ -1916,7 +1857,7 @@ const canAccessTab = (tab: string) => {
                   <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm">
                     <div className="text-neutral-500 font-bold text-xs">In-Stock Items</div>
                     <div className="font-serif-heading font-extrabold text-3xl text-emerald-600 mt-2">
-                      {products.filter((p: any) => p.inStock).length}
+                      {products.filter((p) => p.inStock).length}
                     </div>
                   </div>
                   <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-sm">
@@ -1994,15 +1935,13 @@ const canAccessTab = (tab: string) => {
 
       {/* --- SMART DYNAMIC PRODUCT ADD / EDIT MODAL --- */}
       {editingProduct && (
-        <AdminErrorBoundary fallbackTitle="Smart Product Form Error">
-          <SmartProductFormModal
-            product={editingProduct}
-            isCreating={isCreatingProduct}
-            onSave={(savedProduct) => handleSaveProduct(savedProduct)}
-            onClose={() => setEditingProduct(null)}
-            onDuplicate={(duplicated) => handleDuplicateProduct(duplicated)}
-          />
-        </AdminErrorBoundary>
+        <SmartProductFormModal
+          product={editingProduct}
+          isCreating={isCreatingProduct}
+          onSave={(savedProduct) => handleSaveProduct(savedProduct)}
+          onClose={() => setEditingProduct(null)}
+          onDuplicate={(duplicated) => handleDuplicateProduct(duplicated)}
+        />
       )}
 
       {/* Real-time Order Notification Drawer */}

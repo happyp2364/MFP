@@ -40,7 +40,7 @@ export async function createGoogleCalendarEvent(input: CalendarEventInput): Prom
   const payload = {
     summary: input.summary,
     description: input.description,
-    location: input.location || 'Store Main Location, Commercial Center',
+    location: input.location || 'Marudhar Fashion Point, Near Main Market, Pali, Rajasthan',
     start: {
       dateTime: input.startDateTime,
       timeZone: 'Asia/Kolkata',

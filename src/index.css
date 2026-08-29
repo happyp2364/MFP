@@ -140,53 +140,101 @@
 
 
 /* ==========================================================================
-   ACCESSIBILITY & CONTRAST INJECTOR (WCAG AA COMPLIANT WITH THEME VARIABLES)
+   GLOBAL COLOR SYSTEM & WCAG AAA/AA CONTRAST TOKENS
+   MARUDHAR FASHION POINT — MASTER PALETTE
    ========================================================================== */
 
 :root {
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f8fafc;
+  --color-surface-elevated: #ffffff;
+
+  --color-text-primary: #111827; /* Dark slate - WCAG AAA 15:1 */
+  --color-text-secondary: #374151; /* Charcoal - WCAG AAA 9.5:1 */
+  --color-text-muted: #4b5563; /* Medium gray - WCAG AA 7.2:1 */
+
+  --color-border: #d1d5db;
+  --color-border-strong: #9ca3af;
+  --color-placeholder: #6b7280;
+
+  --color-primary: #059669; /* Emerald 600 */
+  --color-primary-hover: #047857; /* Emerald 700 */
+  --color-primary-contrast: #ffffff;
+
+  --color-accent: #f59e0b; /* Amber 500 */
+  --color-accent-hover: #d97706; /* Amber 600 */
+  --color-accent-contrast: #111827;
+
+  --color-success: #047857;
+  --color-warning: #b45309;
+  --color-error: #b91c1c;
+  --color-info: #1d4ed8;
+
+  /* Surface & text tokens */
   --background: #ffffff;
-  --surface: #f8fafc;
+  --surface: #ffffff;
   --card: #ffffff;
   --surface-primary: #ffffff;
   --surface-secondary: #f8fafc;
   --surface-elevated: #ffffff;
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  --border: #cbd5e1;
-  --placeholder: #64748b;
-  --success: #15803d;
-  --warning: #c2410c;
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-muted: #4b5563;
+  --border: #d1d5db;
+  --placeholder: #6b7280;
+  --success: #047857;
+  --warning: #b45309;
   --error: #b91c1c;
-  --primary: #0b8f63;
+  --primary: #059669;
   --secondary: #1e293b;
 
-  /* Legacy variable mappings for system compatibility */
+  /* Legacy variable mappings for backward compatibility */
   --color-bg-primary: var(--background);
-  --color-bg-secondary: var(--surface);
+  --color-bg-secondary: var(--surface-secondary);
   --color-bg-tertiary: #f1f5f9;
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-muted);
-  --color-border: var(--border);
-  --color-placeholder: var(--placeholder);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
   --color-danger: var(--error);
-  --color-accent: var(--primary);
 }
 
 .dark {
-  --background: #0f172a;
-  --surface: #1e293b;
-  --card: #1e293b;
-  --surface-primary: #0f172a;
-  --surface-secondary: #1e293b;
+  --color-bg: #0b132b;
+  --color-surface: #111e38;
+  --color-surface-secondary: #0f172a;
+  --color-surface-elevated: #1e293b;
+
+  --color-text-primary: #ffffff; /* Pure white - WCAG AAA 16:1 */
+  --color-text-secondary: #e2e8f0; /* Crisp slate 200 - WCAG AAA 12:1 */
+  --color-text-muted: #94a3b8; /* Slate 400 - WCAG AA 6.8:1 */
+
+  --color-border: #334155;
+  --color-border-strong: #475569;
+  --color-placeholder: #94a3b8;
+
+  --color-primary: #10b981; /* Emerald 500 */
+  --color-primary-hover: #059669; /* Emerald 600 */
+  --color-primary-contrast: #ffffff;
+
+  --color-accent: #fbbf24; /* Amber 400 */
+  --color-accent-hover: #f59e0b; /* Amber 500 */
+  --color-accent-contrast: #0f172a;
+
+  --color-success: #34d399;
+  --color-warning: #fb923c;
+  --color-error: #f87171;
+  --color-info: #60a5fa;
+
+  /* Surface & text tokens */
+  --background: #0b132b;
+  --surface: #111e38;
+  --card: #111e38;
+  --surface-primary: #0b132b;
+  --surface-secondary: #0f172a;
   --surface-elevated: #1e293b;
-  --text-primary: #f8fafc;
+  --text-primary: #ffffff;
   --text-secondary: #e2e8f0;
   --text-muted: #94a3b8;
-  --border: #475569;
+  --border: #334155;
   --placeholder: #94a3b8;
   --success: #34d399;
   --warning: #fb923c;
@@ -194,49 +242,28 @@
   --primary: #10b981;
   --secondary: #f8fafc;
 
-  /* Legacy variable mappings for system compatibility */
+  /* Legacy variable mappings for backward compatibility */
   --color-bg-primary: var(--background);
   --color-bg-secondary: var(--surface);
-  --color-bg-tertiary: #334155;
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
+  --color-bg-tertiary: #1e293b;
   --color-text-tertiary: var(--text-muted);
-  --color-border: var(--border);
-  --color-placeholder: var(--placeholder);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
   --color-danger: var(--error);
-  --color-accent: var(--primary);
 }
 
-/* WCAG AA Contrast Enforcement across all text utility classes */
-.dark .text-gray-300, .dark .text-neutral-300, .dark .text-slate-300, .dark .text-zinc-300 {
-  color: #f1f5f9 !important;
-}
-.dark .text-gray-400, .dark .text-neutral-400, .dark .text-slate-400, .dark .text-zinc-400 {
-  color: #cbd5e1 !important;
-}
-.dark .text-gray-500, .dark .text-neutral-500, .dark .text-slate-500, .dark .text-zinc-500 {
-  color: #94a3b8 !important;
-}
-.text-gray-300, .text-neutral-300, .text-slate-300, .text-zinc-300 {
-  color: #475569 !important;
-}
-.text-gray-400, .text-neutral-400, .text-slate-400, .text-zinc-400 {
-  color: #334155 !important;
-}
-.text-gray-500, .text-neutral-500, .text-slate-500, .text-zinc-500 {
-  color: #1e293b !important;
+/* Accessible focus ring style */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* 1. SELECTION & CURSOR */
 ::selection {
-  background-color: var(--color-accent) !important;
+  background-color: var(--color-primary) !important;
   color: #ffffff !important;
 }
 
 input, textarea, select {
-  caret-color: var(--color-text-primary);
+  caret-color: var(--color-primary);
 }
 
 /* 2. FORM CONTROLS: INPUTS, TEXTAREAS, SELECTS (SAFE DEFAULTS WITHOUT BREAKING CUSTOM CARDS) */

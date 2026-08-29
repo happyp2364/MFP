@@ -3,13 +3,9 @@ import {
   X,
   History,
   Monitor,
-  Smartphone,
-  Globe,
   Clock,
   CheckCircle2,
   XCircle,
-  ShieldCheck,
-  SmartphoneNfc,
 } from 'lucide-react';
 import { AdminUser } from '../../types';
 
@@ -40,7 +36,7 @@ export const LoginHistoryModal: React.FC<LoginHistoryModalProps> = ({
             <div>
               <h2 className="text-lg font-black text-white tracking-wide">Admin Session & Device Audit</h2>
               <p className="text-xs text-neutral-400">
-                User: <span className="text-white font-bold">{adminUser.name}</span> ({adminUser.email})
+                User: <span className="text-white font-bold">{adminUser.name || 'Admin User'}</span> ({adminUser.email || 'No email'})
               </p>
             </div>
           </div>
@@ -83,13 +79,13 @@ export const LoginHistoryModal: React.FC<LoginHistoryModalProps> = ({
                       : 'bg-rose-950 text-rose-400 border border-rose-500/30'
                   }`}
                 >
-                  {adminUser.status.toUpperCase()}
+                  {(adminUser.status || 'active').toUpperCase()}
                 </span>
               </div>
 
               <div className="p-3 bg-neutral-900/60 rounded-xl border border-neutral-800/80">
                 <span className="text-[10px] text-neutral-500 block uppercase font-mono">Assigned Role</span>
-                <span className="font-bold text-amber-300 block mt-0.5">{adminUser.roleName || adminUser.roleId}</span>
+                <span className="font-bold text-amber-300 block mt-0.5">{adminUser.roleName || adminUser.roleId || 'Admin'}</span>
               </div>
             </div>
           </div>
@@ -127,7 +123,7 @@ export const LoginHistoryModal: React.FC<LoginHistoryModalProps> = ({
                         <div>
                           <span className="font-bold text-white block">{entry.device || 'Unknown Browser'}</span>
                           <span className="text-[10px] text-neutral-500 flex items-center gap-2">
-                            <span>Method: <strong className="text-neutral-400 uppercase">{entry.loginMethod}</strong></span>
+                            <span>Method: <strong className="text-neutral-400 uppercase">{entry.loginMethod || 'password'}</strong></span>
                             {entry.ip && <span>• IP: {entry.ip}</span>}
                           </span>
                         </div>
@@ -135,14 +131,14 @@ export const LoginHistoryModal: React.FC<LoginHistoryModalProps> = ({
 
                       <div className="text-right shrink-0">
                         <span className="text-[10px] text-neutral-400 font-mono block">
-                          {new Date(entry.timestamp).toLocaleString()}
+                          {entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'N/A'}
                         </span>
                         <span
                           className={`text-[9px] font-black uppercase tracking-wider ${
                             isSuccess ? 'text-emerald-400' : 'text-rose-400'
                           }`}
                         >
-                          {entry.status}
+                          {entry.status || 'SUCCESS'}
                         </span>
                       </div>
                     </div>

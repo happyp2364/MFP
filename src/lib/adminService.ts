@@ -10,23 +10,38 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { User as FirebaseUser } from 'firebase/auth';
-import { db, auth, recordAuditLog, OperationType, handleFirestoreError, createAdminNotificationInFirestore } from './firebase';
+import { db, auth, recordAuditLog, OperationType, handleFirestoreError, sendAdminPasswordResetEmail as sendAdminPasswordResetEmailFirebase } from './firebase';
 import {
   AdminUser,
   AdminRole,
   AdminLoginHistoryEntry,
   AdminPermissionMatrix,
-  BuiltInAdminRoleId,
-  AdminNotification,
 } from '../types';
 import {
   BUILTIN_ROLES,
   createFullPermissionMatrix,
+  createNoPermissionMatrix,
   getDeviceInfo,
 } from './adminPermissions';
+import {
+  normalizeAdminUser,
+  isSuperAdminUser,
+  normalizeTenantId,
+  validateTenantAccess,
+  KNOWN_TENANTS,
+  SUPER_ADMIN_EMAILS,
+} from './tenantUtils';
+
+export {
+  normalizeAdminUser,
+  isSuperAdminUser,
+  normalizeTenantId,
+  validateTenantAccess,
+  KNOWN_TENANTS,
+  SUPER_ADMIN_EMAILS,
+};
 
 const SUPER_ADMIN_EMAIL = 'vpcreation2002@gmail.com';
-export const SUPER_ADMIN_EMAILS = ['vpcreation2002@gmail.com', 'vishalpparihar2002@gmail.com'];
 
 // Guarantee Super Admin user record exists in Firestore admin_users collection
 export async function ensureSuperAdminExists(
@@ -34,41 +49,52 @@ export async function ensureSuperAdminExists(
 ): Promise<AdminUser> {
   const activeUser = firebaseUser || auth.currentUser;
   const targetUid = activeUser?.uid || 'super-admin-root';
-  const targetEmail = activeUser?.email || SUPER_ADMIN_EMAIL;
-  const targetName = activeUser?.displayName || 'Store Owner (Super Admin)';
+  const targetEmail = (activeUser?.email || SUPER_ADMIN_EMAIL).trim().toLowerCase();
+  const targetName = (activeUser?.displayName || 'Store Owner (Super Admin)').trim();
 
   const userDocRef = doc(db, 'admin_users', targetUid);
 
   try {
     const snap = await getDoc(userDocRef);
     if (snap.exists()) {
-      const data = snap.data() as AdminUser;
+      const rawData = snap.data();
+      const normalized = normalizeAdminUser({ ...rawData, uid: targetUid, id: targetUid });
+      
       // Ensure super_admin role and active status for main owner
-      if (targetEmail.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() && data.roleId !== 'super_admin') {
+      if (
+        (targetEmail === SUPER_ADMIN_EMAIL.toLowerCase() || isSuperAdminUser(normalized)) &&
+        normalized.roleId !== 'super_admin'
+      ) {
         const updated: AdminUser = {
-          ...data,
+          ...normalized,
           roleId: 'super_admin',
           roleName: 'Super Admin',
           status: 'active',
+          updatedAt: new Date().toISOString(),
         };
         await setDoc(userDocRef, updated, { merge: true });
         return updated;
       }
-      return data;
+      return normalized;
     }
   } catch (err) {
     console.warn('[AdminService] Could not read admin_users doc:', err);
   }
 
   // Create primary Super Admin profile if non-existent
-  const newSuperAdmin: AdminUser = {
+  const newSuperAdmin: AdminUser = normalizeAdminUser({
     uid: targetUid,
+    id: targetUid,
     email: targetEmail,
     name: targetName,
     roleId: 'super_admin',
+    role: 'super_admin',
     roleName: 'Super Admin',
+    assignedWebsiteId: 'tenant-masrudharfashionpoint',
+    websiteId: 'tenant-masrudharfashionpoint',
     status: 'active',
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     createdBy: 'SYSTEM_BOOTSTRAP',
     lastLogin: new Date().toISOString(),
     deviceInfo: getDeviceInfo(),
@@ -77,11 +103,11 @@ export async function ensureSuperAdminExists(
         id: `lh-${Date.now()}`,
         timestamp: new Date().toISOString(),
         device: getDeviceInfo(),
-        loginMethod: activeUser?.providerData?.[0]?.providerId.includes('google') ? 'google' : 'password',
+        loginMethod: activeUser?.providerData?.[0]?.providerId?.includes('google') ? 'google' : 'password',
         status: 'success',
       },
     ],
-  };
+  });
 
   try {
     await setDoc(userDocRef, newSuperAdmin);
@@ -102,17 +128,23 @@ export async function ensureSuperAdminExists(
   return newSuperAdmin;
 }
 
-// Fetch all registered admin users
+// Fetch all registered admin users with mandatory normalization
 export async function fetchAdminUsers(): Promise<AdminUser[]> {
   try {
     const colRef = collection(db, 'admin_users');
     const snap = await getDocs(colRef);
     const users: AdminUser[] = [];
     snap.forEach((docSnap) => {
-      users.push({ ...(docSnap.data() as AdminUser), uid: docSnap.id });
+      const raw = docSnap.data();
+      const normalized = normalizeAdminUser({
+        ...raw,
+        uid: docSnap.id,
+        id: docSnap.id,
+      });
+      users.push(normalized);
     });
 
-    // Ensure super admin is included in array
+    // Ensure super admin is included in array if collection is empty
     if (users.length === 0 && auth.currentUser) {
       const superAdmin = await ensureSuperAdminExists(auth.currentUser);
       return [superAdmin];
@@ -136,7 +168,14 @@ export async function fetchAdminRoles(): Promise<AdminRole[]> {
     const snap = await getDocs(colRef);
     const customRoles: AdminRole[] = [];
     snap.forEach((docSnap) => {
-      customRoles.push({ ...(docSnap.data() as AdminRole), id: docSnap.id });
+      const raw = docSnap.data() as AdminRole;
+      customRoles.push({
+        ...raw,
+        id: docSnap.id,
+        name: raw.name || 'Custom Role',
+        description: raw.description || '',
+        permissions: raw.permissions || createNoPermissionMatrix(),
+      });
     });
     return customRoles;
   } catch (err) {
@@ -150,18 +189,20 @@ export async function fetchAdminRoles(): Promise<AdminRole[]> {
 }
 
 // Create or update admin user profile
-export async function saveAdminUser(admin: AdminUser): Promise<void> {
-  const userRef = doc(db, 'admin_users', admin.uid);
+export async function saveAdminUser(admin: Partial<AdminUser>): Promise<AdminUser> {
+  const normalized = normalizeAdminUser(admin);
+  const userRef = doc(db, 'admin_users', normalized.uid);
   try {
-    await setDoc(userRef, admin, { merge: true });
+    await setDoc(userRef, normalized, { merge: true });
     recordAuditLog(
       'Admin Profile Updated',
       'SECURITY',
-      `Updated profile & permissions for admin: ${admin.email} (${admin.roleName || admin.roleId})`,
+      `Updated profile & permissions for admin: ${normalized.email || normalized.name} (${normalized.roleName || normalized.roleId})`,
       'SUCCESS'
     );
+    return normalized;
   } catch (err) {
-    handleFirestoreError(err, OperationType.WRITE, `admin_users/${admin.uid}`);
+    handleFirestoreError(err, OperationType.WRITE, `admin_users/${normalized.uid}`);
     throw err;
   }
 }
@@ -180,16 +221,13 @@ export async function toggleAdminStatus(
       return { success: false, message: 'Admin account not found in system.' };
     }
 
-    const adminData = snap.data() as AdminUser;
+    const adminData = normalizeAdminUser({ ...snap.data(), uid });
 
     // Failsafe: Prevent disabling primary Super Admin or sole Super Admin
-    if (
-      adminData.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
-      adminData.roleId === 'super_admin'
-    ) {
+    if (isSuperAdminUser(adminData)) {
       const allAdmins = await fetchAdminUsers();
       const activeSuperAdmins = allAdmins.filter(
-        (a) => a.roleId === 'super_admin' && a.status === 'active' && a.uid !== uid
+        (a) => isSuperAdminUser(a) && a.status === 'active' && a.uid !== uid
       );
       if (activeSuperAdmins.length === 0 && newStatus === 'disabled') {
         return {
@@ -204,18 +242,19 @@ export async function toggleAdminStatus(
     await updateDoc(userRef, {
       status: newStatus,
       forceLoggedOutAt: forceTime,
+      updatedAt: new Date().toISOString(),
     });
 
     recordAuditLog(
       `Admin Account ${newStatus === 'active' ? 'Enabled' : 'Disabled'}`,
       'SECURITY',
-      `${currentUserEmail} ${newStatus === 'active' ? 'enabled' : 'disabled'} account ${adminData.email}`,
+      `${currentUserEmail || 'Admin'} ${newStatus === 'active' ? 'enabled' : 'disabled'} account ${adminData.email || adminData.name}`,
       newStatus === 'disabled' ? 'WARNING' : 'SUCCESS'
     );
 
     return {
       success: true,
-      message: `Admin account ${adminData.email} is now ${newStatus.toUpperCase()}.`,
+      message: `Admin account ${adminData.email || adminData.name} is now ${newStatus.toUpperCase()}.`,
     };
   } catch (err: any) {
     try {
@@ -240,16 +279,13 @@ export async function deleteAdminUser(
       return { success: false, message: 'Admin account not found.' };
     }
 
-    const adminData = snap.data() as AdminUser;
+    const adminData = normalizeAdminUser({ ...snap.data(), uid });
 
     // Failsafe: Cannot delete primary Super Admin or last remaining Super Admin
-    if (
-      adminData.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() ||
-      adminData.roleId === 'super_admin'
-    ) {
+    if (isSuperAdminUser(adminData)) {
       const allAdmins = await fetchAdminUsers();
       const otherSuperAdmins = allAdmins.filter(
-        (a) => a.roleId === 'super_admin' && a.status === 'active' && a.uid !== uid
+        (a) => isSuperAdminUser(a) && a.status === 'active' && a.uid !== uid
       );
       if (otherSuperAdmins.length === 0) {
         return {
@@ -264,13 +300,13 @@ export async function deleteAdminUser(
     recordAuditLog(
       'Admin Account Deleted',
       'SECURITY',
-      `${currentUserEmail} deleted admin user ${adminData.email}`,
+      `${currentUserEmail || 'Admin'} deleted admin user ${adminData.email || adminData.name}`,
       'DANGER'
     );
 
     return {
       success: true,
-      message: `Admin user ${adminData.email} deleted successfully.`,
+      message: `Admin user ${adminData.email || adminData.name} deleted successfully.`,
     };
   } catch (err: any) {
     try {
@@ -293,12 +329,13 @@ export async function forceLogoutAdminUser(
     const now = new Date().toISOString();
     await updateDoc(userRef, {
       forceLoggedOutAt: now,
+      updatedAt: now,
     });
 
     recordAuditLog(
       'Admin Session Force Logout',
       'SECURITY',
-      `${currentUserEmail} issued force logout command for admin user UID: ${uid}`,
+      `${currentUserEmail || 'Admin'} issued force logout command for admin user UID: ${uid}`,
       'WARNING'
     );
 
@@ -313,6 +350,20 @@ export async function forceLogoutAdminUser(
       console.warn('Force logout admin user notice:', e);
     }
     return { success: false, message: err?.message || 'Failed to issue force logout.' };
+  }
+}
+
+// Send Password Reset Email for Admin
+export async function sendAdminPasswordResetEmail(
+  email: string
+): Promise<{ success: boolean; message: string }> {
+  if (!email || !email.includes('@')) {
+    return { success: false, message: 'Invalid admin email address.' };
+  }
+  try {
+    return await sendAdminPasswordResetEmailFirebase(email);
+  } catch (err: any) {
+    return { success: false, message: err?.message || 'Failed to send password reset email.' };
   }
 }
 
@@ -339,12 +390,13 @@ export async function recordAdminLoginHistory(
   try {
     const snap = await getDoc(userRef);
     if (snap.exists()) {
-      const data = snap.data() as AdminUser;
+      const data = normalizeAdminUser({ ...snap.data(), uid });
       const updatedHistory = [newHistoryEntry, ...(data.loginHistory || [])].slice(0, 25);
       await updateDoc(userRef, {
         lastLogin: now,
         deviceInfo: device,
         loginHistory: updatedHistory,
+        updatedAt: now,
       });
     }
   } catch (e) {
@@ -391,7 +443,7 @@ export async function deleteCustomRole(
     recordAuditLog(
       'Admin Custom Role Deleted',
       'SECURITY',
-      `${currentUserEmail} deleted custom role ID: ${roleId}`,
+      `${currentUserEmail || 'Admin'} deleted custom role ID: ${roleId}`,
       'WARNING'
     );
     return { success: true, message: 'Custom role deleted successfully.' };

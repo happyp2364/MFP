@@ -119,7 +119,7 @@ export const EditAdminPermissionsModal: React.FC<EditAdminPermissionsModalProps>
                 Edit Role & Permissions Matrix
               </h2>
               <p className="text-xs text-neutral-400">
-                User: <span className="text-white font-bold">{adminUser.name}</span> ({adminUser.email})
+                User: <span className="text-white font-bold">{adminUser.name || 'Admin User'}</span> ({adminUser.email || 'No email registered'})
               </p>
             </div>
           </div>

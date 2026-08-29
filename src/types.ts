@@ -571,10 +571,15 @@ export interface AdminUser {
   email: string;
   name: string;
   roleId: string; // e.g. 'super_admin', 'admin', 'inventory_manager', etc.
+  role?: string;
   roleName?: string;
-  status: 'active' | 'disabled';
+  assignedWebsiteId?: string;
+  websiteId?: string;
+  status: 'active' | 'disabled' | 'pending_activation' | string;
+  permissions?: string[];
   customPermissions?: Partial<AdminPermissionMatrix>; // Optional per-user overrides
   createdAt: string;
+  updatedAt?: string;
   createdBy: string;
   lastLogin?: string;
   loginHistory?: AdminLoginHistoryEntry[];

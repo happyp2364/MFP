@@ -322,9 +322,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     if (adminSearch.trim()) {
       const q = adminSearch.toLowerCase();
       return (
-        p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        p.subcategory.toLowerCase().includes(q)
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.brand || '').toLowerCase().includes(q) ||
+        (p.subcategory || '').toLowerCase().includes(q)
       );
     }
     return true;
@@ -336,9 +336,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     if (auditSearch.trim()) {
       const q = auditSearch.toLowerCase();
       return (
-        log.action.toLowerCase().includes(q) ||
-        log.details.toLowerCase().includes(q) ||
-        log.userEmail.toLowerCase().includes(q)
+        (log.action || '').toLowerCase().includes(q) ||
+        (log.details || '').toLowerCase().includes(q) ||
+        (log.userEmail || '').toLowerCase().includes(q)
       );
     }
     return true;

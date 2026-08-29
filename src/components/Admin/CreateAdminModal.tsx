@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   UserPlus,
@@ -12,6 +12,7 @@ import {
   Phone,
   Sparkles,
   SlidersHorizontal,
+  Globe,
 } from 'lucide-react';
 import {
   AdminUser,
@@ -25,14 +26,20 @@ import {
   BUILTIN_ROLES,
   NO_PERMISSIONS,
   FULL_PERMISSIONS,
-  createNoPermissionMatrix,
 } from '../../lib/adminPermissions';
+import {
+  isSuperAdminUser,
+  normalizeTenantId,
+  KNOWN_TENANTS,
+  normalizeAdminUser,
+} from '../../lib/tenantUtils';
 
 interface CreateAdminModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (adminData: Partial<AdminUser>) => Promise<void>;
   customRoles?: AdminRole[];
+  currentUser?: AdminUser | null;
 }
 
 export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
@@ -40,26 +47,49 @@ export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
   onClose,
   onSave,
   customRoles = [],
+  currentUser = null,
 }) => {
   if (!isOpen) return null;
 
-  const allAvailableRoles = [...BUILTIN_ROLES, ...customRoles];
+  const isSuper = isSuperAdminUser(currentUser);
+  const currentTenantId = normalizeTenantId(
+    currentUser?.assignedWebsiteId || currentUser?.websiteId || 'tenant-masrudharfashionpoint'
+  );
+
+  // If not super admin, filter out 'super_admin' role
+  const allAvailableRoles = [...BUILTIN_ROLES, ...customRoles].filter(
+    (role) => isSuper || role.id !== 'super_admin'
+  );
 
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedRoleId, setSelectedRoleId] = useState<string>('admin');
+  const [assignedWebsiteId, setAssignedWebsiteId] = useState<string>(
+    isSuper ? 'tenant-masrudharfashionpoint' : currentTenantId
+  );
+  const [status, setStatus] = useState<'active' | 'disabled'>('active');
   const [enableCustomOverrides, setEnableCustomOverrides] = useState(false);
   const [customPermissions, setCustomPermissions] = useState<Partial<AdminPermissionMatrix>>({});
   const [showPermissionsAccordion, setShowPermissionsAccordion] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedRoleDef = allAvailableRoles.find((r) => r.id === selectedRoleId) || BUILTIN_ROLES[1];
+  useEffect(() => {
+    if (!isSuper) {
+      setAssignedWebsiteId(currentTenantId);
+    }
+  }, [isSuper, currentTenantId]);
+
+  const selectedRoleDef =
+    allAvailableRoles.find((r) => r.id === selectedRoleId) ||
+    allAvailableRoles[0] ||
+    BUILTIN_ROLES[1];
 
   const handleToggleCustomPermission = (moduleKey: AdminModule, action: AdminAction) => {
     setCustomPermissions((prev) => {
-      const currentMod = prev[moduleKey] || { ...(selectedRoleDef.permissions[moduleKey] || NO_PERMISSIONS) };
+      const currentMod =
+        prev[moduleKey] || { ...(selectedRoleDef.permissions[moduleKey] || NO_PERMISSIONS) };
       return {
         ...prev,
         [moduleKey]: {
@@ -74,8 +104,8 @@ export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanName = name.trim();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanName = (name || '').trim();
 
     if (!cleanEmail || !cleanEmail.includes('@')) {
       setError('Please enter a valid email address.');
@@ -86,17 +116,26 @@ export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
       return;
     }
 
+    const finalTenant = isSuper
+      ? normalizeTenantId(assignedWebsiteId)
+      : currentTenantId;
+
     setIsSubmitting(true);
     try {
-      const newAdminData: Partial<AdminUser> = {
+      const newAdminData: Partial<AdminUser> = normalizeAdminUser({
         email: cleanEmail,
         name: cleanName,
-        phoneNumber: phoneNumber.trim(),
+        phoneNumber: (phoneNumber || '').trim(),
         roleId: selectedRoleId,
+        role: selectedRoleId,
         roleName: selectedRoleDef.name,
-        status: 'active',
+        assignedWebsiteId: finalTenant,
+        websiteId: finalTenant,
+        status,
         customPermissions: enableCustomOverrides ? customPermissions : undefined,
-      };
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
 
       await onSave(newAdminData);
       onClose();
@@ -198,6 +237,49 @@ export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Assigned Website / Tenant */}
+          <div className="space-y-3 pt-2 border-t border-neutral-800">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              Website / Tenant Assignment
+            </h3>
+
+            {isSuper ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {KNOWN_TENANTS.map((t) => {
+                  const isSelected = normalizeTenantId(assignedWebsiteId) === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setAssignedWebsiteId(t.id)}
+                      className={`p-3 rounded-2xl border text-left transition-all ${
+                        isSelected
+                          ? 'bg-amber-500/20 border-amber-500 text-white font-bold'
+                          : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700 text-neutral-400'
+                      }`}
+                    >
+                      <span className="text-xs text-white block">{t.name}</span>
+                      <span className="text-[10px] text-neutral-500 font-mono block">{t.id}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-3 bg-neutral-950 border border-neutral-800 rounded-xl flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-white block">
+                    {KNOWN_TENANTS.find((t) => t.id === currentTenantId)?.name || 'Current Website'}
+                  </span>
+                  <span className="text-[10px] text-neutral-500 font-mono">{currentTenantId}</span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 font-mono">
+                  Tenant Locked
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Role Selection */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Users,
   ShieldCheck,
@@ -6,7 +6,6 @@ import {
   ShieldAlert,
   Search,
   Filter,
-  MoreVertical,
   Edit2,
   Lock,
   Unlock,
@@ -14,29 +13,26 @@ import {
   LogOut,
   History,
   KeyRound,
-  Download,
   Plus,
   RefreshCw,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   SlidersHorizontal,
-  Clock,
   Sparkles,
   Shield,
   FileSpreadsheet,
+  Globe,
+  Building2,
 } from 'lucide-react';
 import {
   AdminUser,
   AdminRole,
-  AdminModule,
   AdminPermissionMatrix,
   AuditLogItem,
 } from '../../types';
 import {
   BUILTIN_ROLES,
   ADMIN_MODULE_LIST,
-  getEffectivePermissions,
 } from '../../lib/adminPermissions';
 import {
   fetchAdminUsers,
@@ -47,8 +43,16 @@ import {
   forceLogoutAdminUser,
   saveCustomRole,
   deleteCustomRole,
+  sendAdminPasswordResetEmail,
 } from '../../lib/adminService';
-import { sendAdminPasswordResetEmail, recordAuditLog } from '../../lib/firebase';
+import {
+  normalizeAdminUser,
+  isSuperAdminUser,
+  normalizeTenantId,
+  KNOWN_TENANTS,
+  SUPER_ADMIN_EMAILS,
+} from '../../lib/tenantUtils';
+import { recordAuditLog } from '../../lib/firebase';
 import { CreateAdminModal } from './CreateAdminModal';
 import { EditAdminPermissionsModal } from './EditAdminPermissionsModal';
 import { CustomRoleModal } from './CustomRoleModal';
@@ -72,22 +76,12 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [tenantFilter, setTenantFilter] = useState('all');
 
-  const isSuperAdmin = currentUser?.roleId === 'super_admin' || currentUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com';
-
-  if (!isSuperAdmin) {
-    return (
-      <div className="p-12 text-center bg-neutral-950 border border-neutral-800 rounded-3xl space-y-4">
-        <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-center mx-auto text-rose-400">
-          <ShieldAlert className="w-8 h-8" />
-        </div>
-        <h2 className="text-lg font-black text-white">Access Denied: Super Admin Restricted</h2>
-        <p className="text-xs text-neutral-400 max-w-md mx-auto leading-relaxed">
-          Multi Admin Management & RBAC Role console is restricted exclusively to Super Administrator profiles. Website Administrators cannot view or manage platform administrators or role templates.
-        </p>
-      </div>
-    );
-  }
+  const isSuperAdmin = isSuperAdminUser(currentUser);
+  const currentTenantId = normalizeTenantId(
+    currentUser?.assignedWebsiteId || currentUser?.websiteId || 'tenant-masrudharfashionpoint'
+  );
 
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -116,8 +110,13 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
         fetchAdminUsers(),
         fetchAdminRoles(),
       ]);
-      setAdmins(fetchedUsers);
+      // Normalize all loaded admins
+      const normalizedAdmins = fetchedUsers.map((u) => normalizeAdminUser(u));
+      setAdmins(normalizedAdmins);
       setCustomRoles(fetchedRoles);
+      if (onRefreshAuditLogs) {
+        onRefreshAuditLogs();
+      }
     } catch (err) {
       console.error('Failed to load admin management data:', err);
       showToast('error', 'Failed to synchronize admin database.');
@@ -130,50 +129,104 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
     loadData();
   }, []);
 
-  const allRoles = [...BUILTIN_ROLES, ...customRoles];
+  const allRoles = useMemo(() => {
+    const roles = [...BUILTIN_ROLES, ...customRoles];
+    if (!isSuperAdmin) {
+      return roles.filter((r) => r.id !== 'super_admin');
+    }
+    return roles;
+  }, [customRoles, isSuperAdmin]);
 
-  // Filtered Admins
-  const filteredAdmins = admins.filter((admin) => {
-    const matchesSearch =
-      admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (admin.roleName || '').toLowerCase().includes(searchTerm.toLowerCase());
+  // Scoped & Filtered Admins (Strict Tenant Isolation & Super Admin Hiding)
+  const filteredAdmins = useMemo(() => {
+    const term = (searchTerm || '').trim().toLowerCase();
 
-    const matchesRole = roleFilter === 'all' || admin.roleId === roleFilter;
-    const matchesStatus = statusFilter === 'all' || admin.status === statusFilter;
+    return admins.filter((rawAdmin) => {
+      const admin = normalizeAdminUser(rawAdmin);
 
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+      // 1. Tenant Admin Isolation: Completely hide Super Admin records from Tenant Admins
+      if (!isSuperAdmin) {
+        if (
+          admin.roleId === 'super_admin' ||
+          SUPER_ADMIN_EMAILS.some((e) => e.toLowerCase() === (admin.email || '').toLowerCase())
+        ) {
+          return false;
+        }
+
+        // Must belong to the same tenant
+        const adminTenant = normalizeTenantId(admin.assignedWebsiteId || admin.websiteId);
+        if (adminTenant !== currentTenantId) {
+          return false;
+        }
+      }
+
+      // 2. Super Admin Tenant Filter
+      if (isSuperAdmin && tenantFilter !== 'all') {
+        const normalizedTargetTenant = normalizeTenantId(tenantFilter);
+        const adminTenant = normalizeTenantId(admin.assignedWebsiteId || admin.websiteId);
+        if (adminTenant !== normalizedTargetTenant) {
+          return false;
+        }
+      }
+
+      // 3. Role Filter
+      if (roleFilter !== 'all' && admin.roleId !== roleFilter) {
+        return false;
+      }
+
+      // 4. Status Filter
+      if (statusFilter !== 'all' && admin.status !== statusFilter) {
+        return false;
+      }
+
+      // 5. Search Term Filter (Defensively guarded against undefined)
+      if (term) {
+        const nameMatch = (admin.name || '').toLowerCase().includes(term);
+        const emailMatch = (admin.email || '').toLowerCase().includes(term);
+        const roleMatch = (admin.roleName || admin.roleId || '').toLowerCase().includes(term);
+        const tenantMatch = (admin.assignedWebsiteId || admin.websiteId || '').toLowerCase().includes(term);
+        const phoneMatch = (admin.phoneNumber || '').toLowerCase().includes(term);
+
+        if (!nameMatch && !emailMatch && !roleMatch && !tenantMatch && !phoneMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [admins, isSuperAdmin, currentTenantId, tenantFilter, roleFilter, statusFilter, searchTerm]);
 
   // Admin Actions Handlers
-  const handleCreateAdmin = async (adminData: Partial<AdminUser>, password?: string) => {
+  const handleCreateAdmin = async (adminData: Partial<AdminUser>) => {
     const currentAdminEmail = currentUser?.email || 'admin@marudharfashionpoint.com';
-    const uid = `admin-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const uid = adminData.uid || `admin-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
-    const newAdmin: AdminUser = {
+    const targetTenant = isSuperAdmin
+      ? normalizeTenantId(adminData.assignedWebsiteId || adminData.websiteId || 'tenant-masrudharfashionpoint')
+      : currentTenantId;
+
+    const newAdmin: AdminUser = normalizeAdminUser({
+      ...adminData,
       uid,
-      email: adminData.email || '',
-      name: adminData.name || '',
-      phoneNumber: adminData.phoneNumber,
-      roleId: adminData.roleId || 'admin',
-      roleName: adminData.roleName || 'Administrator',
-      status: 'active',
-      customPermissions: adminData.customPermissions,
+      id: uid,
+      assignedWebsiteId: targetTenant,
+      websiteId: targetTenant,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       createdBy: currentAdminEmail,
-      lastLogin: undefined,
+      status: adminData.status || 'active',
       deviceInfo: 'Pending initial login',
       loginHistory: [],
-    };
+    });
 
     await saveAdminUser(newAdmin);
     await recordAuditLog(
       'New Admin Account Created',
       'SECURITY',
-      `Created new admin account for ${newAdmin.email} with role "${newAdmin.roleName}"`,
+      `Created new admin account for ${newAdmin.email || newAdmin.name} with role "${newAdmin.roleName}" on website "${newAdmin.assignedWebsiteId}"`,
       'SUCCESS'
     );
-    showToast('success', `Admin account created for ${newAdmin.email}`);
+    showToast('success', `Admin account created for ${newAdmin.email || newAdmin.name}`);
     await loadData();
   };
 
@@ -184,19 +237,22 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
     const target = admins.find((a) => a.uid === uid);
     if (!target) return;
 
-    const updated: AdminUser = {
+    const updated: AdminUser = normalizeAdminUser({
       ...target,
       roleId: updatedRole.roleId,
+      role: updatedRole.roleId,
       roleName: updatedRole.roleName,
       customPermissions: updatedRole.customPermissions,
-    };
+      updatedAt: new Date().toISOString(),
+    });
 
     await saveAdminUser(updated);
-    showToast('success', `Permissions updated for ${target.email}`);
+    showToast('success', `Permissions updated for ${target.email || target.name}`);
     await loadData();
   };
 
-  const handleToggleStatus = async (admin: AdminUser) => {
+  const handleToggleStatus = async (rawAdmin: AdminUser) => {
+    const admin = normalizeAdminUser(rawAdmin);
     const nextStatus = admin.status === 'active' ? 'disabled' : 'active';
     const currentAdminEmail = currentUser?.email || 'admin';
 
@@ -209,7 +265,8 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
     }
   };
 
-  const handleForceLogout = async (admin: AdminUser) => {
+  const handleForceLogout = async (rawAdmin: AdminUser) => {
+    const admin = normalizeAdminUser(rawAdmin);
     const currentAdminEmail = currentUser?.email || 'admin';
     const res = await forceLogoutAdminUser(admin.uid, currentAdminEmail);
     if (res.success) {
@@ -220,7 +277,8 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
     }
   };
 
-  const handleResetPassword = async (admin: AdminUser) => {
+  const handleResetPassword = async (rawAdmin: AdminUser) => {
+    const admin = normalizeAdminUser(rawAdmin);
     const res = await sendAdminPasswordResetEmail(admin.email);
     if (res.success) {
       showToast('success', res.message);
@@ -229,7 +287,8 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
     }
   };
 
-  const handleDeleteAdmin = async (admin: AdminUser) => {
+  const handleDeleteAdmin = async (rawAdmin: AdminUser) => {
+    const admin = normalizeAdminUser(rawAdmin);
     if (
       !window.confirm(
         `Are you sure you want to permanently delete admin account "${admin.name}" (${admin.email})?`
@@ -275,12 +334,12 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
 
     const headers = ['Timestamp', 'Action', 'Category', 'User Email', 'Status', 'Details', 'IP Address'];
     const rows = auditLogs.map((log) => [
-      log.timestamp,
-      `"${log.action.replace(/"/g, '""')}"`,
-      log.category,
-      log.userEmail,
-      log.status,
-      `"${log.details.replace(/"/g, '""')}"`,
+      log.timestamp || '',
+      `"${(log.action || '').replace(/"/g, '""')}"`,
+      log.category || '',
+      log.userEmail || '',
+      log.status || '',
+      `"${(log.details || '').replace(/"/g, '""')}"`,
       log.ipAddress || '',
     ]);
 
@@ -331,11 +390,13 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
                 Multi Admin Management & RBAC System
               </h1>
               <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Lightweight • Secure
+                {isSuperAdmin ? 'Super Admin Mode' : 'Tenant Admin Mode'}
               </span>
             </div>
             <p className="text-xs text-neutral-400 mt-1">
-              Configure fine-grained Role-Based Access Control (RBAC) across 21 store modules
+              {isSuperAdmin
+                ? 'Global multi-tenant governance with full role-based access control across all websites'
+                : `Managing team administrators and staff for ${KNOWN_TENANTS.find((t) => t.id === currentTenantId)?.name || 'current website'}`}
             </p>
           </div>
         </div>
@@ -348,16 +409,20 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
-          <button
-            onClick={() => {
-              setSelectedRoleForEdit(null);
-              setIsCustomRoleModalOpen(true);
-            }}
-            className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-amber-300 font-bold text-xs rounded-xl border border-amber-500/20 flex items-center gap-2 transition-all"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>New Custom Role</span>
-          </button>
+          
+          {isSuperAdmin && (
+            <button
+              onClick={() => {
+                setSelectedRoleForEdit(null);
+                setIsCustomRoleModalOpen(true);
+              }}
+              className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-amber-300 font-bold text-xs rounded-xl border border-amber-500/20 flex items-center gap-2 transition-all"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              <span>New Custom Role</span>
+            </button>
+          )}
+
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all hover:scale-105"
@@ -379,7 +444,7 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Admin Accounts ({admins.length})</span>
+          <span>Admin Accounts ({filteredAdmins.length})</span>
         </button>
 
         <button
@@ -415,44 +480,63 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
           {/* Stat Overview Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl">
-              <span className="text-[10px] font-bold uppercase text-neutral-500 tracking-wider">Total Admins</span>
-              <div className="text-2xl font-black text-white mt-1">{admins.length}</div>
+              <span className="text-[10px] font-bold uppercase text-neutral-500 tracking-wider">Visible Admins</span>
+              <div className="text-2xl font-black text-white mt-1">{filteredAdmins.length}</div>
             </div>
 
             <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl">
               <span className="text-[10px] font-bold uppercase text-emerald-500 tracking-wider">Active Admins</span>
               <div className="text-2xl font-black text-emerald-400 mt-1">
-                {admins.filter((a) => a.status === 'active').length}
+                {filteredAdmins.filter((a) => a.status === 'active').length}
               </div>
             </div>
 
             <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl">
               <span className="text-[10px] font-bold uppercase text-rose-500 tracking-wider">Disabled Accounts</span>
               <div className="text-2xl font-black text-rose-400 mt-1">
-                {admins.filter((a) => a.status === 'disabled').length}
+                {filteredAdmins.filter((a) => a.status === 'disabled').length}
               </div>
             </div>
 
             <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl">
-              <span className="text-[10px] font-bold uppercase text-amber-500 tracking-wider">Active Roles</span>
+              <span className="text-[10px] font-bold uppercase text-amber-500 tracking-wider">Available Roles</span>
               <div className="text-2xl font-black text-amber-400 mt-1">{allRoles.length}</div>
             </div>
           </div>
 
           {/* Search and Filters Bar */}
-          <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap">
             <div className="relative w-full sm:w-80">
               <Search className="w-4 h-4 absolute left-3.5 top-3 text-neutral-500" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search admins by name, email or role..."
+                placeholder="Search admins by name, email, website or role..."
                 className="w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 transition-all"
               />
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+              {/* Tenant selector for Super Admin */}
+              {isSuperAdmin && (
+                <div className="flex items-center gap-2">
+                  <Globe className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                  <select
+                    value={tenantFilter}
+                    onChange={(e) => setTenantFilter(e.target.value)}
+                    className="bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="all">All Websites / Tenants</option>
+                    {KNOWN_TENANTS.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="flex items-center gap-2">
                 <Filter className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
                 <select
@@ -489,6 +573,7 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
                   <tr>
                     <th className="p-4">Admin Name & Email</th>
                     <th className="p-4">Role Badge</th>
+                    <th className="p-4">Assigned Website</th>
                     <th className="p-4">Status</th>
                     <th className="p-4">Last Login & Device</th>
                     <th className="p-4 text-right">Actions</th>
@@ -497,26 +582,28 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
                 <tbody className="divide-y divide-neutral-800/60">
                   {filteredAdmins.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-neutral-500">
+                      <td colSpan={6} className="p-8 text-center text-neutral-500">
                         No admin accounts found matching your filters.
                       </td>
                     </tr>
                   ) : (
                     filteredAdmins.map((admin) => {
-                      const isSuper =
-                        admin.roleId === 'super_admin' ||
-                        admin.email.toLowerCase() === 'vpcreation2002@gmail.com';
+                      const isSuper = isSuperAdminUser(admin);
+                      const adminInitial = (admin.name || admin.email || 'A').charAt(0).toUpperCase();
+                      const tenantDef = KNOWN_TENANTS.find(
+                        (t) => t.id === normalizeTenantId(admin.assignedWebsiteId || admin.websiteId)
+                      );
 
                       return (
                         <tr key={admin.uid} className="hover:bg-neutral-900/50 transition-colors">
                           <td className="p-4">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 font-bold flex items-center justify-center uppercase shrink-0">
-                                {admin.name.charAt(0) || 'A'}
+                                {adminInitial}
                               </div>
                               <div>
-                                <span className="font-bold text-white block">{admin.name}</span>
-                                <span className="text-[11px] text-neutral-400 font-mono">{admin.email}</span>
+                                <span className="font-bold text-white block">{admin.name || 'Admin User'}</span>
+                                <span className="text-[11px] text-neutral-400 font-mono">{admin.email || 'No email registered'}</span>
                               </div>
                             </div>
                           </td>
@@ -532,6 +619,20 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
                               <Shield className="w-3 h-3 text-amber-400" />
                               <span>{admin.roleName || admin.roleId}</span>
                             </span>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="flex items-center gap-1.5">
+                              <Building2 className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                              <div>
+                                <span className="font-medium text-neutral-300 block text-[11px]">
+                                  {tenantDef?.name || admin.assignedWebsiteId || 'Default Website'}
+                                </span>
+                                <span className="text-[10px] text-neutral-500 font-mono block">
+                                  {normalizeTenantId(admin.assignedWebsiteId || admin.websiteId)}
+                                </span>
+                              </div>
+                            </div>
                           </td>
 
                           <td className="p-4">
@@ -651,16 +752,18 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
               <h2 className="text-sm font-black text-white uppercase tracking-wider">Role Definitions & Presets</h2>
               <p className="text-xs text-neutral-400">View built-in roles or create custom system roles</p>
             </div>
-            <button
-              onClick={() => {
-                setSelectedRoleForEdit(null);
-                setIsCustomRoleModalOpen(true);
-              }}
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl flex items-center gap-2 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Custom Role</span>
-            </button>
+            {isSuperAdmin && (
+              <button
+                onClick={() => {
+                  setSelectedRoleForEdit(null);
+                  setIsCustomRoleModalOpen(true);
+                }}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl flex items-center gap-2 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Custom Role</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -690,14 +793,15 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
                     Modules Granted:{' '}
                     <strong className="text-amber-300 font-mono">
                       {
-                        Object.values(role.permissions).filter((p) => p.read || p.create || p.edit || p.delete || p.export)
-                          .length
+                        Object.values(role.permissions || {}).filter(
+                          (p) => p && (p.read || p.create || p.edit || p.delete || p.export)
+                        ).length
                       }
                     </strong>{' '}
                     / {ADMIN_MODULE_LIST.length}
                   </span>
 
-                  {!role.isSystemPreset && (
+                  {!role.isSystemPreset && isSuperAdmin && (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
@@ -767,14 +871,14 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
                   ) : (
                     auditLogs.map((log) => (
                       <tr key={log.id} className="hover:bg-neutral-900/50 transition-colors font-mono text-[11px]">
-                        <td className="p-4 text-neutral-400">{new Date(log.timestamp).toLocaleString()}</td>
-                        <td className="p-4 font-bold text-white">{log.action}</td>
+                        <td className="p-4 text-neutral-400">{log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}</td>
+                        <td className="p-4 font-bold text-white">{log.action || 'Action'}</td>
                         <td className="p-4">
                           <span className="px-2 py-0.5 rounded bg-neutral-900 text-neutral-300 border border-neutral-800 uppercase font-sans text-[10px]">
-                            {log.category}
+                            {log.category || 'GENERAL'}
                           </span>
                         </td>
-                        <td className="p-4 text-amber-300">{log.userEmail}</td>
+                        <td className="p-4 text-amber-300">{log.userEmail || 'System'}</td>
                         <td className="p-4">
                           <span
                             className={`px-2 py-0.5 rounded-full font-sans text-[10px] font-black uppercase ${
@@ -785,10 +889,10 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
                                 : 'bg-rose-950 text-rose-400 border border-rose-500/30'
                             }`}
                           >
-                            {log.status}
+                            {log.status || 'INFO'}
                           </span>
                         </td>
-                        <td className="p-4 text-neutral-300 font-sans max-w-xs truncate">{log.details}</td>
+                        <td className="p-4 text-neutral-300 font-sans max-w-xs truncate">{log.details || ''}</td>
                       </tr>
                     ))
                   )}
@@ -805,6 +909,7 @@ export const AdminManagementView: React.FC<AdminManagementViewProps> = ({
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleCreateAdmin}
         customRoles={customRoles}
+        currentUser={currentUser}
       />
 
       <EditAdminPermissionsModal

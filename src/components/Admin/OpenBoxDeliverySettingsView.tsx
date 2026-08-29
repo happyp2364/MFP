@@ -85,11 +85,14 @@ export const OpenBoxDeliverySettingsView: React.FC = () => {
   ];
 
   // Filtered products for selection
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    p.category.toLowerCase().includes(productSearch.toLowerCase()) ||
-    (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase()))
-  );
+  const filteredProducts = products.filter((p) => {
+    const q = (productSearch || '').toLowerCase();
+    return (
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.category || '').toLowerCase().includes(q) ||
+      (p.sku ? p.sku.toLowerCase().includes(q) : false)
+    );
+  });
 
   const toggleCategorySelection = (catId: string) => {
     setFormConfig((prev) => {

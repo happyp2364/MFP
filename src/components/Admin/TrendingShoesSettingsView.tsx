@@ -81,10 +81,14 @@ export const TrendingShoesSettingsView: React.FC = () => {
   };
 
   const filteredProductsForPicker = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-      p.brand.toLowerCase().includes(productSearch.toLowerCase()) ||
-      p.category.toLowerCase().includes(productSearch.toLowerCase())
+    (p) => {
+      const q = (productSearch || '').toLowerCase();
+      return (
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.brand || '').toLowerCase().includes(q) ||
+        (p.category || '').toLowerCase().includes(q)
+      );
+    }
   );
 
   return (

@@ -103,7 +103,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                     <User className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-white">Welcome to Marudhar</h3>
+                    <h3 className="text-sm font-black text-white">Welcome</h3>
                     <p className="text-xs text-neutral-400">Sign in to track orders & earn rewards</p>
                   </div>
                 </div>
@@ -115,7 +115,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                   }}
                   className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
                 >
-                  SIGN IN / REGISTER
+                  Sign In / Register
                 </button>
               </div>
             )}
@@ -162,10 +162,10 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
               >
                 <div className="flex items-center gap-3">
                   <Gift className="w-4 h-4 text-purple-400" />
-                  <span>Rewards Center & Spin Wheel</span>
+                  <span>Spin the Wheel & Rewards</span>
                 </div>
                 <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[9px] font-black uppercase">
-                  WIN COUPONS
+                  WIN PRIZES
                 </span>
               </button>
 
@@ -204,7 +204,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                     className="w-full p-2.5 rounded-xl hover:bg-neutral-800 text-neutral-300 hover:text-white flex items-center gap-3 transition-colors cursor-pointer"
                   >
                     <Footprints className="w-4 h-4 text-emerald-500" />
-                    <span>Men's Shoes & Sneakers</span>
+                    <span>Men's Footwear</span>
                   </button>
 
                   <button
@@ -212,7 +212,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                     className="w-full p-2.5 rounded-xl hover:bg-neutral-800 text-neutral-300 hover:text-white flex items-center gap-3 transition-colors cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4 text-pink-400" />
-                    <span>Women's Sports Shoes</span>
+                    <span>Women's Shoes & Heels</span>
                   </button>
 
                   <button
@@ -228,7 +228,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                     className="w-full p-2.5 rounded-xl hover:bg-neutral-800 text-neutral-300 hover:text-white flex items-center gap-3 transition-colors cursor-pointer"
                   >
                     <Shirt className="w-4 h-4 text-blue-400" />
-                    <span>Men Clothing & Apparel</span>
+                    <span>Men's Apparel & Accessories</span>
                   </button>
                 </div>
               )}
@@ -247,7 +247,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                 className="w-full p-2.5 rounded-xl hover:bg-neutral-800 text-neutral-300 hover:text-white flex items-center gap-3 transition-colors"
               >
                 <MessageCircle className="w-4 h-4 text-emerald-500" />
-                <span>WhatsApp Customer Support</span>
+                <span>WhatsApp Support</span>
               </a>
 
               <a
@@ -255,7 +255,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                 className="w-full p-2.5 rounded-xl hover:bg-neutral-800 text-neutral-300 hover:text-white flex items-center gap-3 transition-colors"
               >
                 <Phone className="w-4 h-4 text-blue-400" />
-                <span>Call Helpline: {storeInfo.phone}</span>
+                <span>Helpline: {storeInfo.phone}</span>
               </a>
             </div>
 
@@ -270,7 +270,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                   className="w-full p-3 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-extrabold flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Logout Account</span>
+                  <span>Logout</span>
                 </button>
               </div>
             )}

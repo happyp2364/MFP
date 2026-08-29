@@ -782,10 +782,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-serif font-bold text-amber-100">
-                Secure Payment & Checkout
+                सुरक्षित भुगतान • Secure Checkout
               </h2>
               <p className="text-xs text-amber-200/70">
-                Marudhar Fashion Point • Bank-Level Encryption
+                मारुधर फैशन पॉइंट • 100% सुरक्षित और एन्क्रिप्टेड
               </p>
             </div>
           </div>
@@ -813,7 +813,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             >
               1
             </span>
-            <span>Delivery Info</span>
+            <span>पता • Delivery</span>
           </div>
 
           <div className="w-6 h-[1px] bg-neutral-300" />
@@ -830,7 +830,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             >
               2
             </span>
-            <span>Payment Method</span>
+            <span>भुगतान • Payment</span>
           </div>
 
           <div className="w-6 h-[1px] bg-neutral-300" />
@@ -849,7 +849,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             >
               3
             </span>
-            <span>Verification</span>
+            <span>सत्यापन • Verify</span>
           </div>
 
           <div className="w-6 h-[1px] bg-neutral-300" />
@@ -866,7 +866,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             >
               4
             </span>
-            <span>Order Confirmed</span>
+            <span>पुष्टि • Confirmed</span>
           </div>
         </div>
 
@@ -882,12 +882,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {step === 'SHIPPING' && (
           <form onSubmit={handleShippingSubmit} className="p-6 space-y-4">
             <h3 className="text-sm font-semibold text-neutral-900 uppercase tracking-wider">
-              Shipping & Delivery Details
+              डिलीवरी का पता • Shipping & Delivery Details
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="block text-neutral-600 mb-1 font-medium">Full Name *</label>
+                <label className="block text-neutral-600 mb-1 font-medium">पूरा नाम • Full Name *</label>
                 <input
                   type="text"
                   required
@@ -899,7 +899,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-neutral-600 mb-1 font-medium">Phone Number *</label>
+                <label className="block text-neutral-600 mb-1 font-medium">मोबाइल नंबर • Phone Number *</label>
                 <input
                   type="tel"
                   required
@@ -911,7 +911,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-neutral-600 mb-1 font-medium">Email Address *</label>
+                <label className="block text-neutral-600 mb-1 font-medium">ईमेल • Email Address *</label>
                 <input
                   type="email"
                   required
@@ -924,7 +924,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               <div className="md:col-span-2">
                 <label className="block text-neutral-600 mb-1 font-medium">
-                  House / Street Address *
+                  मकान नं. व गली / पता • House / Street Address *
                 </label>
                 <input
                   type="text"
@@ -937,7 +937,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-neutral-600 mb-1 font-medium">City / District *</label>
+                <label className="block text-neutral-600 mb-1 font-medium">शहर / जिला • City / District *</label>
                 <input
                   type="text"
                   required
@@ -948,7 +948,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-neutral-600 mb-1 font-medium">State *</label>
+                <label className="block text-neutral-600 mb-1 font-medium">राज्य • State *</label>
                 <input
                   type="text"
                   required
@@ -959,7 +959,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-neutral-600 mb-1 font-medium">PIN Code *</label>
+                <label className="block text-neutral-600 mb-1 font-medium">पिन कोड • PIN Code *</label>
                 <input
                   type="text"
                   required
@@ -972,7 +972,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               <div>
                 <label className="block text-neutral-600 mb-1 font-medium">
-                  Landmark (Optional)
+                  नजदीकी स्थान • Landmark (Optional)
                 </label>
                 <input
                   type="text"
@@ -1175,31 +1175,31 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* Price Summary */}
             <div className="mt-4 p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-1.5">
               <div className="flex justify-between text-neutral-600">
-                <span>Subtotal ({cartItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
+                <span>कुल मूल्य • Subtotal ({cartItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
                 <span>₹{subtotal.toLocaleString()}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-600 font-bold">
-                  <span>Discount Applied ({appliedCoupon?.code})</span>
+                  <span>कूपन छूट • Discount ({appliedCoupon?.code})</span>
                   <span>-₹{discountAmount.toLocaleString()}</span>
                 </div>
               )}
               {freeGiftPromo && (
                 <div className="flex justify-between text-emerald-600 font-bold">
-                  <span>Free Promo Gift</span>
+                  <span>मुफ्त उपहार • Free Promo Gift</span>
                   <span>🎁 {freeGiftPromo}</span>
                 </div>
               )}
               <div className="flex justify-between text-neutral-600">
-                <span>GST ({gstPercent}%)</span>
+                <span>जीएसटी • GST ({gstPercent}%)</span>
                 <span>₹{taxAmount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-neutral-600">
-                <span>Shipping</span>
+                <span>डिलीवरी शुल्क • Shipping</span>
                 <span>
                   {shippingFee === 0 ? (
                     <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                      <span>FREE</span>
+                      <span>मुफ्त • FREE</span>
                       {freeShippingPromo && <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1 rounded uppercase">Coupon</span>}
                     </span>
                   ) : (
@@ -1209,12 +1209,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
               {isFeeEnabled && (
                 <div className="flex justify-between text-neutral-600">
-                  <span>Convenience Fee (Est.)</span>
-                  <span className="text-emerald-700 font-semibold">₹0 on QR / +{feePercent}% Online</span>
+                  <span>सुविधा शुल्क • Convenience Fee</span>
+                  <span className="text-emerald-700 font-semibold">QR कोड पर ₹0 / +{feePercent}%</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-neutral-900 pt-1.5 border-t border-neutral-200 text-sm">
-                <span>Estimated Total</span>
+                <span>कुल भुगतान राशि • Total Payable</span>
                 <span className="text-amber-800">₹{(subtotal - discountAmount + shippingFee + taxAmount).toLocaleString()}</span>
               </div>
             </div>
@@ -1226,7 +1226,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               type="submit"
               className="w-full py-3 bg-amber-700 hover:bg-amber-800 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center space-x-2 shadow-md hover:shadow-lg"
             >
-              <span>Proceed to Payment</span>
+              <span>भुगतान के लिए आगे बढ़ें • Proceed to Payment</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>

@@ -3,7 +3,7 @@ import { MobileCategoryIcon } from '../types';
 export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   {
     id: 'cat-mens-sports',
-    name: "Men's Sports Shoes",
+    name: "मेंस स्पोर्ट्स शूज • Men's Sports",
     iconName: 'Zap',
     image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -20,7 +20,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-womens-sports',
-    name: "Women's Sports Shoes",
+    name: "विमेंस स्पोर्ट्स शूज • Women's Sports",
     iconName: 'Zap',
     image: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -37,7 +37,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-men-clothing',
-    name: "Men's Clothing",
+    name: "मेंस क्लॉथिंग • Men's Apparel",
     iconName: 'Shirt',
     image: 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -52,7 +52,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-new-launches',
-    name: 'New Launches',
+    name: 'नए आगमन • New Arrivals',
     iconName: 'Sparkles',
     image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -68,7 +68,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-best-sellers',
-    name: 'Best Sellers',
+    name: 'बेस्ट सेलर • Best Sellers',
     iconName: 'Trophy',
     image: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -84,7 +84,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-trending',
-    name: 'Trending',
+    name: 'ट्रेंडिंग शूज • Trending',
     iconName: 'TrendingUp',
     image: 'https://images.unsplash.com/photo-1512374382149-233c42b6a83b?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -100,7 +100,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-sneakers',
-    name: 'Sneakers',
+    name: 'स्नीकर्स • Sneakers',
     iconName: 'Footprints',
     image: 'https://images.unsplash.com/photo-1597045566677-8cf032ed6634?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -114,7 +114,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-running',
-    name: 'Running Shoes',
+    name: 'रनिंग शूज • Running Shoes',
     iconName: 'Flame',
     image: 'https://images.unsplash.com/photo-1581553680321-4fffae59febd?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -128,7 +128,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-casual',
-    name: 'Casual Shoes',
+    name: 'कैजुअल शूज • Casual Shoes',
     iconName: 'Footprints',
     image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -142,7 +142,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-formal',
-    name: 'Formal Shoes',
+    name: 'फॉर्मल शूज • Formal Shoes',
     iconName: 'Briefcase',
     image: 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -156,7 +156,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-sandals',
-    name: 'Sandals',
+    name: 'सैंडल • Sandals',
     iconName: 'Sun',
     image: 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -170,7 +170,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-slippers',
-    name: 'Slippers',
+    name: 'स्लीपर्स व चप्पल • Slippers',
     iconName: 'Smile',
     image: 'https://images.unsplash.com/photo-1575410229391-19b4da01cc94?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -184,7 +184,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-loafers',
-    name: 'Loafers',
+    name: 'लोफर्स • Loafers',
     iconName: 'Briefcase',
     image: 'https://images.unsplash.com/photo-1533867617858-e7b97e060509?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -198,7 +198,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-kids',
-    name: 'Kids Footwear',
+    name: 'किड्स फुटवियर • Kids Shoes',
     iconName: 'Baby',
     image: 'https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=600&q=80',
     images: [
@@ -212,7 +212,7 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
   },
   {
     id: 'cat-offers',
-    name: 'Offers & Deals',
+    name: 'ऑफर व डील्स • Offers & Deals',
     iconName: 'Tag',
     image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=600&q=80',
     images: [

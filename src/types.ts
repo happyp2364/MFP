@@ -230,6 +230,37 @@ export interface SocialLinkItem {
   displayOrder: number;
 }
 
+export type CustomerLanguage = 'hi' | 'en';
+
+export interface CustomerCommunicationConfig {
+  language: CustomerLanguage; // 'hi' (default) | 'en'
+  welcomeMessage?: {
+    hi: string;
+    en: string;
+  };
+  orderConfirmationMessage?: {
+    hi: string;
+    en: string;
+  };
+  cartAlmostCompleteMessage?: {
+    hi: string;
+    en: string;
+  };
+  limitedStockAlert?: {
+    hi: string;
+    en: string;
+  };
+  slogans?: {
+    hi: string[];
+    en: string[];
+  };
+  friendlyErrorMessage?: {
+    hi: string;
+    en: string;
+  };
+  whatsAppTemplates?: Record<string, { hi: string; en: string }>;
+}
+
 export interface WebsiteConfig {
   // Section 1: Business Identity
   businessIdentity: {
@@ -396,6 +427,10 @@ export interface WebsiteConfig {
   storeLocator: {
     stores: PhysicalStore[];
   };
+
+  // Section 15: Customer Communication & Language Control
+  customerCommunication?: CustomerCommunicationConfig;
+  customerLanguage?: CustomerLanguage; // 'hi' | 'en'
 
   version?: number;
   lastUpdated?: string;
@@ -1438,6 +1473,8 @@ export interface WhatsAppTemplate {
   isActiveForAction: boolean;
   isDefault?: boolean;
   messageBody: string;
+  messageBodyHindi?: string;
+  messageBodyEnglish?: string;
   advancedOptions: WhatsAppTemplateAdvancedOptions;
   updatedAt: string;
 }

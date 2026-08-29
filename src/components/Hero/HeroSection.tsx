@@ -26,47 +26,47 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
   const slides: HeroSlide[] = [
     {
       id: 'slide-1',
-      badge: '👑 Royal Collection 2026',
-      title: storeInfo?.tagline || 'Royal Comfort & Authentic Indian Fashion',
-      subtitle: 'Discover Marudhar Fashion Point\'s exclusive lineup of athletic sneakers, royal leather loafers, bridal footwear, and durable everyday shoes.',
+      badge: '👑 शाही कलेक्शन • Royal Collection',
+      title: 'शाही आराम व असली भारतीय स्टाइल • Royal Comfort & Authentic Style',
+      subtitle: 'मरुधर फैशन पॉइंट के खास स्पोर्ट्स स्नीकर्स, फॉर्मल लेदर शूज और वेडिंग फुटवियर का अनूठा संग्रह। Explore athletic sneakers, formal loafers & festive shoes.',
       image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80',
-      ctaText: 'Explore Royal Range',
+      ctaText: 'कलेक्शन देखें • Explore Range',
       ctaActionId: 'products',
       accentColor: 'from-emerald-500/20 to-amber-500/20',
-      priceTag: 'From ₹499'
+      priceTag: 'मात्र ₹499 से शुरू • From ₹499'
     },
     {
       id: 'slide-2',
-      badge: '🔥 Flat ₹699 Mega Store',
-      title: 'Unbeatable ₹699 Footwear Bonanza',
-      subtitle: 'High-performance running sneakers, cushioned air-sole trainers, and daily comfort walking shoes at flat ₹699!',
+      badge: '🔥 फ्लैट ₹699 महा धमाका • Flat ₹699 Mega Store',
+      title: 'धमाकेदार ₹699 फुटवियर सेल • Unbeatable ₹699 Bonanza',
+      subtitle: 'हाई-परफॉर्मेंस रनिंग स्नीकर्स, एयर-सोल कुशन वाले जूते और डेली वॉक शूज फ्लैट ₹699 में! High-performance sneakers & cushion trainers.',
       image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80',
-      ctaText: 'Shop ₹699 Deals',
+      ctaText: '₹699 डील्स देखें • Shop ₹699 Deals',
       ctaActionId: 'price_699_collection',
       accentColor: 'from-amber-500/20 to-rose-500/20',
-      priceTag: 'Flat ₹699'
+      priceTag: 'फ्लैट ₹699 • Flat ₹699'
     },
     {
       id: 'slide-3',
-      badge: '⚡ Sports & Athletic Edition',
-      title: 'Ultimate Cushion Soles & Sport Trainers',
-      subtitle: 'Lightweight, breathable, and ultra-durable athletic sneakers engineered for all-day comfort and workout agility.',
+      badge: '⚡ स्पोर्ट्स व एथलेटिक एडिशन • Sports Edition',
+      title: 'अल्टीमेट कुशन सोल व ट्रेनर शूज • Ultimate Cushion Soles',
+      subtitle: 'हल्के, हवादार और लंबे चलने वाले स्पोर्ट्स शूज जो दें दिनभर आराम। Lightweight, breathable & ultra-durable athletic sneakers.',
       image: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=1200&q=80',
-      ctaText: 'View Trending Shoes',
+      ctaText: 'ट्रेंडिंग शूज देखें • Trending Shoes',
       ctaActionId: 'trending_shoes_section',
       accentColor: 'from-cyan-500/20 to-emerald-500/20',
-      priceTag: 'Save up to 40%'
+      priceTag: '40% तक छूट • Up to 40% OFF'
     },
     {
       id: 'slide-4',
-      badge: '✨ Wedding & Festive Special',
-      title: 'Bridal Heels, Mojaris & Royal Wear',
-      subtitle: 'Handcrafted elegance designed for grand Indian weddings, festive celebrations, and royal traditional ceremonies.',
+      badge: '✨ शादी व उत्सव स्पेशल • Wedding & Festive Special',
+      title: 'ब्राइडल हील्स, मोजड़ी व पारंपरिक फुटवियर • Royal Mojaris & Heels',
+      subtitle: 'भारतीय शादियों और त्योहारों के लिए हाथ से तराशी गई खास डिज़ाइन्स। Handcrafted elegance for grand Indian weddings & festive celebrations.',
       image: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=1200&q=80',
-      ctaText: 'Shop Wedding Wear',
+      ctaText: 'वेडिंग फुटवियर देखें • Shop Wedding',
       ctaActionId: 'products',
       accentColor: 'from-purple-500/20 to-amber-500/20',
-      priceTag: 'New Arrivals'
+      priceTag: 'नए आगमन • New Drops'
     }
   ];
 
@@ -282,8 +282,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
               <Truck className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-bold text-white">Free Express Shipping</div>
-              <div className="text-[10px] text-emerald-300/70">On orders above ₹999</div>
+              <div className="text-xs font-bold text-white">फ्री एक्सप्रेस डिलीवरी • Free Shipping</div>
+              <div className="text-[10px] text-emerald-300/70">₹999+ के ऑर्डर पर • Above ₹999</div>
             </div>
           </div>
 
@@ -292,8 +292,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
               <PackageCheck className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-bold text-white">Open Box Delivery</div>
-              <div className="text-[10px] text-amber-300/70">Verify before payment</div>
+              <div className="text-xs font-bold text-white">ओपन बॉक्स डिलीवरी • Open Box</div>
+              <div className="text-[10px] text-amber-300/70">चेक करके पेमेंट करें • Verify First</div>
             </div>
           </div>
 
@@ -302,8 +302,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
               <RefreshCw className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-bold text-white">Easy 7-Day Exchange</div>
-              <div className="text-[10px] text-emerald-300/70">Hassle-free size swap</div>
+              <div className="text-xs font-bold text-white">7 दिन आसान एक्सचेंज • 7-Day Swap</div>
+              <div className="text-[10px] text-emerald-300/70">साइज बदलना आसान • Easy Exchange</div>
             </div>
           </div>
 
@@ -312,8 +312,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-bold text-white">100% Genuine Quality</div>
-              <div className="text-[10px] text-amber-300/70">Authentic Marudhar footwear</div>
+              <div className="text-xs font-bold text-white">100% असली क्वालिटी • 100% Genuine</div>
+              <div className="text-[10px] text-amber-300/70">मरुधर गारंटी • Verified Quality</div>
             </div>
           </div>
 
@@ -322,8 +322,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
               <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
             </div>
             <div>
-              <div className="text-xs font-bold text-white">4.9★ Customer Rating</div>
-              <div className="text-[10px] text-emerald-300/70">15,000+ Happy Buyers</div>
+              <div className="text-xs font-bold text-white">4.9★ कस्टमर रेटिंग • 4.9★ Rating</div>
+              <div className="text-[10px] text-emerald-300/70">15,000+ खुश ग्राहक • 15K+ Reviews</div>
             </div>
           </div>
 

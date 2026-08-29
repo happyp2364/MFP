@@ -21,13 +21,13 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
           <span className="text-xs font-bold uppercase tracking-widest text-[#0B8F63] px-3 py-1 rounded-full bg-[#0B8F63]/10 inline-block">
-            Explore By Family
+            परिवार के लिए खास कलेक्शन • Explore By Family
           </span>
           <h2 className="font-serif-heading text-3xl sm:text-4xl lg:text-5xl font-bold text-neutral-900">
-            Select Your Category
+            कलेक्शन चुनें • Select Your Category
           </h2>
           <p className="text-sm sm:text-base text-neutral-600">
-            Crafted with ergonomic comfort, premium genuine materials, and royal craftsmanship for every member of the family.
+            आरामदायक कुशनिंग, प्रीमियम लेदर और बेहतरीन फिनिशिंग—पूरे परिवार के लिए। Crafted with ergonomic comfort and royal craftsmanship.
           </p>
         </div>
 

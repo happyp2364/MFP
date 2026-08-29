@@ -58,13 +58,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
           <div className="space-y-2 text-center lg:text-left max-w-xl">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0B8F63]/20 text-[#0B8F63] text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
-              Join Marudhar Family Club
+              मारुधर फैमिली क्लब • Join Marudhar Family Club
             </div>
             <h3 className="font-serif-heading text-2xl sm:text-3xl font-bold">
-              Get Exclusive Special Offers & New Arrival Alerts
+              विशेष ऑफर और नए कलेक्शन की जानकारी • Get Exclusive Deals & Updates
             </h3>
             <p className="text-xs sm:text-sm text-neutral-400">
-              Subscribe to get seasonal catalog updates directly on WhatsApp & Email.
+              सीजनल कैटलॉग और डिस्काउंट अपडेट सीधे व्हाट्सएप या ईमेल पर पाएं। Subscribe for seasonal catalog updates on WhatsApp & Email.
             </p>
           </div>
 
@@ -74,14 +74,14 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
               required
               value={newsletterEmail}
               onChange={(e) => setNewsletterEmail(e.target.value)}
-              placeholder="Enter your email or WhatsApp number"
+              placeholder="ईमेल या व्हाट्सऐप नंबर दर्ज करें"
               className="bg-neutral-900 border border-white/10 rounded-2xl px-4 py-3 text-xs text-white placeholder-neutral-500 outline-none focus:border-[#0B8F63] flex-1"
             />
             <button
               type="submit"
               className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-bold text-xs px-6 py-3 rounded-2xl transition-all shadow-md shrink-0 flex items-center justify-center gap-2"
             >
-              <span>{subscribed ? 'Subscribed!' : 'Subscribe'}</span>
+              <span>{subscribed ? 'जुड़ गए! • Subscribed!' : 'जुड़ें • Subscribe'}</span>
               <Send className="w-3.5 h-3.5" />
             </button>
           </form>
@@ -107,7 +107,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
             </div>
 
             <p className="text-xs text-neutral-400 leading-relaxed max-w-sm">
-              Your trusted family destination for high-grade sports shoes, royal leather loafers, mirror-work Kolhapuris, durable school shoes, and men's daily apparel.
+              भीलवाड़ा का भरोसेमंद पारिवारिक शोरूम — बेहतरीन स्पोर्ट्स शूज, फॉर्मल लेदर जूते, राजस्थानी जूतियां, स्कूल शूज और पुरुषों के परिधान।
             </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
@@ -153,7 +153,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
                     className="inline-flex items-center gap-2 bg-[#0B8F63] hover:bg-[#086F4C] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition-all"
                   >
                     <MessageCircle className="w-4 h-4 fill-white text-[#0B8F63]" />
-                    <span>Shop on WhatsApp</span>
+                    <span>व्हाट्सऐप पर संपर्क करें • WhatsApp</span>
                   </a>
                 </>
               )}
@@ -163,37 +163,37 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
           {/* Col 2: Quick Links */}
           <div className="space-y-3">
             <h4 className="font-bold text-xs uppercase tracking-wider text-[#0B8F63]">
-              Quick Navigation
+              महत्वपूर्ण लिंक्स • Quick Links
             </h4>
             <ul className="space-y-2 text-xs text-neutral-400">
-              <li><a href="#hero" className="hover:text-white transition-colors">Home Page</a></li>
-              <li><a href="#categories" className="hover:text-white transition-colors">Family Categories</a></li>
-              <li><a href="#products" className="hover:text-white transition-colors">Explore All Products</a></li>
-              <li><a href="#reviews" className="hover:text-white transition-colors">Customer Testimonials</a></li>
-              <li><a href="#about" className="hover:text-white transition-colors">About Viju Bhai & Store</a></li>
-              <li><a href="#contact" className="hover:text-white transition-colors">Store Location & Hours</a></li>
+              <li><a href="#hero" className="hover:text-white transition-colors">होम पेज • Home</a></li>
+              <li><a href="#categories" className="hover:text-white transition-colors">कैटेगरी • Categories</a></li>
+              <li><a href="#products" className="hover:text-white transition-colors">सभी उत्पाद • All Products</a></li>
+              <li><a href="#reviews" className="hover:text-white transition-colors">ग्राहक समीक्षाएं • Reviews</a></li>
+              <li><a href="#about" className="hover:text-white transition-colors">हमारे बारे में • About Us</a></li>
+              <li><a href="#contact" className="hover:text-white transition-colors">दुकान का पता • Location</a></li>
             </ul>
           </div>
 
           {/* Col 3: Product Categories */}
           <div className="space-y-3">
             <h4 className="font-bold text-xs uppercase tracking-wider text-[#0B8F63]">
-              Collections
+              लोकप्रिय कलेक्शन • Collections
             </h4>
             <ul className="space-y-2 text-xs text-neutral-400">
-              <li><span className="hover:text-white transition-colors cursor-pointer">Men's Running Shoes & Sneakers</span></li>
-              <li><span className="hover:text-white transition-colors cursor-pointer">Leather Loafers & Formals</span></li>
-              <li><span className="hover:text-white transition-colors cursor-pointer">Women's Sports Shoes & Sneakers</span></li>
-              <li><span className="hover:text-white transition-colors cursor-pointer">Traditional Kolhapuri & Juttis</span></li>
-              <li><span className="hover:text-white transition-colors cursor-pointer">Kids' School & Party Shoes</span></li>
-              <li><span className="hover:text-white transition-colors cursor-pointer">Men's Shirts & Trousers</span></li>
+              <li><span className="hover:text-white transition-colors cursor-pointer">मेंस स्पोर्ट्स शूज • Running Shoes</span></li>
+              <li><span className="hover:text-white transition-colors cursor-pointer">लेदर लोफर्स • Formal Loafers</span></li>
+              <li><span className="hover:text-white transition-colors cursor-pointer">विमेंस स्नीकर्स • Women's Shoes</span></li>
+              <li><span className="hover:text-white transition-colors cursor-pointer">राजस्थानी जूतियां • Kolhapuris</span></li>
+              <li><span className="hover:text-white transition-colors cursor-pointer">किड्स स्कूल शूज • Kids' Shoes</span></li>
+              <li><span className="hover:text-white transition-colors cursor-pointer">मेंस शर्ट्स व पैंट्स • Men's Apparel</span></li>
             </ul>
           </div>
 
           {/* Col 4: Store Contact */}
           <div className="space-y-3">
             <h4 className="font-bold text-xs uppercase tracking-wider text-[#0B8F63]">
-              Store Information
+              संपर्क विवरण • Store Contact
             </h4>
             <div className="space-y-2 text-xs text-neutral-400">
               <div className="flex items-start gap-2">
@@ -202,18 +202,18 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
               </div>
               <a href={`tel:${storeInfo.phone}`} className="flex items-center gap-2 hover:text-white transition-colors">
                 <Phone className="w-4 h-4 text-[#0B8F63] shrink-0" />
-                <span>Call: {storeInfo.phone}</span>
+                <span>फोन: {storeInfo.phone}</span>
               </a>
               <a href={generateGeneralInquiryWhatsAppLink()} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
                 <MessageCircle className="w-4 h-4 text-[#0B8F63] shrink-0 fill-[#0B8F63]/20" />
-                <span>WhatsApp: +{storeInfo.whatsappNumber}</span>
+                <span>व्हाट्सऐप: +{storeInfo.whatsappNumber}</span>
               </a>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-[#0B8F63] shrink-0" />
                 <span>{storeInfo.email}</span>
               </div>
               <div className="text-[11px] text-emerald-400 font-semibold pt-1">
-                Hours: {storeInfo.businessHours}
+                समय: {storeInfo.businessHours}
               </div>
             </div>
           </div>
@@ -223,15 +223,15 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
         {/* Bottom Guarantees & Copyright Bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
           <div className="flex items-center gap-1 select-none cursor-pointer" onClick={handleCopyrightClick} onDoubleClick={onOpenAdmin}>
-            <span>{websiteConfig?.footer?.copyrightText || `© ${new Date().getFullYear()} ${websiteConfig?.businessIdentity?.businessName || storeInfo.name}. All rights reserved.`}</span>
+            <span>{websiteConfig?.footer?.copyrightText || `© ${new Date().getFullYear()} ${websiteConfig?.businessIdentity?.businessName || storeInfo.name}. सर्वाधिकार सुरक्षित • All rights reserved.`}</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-[11px] text-neutral-400">
-            <span>100% Fit & Size Guarantee</span>
+            <span>💯 100% सही साइज गारंटी • Fit Guarantee</span>
             <span>•</span>
-            <span>Express Delivery</span>
+            <span>⚡ तेज डिलीवरी • Fast Shipping</span>
             <span>•</span>
-            <span>Easy WhatsApp Returns</span>
+            <span>💬 आसान व्हाट्सएप सहायता • Easy Support</span>
           </div>
         </div>
 

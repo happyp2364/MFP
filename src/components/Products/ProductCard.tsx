@@ -329,24 +329,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <OpenBoxDeliveryBadge product={product} variant="compact" />
             {currentPrice >= 999 && (
               <span className="bg-emerald-800 text-white text-[9px] font-extrabold tracking-wider uppercase px-2.5 py-0.5 rounded-md shadow-sm">
-                🚚 Free Delivery
+                🚚 फ्री डिलीवरी • Free Delivery
               </span>
             )}
             {product.isBestSeller && (
               <span className="bg-[#0B8F63] text-white text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                Best Seller
+                बेस्ट सेलर • Best Seller
               </span>
             )}
             {product.isNewArrival && (
               <span className="bg-neutral-900 text-white text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md shadow-sm">
-                New
+                नया • New
               </span>
             )}
             {product.isLimitedStock && (
               <span className="bg-amber-500 text-white text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1">
                 <Flame className="w-3 h-3" />
-                Limited
+                सीमित स्टॉक • Limited
               </span>
             )}
           </div>
@@ -553,11 +553,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {cfg.showStockStatus && (
               isCompletelyOutOfStock ? (
                 <span className="text-[10px] font-extrabold text-rose-700 bg-rose-50 px-2 py-0.5 rounded">
-                  Out of Stock
+                  स्टॉक समाप्त • Out of Stock
                 </span>
               ) : (
                 <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                  In Stock
+                  उपलब्ध • In Stock
                 </span>
               )
             )}
@@ -570,7 +570,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <Bell className="w-4 h-4 fill-white text-amber-600" />
-              <span>NOTIFY ON WHATSAPP</span>
+              <span>व्हाट्सऐप पर सूचित करें • NOTIFY</span>
             </button>
           ) : (
             <div className="space-y-1.5">
@@ -589,7 +589,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   ) : (
                     <Zap className="w-3.5 h-3.5 fill-current" />
                   )}
-                  <span>{cfg.buyNowText || paymentSettings.buyNowButtonText || 'BUY NOW'}</span>
+                  <span>{cfg.buyNowText || paymentSettings.buyNowButtonText || 'अभी खरीदें • BUY NOW'}</span>
                 </button>
               )}
 
@@ -604,7 +604,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     }}
                   >
                     <MessageCircle className="w-3.5 h-3.5 fill-current shrink-0" />
-                    <span className="truncate">{cfg.whatsAppText || paymentSettings.buyWhatsAppButtonText || 'WHATSAPP'}</span>
+                    <span className="truncate">{cfg.whatsAppText || paymentSettings.buyWhatsAppButtonText || 'व्हाट्सऐप • WHATSAPP'}</span>
                   </button>
                 )}
 
@@ -617,7 +617,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     }}
                   >
                     <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{cfg.addToCartText || paymentSettings.addToBagButtonText || 'ADD TO BAG'}</span>
+                    <span className="truncate">{cfg.addToCartText || paymentSettings.addToBagButtonText || 'बैग में जोड़ें • ADD'}</span>
                   </button>
                 )}
               </div>

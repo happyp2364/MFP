@@ -16,41 +16,41 @@ export const HorizontalCategoryBar: React.FC<HorizontalCategoryBarProps> = ({
   const categories = [
     {
       id: 'all',
-      name: 'All Collection',
-      tag: 'Explore',
+      name: 'सभी कलेक्शन • All',
+      tag: 'एक्सप्लोर करें • Explore',
       image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=150&q=80',
       badge: 'HOT',
     },
     {
       id: 'men',
-      name: 'Men',
-      tag: 'Sports & Formals',
+      name: 'पुरुष • Men',
+      tag: 'स्पोर्ट्स व फॉर्मल • Sports',
       image: 'https://images.unsplash.com/photo-1520639888713-7851133b1ed0?auto=format&fit=crop&w=150&q=80',
       badge: 'POPULAR',
     },
     {
       id: 'women',
-      name: 'Women',
-      tag: 'Sports Shoes',
+      name: 'महिलाएं • Women',
+      tag: 'स्पोर्ट्स शूज • Footwear',
       image: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=150&q=80',
       badge: 'TRENDING',
     },
     {
       id: 'kids',
-      name: 'Kids',
-      tag: 'School & Play',
+      name: 'बच्चे • Kids',
+      tag: 'स्कूल व प्ले • Casuals',
       image: 'https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=150&q=80',
       badge: 'NEW',
     },
   ];
 
   const quickPills = [
-    { label: '⚡ New Launches', action: () => { onSelectCategory('all'); onNavigateToSection('products'); } },
-    { label: '👟 Sneakers', action: () => { onSelectCategory('men'); onNavigateToSection('products'); } },
-    { label: '🩴 Slip Ons & Slides', action: () => { onSelectCategory('men'); onNavigateToSection('products'); } },
-    { label: '👟 Women Sports Shoes', action: () => { onSelectCategory('women'); onNavigateToSection('products'); } },
-    { label: '🧒 Light-Up Shoes', action: () => { onSelectCategory('kids'); onNavigateToSection('products'); } },
-    { label: '🏷️ Clearance Sale', action: () => { onSelectCategory('all'); onNavigateToSection('products'); } },
+    { label: '⚡ नए आगमन • New Drops', action: () => { onSelectCategory('all'); onNavigateToSection('products'); } },
+    { label: '👟 स्नीकर्स • Sneakers', action: () => { onSelectCategory('men'); onNavigateToSection('products'); } },
+    { label: '🩴 स्लिप ऑन • Slides', action: () => { onSelectCategory('men'); onNavigateToSection('products'); } },
+    { label: '👟 विमेंस शूज • Women Sports', action: () => { onSelectCategory('women'); onNavigateToSection('products'); } },
+    { label: '🧒 किड्स शूज • Kids Light-Up', action: () => { onSelectCategory('kids'); onNavigateToSection('products'); } },
+    { label: '🏷️ खास सेल • Clearance Sale', action: () => { onSelectCategory('all'); onNavigateToSection('products'); } },
   ];
 
   const handleClick = (catId: GenderCategory) => {

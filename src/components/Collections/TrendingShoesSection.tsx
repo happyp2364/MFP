@@ -208,13 +208,13 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0B8F63]/10 border border-[#0B8F63]/20 text-[#0B8F63] text-xs font-extrabold tracking-widest uppercase mb-3">
               <Flame className="w-4 h-4 fill-[#0B8F63] animate-pulse" />
-              <span>{config.badgeLabel || 'COLLEGE FAVOURITES'}</span>
+              <span>{config.badgeLabel || 'ट्रेंडिंग शूज • TRENDING SHOES'}</span>
             </div>
             <h2 className="font-serif-heading text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-              {config.sectionTitle || '🔥 Trending Shoes Collection'}
+              {config.sectionTitle || '🔥 ट्रेंडिंग शूज कलेक्शन • Trending Shoes'}
             </h2>
             <p className={`mt-2 text-sm sm:text-base max-w-xl ${isDarkBg ? 'text-neutral-300' : 'text-neutral-600'}`}>
-              {config.subtitle || 'Discover our most popular college sports shoes.'}
+              {config.subtitle || 'कॉलेज व स्पोर्ट्स के सबसे पसंदीदा शूज। Discover our most popular sports shoes.'}
             </p>
           </div>
 
@@ -405,7 +405,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
                   className="btn-liquid-base btn-liquid-emerald w-full text-white font-extrabold text-sm py-3.5 px-6 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer group"
                 >
                   <Zap className="w-4 h-4 fill-white group-hover:scale-125 transition-transform" />
-                  <span>⚡ BUY NOW — {formatINR(currentShoe.price)}</span>
+                  <span>⚡ अभी खरीदें • BUY NOW ({formatINR(currentShoe.price)})</span>
                 </button>
 
                 <button
@@ -417,7 +417,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
                   }`}
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  <span>ADD TO BAG</span>
+                  <span>बैग में जोड़ें • ADD TO BAG</span>
                 </button>
               </div>
 
@@ -428,12 +428,12 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
                   className="flex items-center gap-1.5 text-neutral-400 hover:text-[#0B8F63] transition-colors cursor-pointer"
                 >
                   <Eye className="w-4 h-4" />
-                  <span>Quick 360° View Details</span>
+                  <span>360° विवरण देखें • Quick View</span>
                 </button>
 
                 <div className="flex items-center gap-2 text-[11px] text-emerald-500 font-bold">
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Original MBH Guarantee</span>
+                  <span>100% असली गारंटी • Verified Quality</span>
                 </div>
               </div>
 

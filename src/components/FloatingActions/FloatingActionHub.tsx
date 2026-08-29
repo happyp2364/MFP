@@ -117,7 +117,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
         {/* Toggle Social Media links button */}
         <div className="group relative flex items-center gap-2">
           <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
-            {expandedSocials ? 'Close Socials' : 'Social Channels'}
+            {expandedSocials ? 'बंद करें • Close' : 'सोशल मीडिया • Social Media'}
           </span>
           <button
             onClick={() => setExpandedSocials(!expandedSocials)}
@@ -136,7 +136,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
         {onOpenSoundSettings && (
           <div className="group relative flex items-center gap-2">
             <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
-              {customerSoundSettings?.muted ? 'Muted (Tap for Sound Settings)' : `Sound Volume: ${customerSoundSettings?.volume ?? 80}%`}
+              {customerSoundSettings?.muted ? 'आवाज़ बंद • Sound Muted' : `ध्वनि • Sound: ${customerSoundSettings?.volume ?? 80}%`}
             </span>
             <button
               onClick={onOpenSoundSettings}
@@ -159,7 +159,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
         {/* Quick Call Button */}
         <div className="group relative flex items-center gap-2">
           <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
-            Call Store: {storeInfo.phone}
+            कॉल करें • Call: {storeInfo.phone}
           </span>
           <a
             href={`tel:${storeInfo.phone}`}
@@ -174,7 +174,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
         {onOpenCalendarModal && (
           <div className="group relative flex items-center gap-2">
             <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
-              Book VIP Fitting (Google Calendar)
+              फिटिंग बुक करें • Book VIP Fitting
             </span>
             <button
               onClick={onOpenCalendarModal}
@@ -193,7 +193,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
             <img src={waSupportAvatar} alt={waSupportName} className="w-8 h-8 rounded-full border border-neutral-700 object-cover" />
             <div className="text-left leading-tight">
               <span className="font-bold text-[11px] block text-white">{waSupportName}</span>
-              <span className="text-[9px] text-[#0B8F63] font-extrabold tracking-wide uppercase">{waSupportRole}</span>
+              <span className="text-[9px] text-[#0B8F63] font-extrabold tracking-wide uppercase">व्हाट्सऐप लाइव सहायता • Live Chat</span>
             </div>
           </div>
           <a
@@ -214,7 +214,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
         {showScrollTop && (
           <div className="group relative flex items-center gap-2">
             <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
-              Back To Top
+              ऊपर जाएं • Back To Top
             </span>
             <button
               onClick={scrollToTop}

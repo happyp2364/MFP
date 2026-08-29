@@ -223,14 +223,14 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
           <div>
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-black tracking-widest uppercase mb-3">
               <Zap className="w-4 h-4 fill-emerald-400 text-emerald-400 animate-pulse" />
-              <span>{config.badgeLabel || 'UNBEATABLE VALUE'}</span>
+              <span>{config.badgeLabel || 'महा बचत • UNBEATABLE VALUE'}</span>
             </div>
             
             <h2 className="font-serif-heading text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-              {config.sectionTitle || '🔥 Starting at ₹699'}
+              {config.sectionTitle || '🔥 मात्र ₹699 से शुरू • Starting at ₹699'}
             </h2>
             <p className={`mt-2 text-sm sm:text-base max-w-xl ${isDarkBg ? 'text-neutral-300' : 'text-neutral-600'}`}>
-              {config.subtitle || 'Premium Shoes Under ₹699'}
+              {config.subtitle || 'प्रीमियम स्पोर्ट्स व स्नीकर्स मात्र ₹699 में। Premium Shoes Under ₹699.'}
             </p>
           </div>
 
@@ -392,7 +392,7 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
                       className="btn-liquid-base btn-liquid-emerald w-full text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer"
                     >
                       <Zap className="w-3.5 h-3.5 fill-white" />
-                      <span>BUY NOW</span>
+                      <span>खरीदें • BUY</span>
                     </button>
 
                     <button
@@ -406,7 +406,7 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
                       }`}
                     >
                       <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>ADD</span>
+                      <span>जोड़ें • ADD</span>
                     </button>
                   </div>
 
@@ -417,7 +417,7 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
                       className="text-[11px] font-bold text-neutral-400 hover:text-[#0B8F63] transition-colors inline-flex items-center gap-1 cursor-pointer"
                     >
                       <Eye className="w-3 h-3" />
-                      <span>Quick Details</span>
+                      <span>विवरण • Details</span>
                     </button>
                   </div>
 

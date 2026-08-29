@@ -102,6 +102,40 @@ export const DEFAULT_WHATSAPP_TEMPLATES: WhatsAppTemplate[] = [
     isActiveForAction: true,
     isDefault: true,
     updatedAt: new Date().toISOString(),
+    messageBodyHindi: `🛍️ *डायरेक्ट ऑर्डर - {shopName}*
+
+नमस्ते {shopName}! मैं व्हाट्सऐप पर यह प्रोडक्ट सीधे खरीदना चाहता हूँ:
+
+📦 *प्रोडक्ट:* {productName}
+🏷️ *ब्रांड:* {productBrand}
+📁 *कैटेगरी:* {productCategory}
+📏 *साइज:* {selectedSize}
+🎨 *कलर:* {selectedColor}
+🔢 *मात्रा:* {quantity}
+💰 *कीमत:* {finalPrice}
+
+👤 *ग्राहक का नाम:* {customerName}
+📞 *मोबाइल:* {customerPhone}
+📍 *डिलीवरी पता:* {deliveryAddress}, {city}, {state} - {pincode}
+
+कृपया स्टॉक उपलब्धता और डिस्पैच की पुष्टि करें। धन्यवाद!`,
+    messageBodyEnglish: `🛍️ *DIRECT BUY ORDER - {shopName}*
+
+Hello {shopName}! I would like to purchase this product directly via WhatsApp:
+
+📦 *Product:* {productName}
+🏷️ *Brand:* {productBrand}
+📁 *Category:* {productCategory}
+📏 *Size:* {selectedSize}
+🎨 *Color:* {selectedColor}
+🔢 *Quantity:* {quantity}
+💰 *Price:* {finalPrice}
+
+👤 *Customer Name:* {customerName}
+📞 *Mobile Number:* {customerPhone}
+📍 *Delivery Address:* {deliveryAddress}, {city}, {state} - {pincode}
+
+Please confirm stock availability and send payment/dispatch instructions.`,
     messageBody: `🛍️ *DIRECT BUY ORDER - {shopName}*
 
 Hello {shopName}! I would like to purchase this product directly via WhatsApp:
@@ -129,6 +163,30 @@ Please confirm stock availability and send payment/dispatch instructions.`,
     isActiveForAction: true,
     isDefault: true,
     updatedAt: new Date().toISOString(),
+    messageBodyHindi: `🛒 *कार्ट ऑर्डर कन्फर्मेशन - {shopName}*
+
+नमस्ते {shopName}! मैं अपनी शॉपिंग कार्ट के प्रोडक्ट्स का ऑर्डर देना चाहता हूँ:
+
+💰 *कुल राशि:* {finalPrice}
+🎟️ *कूपन कोड:* {couponCode} ({couponDiscount})
+
+👤 *ग्राहक का नाम:* {customerName}
+📞 *मोबाइल:* {customerPhone}
+📍 *डिलीवरी पता:* {deliveryAddress}, {city}, {state} - {pincode}
+
+कृपया स्टॉक चेक करके ऑर्डर कन्फर्म करें। धन्यवाद!`,
+    messageBodyEnglish: `🛒 *CART ORDER CONFIRMATION - {shopName}*
+
+Hello {shopName}! I would like to place an order for the items in my shopping cart:
+
+💰 *Total Estimated Price:* {finalPrice}
+🎟️ *Coupon Code:* {couponCode} ({couponDiscount})
+
+👤 *Customer Name:* {customerName}
+📞 *Mobile:* {customerPhone}
+📍 *Delivery Address:* {deliveryAddress}, {city}, {state} - {pincode}
+
+Please verify item stock and guide me with the order confirmation. Thank you!`,
     messageBody: `🛒 *CART ORDER CONFIRMATION - {shopName}*
 
 Hello {shopName}! I would like to place an order for the items in my shopping cart:
@@ -151,11 +209,47 @@ Please verify item stock and guide me with the order confirmation. Thank you!`,
     isActiveForAction: true,
     isDefault: true,
     updatedAt: new Date().toISOString(),
+    messageBodyHindi: `💵 *कैश ऑन डिलीवरी ऑर्डर - {shopName}*
+
+नमस्ते {shopName}! मैंने आपकी वेबसाइट पर कैश ऑन डिलीवरी (COD) ऑर्डर दर्ज किया है:
+
+🆔 *ऑर्डर आईडी:* #{orderId}
+📅 *तारीख:* {date} समय {time}
+💳 *भुगतान माध्यम:* Cash on Delivery (COD)
+💰 *देय राशि:* {finalPrice}
+
+📦 *ऑर्डर किया गया आइटम:* {productName}
+📏 *साइज:* {selectedSize} | 🎨 *कलर:* {selectedColor} | 🔢 *मात्रा:* {quantity}
+
+📍 *डिलीवरी पता:*
+{customerName}
+{deliveryAddress}, {city}, {state} - {pincode}
+फोन: {customerPhone}
+
+कृपया पता सत्यापित कर शीघ्र पार्सल डिस्पैच करें!`,
+    messageBodyEnglish: `💵 *CASH ON DELIVERY ORDER - {shopName}*
+
+Hello {shopName}! I have placed a Cash on Delivery (COD) order on your website.
+
+🆔 *Order ID:* #{orderId}
+📅 *Date:* {date} at {time}
+💳 *Payment Mode:* Cash on Delivery (COD)
+💰 *Total Payable:* {finalPrice}
+
+📦 *Ordered Item:* {productName}
+📏 *Size:* {selectedSize} | 🎨 *Color:* {selectedColor} | 🔢 *Qty:* {quantity}
+
+📍 *Shipping Address:*
+{customerName}
+{deliveryAddress}, {city}, {state} - {pincode}
+Contact Phone: {customerPhone}
+
+Please verify my address and confirm express dispatch!`,
     messageBody: `💵 *CASH ON DELIVERY ORDER - {shopName}*
 
 Hello {shopName}! I have placed a Cash on Delivery (COD) order on your website.
 
-🆔 *Order ID:* {orderId}
+🆔 *Order ID:* #{orderId}
 📅 *Date:* {date} at {time}
 💳 *Payment Mode:* Cash on Delivery (COD)
 💰 *Total Payable:* {finalPrice}
@@ -179,11 +273,47 @@ Please verify my address and confirm express dispatch!`,
     isActiveForAction: true,
     isDefault: true,
     updatedAt: new Date().toISOString(),
+    messageBodyHindi: `✅ *ऑनलाइन पेमेंट ऑर्डर - {shopName}*
+
+नमस्ते {shopName}! मैंने अपने ऑर्डर का ऑनलाइन भुगतान सफलतापूर्वक पूरा कर लिया है:
+
+🆔 *ऑर्डर आईडी:* #{orderId}
+📅 *तारीख:* {date} समय {time}
+💳 *भुगतान माध्यम:* {paymentMethod} (Verified)
+💰 *भुगतान की गई राशि:* {finalPrice}
+
+📦 *ऑर्डर किया गया आइटम:* {productName}
+📏 *साइज:* {selectedSize} | 🎨 *कलर:* {selectedColor} | 🔢 *मात्रा:* {quantity}
+
+📍 *डिलीवरी पता:*
+{customerName}
+{deliveryAddress}, {city}, {state} - {pincode}
+फोन: {customerPhone}
+
+कृपया ऑर्डर तैयार कर ट्रैकिंग विवरण साझा करें। धन्यवाद!`,
+    messageBodyEnglish: `✅ *VERIFIED ONLINE PAYMENT ORDER - {shopName}*
+
+Hello {shopName}! I have successfully completed payment for my order.
+
+🆔 *Order ID:* #{orderId}
+📅 *Date:* {date} at {time}
+💳 *Payment Method:* {paymentMethod} (Verified)
+💰 *Total Paid:* {finalPrice}
+
+📦 *Ordered Item:* {productName}
+📏 *Size:* {selectedSize} | 🎨 *Color:* {selectedColor} | 🔢 *Qty:* {quantity}
+
+📍 *Delivery Address:*
+{customerName}
+{deliveryAddress}, {city}, {state} - {pincode}
+Phone: {customerPhone}
+
+Please process my order for fast dispatch and share the tracking details. Thank you!`,
     messageBody: `✅ *VERIFIED ONLINE PAYMENT ORDER - {shopName}*
 
 Hello {shopName}! I have successfully completed payment for my order.
 
-🆔 *Order ID:* {orderId}
+🆔 *Order ID:* #{orderId}
 📅 *Date:* {date} at {time}
 💳 *Payment Method:* {paymentMethod} (Verified)
 💰 *Total Paid:* {finalPrice}
@@ -207,6 +337,22 @@ Please process my order for fast dispatch and share the tracking details. Thank 
     isActiveForAction: true,
     isDefault: true,
     updatedAt: new Date().toISOString(),
+    messageBodyHindi: `💬 *स्टोर पूछताछ - {shopName}*
+
+नमस्ते {shopName}! मैं आपकी ऑनलाइन वेबसाइट देख रहा हूँ और फुटवियर कलेक्शन, स्टॉक और ऑफर्स के बारे में जानकारी चाहता हूँ।
+
+🌐 वेबसाइट: {website}
+📞 हेल्पलाइन: {shopPhone}
+
+कृपया सहायता करें।`,
+    messageBodyEnglish: `💬 *GENERAL STORE INQUIRY - {shopName}*
+
+Hello {shopName}! I am visiting your online store and would like to inquire about your footwear collection, stock availability, and special discounts.
+
+🌐 Store URL: {website}
+📞 Helpline: {shopPhone}
+
+Please connect me with a store representative.`,
     messageBody: `💬 *GENERAL STORE INQUIRY - {shopName}*
 
 Hello {shopName}! I am visiting your online store and would like to inquire about your footwear collection, stock availability, and special discounts.
@@ -225,6 +371,32 @@ Please connect me with a store representative.`,
     isActiveForAction: true,
     isDefault: true,
     updatedAt: new Date().toISOString(),
+    messageBodyHindi: `🔍 *प्रोडक्ट जानकारी व साइज पूछताछ - {shopName}*
+
+नमस्ते {shopName}! मुझे इस प्रोडक्ट के बारे में जानकारी चाहिए:
+
+📦 *प्रोडक्ट:* {productName}
+🏷️ *ब्रांड:* {productBrand}
+📏 *साइज:* {selectedSize}
+🎨 *कलर:* {selectedColor}
+💰 *कीमत:* {productPrice}
+
+🔗 *लिंक:* {productURL}
+
+क्या यह साइज स्टोर पिकअप या डिलीवरी के लिए उपलब्ध है?`,
+    messageBodyEnglish: `🔍 *PRODUCT STOCK ENQUIRY - {shopName}*
+
+Hello {shopName}! I am interested in this product and have a query:
+
+📦 *Product Name:* {productName}
+🏷️ *Brand:* {productBrand}
+📏 *Size:* {selectedSize}
+🎨 *Color:* {selectedColor}
+💰 *Price:* {productPrice}
+
+🔗 *Direct Product Link:* {productURL}
+
+Could you please let me know if this size is ready for store pickup or home delivery?`,
     messageBody: `🔍 *PRODUCT STOCK ENQUIRY - {shopName}*
 
 Hello {shopName}! I am interested in this product and have a query:
@@ -248,6 +420,34 @@ Could you please let me know if this size is ready for store pickup or home deli
     isActiveForAction: true,
     isDefault: true,
     updatedAt: new Date().toISOString(),
+    messageBodyHindi: `📦 *थोक / बल्क ऑर्डर पूछताछ - {shopName}*
+
+नमस्ते {shopName}! मुझे थोक / बल्क ऑर्डर के लिए रेट चाहिए:
+
+📦 *प्रोडक्ट:* {productName}
+📁 *कैटेगरी:* {productCategory}
+🔢 *आवश्यक मात्रा:* {quantity}
+📏 *आवश्यक साइज:* {selectedSize}
+
+👤 *नाम:* {customerName}
+📞 *फोन:* {customerPhone}
+📍 *शहर:* {city}, {state}
+
+कृपया सबसे अच्छा डिस्काउंट रेट बताएं।`,
+    messageBodyEnglish: `📦 *BULK ORDER QUOTATION REQUEST - {shopName}*
+
+Hello {shopName}! I would like to request a bulk order price quote:
+
+📦 *Product:* {productName}
+📁 *Category:* {productCategory}
+🔢 *Quantity Required:* {quantity}
+📏 *Sizes Required:* {selectedSize}
+
+👤 *Contact Name:* {customerName}
+📞 *Phone Number:* {customerPhone}
+📍 *Delivery City:* {city}, {state}
+
+Please share your best bulk discounted rate and estimated delivery timeframe.`,
     messageBody: `📦 *BULK ORDER QUOTATION REQUEST - {shopName}*
 
 Hello {shopName}! I would like to request a bulk order price quote:
@@ -272,6 +472,32 @@ Please share your best bulk discounted rate and estimated delivery timeframe.`,
     isActiveForAction: true,
     isDefault: true,
     updatedAt: new Date().toISOString(),
+    messageBodyHindi: `🏬 *थोक व्यापार B2B पूछताछ - {shopName}*
+
+नमस्ते {shopName} थोक विभाग!
+
+मेरा फुटवियर का व्यवसाय है और मैं थोक खरीदारी में रुचि रखता हूँ:
+
+🏢 *दुकान / फर्म:* {customerName}
+📞 *व्हाट्सऐप:* {customerPhone}
+📧 *ईमेल:* {customerEmail}
+📍 *स्थान:* {city}, {state} - {pincode}
+
+कैटेगरी: {productCategory}
+कृपया कैटलॉग, रेट लिस्ट और मिनिमम ऑर्डर क्वांटिटी साझा करें।`,
+    messageBodyEnglish: `🏬 *WHOLESALE B2B INQUIRY - {shopName}*
+
+Hello {shopName} Wholesale Department!
+
+I own a retail footwear business and am interested in wholesale purchasing:
+
+🏢 *Business Name:* {customerName}
+📞 *WhatsApp:* {customerPhone}
+📧 *Email:* {customerEmail}
+📍 *Store Location:* {city}, {state} - {pincode}
+
+Looking for wholesale pricing in: {productCategory}.
+Please share your full wholesale catalog, rate list, and minimum order quantities.`,
     messageBody: `🏬 *WHOLESALE B2B INQUIRY - {shopName}*
 
 Hello {shopName} Wholesale Department!
@@ -295,13 +521,35 @@ Please share your full wholesale catalog, rate list, and minimum order quantitie
     isActiveForAction: true,
     isDefault: true,
     updatedAt: new Date().toISOString(),
+    messageBodyHindi: `🆘 *कस्टमर सपोर्ट सहायता - {shopName}*
+
+नमस्ते {shopName} सहायता टीम!
+
+मुझे अपने ऑर्डर या स्टोर संबंधी सहायता चाहिए:
+
+🆔 *ऑर्डर आईडी:* #{orderId}
+👤 *ग्राहक का नाम:* {customerName}
+📞 *फोन:* {customerPhone}
+
+कृपया मुझसे संपर्क करें। धन्यवाद!`,
+    messageBodyEnglish: `🆘 *CUSTOMER SUPPORT REQUEST - {shopName}*
+
+Hello {shopName} Support Team!
+
+I need assistance regarding an existing order or store query:
+
+🆔 *Order ID:* #{orderId}
+👤 *Customer Name:* {customerName}
+📞 *Phone Number:* {customerPhone}
+
+Please connect with me to assist. Thank you!`,
     messageBody: `🆘 *CUSTOMER SUPPORT REQUEST - {shopName}*
 
 Hello {shopName} Support Team!
 
 I need assistance regarding an existing order or store query:
 
-🆔 *Order ID:* {orderId}
+🆔 *Order ID:* #{orderId}
 👤 *Customer Name:* {customerName}
 📞 *Phone Number:* {customerPhone}
 

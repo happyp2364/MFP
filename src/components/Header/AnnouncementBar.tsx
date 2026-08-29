@@ -32,10 +32,10 @@ export const AnnouncementBar: React.FC = () => {
   const displayItems = enabledAnnouncements.length > 0
     ? enabledAnnouncements
     : [
-        { id: '1', text: '🚚 Free Delivery on Selected Products Across India', icon: 'Truck' },
-        { id: '2', text: '👟 New Season Sports Shoes & Sneakers Just Arrived', icon: 'Sparkles' },
-        { id: '3', text: '⭐ Rated 4.9/5 by 15,000+ Happy Families', icon: 'Award' },
-        { id: '4', text: '📱 Easy WhatsApp Order & Instant Confirmation', icon: 'MessageCircle' },
+        { id: '1', text: '🚚 पूरे भारत में फ्री डिलीवरी • Free Delivery Across India', icon: 'Truck' },
+        { id: '2', text: '👟 नए सीज़न के स्पोर्ट्स शूज और स्नीकर्स • New Season Arrivals Just In', icon: 'Sparkles' },
+        { id: '3', text: '⭐ 15,000+ खुश परिवारों का भरोसा • Rated 4.9/5 by 15,000+ Happy Families', icon: 'Award' },
+        { id: '4', text: '📱 आसान व्हाट्सऐप ऑर्डर • Easy WhatsApp Order & Quick Confirmation', icon: 'MessageCircle' },
       ];
 
   const speed = topAnnouncementBarConfig?.intervalSpeed || 4000;

@@ -37,11 +37,13 @@ import {
   X,
   Lock,
   Download,
-  FileCode
+  FileCode,
+  Languages
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { WebsiteConfig, SocialLinkItem, PhysicalStore } from '../../types';
 import { DEFAULT_WEBSITE_CONFIG } from '../../data/defaultWebsiteConfig';
+import { CustomerCommunicationSettingsView } from './CustomerCommunicationSettingsView';
 
 type ConfigSection =
   | 'identity'
@@ -55,6 +57,7 @@ type ConfigSection =
   | 'legal'
   | 'emails'
   | 'whatsapp'
+  | 'language_communication'
   | 'ai_pet'
   | 'invoices'
   | 'store_locator'
@@ -80,9 +83,10 @@ const SECTIONS: SectionDefinition[] = [
   { id: 'legal', title: 'Legal Documents', badge: '9', icon: FileText, description: 'Privacy policy, terms & conditions, refund, and shipping policies' },
   { id: 'emails', title: 'Email Templates', badge: '10', icon: Mail, description: 'Email headers, signatures, support email, and footers' },
   { id: 'whatsapp', title: 'WhatsApp Business', badge: '11', icon: MessageSquare, description: 'Greetings, auto-replies, and WhatsApp support parameters' },
-  { id: 'ai_pet', title: 'AI Assistant Sync', badge: '12', icon: Bot, description: 'Mascot branding, custom prompt parameters, and auto-sync' },
-  { id: 'invoices', title: 'Invoices & Billing', badge: '13', icon: Receipt, description: 'Invoice branding, GST, payment QR codes, and terms' },
-  { id: 'store_locator', title: 'Store Locator', badge: '14', icon: Map, description: 'Unlimited physical store locations, managers, and hours' },
+  { id: 'language_communication', title: 'Language & Communication', badge: '12', icon: Languages, description: 'Hindi & English customer dialogues, slogans, welcome notes & WhatsApp templates' },
+  { id: 'ai_pet', title: 'AI Assistant Sync', badge: '13', icon: Bot, description: 'Mascot branding, custom prompt parameters, and auto-sync' },
+  { id: 'invoices', title: 'Invoices & Billing', badge: '14', icon: Receipt, description: 'Invoice branding, GST, payment QR codes, and terms' },
+  { id: 'store_locator', title: 'Store Locator', badge: '15', icon: Map, description: 'Unlimited physical store locations, managers, and hours' },
   { id: 'version_history', title: 'Version History', badge: '📜', icon: History, description: 'Restore prior configurations and export white-label backups' },
 ];
 
@@ -1167,13 +1171,18 @@ export const WebsiteConfigurationView: React.FC = () => {
             </div>
           )}
 
-          {/* SECTION 12: AI PET */}
+          {/* SECTION 12: LANGUAGE & COMMUNICATION */}
+          {activeSection === 'language_communication' && (
+            <CustomerCommunicationSettingsView />
+          )}
+
+          {/* SECTION 13: AI PET */}
           {activeSection === 'ai_pet' && (
             <div className="space-y-6 max-w-4xl">
               <div>
                 <h2 className="text-xl font-black text-white flex items-center space-x-2">
                   <Bot className="w-5 h-5 text-amber-400" />
-                  <span>Section 12: AI Assistant Sync</span>
+                  <span>Section 13: AI Assistant Sync</span>
                 </h2>
                 <p className="text-xs text-slate-300 mt-1 font-normal leading-relaxed">
                   The Intelligent Floating Mascot automatically consumes store identity, phone, address, and hours without requiring code changes.

@@ -11,6 +11,7 @@ import {
 } from '../data/defaultWhatsAppTemplates';
 import { STORE_INFO } from '../data/mockData';
 import { getProductSKU, getProductUrl } from './productUtils';
+import { getCustomerLanguage } from './customerLanguage';
 
 export interface WhatsAppPayloadData {
   customerName?: string;
@@ -140,7 +141,15 @@ export function renderWhatsAppMessageText(
     '{productURL}': payload.productURL || website,
   };
 
-  let rendered = template.messageBody || '';
+  const activeLang = getCustomerLanguage();
+  let baseBody = template.messageBody;
+  if (activeLang === 'hi') {
+    baseBody = template.messageBodyHindi || template.messageBody || template.messageBodyEnglish || '';
+  } else {
+    baseBody = template.messageBodyEnglish || template.messageBody || template.messageBodyHindi || '';
+  }
+
+  let rendered = baseBody || '';
 
   Object.entries(replacements).forEach(([key, val]) => {
     rendered = rendered.replaceAll(key, val);

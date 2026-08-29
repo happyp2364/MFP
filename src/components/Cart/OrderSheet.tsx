@@ -60,7 +60,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
         <div className="p-5 border-b border-neutral-200 flex items-center justify-between">
           <div className="flex items-center gap-2 font-serif-heading font-bold text-lg text-neutral-900">
             <ShoppingBag className="w-5 h-5 text-[#0B8F63]" />
-            <span>Order Bag ({cartItems.length})</span>
+            <span>शॉपिंग बैग • Order Bag ({cartItems.length})</span>
           </div>
           <button
             onClick={onClose}
@@ -78,10 +78,10 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
                 <ShoppingBag className="w-8 h-8 text-[#0B8F63]" />
               </div>
               <h3 className="font-serif-heading font-bold text-lg text-neutral-900">
-                Your Bag is Empty
+                आपकी बैग खाली है • Your Bag is Empty
               </h3>
               <p className="text-xs text-neutral-500 max-w-xs mx-auto">
-                Explore our Men's, Women's Sports Shoes, and Kids' collections to select your favorite footwear.
+                अपने पसंदीदा शूज व परिधान चुनने के लिए कलेक्शन देखें। Explore our footwear & apparel collections to add your favorites.
               </p>
             </div>
           ) : (
@@ -105,7 +105,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
                     {item.product.name}
                   </h4>
                   <div className="text-[10px] text-neutral-500 font-medium">
-                    Size: <strong className="text-neutral-800">{item.selectedSize}</strong> | Color: <strong className="text-neutral-800">{item.selectedColor}</strong>
+                    साइज: <strong className="text-neutral-800">{item.selectedSize}</strong> | रंग: <strong className="text-neutral-800">{item.selectedColor}</strong>
                   </div>
                   <div className="font-bold text-xs text-[#0B8F63]">
                     ₹{(getCartItemPrice(item) * item.quantity).toLocaleString('en-IN')}
@@ -164,34 +164,34 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
               <div className="flex justify-between items-center border-b border-white/10 pb-1 font-bold">
                 <span className="flex items-center gap-1 text-emerald-400">
                   <Truck className="w-3.5 h-3.5" />
-                  {shippingFee === 0 ? '🚚 FREE DELIVERY' : `🚚 Delivery: ₹${shippingFee}`}
+                  {shippingFee === 0 ? '🚚 मुफ्त डिलीवरी • FREE DELIVERY' : `🚚 डिलीवरी: ₹${shippingFee}`}
                 </span>
                 <span className="text-amber-300">
-                  {subtotal < freeMin ? `Add ₹${freeMin - subtotal} for FREE Delivery` : 'Free Shipping Unlocked!'}
+                  {subtotal < freeMin ? `₹${freeMin - subtotal} और जोड़ें मुफ्त डिलीवरी के लिए` : 'मुफ्त डिलीवरी उपलब्ध! • Free Shipping'}
                 </span>
               </div>
               <div className="flex items-center justify-between font-extrabold text-rose-300 pt-0.5">
                 <span className="flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
-                  <span>❌ NO RETURN</span>
+                  <span>❌ नो रिटर्न • NO RETURN</span>
                 </span>
-                <span>❌ NO EXCHANGE</span>
+                <span>❌ नो एक्सचेंज • NO EXCHANGE</span>
               </div>
             </div>
 
             <div className="space-y-1 text-xs font-semibold text-neutral-600">
               <div className="flex justify-between">
-                <span>Items Subtotal:</span>
+                <span>कुल मूल्य • Subtotal:</span>
                 <span>₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
-                <span>Delivery Charge:</span>
+                <span>डिलीवरी शुल्क • Delivery Fee:</span>
                 <span className={shippingFee === 0 ? 'text-emerald-700 font-bold' : ''}>
-                  {shippingFee === 0 ? '🚚 FREE' : `₹${shippingFee}`}
+                  {shippingFee === 0 ? '🚚 मुफ्त • FREE' : `₹${shippingFee}`}
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm pt-1 border-t border-neutral-200">
-                <span className="font-extrabold text-neutral-900">Total Payable:</span>
+                <span className="font-extrabold text-neutral-900">कुल भुगतान • Total Payable:</span>
                 <span className="font-serif-heading font-extrabold text-xl text-neutral-900">
                   ₹{totalAmount.toLocaleString('en-IN')}
                 </span>
@@ -209,7 +209,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
               className="w-full bg-amber-800 hover:bg-amber-900 text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-lg shadow-amber-800/25 flex items-center justify-center gap-2 transition-all"
             >
               <ShoppingBag className="w-4 h-4" />
-              <span>PROCEED TO ONLINE CHECKOUT (UPI / CARDS)</span>
+              <span>चेकआउट करें • PROCEED TO CHECKOUT (UPI/CARDS)</span>
             </button>
 
             <button
@@ -217,14 +217,14 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
               className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2.5 rounded-2xl flex items-center justify-center gap-2 transition-all opacity-90"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>Order via WhatsApp Instead</span>
+              <span>व्हाट्सऐप पर ऑर्डर करें • Order via WhatsApp</span>
             </button>
 
             <button
               onClick={onClearCart}
               className="w-full text-center text-xs text-neutral-500 hover:text-red-600 py-1 font-semibold"
             >
-              Clear Bag
+              बैग खाली करें • Clear Bag
             </button>
           </div>
         )}

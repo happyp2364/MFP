@@ -225,6 +225,46 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     stores: [],
   },
 
+  // Section 15: Customer Communication & Language Control
+  customerLanguage: 'hi',
+  customerCommunication: {
+    language: 'hi',
+    slogans: {
+      hi: [
+        'हर कदम में स्टाइल',
+        'आपका स्टाइल, हमारी पहचान',
+        'फैशन जो आपके अंदाज़ को बनाए खास',
+        'हर मौके के लिए शानदार स्टाइल',
+      ],
+      en: [
+        'Style for Every Step',
+        'Your Style, Our Identity',
+        'Fashion That Makes You Stand Out',
+        'Signature Styles for Every Occasion',
+      ],
+    },
+    welcomeMessage: {
+      hi: 'आपका स्वागत है • मारूधर फैशन पॉइंट',
+      en: 'Welcome to Marudhar Fashion Point',
+    },
+    orderConfirmationMessage: {
+      hi: 'आपका ऑर्डर सफलतापूर्वक प्राप्त हो गया है।',
+      en: 'Your order has been received successfully.',
+    },
+    cartAlmostCompleteMessage: {
+      hi: 'आपकी खरीदारी लगभग पूरी हो चुकी है। ❤️',
+      en: "You're almost ready to complete your purchase. ❤️",
+    },
+    limitedStockAlert: {
+      hi: 'जल्दी करें, स्टॉक सीमित है!',
+      en: 'Hurry, Limited Stock Available!',
+    },
+    friendlyErrorMessage: {
+      hi: 'कुछ समस्या आ गई है। कृपया थोड़ी देर बाद दोबारा प्रयास करें।',
+      en: 'Something went wrong. Please try again shortly.',
+    },
+  },
+
   version: 1,
   lastUpdated: new Date().toISOString(),
   updatedBy: 'System',

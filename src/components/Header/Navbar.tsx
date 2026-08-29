@@ -181,6 +181,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={() => handleNavClick('hero')}
                 className="text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors"
+                title="Home"
               >
                 Home
               </button>
@@ -196,7 +197,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => handleNavClick('products')}
                     className="flex items-center gap-1 text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors py-2"
                   >
-                    <span>Shop Categories</span>
+                    <span>Categories</span>
                     <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${megaMenuOpen ? 'rotate-180 text-[#0B8F63]' : ''}`} />
                   </button>
 
@@ -258,6 +259,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={() => handleNavClick('reviews')}
                 className="text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors"
+                title="Reviews"
               >
                 Reviews
               </button>
@@ -265,6 +267,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={() => handleNavClick('about')}
                 className="text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors"
+                title="About Us"
               >
                 About Us
               </button>
@@ -272,6 +275,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={() => handleNavClick('contact')}
                 className="text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors"
+                title="Contact"
               >
                 Contact
               </button>
@@ -280,11 +284,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={() => handleNavClick('products')}
                   className="relative text-sm font-bold text-rose-600 hover:text-rose-700 transition-colors flex items-center gap-1 group py-2"
+                  title="Offers"
                 >
                   <Tag className="w-3.5 h-3.5" />
                   <span>Offers</span>
                   <span className="absolute -top-1 -right-4 px-1 py-0.5 text-[8px] bg-rose-600 text-white rounded font-sans-body font-bold uppercase animate-pulse">
-                    Hot
+                    HOT
                   </span>
                 </button>
               )}
@@ -391,9 +396,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hidden lg:flex items-center gap-2 bg-[#0B8F63] hover:bg-[#086F4C] text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-md shadow-[#0B8F63]/20 hover:scale-105 transition-all duration-300"
+                title="व्हाट्सऐप पर ऑर्डर करें • Order on WhatsApp"
               >
                 <MessageCircle className="w-4 h-4 fill-white text-[#0B8F63]" />
-                <span>Shop on WhatsApp</span>
+                <span>व्हाट्सऐप • WhatsApp</span>
               </a>
 
               {/* Google Workspace Account / Sign-In Button */}
@@ -406,10 +412,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={onOpenCalendarModal}
                   className="hidden xl:flex items-center gap-1.5 bg-[#0B8F63]/10 hover:bg-[#0B8F63]/20 text-[#0B8F63] text-xs font-bold px-3 py-2 rounded-full border border-[#0B8F63]/20 transition-all"
-                  title="Book VIP Fitting on Google Calendar"
+                  title="वीआईपी फिटिंग बुक करें • Book VIP Fitting on Google Calendar"
                 >
                   <Calendar className="w-3.5 h-3.5" />
-                  <span>Book Fitting</span>
+                  <span>फिटिंग बुक करें • Book Fitting</span>
                 </button>
               )}
             </div>

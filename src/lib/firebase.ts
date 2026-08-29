@@ -36,7 +36,6 @@ import {
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { CustomerProfile, MarketingConsent, MarketingSubscriber, MarketingCampaign } from '../types';
-import { scopeDoc, getCurrentTenantId } from './tenantIsolation';
 
 // Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
@@ -93,7 +92,6 @@ export interface FirestoreErrorInfo {
     email?: string | null;
     emailVerified?: boolean | null;
     isAnonymous?: boolean | null;
-    tenantId?: string | null;
     providerInfo?: {
       providerId?: string | null;
       email?: string | null;
@@ -119,7 +117,6 @@ export function handleFirestoreError(
       email: auth.currentUser?.email || null,
       emailVerified: auth.currentUser?.emailVerified || false,
       isAnonymous: auth.currentUser?.isAnonymous || false,
-      tenantId: auth.currentUser?.tenantId || null,
       providerInfo: auth.currentUser?.providerData?.map(provider => ({
         providerId: provider.providerId,
         email: provider.email,
@@ -366,7 +363,7 @@ export async function recordAuditLog(
   details: string,
   status: 'SUCCESS' | 'WARNING' | 'DANGER' = 'SUCCESS'
 ): Promise<AuditLogItem> {
-  const logItem: AuditLogItem = scopeDoc({
+  const logItem: AuditLogItem = {
     id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     timestamp: new Date().toISOString(),
     action,
@@ -375,7 +372,7 @@ export async function recordAuditLog(
     userEmail: auth.currentUser?.email || 'admin@marudharfashionpoint.com',
     status,
     ipAddress: '127.0.0.1 (Client Applet)',
-  });
+  };
 
   // 1. Save to local storage cache for instant UI rendering
   try {
@@ -793,14 +790,13 @@ export async function savePaymentSettingsInFirestore(
 // Save Order in Firestore
 export async function saveOrderInFirestore(order: import('../types').CustomerOrder): Promise<boolean> {
   try {
-    const scopedOrder = scopeDoc(order);
     const docRef = doc(db, 'orders', order.id);
-    await setDoc(docRef, scopedOrder);
+    await setDoc(docRef, order);
 
     // Create persistent Admin Notification in Firestore collection
     const notifId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const notifRef = doc(db, 'notifications', notifId);
-    await setDoc(notifRef, scopeDoc({
+    await setDoc(notifRef, {
       id: notifId,
       orderId: order.id,
       customerName: order.customerName,
@@ -809,7 +805,7 @@ export async function saveOrderInFirestore(order: import('../types').CustomerOrd
       paymentStatus: order.paymentStatus,
       timestamp: new Date().toISOString(),
       read: false,
-    }));
+    });
 
     // If order is linked to a logged-in user, also sync to customer's order history array
     if (order.userId) {

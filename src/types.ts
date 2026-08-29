@@ -66,8 +66,6 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   variants?: ProductVariant[];
-  websiteId?: string;
-  tenantId?: string;
 }
 
 export interface Review {
@@ -88,8 +86,6 @@ export interface Review {
   reply?: string;
   helpfulCount?: number;
   productImage?: string;
-  websiteId?: string;
-  tenantId?: string;
 }
 
 export interface FilterState {
@@ -235,8 +231,6 @@ export interface SocialLinkItem {
 }
 
 export interface WebsiteConfig {
-  websiteId?: string;
-  tenantId?: string;
   // Section 1: Business Identity
   businessIdentity: {
     businessName: string;
@@ -536,46 +530,6 @@ export interface TrendingCollectionItem {
   count: string;
 }
 
-export interface Tenant {
-  id: string;
-  slug?: string; // Platform-wide unique website slug e.g. "abc-shoes", "raj-footwear"
-  name: string;
-  domain: string;
-  customDomain?: string;
-  websiteUrl?: string;
-  adminLoginUrl?: string;
-  ownerId: string;
-  ownerEmail: string;
-  status: 'active' | 'suspended' | 'provisioning' | 'draft' | 'maintenance' | 'archived';
-  plan: 'free' | 'pro' | 'enterprise';
-  createdAt: string;
-  updatedAt?: string;
-  databaseSize: number; // in MB
-  logoUrl?: string;
-  businessCategory?: string;
-  ownerName?: string;
-  adminGoogleEmail?: string;
-  adminLoginStatus?: 'active' | 'pending_activation';
-  lastLogin?: string;
-  version?: string;
-  healthStatus?: 'Operational' | 'Degraded' | 'Passing' | 'Maintenance';
-  enabledFeatures?: string[];
-  currentTheme?: string;
-  language?: string;
-  contactInfo?: {
-    phone?: string;
-    email?: string;
-    address?: string;
-  };
-  physicalStoreCount?: number;
-  statistics?: {
-    totalProducts?: number;
-    totalOrders?: number;
-    totalRevenue?: number;
-    totalCustomers?: number;
-  };
-}
-
 export interface AdminUser {
   uid: string;
   id?: string;
@@ -594,8 +548,6 @@ export interface AdminUser {
   phoneNumber?: string;
   username?: string;
   isLoggedIn?: boolean;
-  websiteId?: string;
-  tenantId?: string;
 }
 
 // Enterprise Security Types
@@ -608,8 +560,6 @@ export interface AuditLogItem {
   userEmail: string;
   status: 'SUCCESS' | 'WARNING' | 'DANGER';
   ipAddress?: string;
-  websiteId?: string;
-  tenantId?: string;
 }
 
 export interface SavedAddress {
@@ -717,8 +667,6 @@ export interface ShippingAddressInfo {
 export interface CustomerOrder {
   id: string; // e.g. #MFP1025
   orderNumber: number;
-  websiteId?: string;
-  tenantId?: string;
   userId?: string;
   customerName: string;
   customerPhone: string;

@@ -92,8 +92,6 @@ import { AIMarketingGrowthView } from './AIMarketingGrowthView';
 import { CustomerIntelligenceCRMView } from './CustomerIntelligenceCRMView';
 import { SoundSettingsView } from './SoundSettingsView';
 import { WebsiteConfigurationView } from './WebsiteConfigurationView';
-import { WebsiteManagementView } from './WebsiteManagementView';
-import { SuperAdminConsoleView } from './SuperAdminConsoleView';
 import { MapPin, Users, Volume2, Crown } from 'lucide-react';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
@@ -104,7 +102,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'website_management' | 'super_admin_console';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -162,7 +160,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   );
 
   const canAccessTab = (tab: string) => {
-    if (tab === 'super_admin_console' || tab === 'admin_management') {
+    if (tab === 'admin_management') {
       return isSuperAdminUser;
     }
     if (store.canAccessTab) {
@@ -480,31 +478,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           {/* Sidebar Navigation */}
           <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-2.5 sm:p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto scrollbar-none touch-pan-x">
             
-            {/* Super Admin Exclusive Console */}
-            {(currentAdminUser?.roleId === 'super_admin' || currentAdminUser?.email?.toLowerCase() === 'vpcreation2002@gmail.com' || currentAdminUser?.email?.toLowerCase() === 'vishalpparihar2002@gmail.com') && (
-              <button
-                onClick={() => setActiveTab('super_admin_console')}
-                className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap text-left border ${
-                  activeTab === 'super_admin_console'
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 border-amber-600 shadow-lg shadow-amber-500/30'
-                    : 'bg-amber-500/15 text-amber-950 border-amber-500/40 hover:bg-amber-500/25'
-                }`}
-              >
-                <Crown className="w-4 h-4 text-amber-600 stroke-[2.5]" />
-                <span>👑 PLATFORM CONTROL CENTER</span>
-              </button>
-            )}
-
+            {/* Store Identity & Configuration Navigation */}
             <button
-              onClick={() => setActiveTab('website_management')}
+              onClick={() => setActiveTab('website_configuration')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left border ${
-                activeTab === 'website_management' || activeTab === 'website_configuration'
-                  ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-md shadow-amber-500/20'
-                  : 'bg-amber-500/10 text-amber-900 border-amber-500/30 hover:bg-amber-500/20'
+                activeTab === 'website_configuration'
+                  ? 'bg-neutral-900 text-white border-neutral-900 shadow-md'
+                  : 'bg-white text-neutral-800 border-neutral-200 hover:bg-neutral-100'
               }`}
             >
-              <Globe className="w-4 h-4 text-amber-600 stroke-[2.5]" />
-              <span>🏢 WEBSITE MANAGEMENT</span>
+              <Globe className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
+              <span>Store Identity & Config</span>
             </button>
             
             <button
@@ -956,17 +940,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-[#F7F7F7]">
             <AdminErrorBoundary key={activeTab} fallbackTitle="Admin Tab View Display Notice">
             
-            {/* ----------------- TAB: SUPER ADMIN PLATFORM CONTROL CENTER ----------------- */}
-            {activeTab === 'super_admin_console' && (
-              <AdminErrorBoundary>
-                <SuperAdminConsoleView
-                  currentUser={currentAdminUser}
-                  auditLogs={auditLogs}
-                  onRefreshAuditLogs={refreshAuditLogs}
-                />
-              </AdminErrorBoundary>
-            )}
-
             {/* ----------------- TAB: MULTI ADMIN & RBAC MANAGEMENT ----------------- */}
             {activeTab === 'admin_management' && (
               <AdminManagementView
@@ -982,10 +955,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* ----------------- TAB: SEO & LOCAL BUSINESS ----------------- */}
             {activeTab === 'seo_local_business' && <SEOAuthorityCenterView />}
 
-            {/* ----------------- TAB: WEBSITE MANAGEMENT ----------------- */}
-            {(activeTab === 'website_management' || activeTab === 'website_configuration') && (
-              <AdminErrorBoundary>
-                <WebsiteManagementView />
+            {/* ----------------- TAB: STORE IDENTITY & CONFIGURATION ----------------- */}
+            {activeTab === 'website_configuration' && (
+              <AdminErrorBoundary fallbackTitle="Store Configuration Notice">
+                <WebsiteConfigurationView />
               </AdminErrorBoundary>
             )}
 

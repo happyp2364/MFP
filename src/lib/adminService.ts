@@ -17,7 +17,6 @@ import {
   AdminLoginHistoryEntry,
   AdminPermissionMatrix,
   BuiltInAdminRoleId,
-  Tenant,
   AdminNotification,
 } from '../types';
 import {
@@ -128,100 +127,6 @@ export async function fetchAdminUsers(): Promise<AdminUser[]> {
     }
     return [];
   }
-}
-
-// Fetch all deployed tenants
-export async function fetchTenants(): Promise<Tenant[]> {
-  try {
-    const colRef = collection(db, 'tenants');
-    const snap = await getDocs(colRef);
-    const tenants: Tenant[] = [];
-    snap.forEach((docSnap) => {
-      tenants.push({ ...(docSnap.data() as Tenant), id: docSnap.id });
-    });
-    
-    // Return mock data if none exist (since we don't have a provisioning flow setting up a tenant yet)
-    if (tenants.length === 0) {
-       return [{
-         id: 'tenant-default',
-         name: 'Marudhar Fashion Point Primary Instance',
-         domain: 'marudharfashionpoint.com',
-         ownerId: 'vpcreation2002',
-         ownerEmail: 'vpcreation2002@gmail.com',
-         status: 'active',
-         plan: 'enterprise',
-         createdAt: new Date().toISOString(),
-         databaseSize: 42.8
-       }];
-    }
-    return tenants;
-  } catch (err) {
-    console.warn('Fetch tenants notice:', err);
-    return [];
-  }
-}
-
-export async function saveTenant(tenant: Tenant): Promise<void> {
-  const tenantRef = doc(db, 'tenants', tenant.id);
-  try {
-    await setDoc(tenantRef, tenant, { merge: true });
-    recordAuditLog(
-      'Tenant Profile Updated',
-      'SECURITY',
-      `Updated profile for tenant: ${tenant.name}`,
-      'SUCCESS'
-    );
-  } catch (err) {
-    console.warn('Failed to save tenant:', err);
-    throw err;
-  }
-}
-
-// Securely transfer tenant ownership, update Firestore, create notification & audit log
-export async function transferTenantOwnership(
-  tenant: Tenant,
-  newOwner: {
-    ownerName: string;
-    ownerEmail: string;
-    adminGoogleEmail?: string;
-    ownerPhone?: string;
-    transferReason?: string;
-  }
-): Promise<Tenant> {
-  const previousOwner = tenant.ownerEmail || 'Unassigned';
-  const updatedTenant: Tenant = {
-    ...tenant,
-    ownerName: newOwner.ownerName,
-    ownerEmail: newOwner.ownerEmail,
-    adminGoogleEmail: newOwner.adminGoogleEmail || newOwner.ownerEmail,
-    adminLoginStatus: newOwner.adminGoogleEmail ? 'pending_activation' : tenant.adminLoginStatus,
-    updatedAt: new Date().toISOString(),
-  };
-
-  // 1. Update Firestore tenant record
-  await saveTenant(updatedTenant);
-
-  // 2. Create persistent Admin Notification in Firestore
-  const notifId = `notif-transfer-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-  const notification: AdminNotification = {
-    id: notifId,
-    message: `👑 Website Ownership Transferred: Primary ownership of "${tenant.name}" was transferred from ${previousOwner} to ${newOwner.ownerName} (${newOwner.ownerEmail}).${newOwner.transferReason ? ` Reason: ${newOwner.transferReason}` : ''}`,
-    timestamp: new Date().toISOString(),
-    read: false,
-    isRead: false,
-    type: 'OWNERSHIP_TRANSFER',
-  };
-  await createAdminNotificationInFirestore(notification);
-
-  // 3. Log Audit Trail
-  recordAuditLog(
-    'Website Ownership Transferred',
-    'SECURITY',
-    `Transferred ownership of website "${tenant.name}" (${tenant.id}) from ${previousOwner} to ${newOwner.ownerName} (${newOwner.ownerEmail}). Reason: ${newOwner.transferReason || 'Super Admin Manual Transfer'}`,
-    'SUCCESS'
-  );
-
-  return updatedTenant;
 }
 
 // Fetch all custom defined admin roles

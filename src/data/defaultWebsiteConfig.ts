@@ -44,8 +44,6 @@ export const DEFAULT_SOCIAL_LINKS: SocialLinkItem[] = [
 ];
 
 export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
-  websiteId: 'mfp_store_001',
-  tenantId: 'mfp_store_001',
   // Section 1: Business Identity
   businessIdentity: {
     businessName: 'Marudhar Fashion Point',

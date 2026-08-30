@@ -115,6 +115,26 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [freeShippingPromo, setFreeShippingPromo] = useState(false);
   const [freeGiftPromo, setFreeGiftPromo] = useState<string | null>(null);
 
+  // Payment Selection states (moved to top for Rules of Hooks compliance)
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType>('UPI');
+  const [paymentRef, setPaymentRef] = useState('');
+  const [directPaymentNotice, setDirectPaymentNotice] = useState<string | null>(null);
+  const [paymentScreenshotName, setPaymentScreenshotName] = useState<string | null>(null);
+
+  // Card details states
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardName, setCardName] = useState('');
+
+  // Netbanking / Wallet selection states
+  const [selectedBank, setSelectedBank] = useState('SBI');
+  const [selectedWallet, setSelectedWallet] = useState('Paytm');
+
+  // Screenshot ref and upload state
+  const screenshotFileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
+
   // Reset all state variables
   const resetCheckoutState = () => {
     setStep('SHIPPING');
@@ -309,20 +329,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   }, [customerProfile]);
 
   // Payment Selection
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType>('UPI');
-  const [paymentRef, setPaymentRef] = useState('');
-  const [directPaymentNotice, setDirectPaymentNotice] = useState<string | null>(null);
-  const [paymentScreenshotName, setPaymentScreenshotName] = useState<string | null>(null);
+  // (States moved to top component header)
 
   // Card details
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [cardName, setCardName] = useState('');
+  // (States moved to top component header)
 
   // Netbanking / Wallet selection
-  const [selectedBank, setSelectedBank] = useState('SBI');
-  const [selectedWallet, setSelectedWallet] = useState('Paytm');
+  // (States moved to top component header)
 
   const handleApplyCoupon = (codeToApply: string) => {
     setCouponError(null);
@@ -484,8 +497,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  const screenshotFileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
+  // (Ref and upload state moved to top component header)
 
   const handleTriggerScreenshotPicker = (e: React.MouseEvent) => {
     e.preventDefault();

@@ -10,6 +10,7 @@ import { DEFAULT_BUTTON_THEME_CONFIG } from '../types';
 import { DEFAULT_WHATSAPP_TEMPLATES_CONFIG } from '../data/defaultWhatsAppTemplates';
 import { DEFAULT_OPEN_BOX_DELIVERY_CONFIG } from '../types';
 import { DEFAULT_PAYMENT_SETTINGS } from '../data/mockData';
+import { getCurrentTenantId } from '../lib/tenantUtils';
 import { db } from '../lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
@@ -38,7 +39,7 @@ interface AppConfigContextType {
   openBoxDeliveryConfig: OpenBoxDeliveryConfig;
   updateOpenBoxDeliveryConfig: (newConfig: OpenBoxDeliveryConfig) => Promise<void>;
   paymentSettings: PaymentSettings;
-  updatePaymentSettings: (newSettings: PaymentSettings) => Promise<void>;
+  updatePaymentSettings: (newSettings: PaymentSettings) => Promise<boolean>;
 }
 
 const AppConfigContext = createContext<AppConfigContextType | undefined>(undefined);
@@ -187,13 +188,25 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
-  const updatePaymentSettings = async (newSettings: PaymentSettings) => {
-    setPaymentSettings(newSettings);
-    localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(newSettings));
+  const updatePaymentSettings = async (newSettings: PaymentSettings): Promise<boolean> => {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) {
+      console.error('[TENANT PAYMENT SAVE ERROR] Invalid tenantId');
+      return false;
+    }
+    const merged = { ...paymentSettings, ...newSettings };
+    setPaymentSettings(merged);
+    localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(merged));
     try {
-      await setDoc(doc(db, 'settings', 'payment_settings'), newSettings, { merge: true });
-    } catch (e) {
-      console.warn('Firestore payment settings sync failed', e);
+      await setDoc(doc(db, 'settings', 'payment_settings'), merged, { merge: true });
+      return true;
+    } catch (e: any) {
+      console.error('[TENANT PAYMENT SAVE ERROR]', {
+        tenantId,
+        error: e?.message || e,
+        code: e?.code,
+      });
+      return false;
     }
   };
 

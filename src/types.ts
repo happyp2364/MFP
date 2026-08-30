@@ -631,7 +631,7 @@ export type OrderStatus =
 
 export type PaymentStatus = 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED';
 
-export type PaymentMethodType = 'UPI' | 'QR_SCAN' | 'CARD' | 'NET_BANKING' | 'WALLET' | 'COD';
+export type PaymentMethodType = 'UPI' | 'QR_SCAN' | 'ONLINE_UPI' | 'CARD' | 'NET_BANKING' | 'WALLET' | 'COD';
 
 export interface RefundRecord {
   id: string;
@@ -735,6 +735,7 @@ export interface CustomerOrder {
   totalAmount: number;
   paymentMethod: PaymentMethodType;
   paymentStatus: PaymentStatus;
+  paymentVerificationStatus?: string;
   orderStatus: OrderStatus;
   transactionId: string;
   paymentReference?: string;
@@ -747,6 +748,7 @@ export interface CustomerOrder {
     note?: string;
   }[];
   customerNotes?: string;
+  couponCode?: string;
   isOpenBoxDelivery?: boolean;
   openBoxDeliveryNote?: string;
 

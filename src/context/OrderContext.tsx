@@ -1,19 +1,30 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { CustomerOrder, OrderStatus, PaymentMethodType, PaymentStatus, CartItem, ShippingAddressInfo } from '../types';
+import { CustomerOrder, OrderStatus, PaymentMethodType, PaymentStatus, CartItem, ShippingAddressInfo, PaymentSettings } from '../types';
 import { saveOrderInFirestore, updateOrderStatusInFirestore, db } from '../lib/firebase';
+import { calculateOrderTax } from '../utils/taxUtils';
 import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 
 interface OrderContextType {
   orders: CustomerOrder[];
   placeOrderAndPay: (
     items: CartItem[],
-    subtotal: number,
-    shippingFee: number,
-    discountAmount: number,
+    shippingInfo: ShippingAddressInfo,
     paymentMethod: PaymentMethodType,
-    customerDetails: { name: string; email: string; phone: string; address: string; city: string; state: string; pincode: string },
-    notes?: string
-  ) => Promise<CustomerOrder>;
+    details: {
+      targetRef?: string;
+      subtotal: number;
+      shippingFee: number;
+      cardNumber?: string;
+      cardExpiry?: string;
+      cardCvv?: string;
+      cardName?: string;
+      selectedBank?: string;
+      selectedWallet?: string;
+    },
+    couponCode?: string,
+    discountAmount?: number,
+    paymentSettings?: PaymentSettings | null
+  ) => Promise<{ success: boolean; orderId?: string; message?: string }>;
   updateOrderStatus: (orderId: string, status: OrderStatus, trackingNumber?: string, courierName?: string) => Promise<void>;
   cancelCustomerOrder: (orderId: string, reason: string) => Promise<void>;
 }
@@ -38,55 +49,77 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const placeOrderAndPay = async (
     items: CartItem[],
-    subtotal: number,
-    shippingFee: number,
-    discountAmount: number,
+    shippingInfo: ShippingAddressInfo,
     paymentMethod: PaymentMethodType,
-    customerDetails: { name: string; email: string; phone: string; address: string; city: string; state: string; pincode: string },
-    notes?: string
-  ): Promise<CustomerOrder> => {
-    const totalAmount = Math.max(0, subtotal + shippingFee - discountAmount);
-    const orderNumber = Date.now();
-    const shippingAddress: ShippingAddressInfo = {
-      name: customerDetails.name,
-      street: customerDetails.address,
-      city: customerDetails.city,
-      state: customerDetails.state,
-      pincode: customerDetails.pincode,
-      phone: customerDetails.phone,
-      email: customerDetails.email,
-    };
-
-    const newOrder: CustomerOrder = {
-      id: `ord_${orderNumber}`,
-      orderNumber,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      items,
-      subtotal,
-      shippingFee,
-      discountAmount,
-      taxAmount: 0,
-      totalAmount,
-      paymentMethod,
-      paymentStatus: (paymentMethod === 'COD' ? 'PENDING' : 'PAID') as PaymentStatus,
-      orderStatus: 'PENDING' as OrderStatus,
-      customerName: customerDetails.name,
-      customerEmail: customerDetails.email,
-      customerPhone: customerDetails.phone,
-      shippingAddress,
-      transactionId: `tx_${Date.now()}`,
-      paymentTimestamp: new Date().toISOString(),
-      customerNotes: notes,
-    };
-
-    setOrders((prev) => [newOrder, ...prev]);
+    details: {
+      targetRef?: string;
+      subtotal: number;
+      shippingFee: number;
+      cardNumber?: string;
+      cardExpiry?: string;
+      cardCvv?: string;
+      cardName?: string;
+      selectedBank?: string;
+      selectedWallet?: string;
+    },
+    couponCode?: string,
+    discountAmount: number = 0,
+    paymentSettings?: PaymentSettings | null
+  ): Promise<{ success: boolean; orderId?: string; message?: string }> => {
     try {
+      const taxResult = calculateOrderTax(
+        items.map(i => ({ product: i.product, quantity: i.quantity })),
+        discountAmount,
+        details.shippingFee,
+        paymentSettings
+      );
+
+      const orderNumber = Date.now();
+      const orderId = `ord_${orderNumber}`;
+
+      const paymentStatus = paymentMethod === 'COD' ? 'PENDING' : 'PAID';
+      const paymentVerificationStatus = paymentMethod === 'COD' ? 'not_required' : (paymentMethod === 'UPI' ? 'pending' : 'verified');
+
+      const newOrder: CustomerOrder = {
+        id: orderId,
+        orderNumber,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        items,
+        subtotal: taxResult.subtotal,
+        shippingFee: taxResult.deliveryCharge,
+        discountAmount: taxResult.discount,
+        taxAmount: taxResult.totalTax,
+        taxableAmount: taxResult.taxableAmount,
+        cgstAmount: taxResult.cgstAmount,
+        sgstAmount: taxResult.sgstAmount,
+        igstAmount: taxResult.igstAmount,
+        totalAmount: taxResult.grandTotal,
+        paymentMethod,
+        paymentStatus: paymentStatus as PaymentStatus,
+        paymentVerificationStatus: paymentVerificationStatus as any,
+        orderStatus: 'PENDING' as OrderStatus,
+        customerName: shippingInfo.name,
+        customerEmail: shippingInfo.email,
+        customerPhone: shippingInfo.phone,
+        shippingAddress: shippingInfo,
+        transactionId: details.targetRef || `tx_${Date.now()}`,
+        paymentReference: details.targetRef,
+        paymentTimestamp: new Date().toISOString(),
+        couponCode,
+        gstEnabled: taxResult.gstEnabled,
+        gstRate: taxResult.gstRate,
+        priceIncludesGst: taxResult.priceIncludesGst,
+        taxMode: taxResult.taxMode,
+      };
+
+      setOrders((prev) => [newOrder, ...prev]);
       await saveOrderInFirestore(newOrder);
-    } catch (e) {
-      console.warn('Firestore save order failed', e);
+      return { success: true, orderId };
+    } catch (err: any) {
+      console.error('placeOrderAndPay error:', err);
+      return { success: false, message: err?.message || 'Payment verification failed. Please verify your details.' };
     }
-    return newOrder;
   };
 
   const updateOrderStatus = async (

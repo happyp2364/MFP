@@ -400,12 +400,10 @@ export const PaymentSettingsView: React.FC = () => {
     setIsTestingGateway(true);
     setTestProbeResult(null);
     try {
-      const res = await fetch('/api/payment/create-order', {
+      const res = await fetch('/api/payment/test-gateway', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: 100, // ₹1 test probe
-          customerName: 'Gateway Probe Test',
           keyId: keyId.trim(),
           keySecret: keySecret.trim(),
           gatewayProvider,
@@ -414,22 +412,25 @@ export const PaymentSettingsView: React.FC = () => {
       });
 
       const data = await res.json();
-      if (data.success && data.orderId) {
+      if (res.ok && data.success && data.connected) {
         setTestProbeResult({
           success: true,
-          message: `✓ Gateway Connection Successful! Order Session created with ID: ${data.orderId}`,
+          message: data.message || `✓ Gateway Connection Successful (${gatewayProvider} - ${isTestMode ? 'TEST' : 'LIVE'}).`,
         });
+        showToast('Payment gateway connection test successful!', 'success');
       } else {
         setTestProbeResult({
           success: false,
-          message: data.message || 'Gateway Probe Failed. Please verify Key ID and Key Secret.',
+          message: data.message || 'Gateway credentials were rejected. Please verify Key ID and Key Secret.',
         });
+        showToast(data.message || 'Gateway connection failed', 'error');
       }
     } catch (err: any) {
       setTestProbeResult({
         success: false,
-        message: 'Network error reaching payment gateway server endpoint.',
+        message: 'Network error reaching payment gateway server endpoint. Please verify server status.',
       });
+      showToast('Network error reaching payment gateway server endpoint.', 'error');
     } finally {
       setIsTestingGateway(false);
     }

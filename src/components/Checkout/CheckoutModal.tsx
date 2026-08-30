@@ -673,7 +673,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           shippingFee,
         },
         appliedCoupon?.code || undefined,
-        discountAmount
+        discountAmount,
+        paymentSettings
       );
 
       if (res.success && res.orderId) {
@@ -1298,97 +1299,72 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
 
             {/* Payment Tabs */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
-              {paymentSettings.enableUPI && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+              {paymentSettings.enableUPI !== false && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedMethod('ONLINE_UPI')}
+                  className={`p-3 rounded-xl border flex flex-col items-center justify-center space-y-1.5 transition-all ${
+                    selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD'
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-bold shadow-sm ring-1 ring-emerald-500'
+                      : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
+                  }`}
+                >
+                  <ShieldCheck className="w-5 h-5 text-emerald-700" />
+                  <span className="text-center font-bold">UPI / Pay Online</span>
+                  <span className="text-[10px] text-neutral-500 font-medium">GPay • PhonePe • Paytm • BHIM</span>
+                </button>
+              )}
+
+              {paymentSettings.enableUPI !== false && (
                 <button
                   type="button"
                   onClick={() => setSelectedMethod('UPI')}
-                  className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
+                  className={`p-3 rounded-xl border flex flex-col items-center justify-center space-y-1.5 transition-all ${
                     selectedMethod === 'UPI'
                       ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-bold shadow-sm ring-1 ring-emerald-500'
                       : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
                   }`}
                 >
                   <QrCode className="w-5 h-5 text-emerald-700" />
-                  <span className="text-center font-bold">Scan QR Code (Manual UPI)</span>
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">
-                    0% Fee • FREE
-                  </span>
+                  <span className="text-center font-bold">Scan QR / Manual UPI</span>
+                  <span className="text-[10px] text-neutral-500 font-medium">0% Fee • Instant Verify</span>
                 </button>
               )}
 
-              {paymentSettings.enableCards && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedMethod('CARD')}
-                  className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
-                    selectedMethod === 'CARD'
-                      ? 'border-amber-700 bg-amber-50 text-amber-950 font-bold shadow-sm ring-1 ring-amber-500'
-                      : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
-                  }`}
-                >
-                  <CreditCard className="w-5 h-5 text-amber-700" />
-                  <span className="text-center font-bold">Pay Online (Cashfree)</span>
-                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-extrabold">
-                    {isFeeEnabled ? `${feePercent}% Fee` : 'Online'}
-                  </span>
-                </button>
-              )}
-
-              {paymentSettings.enableNetBanking && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedMethod('NET_BANKING')}
-                  className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
-                    selectedMethod === 'NET_BANKING'
-                      ? 'border-amber-700 bg-amber-50 text-amber-950 font-bold shadow-sm ring-1 ring-amber-500'
-                      : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
-                  }`}
-                >
-                  <Building2 className="w-5 h-5 text-amber-700" />
-                  <span className="text-center font-bold">Net Banking</span>
-                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-extrabold">
-                    {isFeeEnabled ? `${feePercent}% Fee` : 'Online'}
-                  </span>
-                </button>
-              )}
-
-              {paymentSettings.enableWallets && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedMethod('WALLET')}
-                  className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
-                    selectedMethod === 'WALLET'
-                      ? 'border-amber-700 bg-amber-50 text-amber-950 font-bold shadow-sm ring-1 ring-amber-500'
-                      : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
-                  }`}
-                >
-                  <Wallet className="w-5 h-5 text-amber-700" />
-                  <span className="text-center font-bold">Wallets</span>
-                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-extrabold">
-                    {isFeeEnabled ? `${feePercent}% Fee` : 'Online'}
-                  </span>
-                </button>
-              )}
-
-              {paymentSettings.enableCOD && (
+              {paymentSettings.enableCOD !== false && (
                 <button
                   type="button"
                   onClick={() => setSelectedMethod('COD')}
-                  className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${
+                  className={`p-3 rounded-xl border flex flex-col items-center justify-center space-y-1.5 transition-all ${
                     selectedMethod === 'COD'
                       ? 'border-amber-700 bg-amber-50 text-amber-950 font-bold shadow-sm ring-1 ring-amber-500'
                       : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
                   }`}
                 >
                   <Truck className="w-5 h-5 text-amber-700" />
-                  <span className="text-center font-bold">Pay on Delivery</span>
-                  <span className="px-1.5 py-0.5 rounded bg-neutral-200 text-neutral-800 text-[10px] font-extrabold">
-                    COD
-                  </span>
+                  <span className="text-center font-bold">Cash on Delivery</span>
+                  <span className="text-[10px] text-neutral-500 font-medium">Pay upon delivery</span>
                 </button>
               )}
             </div>
+
+            {/* TAB CONTENT: ONLINE UPI / GATEWAY INTENT */}
+            {(selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD') && (
+              <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200/90 space-y-4 text-xs">
+                <div className="flex items-center space-x-2 text-emerald-800 font-bold">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  <span>Secure UPI Intent & Gateway Checkout</span>
+                </div>
+                <p className="text-neutral-600 leading-relaxed">
+                  Pay securely using any installed UPI app (Google Pay, PhonePe, Paytm, BHIM) or supported online gateway checkout. No manual card details required.
+                </p>
+                <div className="p-3 bg-white rounded-xl border border-neutral-200 flex items-center justify-between">
+                  <span className="text-neutral-500 font-medium">Total Payable Amount:</span>
+                  <span className="font-mono font-bold text-amber-900 text-sm">₹{totalAmount.toLocaleString()}</span>
+                </div>
+              </div>
+            )}
 
             {/* TAB CONTENT: UPI / QR SCAN */}
             {selectedMethod === 'UPI' && (
@@ -1574,125 +1550,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </div>
                   </>
                 )}
-              </div>
-            )}
-
-            {/* TAB CONTENT: DEBIT / CREDIT CARD */}
-            {selectedMethod === 'CARD' && (
-              <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-3 text-xs">
-                <div>
-                  <label className="block text-neutral-600 mb-1 font-medium">Card Number *</label>
-                  <input
-                    type="text"
-                    maxLength={19}
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value)}
-                    placeholder="4532 •••• •••• 8921"
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-neutral-600 mb-1 font-medium">
-                    Cardholder Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={cardName}
-                    onChange={(e) => setCardName(e.target.value)}
-                    placeholder="RAHUL SHARMA"
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-neutral-600 mb-1 font-medium">
-                      Expiry (MM/YY) *
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={5}
-                      value={cardExpiry}
-                      onChange={(e) => setCardExpiry(e.target.value)}
-                      placeholder="12/28"
-                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none text-center font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-neutral-600 mb-1 font-medium">CVV *</label>
-                    <input
-                      type="password"
-                      maxLength={4}
-                      value={cardCvv}
-                      onChange={(e) => setCardCvv(e.target.value)}
-                      placeholder="•••"
-                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none text-center font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-1.5 text-[10px] text-neutral-500 pt-1">
-                  <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>
-                    256-Bit SSL Encrypted via {paymentSettings.gatewayProvider || 'DIRECT_UPI_QR'}{' '}
-                    Gateway
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* TAB CONTENT: NET BANKING */}
-            {selectedMethod === 'NET_BANKING' && (
-              <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-3 text-xs">
-                <label className="block text-neutral-600 font-medium">Select Your Bank *</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    'SBI',
-                    'HDFC Bank',
-                    'ICICI Bank',
-                    'Axis Bank',
-                    'Kotak Bank',
-                    'Punjab National Bank',
-                  ].map((b) => (
-                    <button
-                      key={b}
-                      type="button"
-                      onClick={() => setSelectedBank(b)}
-                      className={`p-2.5 rounded-lg border text-left font-medium transition-colors ${
-                        selectedBank === b
-                          ? 'border-amber-700 bg-amber-100 text-amber-900 font-bold'
-                          : 'border-neutral-200 bg-white hover:bg-neutral-100'
-                      }`}
-                    >
-                      {b}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* TAB CONTENT: WALLET */}
-            {selectedMethod === 'WALLET' && (
-              <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-3 text-xs">
-                <label className="block text-neutral-600 font-medium">Select Wallet *</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['Paytm Wallet', 'Amazon Pay', 'PhonePe Wallet', 'Mobikwik'].map((w) => (
-                    <button
-                      key={w}
-                      type="button"
-                      onClick={() => setSelectedWallet(w)}
-                      className={`p-2.5 rounded-lg border text-left font-medium transition-colors ${
-                        selectedWallet === w
-                          ? 'border-amber-700 bg-amber-100 text-amber-900 font-bold'
-                          : 'border-neutral-200 bg-white hover:bg-neutral-100'
-                      }`}
-                    >
-                      {w}
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
 

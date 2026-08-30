@@ -12,7 +12,7 @@ import { DEFAULT_OPEN_BOX_DELIVERY_CONFIG } from '../types';
 import { DEFAULT_PAYMENT_SETTINGS } from '../data/mockData';
 import { getCurrentTenantId } from '../lib/tenantUtils';
 import { db } from '../lib/firebase';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 
 export const DEFAULT_PRODUCT_FEED_CONFIG: ProductFeedConfig = {
   productsPerPage: 24,
@@ -108,7 +108,9 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
       }
     }, () => {});
 
-    const unsubPayment = onSnapshot(doc(db, 'settings', 'payment_settings'), (snapshot) => {
+    const tenantId = getCurrentTenantId();
+    const paymentDocRef = doc(db, 'websites', tenantId, 'payment', 'config');
+    const unsubPayment = onSnapshot(paymentDocRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as PaymentSettings;
         setPaymentSettings((prev) => ({ ...prev, ...data }));
@@ -195,11 +197,24 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
       return false;
     }
     const merged = { ...paymentSettings, ...newSettings };
-    setPaymentSettings(merged);
-    localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(merged));
     try {
-      await setDoc(doc(db, 'settings', 'payment_settings'), merged, { merge: true });
-      return true;
+      const docRef = doc(db, 'websites', tenantId, 'payment', 'config');
+      const backupRef = doc(db, 'settings', 'payment_settings');
+      
+      await setDoc(docRef, merged, { merge: true });
+      await setDoc(backupRef, merged, { merge: true }).catch(() => {});
+
+      // Read-after-write verification
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const verifiedData = snap.data() as PaymentSettings;
+        setPaymentSettings(verifiedData);
+        localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(verifiedData));
+        return true;
+      } else {
+        console.error('[TENANT PAYMENT VERIFICATION ERROR] Document not found after write');
+        return false;
+      }
     } catch (e: any) {
       console.error('[TENANT PAYMENT SAVE ERROR]', {
         tenantId,

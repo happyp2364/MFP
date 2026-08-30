@@ -34,6 +34,7 @@ import { generateOrderWhatsAppLink } from '../../utils/whatsapp';
 import { InvoiceModal } from '../Customer/InvoiceModal';
 import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { calculateOrderTax } from '../../utils/taxUtils';
 import { db } from '../../lib/firebase';
 import { getDoc, doc } from 'firebase/firestore';
 
@@ -418,13 +419,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Price calculations
+  // Price calculations using centralized tax engine
   const subtotal = cartItems.reduce((acc, item) => acc + getCartItemPrice(item) * item.quantity, 0);
   const baseShippingFee = subtotal >= (paymentSettings.freeShippingMinAmount || 999) ? 0 : paymentSettings.flatShippingRate || 0;
   const shippingFee = freeShippingPromo ? 0 : baseShippingFee;
 
-  const gstPercent = paymentSettings.gstPercent || 5;
-  const taxAmount = Math.round((subtotal * gstPercent) / 100);
+  const orderItemsForTax = cartItems.map(item => ({ product: item.product, quantity: item.quantity }));
+  const taxResult = calculateOrderTax(orderItemsForTax, discountAmount, shippingFee, paymentSettings);
+
+  const taxAmount = taxResult.totalTax;
+  const taxableAmount = taxResult.taxableAmount;
+  const cgstAmount = taxResult.cgstAmount;
+  const sgstAmount = taxResult.sgstAmount;
+  const igstAmount = taxResult.igstAmount;
 
   // Payment Method Based Convenience Fee
   const isOnlinePayment = selectedMethod === 'CARD' || selectedMethod === 'NET_BANKING' || selectedMethod === 'WALLET';
@@ -432,7 +439,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const feePercent = paymentSettings.convenienceFeePercent ?? 2;
   const convenienceFee = (isOnlinePayment && isFeeEnabled) ? Math.round((subtotal * feePercent) / 100) : 0;
 
-  const totalAmount = Math.max(0, subtotal - discountAmount + shippingFee + taxAmount + convenienceFee);
+  const totalAmount = Math.max(0, taxResult.grandTotal + convenienceFee);
 
   // Dynamic UPI Link & QR Image
   const dynamicOrderId = completedOrderId || `MFP${1025 + Math.floor(Math.random() * 8000)}`;
@@ -1228,10 +1235,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span>🎁 {freeGiftPromo}</span>
                 </div>
               )}
-              <div className="flex justify-between text-neutral-600">
-                <span>जीएसटी • GST ({gstPercent}%)</span>
-                <span>₹{taxAmount.toLocaleString()}</span>
-              </div>
+              {taxResult.gstEnabled && (
+                <>
+                  <div className="flex justify-between text-neutral-600">
+                    <span>जीएसटी • GST ({taxResult.gstRate}%)</span>
+                    <span>₹{taxAmount.toLocaleString()}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between text-neutral-600">
                 <span>डिलीवरी शुल्क • Shipping</span>
                 <span>
@@ -1717,10 +1728,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span>🎁 {freeGiftPromo}</span>
                 </div>
               )}
-              <div className="flex justify-between text-neutral-600">
-                <span>GST ({gstPercent}%)</span>
-                <span className="font-mono font-medium text-neutral-900">₹{taxAmount.toLocaleString()}</span>
-              </div>
+              {taxResult.gstEnabled && (
+                <div className="flex justify-between text-neutral-600">
+                  <span>GST ({taxResult.gstRate}%)</span>
+                  <span className="font-mono font-medium text-neutral-900">₹{taxAmount.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between text-neutral-600">
                 <span>Shipping</span>
                 <span>

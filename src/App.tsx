@@ -30,6 +30,8 @@ import { FloatingAdminButton } from './components/Admin/FloatingAdminButton';
 import { SEOLiveScoreWidget } from './components/Admin/SEOLiveScoreWidget';
 import { SEOSchemaInjector } from './components/SEO/SEOSchemaInjector';
 import { CheckoutModal } from './components/Checkout/CheckoutModal';
+import { CheckoutErrorBoundary } from './components/Checkout/CheckoutErrorBoundary';
+import { CustomerAuthGuardModal } from './components/Customer/CustomerAuthGuardModal';
 import { CustomerAccountModal } from './components/Customer/CustomerAccountModal';
 import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
 import { CalendarBookingModal } from './components/GoogleWorkspace/CalendarBookingModal';
@@ -51,7 +53,7 @@ import { SEOHead } from './components/SEO/SEOHead';
 import { generateOrganizationSchema, generateLocalBusinessSchema, generateBreadcrumbSchema, generateFAQSchema } from './utils/seo';
 
 function AppContent() {
-  const { products, isAdmin, toastMessage, productFeedConfig, seoConfig } = useStore();
+  const { products, isAdmin, toastMessage, productFeedConfig, seoConfig, customerUser, showToast } = useStore();
   const { backgroundGradientClass } = useTheme();
 
   // --- STATE ---
@@ -91,6 +93,14 @@ function AppContent() {
   const [adminDashboardOpen, setAdminDashboardOpen] = useState(false);
   const [adminActiveTab, setAdminActiveTab] = useState<any>(undefined);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [pendingBuyNowAction, setPendingBuyNowAction] = useState<{
+    product: Product;
+    size: string;
+    color: string;
+    quantity: number;
+    selectedVariant?: ProductVariant;
+  } | null>(null);
   const [customerAccountOpen, setCustomerAccountOpen] = useState(false);
   const [soundSettingsOpen, setSoundSettingsOpen] = useState(false);
   const [storeLocatorOpen, setStoreLocatorOpen] = useState(false);
@@ -280,19 +290,45 @@ function AppContent() {
   };
 
   const handleBuyNow = (product: Product, size: string, color: string, quantity: number = 1, selectedVariant?: ProductVariant) => {
-    const chosenSize = size || (product.sizes && product.sizes[0]) || 'Standard';
-    const chosenColor = color || (product.colors && product.colors[0] ? product.colors[0].name : 'Standard');
+    if (!product) {
+      showToast?.('Product information is missing.', 'error');
+      return;
+    }
+    const safeProduct = {
+      ...product,
+      price: typeof product.price === 'number' ? product.price : Number(product.price) || 0,
+      images: Array.isArray(product.images) && product.images.length > 0 ? product.images : [''],
+      name: product.name || 'Product',
+      sizes: Array.isArray(product.sizes) ? product.sizes : ['Standard'],
+      colors: Array.isArray(product.colors) ? product.colors : [],
+      variants: Array.isArray(product.variants) ? product.variants : [],
+    };
+
+    const chosenSize = size || (safeProduct.sizes && safeProduct.sizes[0]) || 'Standard';
+    const chosenColor = color || (safeProduct.colors && safeProduct.colors[0] ? safeProduct.colors[0].name : 'Standard');
 
     let variant = selectedVariant;
-    if (!variant && product.variants && product.variants.length > 0) {
-      variant = product.variants.find(
-        (v) => v.color.toLowerCase() === chosenColor.toLowerCase() && v.size.toString() === chosenSize.toString()
+    if (!variant && safeProduct.variants && safeProduct.variants.length > 0) {
+      variant = safeProduct.variants.find(
+        (v) => v.color && chosenColor && v.color.toLowerCase() === chosenColor.toLowerCase() && v.size && v.size.toString() === chosenSize.toString()
       );
+    }
+
+    if (!customerUser) {
+      setPendingBuyNowAction({
+        product: safeProduct,
+        size: chosenSize,
+        color: chosenColor,
+        quantity: quantity > 0 ? quantity : 1,
+        selectedVariant: variant,
+      });
+      setAuthGuardOpen(true);
+      return;
     }
 
     setDirectCheckoutItems([
       {
-        product,
+        product: safeProduct,
         selectedSize: chosenSize,
         selectedColor: chosenColor,
         quantity: quantity > 0 ? quantity : 1,
@@ -300,6 +336,24 @@ function AppContent() {
       },
     ]);
     setCheckoutModalOpen(true);
+  };
+
+  const handleAuthGuardSuccess = () => {
+    setAuthGuardOpen(false);
+    if (pendingBuyNowAction) {
+      const { product, size, color, quantity, selectedVariant } = pendingBuyNowAction;
+      setPendingBuyNowAction(null);
+      setDirectCheckoutItems([
+        {
+          product,
+          selectedSize: size,
+          selectedColor: color,
+          quantity,
+          selectedVariant,
+        },
+      ]);
+      setCheckoutModalOpen(true);
+    }
   };
 
   const handleUpdateCartQuantity = (id: string, size: string, color: string, qty: number) => {
@@ -810,21 +864,35 @@ function AppContent() {
       />
 
       {/* Online Checkout Modal (UPI/QR, Cards, Netbanking, Cashfree, COD) */}
-      <CheckoutModal
-        isOpen={checkoutModalOpen}
+      <CheckoutErrorBoundary fallbackTitle="Checkout Process Notice">
+        <CheckoutModal
+          isOpen={checkoutModalOpen}
+          onClose={() => {
+            setCheckoutModalOpen(false);
+            setDirectCheckoutItems(null);
+          }}
+          cartItems={directCheckoutItems || cartItems}
+          onOrderComplete={(orderId) => {
+            if (!directCheckoutItems) {
+              setCartItems([]);
+            }
+            setDirectCheckoutItems(null);
+            setCheckoutModalOpen(false);
+            setCustomerAccountOpen(true);
+          }}
+        />
+      </CheckoutErrorBoundary>
+
+      {/* Customer Auth Guard Modal for Buy Now / Checkout */}
+      <CustomerAuthGuardModal
+        isOpen={authGuardOpen}
         onClose={() => {
-          setCheckoutModalOpen(false);
-          setDirectCheckoutItems(null);
+          setAuthGuardOpen(false);
+          setPendingBuyNowAction(null);
         }}
-        cartItems={directCheckoutItems || cartItems}
-        onOrderComplete={(orderId) => {
-          if (!directCheckoutItems) {
-            setCartItems([]);
-          }
-          setDirectCheckoutItems(null);
-          setCheckoutModalOpen(false);
-          setCustomerAccountOpen(true);
-        }}
+        onSuccess={handleAuthGuardSuccess}
+        reasonTitle="Login Required to Complete Purchase"
+        reasonDescription="Please log in securely to proceed with your order, track shipments, and checkout."
       />
 
       {/* Customer Account & Order Tracking Modal */}

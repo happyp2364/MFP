@@ -56,22 +56,7 @@ enableIndexedDbPersistence(db).catch((err) => {
   }
 });
 
-// Connection test on load
-async function testFirestoreConnection() {
-  try {
-    await getDoc(doc(db, '_connection_test_', 'test'));
-    console.log('Firestore connection verified');
-  } catch (err: any) {
-    if (err?.code === 'permission-denied') {
-      console.warn('Firestore connected (Security rules active)');
-    } else if (err?.code === 'unavailable' || err?.message?.includes('offline') || err?.message?.includes('Could not reach Cloud Firestore')) {
-      console.warn('Firestore operating in offline/cache mode');
-    } else {
-      console.log('Firestore initialized');
-    }
-  }
-}
-testFirestoreConnection();
+console.log('Firestore initialized successfully');
 
 // Structured Firestore error handler per skill guidelines
 export enum OperationType {

@@ -18,6 +18,7 @@ import {
   Info,
   RotateCcw,
   Building2,
+  Receipt,
   FileText,
   IndianRupee,
   Truck,
@@ -104,6 +105,15 @@ export const PaymentSettingsView: React.FC = () => {
   const [estimatedDeliveryTime, setEstimatedDeliveryTime] = useState<string>(
     paymentSettings.estimatedDeliveryTime || '3-5 Business Days'
   );
+
+  // GST & Tax Settings State
+  const [gstEnabled, setGstEnabled] = useState<boolean>(paymentSettings.gstEnabled ?? false);
+  const [gstin, setGstin] = useState<string>(paymentSettings.gstin || '08AAACM9829A1Z2');
+  const [defaultGstRate, setDefaultGstRate] = useState<number>(paymentSettings.defaultGstRate ?? 18);
+  const [priceIncludesGst, setPriceIncludesGst] = useState<boolean>(paymentSettings.priceIncludesGst ?? true);
+  const [taxMode, setTaxMode] = useState<'CGST_SGST' | 'IGST'>(paymentSettings.taxMode || 'CGST_SGST');
+  const [allowCustomerGstDetails, setAllowCustomerGstDetails] = useState<boolean>(paymentSettings.allowCustomerGstDetails ?? false);
+  const [allowProductLevelGst, setAllowProductLevelGst] = useState<boolean>(paymentSettings.allowProductLevelGst ?? true);
 
   // Gateway Probe / Test State
   const [isTestingGateway, setIsTestingGateway] = useState(false);
@@ -346,6 +356,13 @@ export const PaymentSettingsView: React.FC = () => {
       policyText: policyText.trim(),
       deliveryMessage: deliveryMessage.trim(),
       estimatedDeliveryTime: estimatedDeliveryTime.trim(),
+      gstEnabled,
+      gstin: gstin.trim(),
+      defaultGstRate: Number(defaultGstRate) || 18,
+      priceIncludesGst,
+      taxMode,
+      allowCustomerGstDetails,
+      allowProductLevelGst,
       enableQR: true,
     };
 
@@ -1027,6 +1044,142 @@ export const PaymentSettingsView: React.FC = () => {
                   placeholder="🚚 Fast & Express Delivery Across India"
                   className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2D: GST & Tax Settings (Admin Controlled) */}
+          <div className="p-5 bg-white rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+              <div className="flex items-center gap-2.5">
+                <Receipt className="w-5 h-5 text-indigo-700" />
+                <div>
+                  <h3 className="font-bold text-neutral-900 text-xs uppercase tracking-wider">
+                    GST & Tax Master Settings
+                  </h3>
+                  <p className="text-[11px] text-neutral-500 font-normal">
+                    Admin authoritative control over whether GST is calculated and charged on customer orders.
+                  </p>
+                </div>
+              </div>
+              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${gstEnabled ? 'bg-emerald-100 text-emerald-800' : 'bg-neutral-200 text-neutral-700'}`}>
+                {gstEnabled ? 'GST ACTIVE (ON)' : 'GST DISABLED (OFF)'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* GST Master Switch */}
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="flex items-center justify-between p-3.5 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-bold text-neutral-900 block">
+                      Enable GST for Customer Orders
+                    </span>
+                    <span className="text-[11px] text-neutral-500 block">
+                      When ON, GST calculation becomes active across checkout, invoices, and WhatsApp summaries. When OFF, no GST is charged.
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={gstEnabled}
+                    onChange={(e) => setGstEnabled(e.target.checked)}
+                    className="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  />
+                </label>
+              </div>
+
+              {/* Business GSTIN */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Business GSTIN *
+                </label>
+                <input
+                  type="text"
+                  value={gstin}
+                  onChange={(e) => setGstin(e.target.value)}
+                  placeholder="08AAACM9829A1Z2"
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 font-mono text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none uppercase"
+                />
+                <p className="text-[10px] text-neutral-500">Printed on all official B2B/B2C tax invoices.</p>
+              </div>
+
+              {/* Default GST Rate */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Default GST Rate (%)
+                </label>
+                <select
+                  value={defaultGstRate}
+                  onChange={(e) => setDefaultGstRate(Number(e.target.value))}
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none font-bold"
+                >
+                  <option value={0}>0% (Tax Exempt / Nil Rated)</option>
+                  <option value={5}>5% (Essential Apparel & Footwear)</option>
+                  <option value={12}>12% (Standard Apparel)</option>
+                  <option value={18}>18% (Standard Footwear & Fashion Goods)</option>
+                  <option value={28}>28% (Luxury Goods)</option>
+                </select>
+                <p className="text-[10px] text-neutral-500">Applied by default unless product-level GST is configured.</p>
+              </div>
+
+              {/* Tax Mode */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Tax Breakdown Mode
+                </label>
+                <select
+                  value={taxMode}
+                  onChange={(e) => setTaxMode(e.target.value as 'CGST_SGST' | 'IGST')}
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none font-bold"
+                >
+                  <option value="CGST_SGST">Intra-State (CGST + SGST split evenly)</option>
+                  <option value="IGST">Inter-State (IGST combined rate)</option>
+                </select>
+                <p className="text-[10px] text-neutral-500">Determines invoice tax breakdown format.</p>
+              </div>
+
+              {/* Price Includes GST */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Product Display Prices Include GST
+                </label>
+                <select
+                  value={priceIncludesGst ? 'true' : 'false'}
+                  onChange={(e) => setPriceIncludesGst(e.target.value === 'true')}
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none font-bold"
+                >
+                  <option value="true">Yes (Prices are Tax-Inclusive / MRP)</option>
+                  <option value="false">No (Prices are Tax-Exclusive / GST added at checkout)</option>
+                </select>
+                <p className="text-[10px] text-neutral-500">Standard retail practice is Tax-Inclusive.</p>
+              </div>
+
+              {/* Additional Toggles */}
+              <div className="space-y-2 md:col-span-2 pt-2 border-t border-neutral-100">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Advanced Tax Controls
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer text-xs font-bold">
+                    <input
+                      type="checkbox"
+                      checked={allowCustomerGstDetails}
+                      onChange={(e) => setAllowCustomerGstDetails(e.target.checked)}
+                      className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                    />
+                    <span className="text-neutral-900">Allow Customers to Enter Business Name & GSTIN at Checkout</span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer text-xs font-bold">
+                    <input
+                      type="checkbox"
+                      checked={allowProductLevelGst}
+                      onChange={(e) => setAllowProductLevelGst(e.target.checked)}
+                      className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                    />
+                    <span className="text-neutral-900">Allow Product-Level Custom GST Overrides in Admin Catalog</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>

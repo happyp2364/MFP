@@ -89,6 +89,23 @@ export function generateOrderWhatsAppLink(order: CustomerOrder, whatsappNum?: st
 
   const firstItem = order.items[0];
 
+  let productDetailsText = firstItem ? `${firstItem.product.name}${order.items.length > 1 ? ` (+${order.items.length - 1} more items)` : ''}` : 'Order Package';
+
+  if (order.gstEnabled) {
+    const taxRate = order.gstRate || 18;
+    const halfRate = taxRate / 2;
+    const taxable = order.taxableAmount ?? (order.subtotal - order.discountAmount);
+    const delivery = order.shippingFee;
+    const totalTax = order.taxAmount;
+    if (order.taxMode === 'IGST') {
+      productDetailsText += `\nTaxable Amount: ₹${taxable.toLocaleString()}\nIGST ${taxRate}%: ₹${totalTax.toLocaleString()}\nDelivery: ₹${delivery.toLocaleString()}\nGrand Total: ₹${order.totalAmount.toLocaleString()}`;
+    } else {
+      const cgst = order.cgstAmount ?? (totalTax / 2);
+      const sgst = order.sgstAmount ?? (totalTax / 2);
+      productDetailsText += `\nTaxable Amount: ₹${taxable.toLocaleString()}\nCGST ${halfRate}%: ₹${cgst.toLocaleString()}\nSGST ${halfRate}%: ₹${sgst.toLocaleString()}\nDelivery: ₹${delivery.toLocaleString()}\nGrand Total: ₹${order.totalAmount.toLocaleString()}`;
+    }
+  }
+
   const payload: WhatsAppPayloadData = {
     customerName: order.customerName,
     customerPhone: order.customerPhone,
@@ -102,7 +119,7 @@ export function generateOrderWhatsAppLink(order: CustomerOrder, whatsappNum?: st
     city: order.shippingAddress.city,
     state: order.shippingAddress.state,
     pincode: order.shippingAddress.pincode,
-    productName: firstItem ? `${firstItem.product.name}${order.items.length > 1 ? ` (+${order.items.length - 1} more items)` : ''}` : 'Order Package',
+    productName: productDetailsText,
     selectedSize: firstItem ? firstItem.selectedSize : 'Standard',
     selectedColor: firstItem ? firstItem.selectedColor : 'Standard',
     quantity: order.items.reduce((acc, curr) => acc + curr.quantity, 0),

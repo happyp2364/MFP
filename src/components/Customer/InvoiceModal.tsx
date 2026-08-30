@@ -64,9 +64,16 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <p className="text-neutral-500 text-[11px]">
                 Phone: {storeInfo.phone} • Email: {storeInfo.email}
               </p>
-              <p className="text-amber-900 text-[11px] font-semibold mt-1">
-                GSTIN: 08AAACM9829A1Z2
-              </p>
+              {order.gstEnabled && (
+                <p className="text-amber-900 text-[11px] font-semibold mt-1">
+                  GSTIN: {storeInfo.gstin || '08AAACM9829A1Z2'}
+                </p>
+              )}
+              {order.customerBusinessName && (
+                <p className="text-neutral-700 text-[11px] font-medium mt-0.5">
+                  B2B Buyer: {order.customerBusinessName} {order.customerGstin ? `(GSTIN: ${order.customerGstin})` : ''}
+                </p>
+              )}
             </div>
 
             <div className="text-right">
@@ -164,10 +171,35 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 <span>Items Subtotal:</span>
                 <span className="font-mono">₹{order.subtotal.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between">
-                <span>GST Tax Breakdown:</span>
-                <span className="font-mono">₹{order.taxAmount.toLocaleString()}</span>
-              </div>
+              {order.gstEnabled ? (
+                <>
+                  <div className="flex justify-between text-neutral-500 text-[11px]">
+                    <span>Taxable Amount:</span>
+                    <span className="font-mono">₹{(order.taxableAmount ?? (order.subtotal - order.discountAmount)).toLocaleString()}</span>
+                  </div>
+                  {order.taxMode === 'IGST' ? (
+                    <div className="flex justify-between text-neutral-500 text-[11px]">
+                      <span>IGST ({order.gstRate || 18}%):</span>
+                      <span className="font-mono">₹{(order.igstAmount ?? order.taxAmount).toLocaleString()}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between text-neutral-500 text-[11px]">
+                        <span>CGST ({((order.gstRate || 18) / 2)}%):</span>
+                        <span className="font-mono">₹{(order.cgstAmount ?? (order.taxAmount / 2)).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-neutral-500 text-[11px]">
+                        <span>SGST ({((order.gstRate || 18) / 2)}%):</span>
+                        <span className="font-mono">₹{(order.sgstAmount ?? (order.taxAmount / 2)).toLocaleString()}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between font-semibold text-neutral-700">
+                    <span>Total GST Tax:</span>
+                    <span className="font-mono">₹{order.taxAmount.toLocaleString()}</span>
+                  </div>
+                </>
+              ) : null}
               <div className="flex justify-between">
                 <span>Shipping Fee:</span>
                 <span className="font-mono">{order.shippingFee === 0 ? 'FREE' : `₹${order.shippingFee}`}</span>

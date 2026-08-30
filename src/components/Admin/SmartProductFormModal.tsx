@@ -825,6 +825,55 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                 />
               </div>
 
+              {/* Product-Level GST Override Configuration */}
+              <div className="sm:col-span-3 p-4 bg-neutral-50 rounded-xl border border-neutral-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-neutral-900 block">Product-Level GST Tax Override</span>
+                    <span className="text-[11px] text-neutral-500">Configure custom tax rates specific to this product.</span>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
+                    <input
+                      type="checkbox"
+                      checked={productState.useDefaultGstRate !== false}
+                      onChange={(e) => setProductState({ ...productState, useDefaultGstRate: e.target.checked })}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span>Use Store Default GST Rate</span>
+                  </label>
+                </div>
+
+                {productState.useDefaultGstRate === false && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-neutral-200">
+                    <div>
+                      <label className="text-xs font-bold text-neutral-800 block mb-1">Product GST Rate (%)</label>
+                      <select
+                        value={productState.gstRate ?? 18}
+                        onChange={(e) => setProductState({ ...productState, gstRate: Number(e.target.value) })}
+                        className="w-full bg-white border border-neutral-300 rounded-xl p-2 text-xs font-bold text-neutral-900 outline-none"
+                      >
+                        <option value={0}>0% (Exempt)</option>
+                        <option value={5}>5%</option>
+                        <option value={12}>12%</option>
+                        <option value={18}>18%</option>
+                        <option value={28}>28%</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-neutral-800 block mb-1">Price Includes GST</label>
+                      <select
+                        value={productState.priceIncludesGst !== false ? 'true' : 'false'}
+                        onChange={(e) => setProductState({ ...productState, priceIncludesGst: e.target.value === 'true' })}
+                        className="w-full bg-white border border-neutral-300 rounded-xl p-2 text-xs font-bold text-neutral-900 outline-none"
+                      >
+                        <option value="true">Yes (MRP includes GST)</option>
+                        <option value="false">No (GST exclusive)</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="font-extrabold text-neutral-800 block mb-1">Product Status</label>
                 <select

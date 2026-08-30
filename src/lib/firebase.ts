@@ -723,6 +723,13 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
   buyWhatsAppButtonColor: '#25D366',
   addToBagButtonText: 'ADD TO BAG',
   addToBagButtonColor: '#171717',
+  gstEnabled: false,
+  gstin: '08AAACM9829A1Z2',
+  defaultGstRate: 18,
+  allowProductLevelGst: true,
+  priceIncludesGst: true,
+  taxMode: 'CGST_SGST',
+  allowCustomerGstDetails: false,
 };
 
 // Fetch Payment Settings from Firestore

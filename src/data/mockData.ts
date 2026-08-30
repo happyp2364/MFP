@@ -1006,6 +1006,13 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
   buyNowButtonText: 'Buy Now',
   buyWhatsAppButtonText: 'Order on WhatsApp',
   addToBagButtonText: 'Add to Bag',
+  gstEnabled: false,
+  gstin: '08AAACM9829A1Z2',
+  defaultGstRate: 18,
+  allowProductLevelGst: true,
+  priceIncludesGst: true,
+  taxMode: 'CGST_SGST',
+  allowCustomerGstDetails: false,
 };
 
 export const DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG: TopAnnouncementBarConfig = {

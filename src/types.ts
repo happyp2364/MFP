@@ -66,6 +66,10 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   variants?: ProductVariant[];
+  // Product-level GST override settings
+  useDefaultGstRate?: boolean;
+  gstRate?: number;
+  priceIncludesGst?: boolean;
 }
 
 export interface Review {
@@ -453,6 +457,7 @@ export interface StoreInfo {
   instagram: string;
   facebook: string;
   youtube: string;
+  gstin?: string;
 
   // Header Customization Options
   showHeaderLogo?: boolean;
@@ -691,6 +696,15 @@ export interface PaymentSettings {
   buyWhatsAppButtonColor?: string;
   addToBagButtonText?: string;
   addToBagButtonColor?: string;
+
+  // Comprehensive Admin-Controlled GST & Tax Configuration
+  gstEnabled?: boolean;
+  gstin?: string;
+  defaultGstRate?: number; // 0, 5, 12, 18, 28
+  allowProductLevelGst?: boolean;
+  priceIncludesGst?: boolean;
+  taxMode?: 'CGST_SGST' | 'IGST';
+  allowCustomerGstDetails?: boolean;
 }
 
 export interface ShippingAddressInfo {
@@ -735,6 +749,18 @@ export interface CustomerOrder {
   customerNotes?: string;
   isOpenBoxDelivery?: boolean;
   openBoxDeliveryNote?: string;
+
+  // Order Tax Calculation Snapshot (ensures historical orders retain original tax calculations)
+  gstEnabled?: boolean;
+  gstRate?: number;
+  taxableAmount?: number;
+  cgstAmount?: number;
+  sgstAmount?: number;
+  igstAmount?: number;
+  priceIncludesGst?: boolean;
+  customerGstin?: string;
+  customerBusinessName?: string;
+  taxMode?: 'CGST_SGST' | 'IGST';
 }
 
 export interface TransactionRecord {

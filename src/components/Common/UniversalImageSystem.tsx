@@ -642,7 +642,8 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
                       <span className="text-[10px] text-neutral-500 mt-0.5">Supports PNG, JPG, WEBP, GIF, SVG (Up to 8MB)</span>
                       <button
                         type="button"
-                        className="mt-2 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-[11px] font-bold pointer-events-none"
+                        onClick={handleTriggerUpload}
+                        className="mt-2 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-[11px] font-bold cursor-pointer transition-colors shadow-sm"
                       >
                         Choose File from Device
                       </button>
@@ -655,9 +656,8 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml,image/*"
                     onChange={handleFileUpload}
-                    className="sr-only hidden"
+                    className="sr-only"
                     tabIndex={-1}
-                    aria-hidden="true"
                   />
                 </div>
               </div>

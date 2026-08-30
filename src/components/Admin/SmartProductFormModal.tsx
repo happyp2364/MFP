@@ -602,30 +602,23 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                 value={imageInputUrl}
                 onChange={(url) => {
                   setImageInputUrl(url);
+                  if (url && url.trim()) {
+                    setProductState((prev) => {
+                      const currentImages = prev.images || [];
+                      if (!currentImages.includes(url.trim())) {
+                        return {
+                          ...prev,
+                          images: [...currentImages, url.trim()],
+                        };
+                      }
+                      return prev;
+                    });
+                    setImageInputUrl('');
+                  }
                 }}
                 label="Add Image to Product Gallery"
                 description="Upload a photo, capture via camera, paste direct HTTPS link, generate with AI, or use presets."
               />
-
-              {imageInputUrl && (
-                <div className="mt-3 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!imageInputUrl.trim()) return;
-                      setProductState((prev) => ({
-                        ...prev,
-                        images: [...(prev.images || []), imageInputUrl.trim()],
-                      }));
-                      setImageInputUrl('');
-                    }}
-                    className="w-full sm:w-auto bg-[#0B8F63] text-white font-extrabold text-xs px-6 py-3 rounded-xl hover:bg-[#086F4C] transition-all shadow-md flex items-center justify-center gap-1.5"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Selected Image to Product Gallery</span>
-                  </button>
-                </div>
-              )}
             </div>
 
             {isOptimizingImage && (

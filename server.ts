@@ -1351,8 +1351,8 @@ Respond strictly with valid JSON in format:
         return res.status(400).json({ success: false, message: "Valid payable amount in INR required" });
       }
 
-      const effectiveKeyId = keyId?.trim() || process.env.RAZORPAY_KEY_ID || "rzp_test_TVyHKtwbCc4Qym";
-      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "3bi5KVopcEKMVXeRzrmDDxhi";
+      const effectiveKeyId = keyId?.trim() || process.env.RAZORPAY_KEY_ID || "rzp_test_TVzF9PU2ZZpzr6";
+      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "GeS3iSWXbPb5GqyfRLLz7x2o";
       const amountInPaisa = Math.round(amount * 100);
       const orderReceipt = receipt || `order_rcpt_${Date.now()}`;
 
@@ -1430,7 +1430,7 @@ Respond strictly with valid JSON in format:
         });
       }
 
-      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "3bi5KVopcEKMVXeRzrmDDxhi";
+      const effectiveKeySecret = keySecret?.trim() || process.env.RAZORPAY_KEY_SECRET || "GeS3iSWXbPb5GqyfRLLz7x2o";
 
       let isSignatureValid = false;
       if (razorpay_signature) {

@@ -776,9 +776,37 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           description: `Order ${gatewayOrderId}`,
           order_id: gatewayOrderId.startsWith('order_') ? gatewayOrderId : undefined,
           handler: async function (response: any) {
-            const confirmedPayId = response.razorpay_payment_id || `pay_${Date.now()}`;
-            setPaymentRef(confirmedPayId);
-            await handleStartPaymentVerification(confirmedPayId);
+            try {
+              setVerificationProgress(50);
+              setVerificationStageText('Verifying Razorpay Payment Signature...');
+              
+              const verifyRes = await fetch('/api/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_signature: response.razorpay_signature,
+                  keyId: activeKeyId,
+                  keySecret: paymentSettings?.keySecret || paymentSettings?.apiSecret,
+                }),
+              });
+
+              const verifyData = await verifyRes.json();
+              if (verifyRes.ok && verifyData.success && verifyData.verified) {
+                const confirmedPayId = response.razorpay_payment_id;
+                setPaymentRef(confirmedPayId);
+                await handleStartPaymentVerification(confirmedPayId);
+              } else {
+                setIsSubmitting(false);
+                setFailedReason(verifyData.message || 'Payment signature verification failed. Order was not placed.');
+                setStep('PAYMENT_FAILED');
+              }
+            } catch (err: any) {
+              setIsSubmitting(false);
+              setFailedReason('Network error communicating with payment verification server.');
+              setStep('PAYMENT_FAILED');
+            }
           },
           prefill: {
             name: shippingInfo.name,

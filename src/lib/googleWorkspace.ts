@@ -1,4 +1,4 @@
-import { getCachedAccessToken } from './firebase';
+import { getCachedAccessToken, setCachedAccessToken } from './firebase';
 
 export interface CalendarEventInput {
   summary: string;
@@ -29,12 +29,46 @@ export interface GmailSendResult {
 }
 
 /**
+ * Checks if a Google API response indicates an expired or invalid OAuth credential.
+ * Clears the cached access token if unauthorized.
+ */
+function handleAuthResponse(status: number, errorData: any, serviceName: string): Error | null {
+  const message = errorData?.error?.message || '';
+  const errStatus = errorData?.error?.status || '';
+  const lower = message.toLowerCase();
+
+  const isAuthError =
+    status === 401 ||
+    status === 403 ||
+    errStatus === 'UNAUTHENTICATED' ||
+    errStatus === 'PERMISSION_DENIED' ||
+    lower.includes('invalid authentication credential') ||
+    lower.includes('expected oauth 2 access token') ||
+    lower.includes('unauthenticated') ||
+    lower.includes('token expired') ||
+    lower.includes('insufficient authentication scopes');
+
+  if (isAuthError) {
+    setCachedAccessToken(null);
+    const err = new Error(
+      `Your ${serviceName} session has expired or requires authorization. Please reconnect your Google account.`
+    );
+    (err as any).code = 'UNAUTHENTICATED';
+    return err;
+  }
+
+  return null;
+}
+
+/**
  * Creates an event on the user's primary Google Calendar
  */
 export async function createGoogleCalendarEvent(input: CalendarEventInput): Promise<CalendarEventResult> {
   const token = getCachedAccessToken();
   if (!token) {
-    throw new Error('Google OAuth Access Token missing. Please sign in with Google first.');
+    const err = new Error('Google OAuth Access Token missing or expired. Please sign in with Google first.');
+    (err as any).code = 'UNAUTHENTICATED';
+    throw err;
   }
 
   const payload = {
@@ -69,7 +103,10 @@ export async function createGoogleCalendarEvent(input: CalendarEventInput): Prom
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    console.error('Google Calendar API Error:', errorData);
+    const authErr = handleAuthResponse(response.status, errorData, 'Google Calendar');
+    if (authErr) throw authErr;
+
+    console.warn('Google Calendar API Error:', errorData);
     throw new Error(errorData.error?.message || `Calendar API error (${response.status})`);
   }
 
@@ -82,7 +119,9 @@ export async function createGoogleCalendarEvent(input: CalendarEventInput): Prom
 export async function listGoogleCalendarEvents(): Promise<CalendarEventResult[]> {
   const token = getCachedAccessToken();
   if (!token) {
-    throw new Error('Google OAuth Access Token missing.');
+    const err = new Error('Google OAuth Access Token missing or expired.');
+    (err as any).code = 'UNAUTHENTICATED';
+    throw err;
   }
 
   const now = new Date().toISOString();
@@ -96,6 +135,9 @@ export async function listGoogleCalendarEvents(): Promise<CalendarEventResult[]>
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    const authErr = handleAuthResponse(response.status, errorData, 'Google Calendar');
+    if (authErr) throw authErr;
+
     throw new Error(errorData.error?.message || 'Failed to fetch calendar events');
   }
 
@@ -124,7 +166,9 @@ function encodeBase64Url(str: string): string {
 export async function sendGmailMessage(input: GmailSendInput): Promise<GmailSendResult> {
   const token = getCachedAccessToken();
   if (!token) {
-    throw new Error('Google OAuth Access Token missing. Please sign in with Google first.');
+    const err = new Error('Google OAuth Access Token missing or expired. Please sign in with Google first.');
+    (err as any).code = 'UNAUTHENTICATED';
+    throw err;
   }
 
   const rawMessage = [
@@ -151,7 +195,10 @@ export async function sendGmailMessage(input: GmailSendInput): Promise<GmailSend
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    console.error('Gmail API Send Error:', errorData);
+    const authErr = handleAuthResponse(response.status, errorData, 'Gmail');
+    if (authErr) throw authErr;
+
+    console.warn('Gmail API Send Error:', errorData);
     throw new Error(errorData.error?.message || `Gmail API error (${response.status})`);
   }
 
@@ -173,7 +220,9 @@ export interface DriveFileItem {
 export async function listGoogleDriveFiles(): Promise<DriveFileItem[]> {
   const token = getCachedAccessToken();
   if (!token) {
-    throw new Error('Google OAuth Access Token missing.');
+    const err = new Error('Google OAuth Access Token missing or expired.');
+    (err as any).code = 'UNAUTHENTICATED';
+    throw err;
   }
 
   const url = 'https://www.googleapis.com/drive/v3/files?fields=files(id,name,mimeType,webViewLink,thumbnailLink,createdTime)&pageSize=20&orderBy=createdTime%20desc';
@@ -186,6 +235,9 @@ export async function listGoogleDriveFiles(): Promise<DriveFileItem[]> {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    const authErr = handleAuthResponse(response.status, errorData, 'Google Drive');
+    if (authErr) throw authErr;
+
     throw new Error(errorData.error?.message || 'Failed to list Google Drive files');
   }
 
@@ -199,7 +251,9 @@ export async function listGoogleDriveFiles(): Promise<DriveFileItem[]> {
 export async function uploadFileToGoogleDrive(file: File): Promise<DriveFileItem> {
   const token = getCachedAccessToken();
   if (!token) {
-    throw new Error('Google OAuth Access Token missing. Please sign in with Google first.');
+    const err = new Error('Google OAuth Access Token missing or expired. Please sign in with Google first.');
+    (err as any).code = 'UNAUTHENTICATED';
+    throw err;
   }
 
   const metadata = {
@@ -221,7 +275,10 @@ export async function uploadFileToGoogleDrive(file: File): Promise<DriveFileItem
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    console.error('Google Drive Upload Error:', errorData);
+    const authErr = handleAuthResponse(response.status, errorData, 'Google Drive');
+    if (authErr) throw authErr;
+
+    console.warn('Google Drive Upload Error:', errorData);
     throw new Error(errorData.error?.message || `Drive Upload error (${response.status})`);
   }
 

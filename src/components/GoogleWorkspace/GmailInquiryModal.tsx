@@ -170,23 +170,22 @@ export const GmailInquiryModal: React.FC<GmailInquiryModalProps> = ({
                   <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <p className="font-semibold">{errorMsg}</p>
-                    {!user && (
+                    {(!user || !getCachedAccessToken()) && (
                       <button
                         type="button"
                         onClick={async () => {
                           try {
-                            await signInWithGoogle();
+                            await signInWithGoogle(true);
                             setErrorMsg(null);
                           } catch (e: any) {
-                            setErrorMsg(
-                              e?.message ||
-                                'Google Sign-In is temporarily unavailable because this website domain has not yet been authorized. Please contact the website administrator.'
-                            );
+                            if (e?.code !== 'auth/popup-closed-by-user') {
+                              setErrorMsg(e?.message || 'Google authorization failed.');
+                            }
                           }
                         }}
                         className="underline text-red-800 font-bold mt-1 block"
                       >
-                        Click here to Sign in with Google
+                        Click here to Authorize Gmail
                       </button>
                     )}
                   </div>
@@ -208,18 +207,29 @@ export const GmailInquiryModal: React.FC<GmailInquiryModalProps> = ({
                       From: {user ? user.email : 'Not Signed In'}
                     </span>
                     <span className="text-[10px] text-neutral-500">
-                      To: {recipientEmail}
+                      {user
+                        ? (getCachedAccessToken() ? `To: ${recipientEmail}` : 'Gmail authorization needed')
+                        : `To: ${recipientEmail}`}
                     </span>
                   </div>
                 </div>
 
-                {!user && (
+                {(!user || !getCachedAccessToken()) && (
                   <button
                     type="button"
-                    onClick={() => signInWithGoogle()}
+                    onClick={async () => {
+                      try {
+                        await signInWithGoogle(true);
+                        setErrorMsg(null);
+                      } catch (e: any) {
+                        if (e?.code !== 'auth/popup-closed-by-user') {
+                          setErrorMsg(e?.message || 'Failed to authorize Gmail.');
+                        }
+                      }
+                    }}
                     className="bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-sm transition-all"
                   >
-                    Connect
+                    {!user ? 'Connect' : 'Authorize Gmail'}
                   </button>
                 )}
               </div>

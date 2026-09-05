@@ -20,7 +20,8 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import {
-  getFirestore,
+  initializeFirestore,
+  memoryLocalCache,
   doc,
   getDoc,
   setDoc,
@@ -32,7 +33,6 @@ import {
   query,
   orderBy,
   limit,
-  enableIndexedDbPersistence,
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { CustomerProfile, MarketingConsent, MarketingSubscriber, MarketingCampaign } from '../types';
@@ -40,21 +40,49 @@ import { CustomerProfile, MarketingConsent, MarketingSubscriber, MarketingCampai
 // Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined);
+
+// Purge any stale IndexedDB client leases with clock-drifted future timestamps
+if (typeof window !== 'undefined' && 'indexedDB' in window) {
+  try {
+    if (typeof indexedDB.databases === 'function') {
+      indexedDB.databases().then((databases) => {
+        databases.forEach((d) => {
+          if (d.name && d.name.startsWith('firestore/')) {
+            indexedDB.deleteDatabase(d.name);
+          }
+        });
+      }).catch(() => {});
+    }
+  } catch {
+    // Ignore if not permitted in strict sandbox environments
+  }
+}
+
+// Initialize Firestore with memoryLocalCache to eliminate clock skew lease errors across iframes/tabs
+export const db = initializeFirestore(
+  app,
+  {
+    localCache: memoryLocalCache(),
+  },
+  firebaseConfig.firestoreDatabaseId || undefined
+);
 
 // Enable persistent auth session across page reloads & tabs
 setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.warn('Firebase persistence warning:', err);
 });
 
-// Enable Firestore offline persistence for resilience
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Firestore persistence notice: multiple tabs open');
-  } else if (err.code === 'unimplemented') {
-    console.warn('Firestore persistence not supported in this environment');
+// Test connection per Firebase integration guidelines
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.error('Please check your Firebase configuration.');
+    }
   }
-});
+}
+testConnection();
 
 console.log('Firestore initialized successfully');
 
@@ -136,19 +164,70 @@ googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/gmail.compose'
 googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.file');
 googleWorkspaceProvider.addScope('https://www.googleapis.com/auth/drive.metadata.readonly');
 
-// In-memory token store for Google Workspace API calls
-let cachedAccessToken: string | null = localStorage.getItem('mfp_google_access_token');
+// In-memory token store for Google Workspace API calls with expiration management
+const TOKEN_KEY = 'mfp_google_access_token';
+const TOKEN_TS_KEY = 'mfp_google_access_token_ts';
+// Google OAuth access tokens typically expire in 3600 seconds (1 hour).
+// We set a conservative threshold of 50 minutes to avoid sending stale tokens.
+const TOKEN_MAX_AGE_MS = 50 * 60 * 1000;
+
+let cachedAccessToken: string | null = null;
+try {
+  const storedToken = localStorage.getItem(TOKEN_KEY);
+  const storedTs = localStorage.getItem(TOKEN_TS_KEY);
+  if (storedToken && storedTs) {
+    const elapsed = Date.now() - parseInt(storedTs, 10);
+    if (elapsed < TOKEN_MAX_AGE_MS) {
+      cachedAccessToken = storedToken;
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_TS_KEY);
+    }
+  } else if (storedToken) {
+    // Stale token from earlier session without timestamp - clear it
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_TS_KEY);
+  }
+} catch {
+  // Ignore storage errors
+}
 
 export function getCachedAccessToken(): string | null {
-  return cachedAccessToken;
+  try {
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+    const storedTs = localStorage.getItem(TOKEN_TS_KEY);
+    if (!storedToken) {
+      cachedAccessToken = null;
+      return null;
+    }
+    if (storedTs) {
+      const elapsed = Date.now() - parseInt(storedTs, 10);
+      if (elapsed >= TOKEN_MAX_AGE_MS) {
+        setCachedAccessToken(null);
+        return null;
+      }
+    } else {
+      setCachedAccessToken(null);
+      return null;
+    }
+    return storedToken;
+  } catch {
+    return cachedAccessToken;
+  }
 }
 
 export function setCachedAccessToken(token: string | null) {
   cachedAccessToken = token;
-  if (token) {
-    localStorage.setItem('mfp_google_access_token', token);
-  } else {
-    localStorage.removeItem('mfp_google_access_token');
+  try {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(TOKEN_TS_KEY, Date.now().toString());
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_TS_KEY);
+    }
+  } catch {
+    // Ignore storage errors
   }
 }
 

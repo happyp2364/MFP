@@ -22,33 +22,71 @@ export const WorkspaceHubDrawer: React.FC<WorkspaceHubDrawerProps> = ({
   const [events, setEvents] = useState<CalendarEventResult[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [eventsError, setEventsError] = useState<string | null>(null);
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((u) => {
       setUser(u);
-      if (u && getCachedAccessToken()) {
-        fetchCalendarEvents();
-      }
     });
     return () => unsubscribe();
   }, []);
 
+  // Only sync events when drawer is actually opened on the calendar tab with a valid cached token
+  useEffect(() => {
+    if (isOpen && activeTab === 'calendar' && user && getCachedAccessToken()) {
+      fetchCalendarEvents();
+    } else if (!getCachedAccessToken()) {
+      setEvents([]);
+    }
+  }, [isOpen, activeTab, user]);
+
+  const handleConnectWorkspace = async () => {
+    try {
+      setIsAuthorizing(true);
+      setEventsError(null);
+      await signInWithGoogle(true);
+      await fetchCalendarEvents();
+    } catch (err: any) {
+      if (
+        err?.code !== 'auth/popup-closed-by-user' &&
+        err?.code !== 'auth/cancelled-popup-request'
+      ) {
+        setEventsError(err?.message || 'Failed to connect Google Workspace.');
+      }
+    } finally {
+      setIsAuthorizing(false);
+    }
+  };
+
   const fetchCalendarEvents = async () => {
-    if (!getCachedAccessToken()) return;
+    if (!getCachedAccessToken()) {
+      setEvents([]);
+      return;
+    }
     setLoadingEvents(true);
     setEventsError(null);
     try {
       const items = await listGoogleCalendarEvents();
       setEvents(items);
     } catch (err: any) {
-      console.error('Fetch events error:', err);
-      setEventsError(err.message || 'Failed to sync with Google Calendar.');
-    } fontFinally: {
+      if (
+        err?.code === 'UNAUTHENTICATED' ||
+        err?.message?.toLowerCase().includes('authentication credential') ||
+        err?.message?.toLowerCase().includes('oauth 2 access token')
+      ) {
+        setEvents([]);
+        setEventsError('Google Calendar session has expired. Please reconnect to sync appointments.');
+      } else {
+        setEventsError(err.message || 'Failed to sync with Google Calendar.');
+      }
+    } finally {
       setLoadingEvents(false);
     }
   };
 
   if (!isOpen) return null;
+
+  const hasWorkspaceToken = !!getCachedAccessToken();
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -70,8 +108,12 @@ export const WorkspaceHubDrawer: React.FC<WorkspaceHubDrawerProps> = ({
             <div>
               <h3 className="font-extrabold text-base text-white flex items-center gap-2">
                 <span>Google Workspace</span>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                  CONNECTED
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                  hasWorkspaceToken
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                }`}>
+                  {hasWorkspaceToken ? 'CONNECTED' : (user ? 'RECONNECT NEEDED' : 'AUTH REQUIRED')}
                 </span>
               </h3>
               <p className="text-[11px] text-neutral-400">
@@ -111,21 +153,33 @@ export const WorkspaceHubDrawer: React.FC<WorkspaceHubDrawerProps> = ({
             <div className="w-full flex items-center justify-between">
               <span className="text-xs text-neutral-400 font-medium">Not signed in</span>
               <button
-                onClick={() => signInWithGoogle()}
+                onClick={handleConnectWorkspace}
+                disabled={isAuthorizing}
                 className="bg-[#0B8F63] hover:bg-[#086F4C] text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
               >
-                Sign in with Google
+                {isAuthorizing ? 'Connecting...' : 'Sign in with Google'}
               </button>
             </div>
           )}
 
           {user && (
-            <button
-              onClick={() => logoutUser()}
-              className="text-[11px] font-bold text-neutral-400 hover:text-red-400 underline shrink-0"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {!hasWorkspaceToken && (
+                <button
+                  onClick={handleConnectWorkspace}
+                  disabled={isAuthorizing}
+                  className="bg-[#0B8F63] hover:bg-[#086F4C] text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all"
+                >
+                  {isAuthorizing ? 'Connecting...' : 'Authorize'}
+                </button>
+              )}
+              <button
+                onClick={() => logoutUser()}
+                className="text-[11px] font-bold text-neutral-400 hover:text-red-400 underline"
+              >
+                Sign Out
+              </button>
+            </div>
           )}
         </div>
 
@@ -201,9 +255,34 @@ export const WorkspaceHubDrawer: React.FC<WorkspaceHubDrawerProps> = ({
                 <span>Book New VIP Store Fitting</span>
               </button>
 
+              {!hasWorkspaceToken && (
+                <div className="p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl space-y-2 text-center">
+                  <Calendar className="w-8 h-8 text-[#0B8F63] mx-auto" />
+                  <h5 className="font-bold text-xs text-neutral-900">Google Calendar Not Authorized</h5>
+                  <p className="text-[11px] text-neutral-600">
+                    Authorize Google Calendar to synchronize and manage your VIP footwear fitting sessions.
+                  </p>
+                  <button
+                    onClick={handleConnectWorkspace}
+                    disabled={isAuthorizing}
+                    className="w-full bg-[#0B8F63] hover:bg-[#086F4C] text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>{isAuthorizing ? 'Connecting...' : 'Authorize Google Calendar'}</span>
+                  </button>
+                </div>
+              )}
+
               {eventsError && (
-                <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs">
-                  {eventsError}
+                <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs space-y-2">
+                  <p>{eventsError}</p>
+                  <button
+                    onClick={handleConnectWorkspace}
+                    disabled={isAuthorizing}
+                    className="underline font-bold text-[#0B8F63] hover:text-[#086F4C] block"
+                  >
+                    {isAuthorizing ? 'Reconnecting...' : 'Reconnect Google Account'}
+                  </button>
                 </div>
               )}
 
@@ -237,7 +316,7 @@ export const WorkspaceHubDrawer: React.FC<WorkspaceHubDrawerProps> = ({
                     </div>
                   ))}
                 </div>
-              ) : (
+              ) : hasWorkspaceToken ? (
                 <div className="text-center py-8 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 space-y-2">
                   <Calendar className="w-8 h-8 text-neutral-400 mx-auto" />
                   <p className="text-xs font-semibold text-neutral-700">No upcoming fittings booked</p>
@@ -245,7 +324,7 @@ export const WorkspaceHubDrawer: React.FC<WorkspaceHubDrawerProps> = ({
                     Click above to schedule a store visit and automatically sync it with your Google Calendar.
                   </p>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 

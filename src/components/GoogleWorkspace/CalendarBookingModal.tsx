@@ -194,23 +194,22 @@ export const CalendarBookingModal: React.FC<CalendarBookingModalProps> = ({
                   <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <p className="font-semibold">{errorMsg}</p>
-                    {!user && (
+                    {(!user || !getCachedAccessToken()) && (
                       <button
                         type="button"
                         onClick={async () => {
                           try {
-                            await signInWithGoogle();
+                            await signInWithGoogle(true);
                             setErrorMsg(null);
                           } catch (e: any) {
-                            setErrorMsg(
-                              e?.message ||
-                                'Google Sign-In is temporarily unavailable because this website domain has not yet been authorized. Please contact the website administrator.'
-                            );
+                            if (e?.code !== 'auth/popup-closed-by-user') {
+                              setErrorMsg(e?.message || 'Google authorization failed.');
+                            }
                           }
                         }}
                         className="underline text-red-800 font-bold mt-1 block"
                       >
-                        Click here to Sign in with Google
+                        Click here to Authorize Google Calendar
                       </button>
                     )}
                   </div>
@@ -232,18 +231,29 @@ export const CalendarBookingModal: React.FC<CalendarBookingModalProps> = ({
                       {user ? user.displayName : 'Not Signed In'}
                     </span>
                     <span className="text-[10px] text-neutral-500">
-                      {user ? user.email : 'Google Calendar sync requires authentication'}
+                      {user
+                        ? (getCachedAccessToken() ? user.email : 'Calendar authorization needed')
+                        : 'Google Calendar sync requires authentication'}
                     </span>
                   </div>
                 </div>
 
-                {!user && (
+                {(!user || !getCachedAccessToken()) && (
                   <button
                     type="button"
-                    onClick={() => signInWithGoogle()}
+                    onClick={async () => {
+                      try {
+                        await signInWithGoogle(true);
+                        setErrorMsg(null);
+                      } catch (e: any) {
+                        if (e?.code !== 'auth/popup-closed-by-user') {
+                          setErrorMsg(e?.message || 'Failed to authorize Google.');
+                        }
+                      }
+                    }}
                     className="bg-[#0B8F63] hover:bg-[#086F4C] text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-sm transition-all"
                   >
-                    Connect Google
+                    {!user ? 'Connect Google' : 'Authorize Calendar'}
                   </button>
                 )}
               </div>

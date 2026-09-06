@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Search, X, Sparkles, History, Mic, Camera, MapPin, ArrowRight } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, X, Sparkles, History, Mic, MicOff, Camera, MapPin, AlertCircle } from 'lucide-react';
 import { Product } from '../../types';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 
@@ -12,6 +12,31 @@ interface LiveSearchModalProps {
   onOpenStoreLocator?: () => void;
 }
 
+/**
+ * Clean conversational filler words from voice transcripts
+ * (e.g. "show me ethnic juttis" -> "ethnic juttis")
+ */
+function cleanVoiceQuery(text: string): string {
+  let cleaned = text.trim();
+  const prefixes = [
+    /^search\s+for\s+/i,
+    /^search\s+/i,
+    /^show\s+me\s+/i,
+    /^find\s+(me\s+)?/i,
+    /^look\s+for\s+/i,
+    /^i\s+want\s+/i,
+    /^i'm\s+looking\s+for\s+/i,
+    /^mujhe\s+/i,
+    /^kripya\s+/i,
+  ];
+  for (const prefix of prefixes) {
+    cleaned = cleaned.replace(prefix, '');
+  }
+  // Strip trailing punctuation
+  cleaned = cleaned.replace(/[?.!,]+$/, '').trim();
+  return cleaned;
+}
+
 export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
   isOpen,
   onClose,
@@ -20,12 +45,13 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
   onSearchCategory,
   onOpenStoreLocator,
 }) => {
-  if (!isOpen) return null;
-
   const [query, setQuery] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   const [recentSearches, setRecentSearches] = useState<string[]>([
     'Sports Shoes',
@@ -35,37 +61,129 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
     'Running Sneakers',
   ]);
 
-  // Voice Search Handler
-  const handleStartVoiceSearch = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Voice recognition is not supported in your browser. Try typing instead!');
+  // Clean up recognition on modal close or unmount
+  useEffect(() => {
+    if (!isOpen && recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // Ignore errors on stopping
+      }
+      setIsListening(false);
+      setInterimTranscript('');
+      setVoiceError(null);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
+  // Web Speech API Voice Search Handler
+  const toggleVoiceSearch = () => {
+    setVoiceError(null);
+
+    // If currently listening, stop it
+    if (isListening) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // ignore
+        }
+      }
+      setIsListening(false);
+      setInterimTranscript('');
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-IN';
-    recognition.interimResults = false;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    recognition.onstart = () => {
-      setIsListening(true);
-    };
+    if (!SpeechRecognition) {
+      setVoiceError(
+        'Voice search is not supported in this browser. Please use Google Chrome, Microsoft Edge, or Safari, or type your query.'
+      );
+      return;
+    }
 
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setQuery(transcript);
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.lang = 'en-IN'; // Indian English / Hinglish dialect
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      recognition.continuous = false;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setInterimTranscript('');
+        setVoiceError(null);
+      };
+
+      recognition.onresult = (event: any) => {
+        let interim = '';
+        let final = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcriptPiece = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            final += transcriptPiece;
+          } else {
+            interim += transcriptPiece;
+          }
+        }
+
+        if (interim) {
+          setInterimTranscript(interim);
+        }
+
+        if (final) {
+          const finalSearchQuery = cleanVoiceQuery(final);
+          setQuery(finalSearchQuery);
+          setInterimTranscript('');
+          setIsListening(false);
+
+          // Add to recent searches if non-empty
+          if (finalSearchQuery && !recentSearches.includes(finalSearchQuery)) {
+            setRecentSearches((prev) => [finalSearchQuery, ...prev.filter((s) => s !== finalSearchQuery).slice(0, 4)]);
+          }
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        setIsListening(false);
+        setInterimTranscript('');
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setVoiceError('Microphone permission was denied. Please allow microphone access in your browser settings.');
+        } else if (event.error === 'no-speech') {
+          setVoiceError('No speech was detected. Please click the mic and speak clearly.');
+        } else if (event.error === 'network') {
+          setVoiceError('Network connection error during voice recognition. Please try again.');
+        } else {
+          setVoiceError(`Voice recognition error (${event.error || 'unknown'}). Please try typing.`);
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        setInterimTranscript('');
+      };
+
+      recognition.start();
+    } catch (err: any) {
+      console.warn('Voice recognition startup warning:', err);
       setIsListening(false);
-    };
-
-    recognition.onerror = () => {
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.start();
+      setVoiceError('Could not start voice recognition. Please check your microphone and try again.');
+    }
   };
 
   // AI Image Search Handler
@@ -105,6 +223,8 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-20 p-4">
       {/* Backdrop */}
@@ -119,7 +239,10 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
         ref={fileInputRef}
         accept="image/*"
         onChange={handleImageUpload}
-        className="hidden"
+        onClick={(e) => e.stopPropagation()}
+        className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none -z-10"
+        tabIndex={-1}
+        aria-hidden="true"
       />
 
       {/* Modal Box */}
@@ -142,20 +265,38 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
             <div className="absolute right-3 flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={handleStartVoiceSearch}
-                title="Voice Search"
-                className={`p-1.5 rounded-xl transition-all cursor-pointer ${
-                  isListening ? 'bg-rose-500 text-white animate-bounce' : 'text-neutral-400 hover:text-emerald-700 hover:bg-neutral-200/60'
+                id="live-search-voice-btn"
+                onClick={toggleVoiceSearch}
+                aria-label={isListening ? 'Stop voice recognition' : 'Start voice search'}
+                title={isListening ? 'Listening... Click to stop' : 'Voice Search (Web Speech)'}
+                className={`relative p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+                  isListening
+                    ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30 ring-2 ring-rose-400/60'
+                    : 'text-neutral-500 hover:text-[#0B8F63] hover:bg-emerald-50'
                 }`}
               >
-                <Mic className="w-4 h-4" />
+                {isListening ? (
+                  <MicOff className="w-4 h-4 animate-pulse" />
+                ) : (
+                  <Mic className="w-4 h-4" />
+                )}
+                {isListening && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
+                  </span>
+                )}
               </button>
 
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                id="live-search-camera-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
                 title="AI Image Search"
-                className="p-1.5 rounded-xl text-neutral-400 hover:text-emerald-700 hover:bg-neutral-200/60 transition-all cursor-pointer"
+                className="p-2 rounded-xl text-neutral-500 hover:text-[#0B8F63] hover:bg-emerald-50 transition-all cursor-pointer"
               >
                 <Camera className="w-4 h-4" />
               </button>
@@ -163,8 +304,14 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
               {query && (
                 <button
                   type="button"
-                  onClick={() => setQuery('')}
-                  className="p-1.5 text-neutral-400 hover:text-neutral-700"
+                  id="live-search-clear-btn"
+                  onClick={() => {
+                    setQuery('');
+                    setInterimTranscript('');
+                    setVoiceError(null);
+                  }}
+                  className="p-1.5 text-neutral-400 hover:text-neutral-700 cursor-pointer"
+                  title="Clear search"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -173,12 +320,31 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
           </div>
 
           <button
+            id="live-search-close-btn"
             onClick={onClose}
-            className="p-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-2xl font-bold cursor-pointer"
+            className="p-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-2xl font-bold cursor-pointer transition-colors"
+            title="Close Search"
           >
             ✕
           </button>
         </div>
+
+        {/* Voice Search Error Notice */}
+        {voiceError && (
+          <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-2xl flex items-center justify-between gap-3 text-amber-900 text-xs animate-fade-in">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>{voiceError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setVoiceError(null)}
+              className="text-amber-700 hover:text-amber-950 font-bold px-2 py-0.5 rounded-lg hover:bg-amber-100 transition-colors text-xs shrink-0 cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* AI Processing Overlay */}
         {isAiAnalyzing && (
@@ -190,13 +356,41 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
           </div>
         )}
 
-        {/* Voice Listening Overlay */}
+        {/* Voice Listening Overlay with Realtime Waveform and Interim Feedback */}
         {isListening && (
-          <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3">
-            <span className="w-3 h-3 rounded-full bg-rose-600 animate-ping" />
-            <span className="text-xs font-bold text-rose-900">
-              Listening... Speak shoe name (e.g. "Sports Shoes" or "Formal Loafers")
-            </span>
+          <div className="p-3.5 bg-gradient-to-r from-rose-50 via-rose-50/70 to-emerald-50/50 border border-rose-200/80 rounded-2xl flex items-center justify-between gap-3 animate-fade-in shadow-sm">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-md">
+                <Mic className="w-4 h-4 animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-extrabold text-rose-950">Listening... Speak now</span>
+                  {/* Dynamic sound bars */}
+                  <div className="flex items-center gap-0.5 h-3">
+                    <span className="w-0.5 h-2 bg-rose-500 rounded-full animate-pulse" />
+                    <span className="w-0.5 h-3.5 bg-rose-600 rounded-full animate-pulse [animation-delay:150ms]" />
+                    <span className="w-0.5 h-1.5 bg-rose-400 rounded-full animate-pulse [animation-delay:300ms]" />
+                    <span className="w-0.5 h-2.5 bg-rose-500 rounded-full animate-pulse [animation-delay:200ms]" />
+                    <span className="w-0.5 h-3 bg-rose-600 rounded-full animate-pulse [animation-delay:400ms]" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-neutral-600 truncate mt-0.5">
+                  {interimTranscript ? (
+                    <span className="font-semibold text-rose-700 italic">"{interimTranscript}"</span>
+                  ) : (
+                    'Try: "Sports shoes", "Leather loafers", "Ethnic jutti", "School shoes"'
+                  )}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={toggleVoiceSearch}
+              className="px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 text-[11px] font-bold rounded-xl shrink-0 transition-colors cursor-pointer"
+            >
+              Done
+            </button>
           </div>
         )}
 

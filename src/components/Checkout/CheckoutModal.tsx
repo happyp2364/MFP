@@ -35,6 +35,11 @@ import { InvoiceModal } from '../Customer/InvoiceModal';
 import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 import { calculateOrderTax } from '../../utils/taxUtils';
+import {
+  createRazorpayServerOrder,
+  verifyRazorpayServerPayment,
+  openRazorpayCheckoutModal,
+} from '../../services/razorpayService';
 import { db } from '../../lib/firebase';
 import { getDoc, doc } from 'firebase/firestore';
 
@@ -92,6 +97,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Double-submit protection guard
   const isProcessingRef = useRef(false);
+  const processedPaymentIdsRef = useRef<Set<string>>(new Set());
 
   // Address Form
   const [shippingInfo, setShippingInfo] = useState<ShippingAddressInfo>({
@@ -162,16 +168,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setCouponError(null);
     setCouponCodeInput('');
     
-    // Clear any potential stored flags just in case
-    localStorage.removeItem('mfp_checkout_stale_success');
-    localStorage.removeItem('mfp_last_order_id');
-    localStorage.removeItem('mfp_payment_success');
-    localStorage.removeItem('mfp_checkout_session');
-    
-    sessionStorage.removeItem('mfp_checkout_stale_success');
-    sessionStorage.removeItem('mfp_last_order_id');
-    sessionStorage.removeItem('mfp_payment_success');
-    sessionStorage.removeItem('mfp_checkout_session');
+    // Clear any potential stored flags safely
+    try {
+      localStorage.removeItem('mfp_checkout_stale_success');
+      localStorage.removeItem('mfp_last_order_id');
+      localStorage.removeItem('mfp_payment_success');
+      localStorage.removeItem('mfp_checkout_session');
+      
+      sessionStorage.removeItem('mfp_checkout_stale_success');
+      sessionStorage.removeItem('mfp_last_order_id');
+      sessionStorage.removeItem('mfp_payment_success');
+      sessionStorage.removeItem('mfp_checkout_session');
+    } catch {
+      // ignore storage access restriction
+    }
   };
 
   // Perform full validation check
@@ -386,12 +396,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   useEffect(() => {
     if (isOpen && coupons && coupons.length > 0 && !appliedCoupon) {
       // Prioritize scratched coupon code if found in local storage
-      const scratchedCode = localStorage.getItem('mfp_scratched_coupon');
+      let scratchedCode: string | null = null;
+      try {
+        scratchedCode = localStorage.getItem('mfp_scratched_coupon');
+      } catch {}
+
       if (scratchedCode) {
         const valResult = validateCoupon(scratchedCode, cartItems);
         if (valResult.valid) {
           handleApplyCoupon(scratchedCode);
-          localStorage.removeItem('mfp_scratched_coupon');
+          try {
+            localStorage.removeItem('mfp_scratched_coupon');
+          } catch {}
           return;
         }
       }
@@ -421,7 +437,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Price calculations using centralized tax engine
   const subtotal = cartItems.reduce((acc, item) => acc + getCartItemPrice(item) * item.quantity, 0);
-  const baseShippingFee = subtotal >= (paymentSettings.freeShippingMinAmount || 999) ? 0 : paymentSettings.flatShippingRate || 0;
+  const freeThreshold = paymentSettings.freeShippingMinAmount || 999;
+  const baseShippingFee = subtotal >= freeThreshold ? 0 : (paymentSettings.flatShippingRate ?? 80);
   const shippingFee = freeShippingPromo ? 0 : baseShippingFee;
 
   const orderItemsForTax = cartItems.map(item => ({ product: item.product, quantity: item.quantity }));
@@ -433,13 +450,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const sgstAmount = taxResult.sgstAmount;
   const igstAmount = taxResult.igstAmount;
 
-  // Payment Method Based Convenience Fee
-  const isOnlinePayment = selectedMethod === 'CARD' || selectedMethod === 'NET_BANKING' || selectedMethod === 'WALLET';
-  const isFeeEnabled = paymentSettings.enableConvenienceFee !== false;
-  const feePercent = paymentSettings.convenienceFeePercent ?? 2;
-  const convenienceFee = (isOnlinePayment && isFeeEnabled) ? Math.round((subtotal * feePercent) / 100) : 0;
-
-  const totalAmount = Math.max(0, taxResult.grandTotal + convenienceFee);
+  // Authoritative GST-inclusive payable amount: Subtotal - Discount + Delivery Fee
+  const totalAmount = Math.max(0, subtotal - discountAmount + shippingFee);
 
   // Dynamic UPI Link & QR Image
   const dynamicOrderId = completedOrderId || `MFP${1025 + Math.floor(Math.random() * 8000)}`;
@@ -506,9 +518,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // (Ref and upload state moved to top component header)
 
-  const handleTriggerScreenshotPicker = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleTriggerScreenshotPicker = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     if (!isUploadingScreenshot && screenshotFileInputRef.current) {
       screenshotFileInputRef.current.click();
     }
@@ -725,95 +738,199 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   /**
-   * Launch Official Payment Gateway Modal
+   * Launch Official Razorpay Payment Gateway Checkout or Fallback
    */
   const handleLaunchOfficialGatewayCheckout = async () => {
-    if (selectedMethod === 'COD') {
+    // 1. Double-click / concurrent invocation guard
+    if (isSubmitting || isProcessingRef.current) {
+      return;
+    }
+
+    // 2. Cash on delivery or Manual QR UPI bypass gateway modal
+    if (selectedMethod === 'COD' || selectedMethod === 'UPI') {
       await handleStartPaymentVerification();
       return;
     }
 
+    isProcessingRef.current = true;
     setIsSubmitting(true);
     setErrorMessage(null);
 
     try {
-      // 1. Request Order Session from Express Server Backend API
-      const apiRes = await fetch('/api/payment/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: totalAmount,
-          currency: 'INR',
-          customerName: shippingInfo.name,
-          customerEmail: shippingInfo.email,
-          customerPhone: shippingInfo.phone,
-          keyId: paymentSettings.keyId || paymentSettings.apiKey,
-          keySecret: paymentSettings.keySecret || paymentSettings.apiSecret,
-          gatewayProvider: paymentSettings.gatewayProvider || 'RAZORPAY',
-          isTestMode: paymentSettings.isTestMode !== false,
-        }),
-      });
-
-      const orderData = await apiRes.json();
-      if (!orderData.success) {
-        setErrorMessage(orderData.message || 'Unable to create payment order. Falling back to direct verification.');
+      // 3. Pre-verify inventory & stock
+      const isSessionValid = await verifySessionNow();
+      if (!isSessionValid) {
         setIsSubmitting(false);
-        // Direct verification fallback
-        await handleStartPaymentVerification();
+        isProcessingRef.current = false;
         return;
       }
 
-      const { orderId: gatewayOrderId, keyId: activeKeyId } = orderData;
+      // 4. Create Authoritative Razorpay Order on the Server
+      const orderData = await createRazorpayServerOrder({
+        items: cartItems.map((item) => ({
+          productId: item.product.id,
+          productName: item.product.name,
+          quantity: item.quantity,
+          price: getCartItemPrice(item),
+          selectedSize: item.selectedSize,
+          selectedColor: item.selectedColor,
+        })),
+        shippingInfo,
+        couponCode: appliedCoupon?.code,
+        discountAmount,
+        flatShippingRate: paymentSettings.flatShippingRate || 80,
+        freeShippingMinAmount: paymentSettings.freeShippingMinAmount || 999,
+        notes: {
+          store: 'Marudhar Fashion Point',
+          customerName: shippingInfo.name,
+          customerPhone: shippingInfo.phone,
+        },
+      });
 
-      // 2. Load Razorpay JS SDK if keyId is present
-      const isScriptLoaded = await loadRazorpayScript();
-      if (isScriptLoaded && (window as any).Razorpay && activeKeyId) {
-        const options = {
-          key: activeKeyId,
-          amount: Math.round(totalAmount * 100),
-          currency: 'INR',
-          name: storeInfo.name || 'Marudhar Fashion Point',
-          description: `Order ${gatewayOrderId}`,
-          order_id: gatewayOrderId.startsWith('order_') ? gatewayOrderId : undefined,
-          handler: async function (response: any) {
-            const confirmedPayId = response.razorpay_payment_id || `pay_${Date.now()}`;
-            setPaymentRef(confirmedPayId);
-            await handleStartPaymentVerification(confirmedPayId);
-          },
-          prefill: {
-            name: shippingInfo.name,
-            email: shippingInfo.email,
-            contact: shippingInfo.phone,
-          },
-          theme: {
-            color: '#0B8F63',
-          },
-          modal: {
-            ondismiss: function () {
+      // 5. Open Razorpay Standard Checkout
+      await openRazorpayCheckoutModal({
+        orderId: orderData.orderId,
+        amountInPaise: orderData.amount,
+        keyId: orderData.keyId,
+        customerName: shippingInfo.name,
+        customerEmail: shippingInfo.email,
+        customerPhone: shippingInfo.phone,
+        themeColor: '#0B8F63',
+        onSuccess: async (paymentResponse) => {
+          // Idempotency: Prevent processing identical payment callback twice
+          if (processedPaymentIdsRef.current.has(paymentResponse.razorpay_payment_id)) {
+            return;
+          }
+          processedPaymentIdsRef.current.add(paymentResponse.razorpay_payment_id);
+
+          try {
+            setStep('VERIFYING');
+            setVerificationProgress(35);
+            setVerificationStageText('Cryptographically verifying Razorpay payment signature on secure server...');
+
+            // Step 6: Cryptographic HMAC SHA256 Signature Verification via Server
+            const verifyResult = await verifyRazorpayServerPayment({
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+              razorpay_order_id: paymentResponse.razorpay_order_id,
+              razorpay_signature: paymentResponse.razorpay_signature,
+              customerName: shippingInfo.name,
+              customerEmail: shippingInfo.email,
+              customerPhone: shippingInfo.phone,
+              amount: totalAmount,
+            });
+
+            if (!verifyResult.verified || verifyResult.status !== 'PAID') {
+              setFailedReason(verifyResult.message || 'Cryptographic payment verification failed on server.');
+              setStep('PAYMENT_FAILED');
               setIsSubmitting(false);
-              setErrorMessage('Payment cancelled by customer.');
-            },
-          },
-        };
+              return;
+            }
 
-        const rzp = new (window as any).Razorpay(options);
-        rzp.open();
-      } else {
-        // Direct server verification fallback
-        const fallbackPayId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-        setPaymentRef(fallbackPayId);
-        await handleStartPaymentVerification(fallbackPayId);
-      }
+            setVerificationProgress(75);
+            setVerificationStageText('Payment verified & captured! Finalizing order record in database...');
+
+            // Step 6: Record Paid Order in Firestore
+            const res = await placeOrderAndPay(
+              cartItems,
+              shippingInfo,
+              'ONLINE_UPI',
+              {
+                targetRef: paymentResponse.razorpay_payment_id,
+                subtotal,
+                shippingFee,
+                razorpayOrderId: paymentResponse.razorpay_order_id,
+                razorpayPaymentId: paymentResponse.razorpay_payment_id,
+                razorpaySignature: paymentResponse.razorpay_signature,
+              },
+              appliedCoupon?.code || undefined,
+              discountAmount,
+              paymentSettings
+            );
+
+            if (res.success && res.orderId) {
+              setVerificationProgress(100);
+              setCompletedOrderId(res.orderId);
+
+              const matchedOrder: CustomerOrder = orders.find((o) => o.id === res.orderId) || {
+                id: res.orderId,
+                orderNumber: parseInt(res.orderId.replace('#MFP', '').replace('ord_', ''), 10) || 1025,
+                userId: customerProfile?.uid,
+                customerName: shippingInfo.name,
+                customerPhone: shippingInfo.phone,
+                customerEmail: shippingInfo.email,
+                shippingAddress: shippingInfo,
+                items: cartItems,
+                subtotal,
+                shippingFee,
+                discountAmount,
+                taxAmount,
+                taxableAmount,
+                cgstAmount,
+                sgstAmount,
+                igstAmount,
+                totalAmount,
+                paymentMethod: 'ONLINE_UPI',
+                paymentStatus: 'PAID',
+                paymentVerificationStatus: 'verified',
+                orderStatus: 'PENDING',
+                transactionId: paymentResponse.razorpay_payment_id,
+                paymentReference: paymentResponse.razorpay_payment_id,
+                razorpayOrderId: paymentResponse.razorpay_order_id,
+                razorpayPaymentId: paymentResponse.razorpay_payment_id,
+                razorpaySignature: paymentResponse.razorpay_signature,
+                paymentTimestamp: new Date().toISOString(),
+                couponCode: appliedCoupon?.code,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              } as CustomerOrder;
+
+              setCreatedOrder(matchedOrder);
+              setStep('SUCCESS');
+              triggerGlobalCelebration();
+              onOrderComplete(res.orderId);
+            } else {
+              setFailedReason(res.message || 'Payment received, but database write failed. Please contact store support.');
+              setStep('PAYMENT_FAILED');
+            }
+          } catch (verifyErr: any) {
+            console.error('Server signature verification exception:', verifyErr);
+            setFailedReason(verifyErr.message || 'Security verification failed for Razorpay transaction.');
+            setStep('PAYMENT_FAILED');
+          } finally {
+            setIsSubmitting(false);
+            isProcessingRef.current = false;
+          }
+        },
+        onFailure: (err) => {
+          setIsSubmitting(false);
+          isProcessingRef.current = false;
+          setFailedReason(err?.message || 'Payment was declined or cancelled by the user.');
+          setStep('PAYMENT_FAILED');
+        },
+        onDismiss: () => {
+          setIsSubmitting(false);
+          isProcessingRef.current = false;
+        },
+      });
     } catch (err: any) {
-      console.warn('Gateway modal launch error, falling back to direct server verification:', err);
-      await handleStartPaymentVerification();
+      console.error('Razorpay checkout initiation error:', err);
+      setIsSubmitting(false);
+      isProcessingRef.current = false;
+      setErrorMessage(err?.message || 'Unable to start Razorpay payment. Please try Scan QR or Cash on Delivery.');
     }
   };
 
   const handleOpenWhatsAppConfirmedOrder = () => {
     if (!createdOrder) return;
     const link = generateOrderWhatsAppLink(createdOrder);
-    window.open(link, '_blank');
+    try {
+      const opened = window.open(link, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        window.location.href = link;
+      }
+    } catch {
+      window.location.href = link;
+    }
   };
 
   return (
@@ -1219,10 +1336,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
 
             {/* Price Summary */}
-            <div className="mt-4 p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-1.5">
+            <div className="mt-4 p-3.5 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-2">
               <div className="flex justify-between text-neutral-600">
                 <span>कुल मूल्य • Subtotal ({cartItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
-                <span>₹{subtotal.toLocaleString()}</span>
+                <span className="font-semibold text-neutral-900">₹{subtotal.toLocaleString()}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-600 font-bold">
@@ -1236,36 +1353,30 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span>🎁 {freeGiftPromo}</span>
                 </div>
               )}
-              {taxResult.gstEnabled && (
-                <>
-                  <div className="flex justify-between text-neutral-600">
-                    <span>जीएसटी • GST ({taxResult.gstRate}%)</span>
-                    <span>₹{taxAmount.toLocaleString()}</span>
-                  </div>
-                </>
-              )}
               <div className="flex justify-between text-neutral-600">
-                <span>डिलीवरी शुल्क • Shipping</span>
+                <span>डिलीवरी शुल्क • Delivery Fee</span>
                 <span>
                   {shippingFee === 0 ? (
-                    <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                    <span className="text-emerald-700 font-bold flex items-center gap-1">
                       <span>मुफ्त • FREE</span>
-                      {freeShippingPromo && <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1 rounded uppercase">Coupon</span>}
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
+                        {subtotal >= freeThreshold ? '₹999+ ऑर्डर' : 'Coupon'}
+                      </span>
                     </span>
                   ) : (
-                    `₹${shippingFee}`
+                    <span className="font-semibold text-neutral-900">₹{shippingFee}</span>
                   )}
                 </span>
               </div>
-              {isFeeEnabled && (
-                <div className="flex justify-between text-neutral-600">
-                  <span>सुविधा शुल्क • Convenience Fee</span>
-                  <span className="text-emerald-700 font-semibold">QR कोड पर ₹0 / +{feePercent}%</span>
+              {taxResult.gstEnabled && (
+                <div className="flex justify-between text-neutral-500 text-[11px] pt-1 border-t border-dashed border-neutral-200">
+                  <span>जीएसटी • GST ({taxResult.gstRate}%)</span>
+                  <span className="text-neutral-500 font-medium">कीमत में शामिल • Included in Price (₹{taxAmount.toLocaleString()})</span>
                 </div>
               )}
-              <div className="flex justify-between font-bold text-neutral-900 pt-1.5 border-t border-neutral-200 text-sm">
+              <div className="flex justify-between font-bold text-neutral-900 pt-2 border-t border-neutral-200 text-sm">
                 <span>कुल भुगतान राशि • Total Payable</span>
-                <span className="text-amber-800">₹{(subtotal - discountAmount + shippingFee + taxAmount).toLocaleString()}</span>
+                <span className="text-amber-800 font-extrabold text-base">₹{totalAmount.toLocaleString()}</span>
               </div>
             </div>
 
@@ -1516,13 +1627,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                               type="file"
                               accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
                               onChange={handleScreenshotSelect}
-                              className="sr-only hidden"
+                              onClick={(e) => e.stopPropagation()}
+                              className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none -z-10"
                               tabIndex={-1}
                               aria-hidden="true"
                             />
                             <button
                               type="button"
-                              onClick={handleTriggerScreenshotPicker}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTriggerScreenshotPicker();
+                              }}
                               disabled={isUploadingScreenshot}
                               className="cursor-pointer px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 transition-colors"
                             >
@@ -1570,7 +1685,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* Complete Payment Price Summary Breakdown */}
             <div className="p-3.5 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-1.5">
               <div className="flex justify-between text-neutral-600">
-                <span>Subtotal</span>
+                <span>Subtotal ({cartItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
                 <span className="font-mono font-medium text-neutral-900">₹{subtotal.toLocaleString()}</span>
               </div>
               {discountAmount > 0 && (
@@ -1585,46 +1700,29 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span>🎁 {freeGiftPromo}</span>
                 </div>
               )}
-              {taxResult.gstEnabled && (
-                <div className="flex justify-between text-neutral-600">
-                  <span>GST ({taxResult.gstRate}%)</span>
-                  <span className="font-mono font-medium text-neutral-900">₹{taxAmount.toLocaleString()}</span>
-                </div>
-              )}
               <div className="flex justify-between text-neutral-600">
-                <span>Shipping</span>
+                <span>Delivery Charge</span>
                 <span>
                   {shippingFee === 0 ? (
-                    <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                    <span className="text-emerald-700 font-bold flex items-center gap-1">
                       <span>FREE</span>
-                      {freeShippingPromo && <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1 rounded uppercase">Coupon</span>}
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
+                        {subtotal >= freeThreshold ? 'Orders ₹999+' : 'Coupon'}
+                      </span>
                     </span>
                   ) : (
                     <span className="font-mono font-medium text-neutral-900">₹{shippingFee}</span>
                   )}
                 </span>
               </div>
+              {taxResult.gstEnabled && (
+                <div className="flex justify-between text-neutral-500 text-[11px] pt-1 border-t border-dashed border-neutral-200">
+                  <span>GST ({taxResult.gstRate}%)</span>
+                  <span className="text-neutral-500 font-medium">Included in product prices (₹{taxAmount.toLocaleString()})</span>
+                </div>
+              )}
 
-              {/* Dynamic Convenience Fee line item */}
-              <div className="flex justify-between items-center py-1 border-t border-neutral-200 font-medium">
-                <span className="flex items-center gap-1.5 text-neutral-700">
-                  <span>Convenience Fee</span>
-                  {convenienceFee > 0 ? (
-                    <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded">
-                      {feePercent}% Online Payment (Cashfree)
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
-                      ₹0 (Scan QR / Manual UPI)
-                    </span>
-                  )}
-                </span>
-                <span className={convenienceFee > 0 ? 'font-mono font-bold text-amber-900' : 'font-mono text-emerald-700 font-bold'}>
-                  {convenienceFee > 0 ? `+₹${convenienceFee.toLocaleString()}` : '₹0'}
-                </span>
-              </div>
-
-              <div className="flex justify-between font-bold text-neutral-900 pt-1.5 border-t border-neutral-200 text-sm">
+              <div className="flex justify-between font-bold text-neutral-900 pt-2 border-t border-neutral-200 text-sm">
                 <span>Total Amount Payable</span>
                 <span className="text-amber-900 font-extrabold text-base">₹{totalAmount.toLocaleString()}</span>
               </div>

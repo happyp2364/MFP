@@ -378,13 +378,17 @@ export const SoundSettingsView: React.FC<SoundSettingsViewProps> = ({
                           e.target.value = '';
                         }
                       }}
-                      className="sr-only hidden"
+                      onClick={(e) => e.stopPropagation()}
+                      className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none -z-10"
                       tabIndex={-1}
                       aria-hidden="true"
                     />
                     <button
                       type="button"
-                      onClick={() => document.getElementById(`sound_file_${item.type}`)?.click()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        document.getElementById(`sound_file_${item.type}`)?.click();
+                      }}
                       className="px-3 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-semibold cursor-pointer border border-neutral-300 flex items-center gap-1 shrink-0"
                     >
                       <Upload className="w-3.5 h-3.5" /> Upload

@@ -181,13 +181,13 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
 
             <div className="space-y-1 text-xs font-semibold text-neutral-600">
               <div className="flex justify-between">
-                <span>कुल मूल्य • Subtotal:</span>
+                <span>कुल मूल्य • Subtotal (GST शामिल):</span>
                 <span>₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
                 <span>डिलीवरी शुल्क • Delivery Fee:</span>
                 <span className={shippingFee === 0 ? 'text-emerald-700 font-bold' : ''}>
-                  {shippingFee === 0 ? '🚚 मुफ्त • FREE' : `₹${shippingFee}`}
+                  {shippingFee === 0 ? '🚚 मुफ्त • FREE (₹999+ ऑर्डर)' : `₹${shippingFee}`}
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm pt-1 border-t border-neutral-200">

@@ -34,8 +34,6 @@ export const CustomRoleModal: React.FC<CustomRoleModalProps> = ({
   roleToEdit,
   onSaveRole,
 }) => {
-  if (!isOpen) return null;
-
   const [roleName, setRoleName] = useState('');
   const [description, setDescription] = useState('');
   const [permissions, setPermissions] = useState<AdminPermissionMatrix>(() =>
@@ -104,6 +102,8 @@ export const CustomRoleModal: React.FC<CustomRoleModalProps> = ({
       setIsSubmitting(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">

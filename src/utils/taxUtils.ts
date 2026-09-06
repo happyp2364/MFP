@@ -29,73 +29,33 @@ export function calculateOrderTax(
 ): TaxCalculationResult {
   const gstEnabled = Boolean(paymentSettings?.gstEnabled);
   const defaultRate = paymentSettings?.defaultGstRate ?? 18;
-  const globalPriceIncludesGst = paymentSettings?.priceIncludesGst ?? true;
   const taxMode = paymentSettings?.taxMode ?? 'CGST_SGST';
-  const allowProductLevel = Boolean(paymentSettings?.allowProductLevelGst);
+  const freeThreshold = paymentSettings?.freeShippingMinAmount ?? 999;
 
   let rawSubtotal = 0;
-  let totalTaxable = 0;
-  let totalItemTax = 0;
-
   for (const item of items) {
     const unitPrice = item.product.price || 0;
-    const qty = item.quantity || 1;
-    const itemTotalRaw = unitPrice * qty;
-    rawSubtotal += itemTotalRaw;
-
-    if (!gstEnabled) {
-      continue;
-    }
-
-    const useDefault = item.product.useDefaultGstRate !== false;
-    const itemRate = (allowProductLevel && !useDefault && typeof item.product.gstRate === 'number')
-      ? item.product.gstRate
-      : defaultRate;
-
-    const itemIncludesGst = (allowProductLevel && item.product.priceIncludesGst !== undefined)
-      ? item.product.priceIncludesGst
-      : globalPriceIncludesGst;
-
-    let itemTaxable = 0;
-    let itemTax = 0;
-
-    if (itemIncludesGst) {
-      itemTaxable = itemTotalRaw / (1 + itemRate / 100);
-      itemTax = itemTotalRaw - itemTaxable;
-    } else {
-      itemTaxable = itemTotalRaw;
-      itemTax = itemTotalRaw * (itemRate / 100);
-    }
-
-    totalTaxable += itemTaxable;
-    totalItemTax += itemTax;
+    const qty = Math.max(1, item.quantity || 1);
+    rawSubtotal += unitPrice * qty;
   }
 
-  const discount = Math.max(0, discountAmount);
-  const delivery = Math.max(0, deliveryCharge);
+  const discount = Math.max(0, Math.min(discountAmount, rawSubtotal));
 
-  if (!gstEnabled) {
-    const grandTotal = Math.max(0, rawSubtotal - discount + delivery);
-    return {
-      subtotal: rawSubtotal,
-      discount,
-      taxableAmount: Math.max(0, rawSubtotal - discount),
-      cgstAmount: 0,
-      sgstAmount: 0,
-      igstAmount: 0,
-      totalTax: 0,
-      deliveryCharge: delivery,
-      grandTotal,
-      gstEnabled: false,
-      gstRate: 0,
-      priceIncludesGst: globalPriceIncludesGst,
-      taxMode,
-    };
+  // Determine actual delivery charge respecting the free delivery threshold
+  let effectiveDelivery = Math.max(0, deliveryCharge);
+  if (rawSubtotal >= freeThreshold) {
+    effectiveDelivery = 0;
   }
 
-  const discountRatio = rawSubtotal > 0 ? Math.max(0, 1 - discount / rawSubtotal) : 1;
-  const taxableAmount = Math.round(totalTaxable * discountRatio * 100) / 100;
-  const totalTax = Math.round(totalItemTax * discountRatio * 100) / 100;
+  // Customer-facing grand total is GST-INCLUSIVE:
+  // Subtotal - Discount + Delivery (Zero additional tax added)
+  const grandTotal = Math.max(0, Math.round((rawSubtotal - discount + effectiveDelivery) * 100) / 100);
+
+  // Business / Invoice calculation (GST extracted from inclusive total for legal invoicing)
+  const netDiscountedSubtotal = Math.max(0, rawSubtotal - discount);
+  const rateFraction = defaultRate / 100;
+  const taxableAmount = Math.round((netDiscountedSubtotal / (1 + rateFraction)) * 100) / 100;
+  const totalTax = Math.round((netDiscountedSubtotal - taxableAmount) * 100) / 100;
 
   let cgstAmount = 0;
   let sgstAmount = 0;
@@ -108,23 +68,19 @@ export function calculateOrderTax(
     igstAmount = totalTax;
   }
 
-  const grandTotal = globalPriceIncludesGst
-    ? Math.max(0, Math.round((rawSubtotal - discount + delivery) * 100) / 100)
-    : Math.max(0, Math.round((rawSubtotal - discount + totalTax + delivery) * 100) / 100);
-
   return {
     subtotal: rawSubtotal,
     discount,
-    taxableAmount,
-    cgstAmount,
-    sgstAmount,
-    igstAmount,
-    totalTax,
-    deliveryCharge: delivery,
+    taxableAmount: gstEnabled ? taxableAmount : netDiscountedSubtotal,
+    cgstAmount: gstEnabled ? cgstAmount : 0,
+    sgstAmount: gstEnabled ? sgstAmount : 0,
+    igstAmount: gstEnabled ? igstAmount : 0,
+    totalTax: gstEnabled ? totalTax : 0,
+    deliveryCharge: effectiveDelivery,
     grandTotal,
-    gstEnabled: true,
+    gstEnabled,
     gstRate: defaultRate,
-    priceIncludesGst: globalPriceIncludesGst,
+    priceIncludesGst: true,
     taxMode,
   };
 }

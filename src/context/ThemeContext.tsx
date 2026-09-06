@@ -49,7 +49,9 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
-    localStorage.setItem(LOCAL_STORAGE_KEY, mode);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, mode);
+    } catch {}
   };
 
   // Determine if effectively dark theme

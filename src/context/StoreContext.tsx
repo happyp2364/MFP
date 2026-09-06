@@ -165,7 +165,7 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
 
     // Media & Social
     instagramConfig: media.instagramConfig,
-    updateInstagramConfig: media.instagramConfig,
+    updateInstagramConfig: media.updateInstagramConfig,
     socialMediaConfig: media.socialMediaConfig,
     updateSocialMediaConfig: media.updateSocialMediaConfig,
     socialAnalytics: media.socialAnalytics,
@@ -213,7 +213,7 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
     heroContent: appearance.heroContent,
     updateHeroContent: appearance.updateHeroContent,
     announcementsList: appearance.announcementsList,
-    announcements: appearance.announcementsList.map(a => a.text),
+    announcements: (appearance.announcementsList || []).map(a => a?.text || ''),
     setAnnouncementsList: appearance.setAnnouncementsList,
     categoryHighlights: appearance.categoryHighlights,
     updateCategoryHighlight: appearance.updateCategoryHighlight,

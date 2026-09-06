@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Share2, Eye, EyeOff, Layout, Sliders, Smartphone, Monitor, Palette, Sparkles, 
   Settings, Instagram, Facebook, MessageCircle, Youtube, Send, Twitter, AtSign, 
@@ -14,7 +14,7 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { SocialPlatformConfig, InstagramStoryHighlight, SocialInstagramMediaItem, YouTubeVideoItem } from '../../types';
 import { AdminImageSelector } from '../Common/UniversalImageSystem';
-import { DEFAULT_SOCIAL_PLATFORMS } from '../../data/mockData';
+import { DEFAULT_SOCIAL_PLATFORMS, DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG, DEFAULT_SOCIAL_ANALYTICS } from '../../data/mockData';
 import { SocialIconRenderer } from '../Social/SocialIconRenderer';
 
 export const SocialMediaSettingsView: React.FC = () => {
@@ -98,43 +98,43 @@ export const SocialMediaSettingsView: React.FC = () => {
   const [ytUrl, setYtUrl] = useState('');
   const [ytThumbnail, setYtThumbnail] = useState('');
 
-  // Predefined Messages Editor
-  const [whatsappPhone, setWhatsappPhone] = useState(socialMediaConfig.whatsappPhone || '919876543210');
-  const [whatsappCountry, setWhatsappCountry] = useState(socialMediaConfig.whatsappCountryCode || '91');
-  const [whatsappMsg, setWhatsappMsg] = useState(socialMediaConfig.whatsappPredefinedMessage || '');
-  const [whatsappDefaultMsg, setWhatsappDefaultMsg] = useState(socialMediaConfig.whatsappDefaultMessage || '');
-  const [whatsappInquiryMsg, setWhatsappInquiryMsg] = useState(socialMediaConfig.whatsappProductInquiryMessage || '');
-  const [whatsappOrderMsg, setWhatsappOrderMsg] = useState(socialMediaConfig.whatsappOrderMessage || '');
-  const [whatsappSupportMsg, setWhatsappSupportMsg] = useState(socialMediaConfig.whatsappSupportMessage || '');
-  const [whatsappBulkMsg, setWhatsappBulkMsg] = useState(socialMediaConfig.whatsappBulkOrderMessage || '');
-  const [whatsappFestivalMsg, setWhatsappFestivalMsg] = useState(socialMediaConfig.whatsappFestivalGreeting || '');
-  const [whatsappHours, setWhatsappHours] = useState(socialMediaConfig.whatsappBusinessHours || '');
-  const [whatsappAutoReply, setWhatsappAutoReply] = useState(socialMediaConfig.whatsappAutoReplyText || '');
+  // Predefined Messages Editor with defensive fallbacks
+  const [whatsappPhone, setWhatsappPhone] = useState(socialMediaConfig?.whatsappPhone || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappPhone || '919876543210');
+  const [whatsappCountry, setWhatsappCountry] = useState(socialMediaConfig?.whatsappCountryCode || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappCountryCode || '91');
+  const [whatsappMsg, setWhatsappMsg] = useState(socialMediaConfig?.whatsappPredefinedMessage || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappPredefinedMessage || '');
+  const [whatsappDefaultMsg, setWhatsappDefaultMsg] = useState(socialMediaConfig?.whatsappDefaultMessage || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappDefaultMessage || '');
+  const [whatsappInquiryMsg, setWhatsappInquiryMsg] = useState(socialMediaConfig?.whatsappProductInquiryMessage || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappProductInquiryMessage || '');
+  const [whatsappOrderMsg, setWhatsappOrderMsg] = useState(socialMediaConfig?.whatsappOrderMessage || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappOrderMessage || '');
+  const [whatsappSupportMsg, setWhatsappSupportMsg] = useState(socialMediaConfig?.whatsappSupportMessage || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappSupportMessage || '');
+  const [whatsappBulkMsg, setWhatsappBulkMsg] = useState(socialMediaConfig?.whatsappBulkOrderMessage || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappBulkOrderMessage || '');
+  const [whatsappFestivalMsg, setWhatsappFestivalMsg] = useState(socialMediaConfig?.whatsappFestivalGreeting || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappFestivalGreeting || '');
+  const [whatsappHours, setWhatsappHours] = useState(socialMediaConfig?.whatsappBusinessHours || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappBusinessHours || '');
+  const [whatsappAutoReply, setWhatsappAutoReply] = useState(socialMediaConfig?.whatsappAutoReplyText || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappAutoReplyText || '');
 
-  const [whatsappName, setWhatsappName] = useState(socialMediaConfig.whatsappSupportName || '');
-  const [whatsappAvatar, setWhatsappAvatar] = useState(socialMediaConfig.whatsappSupportAvatar || '');
-  const [whatsappRole, setWhatsappRole] = useState(socialMediaConfig.whatsappSupportRole || '');
+  const [whatsappName, setWhatsappName] = useState(socialMediaConfig?.whatsappSupportName || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappSupportName || '');
+  const [whatsappAvatar, setWhatsappAvatar] = useState(socialMediaConfig?.whatsappSupportAvatar || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappSupportAvatar || '');
+  const [whatsappRole, setWhatsappRole] = useState(socialMediaConfig?.whatsappSupportRole || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.whatsappSupportRole || '');
 
   // Facebook Configs
-  const [fbPageName, setFbPageName] = useState(socialMediaConfig.facebookPageName || 'Marudhar Fashion Point');
-  const [fbPageUrl, setFbPageUrl] = useState(socialMediaConfig.facebookPageUrl || 'https://facebook.com/marudharfashionpoint');
-  const [fbMessengerUrl, setFbMessengerUrl] = useState(socialMediaConfig.facebookMessengerUrl || 'https://m.me/marudharfashionpoint');
-  const [fbLikeEnabled, setFbLikeEnabled] = useState(socialMediaConfig.facebookLikeButtonEnabled !== false);
-  const [fbShareEnabled, setFbShareEnabled] = useState(socialMediaConfig.facebookShareButtonEnabled !== false);
-  const [fbFeedEmbed, setFbFeedEmbed] = useState(socialMediaConfig.facebookFeedEmbed || '');
+  const [fbPageName, setFbPageName] = useState(socialMediaConfig?.facebookPageName || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.facebookPageName || 'Marudhar Fashion Point');
+  const [fbPageUrl, setFbPageUrl] = useState(socialMediaConfig?.facebookPageUrl || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.facebookPageUrl || 'https://facebook.com/marudharfashionpoint');
+  const [fbMessengerUrl, setFbMessengerUrl] = useState(socialMediaConfig?.facebookMessengerUrl || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.facebookMessengerUrl || 'https://m.me/marudharfashionpoint');
+  const [fbLikeEnabled, setFbLikeEnabled] = useState(socialMediaConfig?.facebookLikeButtonEnabled !== false);
+  const [fbShareEnabled, setFbShareEnabled] = useState(socialMediaConfig?.facebookShareButtonEnabled !== false);
+  const [fbFeedEmbed, setFbFeedEmbed] = useState(socialMediaConfig?.facebookFeedEmbed || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.facebookFeedEmbed || '');
 
   // Instagram Custom Options
-  const [instaFollowBtnText, setInstaFollowBtnText] = useState(socialMediaConfig.instagramFollowButtonText || 'Follow us on Instagram');
-  const [instaProfilePic, setInstaProfilePic] = useState(socialMediaConfig.instagramProfilePictureLink || '');
-  const [instaFeedEnabled, setInstaFeedEnabled] = useState(socialMediaConfig.instagramFeedEnabled !== false);
-  const [instaGalleryEnabled, setInstaGalleryEnabled] = useState(socialMediaConfig.instagramGalleryEnabled !== false);
-  const [instaReviewEnabled, setInstaReviewEnabled] = useState(socialMediaConfig.instagramReviewIntegrationEnabled !== false);
+  const [instaFollowBtnText, setInstaFollowBtnText] = useState(socialMediaConfig?.instagramFollowButtonText || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.instagramFollowButtonText || 'Follow us on Instagram');
+  const [instaProfilePic, setInstaProfilePic] = useState(socialMediaConfig?.instagramProfilePictureLink || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.instagramProfilePictureLink || '');
+  const [instaFeedEnabled, setInstaFeedEnabled] = useState(socialMediaConfig?.instagramFeedEnabled !== false);
+  const [instaGalleryEnabled, setInstaGalleryEnabled] = useState(socialMediaConfig?.instagramGalleryEnabled !== false);
+  const [instaReviewEnabled, setInstaReviewEnabled] = useState(socialMediaConfig?.instagramReviewIntegrationEnabled !== false);
 
   // YouTube Custom Options
-  const [ytChannelName, setYtChannelName] = useState(socialMediaConfig.youtubeChannelName || 'Marudhar Fashion Point');
-  const [ytChannelUrl, setYtChannelUrl] = useState(socialMediaConfig.youtubeChannelUrl || '');
-  const [ytSubscribeBtn, setYtSubscribeBtn] = useState(socialMediaConfig.youtubeSubscribeButtonText || 'Subscribe Now');
-  const [ytShortsEnabled, setYtShortsEnabled] = useState(socialMediaConfig.youtubeShortsSectionEnabled !== false);
+  const [ytChannelName, setYtChannelName] = useState(socialMediaConfig?.youtubeChannelName || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.youtubeChannelName || 'Marudhar Fashion Point');
+  const [ytChannelUrl, setYtChannelUrl] = useState(socialMediaConfig?.youtubeChannelUrl || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.youtubeChannelUrl || '');
+  const [ytSubscribeBtn, setYtSubscribeBtn] = useState(socialMediaConfig?.youtubeSubscribeButtonText || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.youtubeSubscribeButtonText || 'Subscribe Now');
+  const [ytShortsEnabled, setYtShortsEnabled] = useState(socialMediaConfig?.youtubeShortsSectionEnabled !== false);
 
   // AI Assistant Tab States
   const [aiAction, setAiAction] = useState<'suggest_placement' | 'suggest_cta' | 'suggest_button_color' | 'generate_caption' | 'generate_promotional' | 'generate_festival' | 'generate_product_launch'>('suggest_placement');
@@ -157,48 +157,114 @@ export const SocialMediaSettingsView: React.FC = () => {
     }
   };
 
+  // Safe Arrays with guaranteed fallbacks to prevent undefined access crashes
+  const platforms = useMemo(() => {
+    return Array.isArray(socialMediaConfig?.platforms) && socialMediaConfig.platforms.length > 0
+      ? socialMediaConfig.platforms
+      : DEFAULT_SOCIAL_PLATFORMS;
+  }, [socialMediaConfig?.platforms]);
+
+  const instagramHighlights = useMemo(() => {
+    return Array.isArray(socialMediaConfig?.instagramHighlights)
+      ? socialMediaConfig.instagramHighlights
+      : (DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.instagramHighlights || []);
+  }, [socialMediaConfig?.instagramHighlights]);
+
+  const instagramMedia = useMemo(() => {
+    return Array.isArray(socialMediaConfig?.instagramMedia)
+      ? socialMediaConfig.instagramMedia
+      : (DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.instagramMedia || []);
+  }, [socialMediaConfig?.instagramMedia]);
+
+  const youtubeVideos = useMemo(() => {
+    return Array.isArray(socialMediaConfig?.youtubeVideos)
+      ? socialMediaConfig.youtubeVideos
+      : (DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.youtubeVideos || []);
+  }, [socialMediaConfig?.youtubeVideos]);
+
+  // Sync state when socialMediaConfig loads or updates asynchronously from Firestore
+  useEffect(() => {
+    if (!socialMediaConfig) return;
+    if (socialMediaConfig.whatsappPhone !== undefined) setWhatsappPhone(socialMediaConfig.whatsappPhone);
+    if (socialMediaConfig.whatsappCountryCode !== undefined) setWhatsappCountry(socialMediaConfig.whatsappCountryCode);
+    if (socialMediaConfig.whatsappPredefinedMessage !== undefined) setWhatsappMsg(socialMediaConfig.whatsappPredefinedMessage);
+    if (socialMediaConfig.whatsappDefaultMessage !== undefined) setWhatsappDefaultMsg(socialMediaConfig.whatsappDefaultMessage);
+    if (socialMediaConfig.whatsappProductInquiryMessage !== undefined) setWhatsappInquiryMsg(socialMediaConfig.whatsappProductInquiryMessage);
+    if (socialMediaConfig.whatsappOrderMessage !== undefined) setWhatsappOrderMsg(socialMediaConfig.whatsappOrderMessage);
+    if (socialMediaConfig.whatsappSupportMessage !== undefined) setWhatsappSupportMsg(socialMediaConfig.whatsappSupportMessage);
+    if (socialMediaConfig.whatsappBulkOrderMessage !== undefined) setWhatsappBulkMsg(socialMediaConfig.whatsappBulkOrderMessage);
+    if (socialMediaConfig.whatsappFestivalGreeting !== undefined) setWhatsappFestivalMsg(socialMediaConfig.whatsappFestivalGreeting);
+    if (socialMediaConfig.whatsappBusinessHours !== undefined) setWhatsappHours(socialMediaConfig.whatsappBusinessHours);
+    if (socialMediaConfig.whatsappAutoReplyText !== undefined) setWhatsappAutoReply(socialMediaConfig.whatsappAutoReplyText);
+    if (socialMediaConfig.whatsappSupportName !== undefined) setWhatsappName(socialMediaConfig.whatsappSupportName);
+    if (socialMediaConfig.whatsappSupportAvatar !== undefined) setWhatsappAvatar(socialMediaConfig.whatsappSupportAvatar);
+    if (socialMediaConfig.whatsappSupportRole !== undefined) setWhatsappRole(socialMediaConfig.whatsappSupportRole);
+
+    if (socialMediaConfig.facebookPageName !== undefined) setFbPageName(socialMediaConfig.facebookPageName);
+    if (socialMediaConfig.facebookPageUrl !== undefined) setFbPageUrl(socialMediaConfig.facebookPageUrl);
+    if (socialMediaConfig.facebookMessengerUrl !== undefined) setFbMessengerUrl(socialMediaConfig.facebookMessengerUrl);
+    if (socialMediaConfig.facebookLikeButtonEnabled !== undefined) setFbLikeEnabled(socialMediaConfig.facebookLikeButtonEnabled);
+    if (socialMediaConfig.facebookShareButtonEnabled !== undefined) setFbShareEnabled(socialMediaConfig.facebookShareButtonEnabled);
+    if (socialMediaConfig.facebookFeedEmbed !== undefined) setFbFeedEmbed(socialMediaConfig.facebookFeedEmbed);
+
+    if (socialMediaConfig.instagramFollowButtonText !== undefined) setInstaFollowBtnText(socialMediaConfig.instagramFollowButtonText);
+    if (socialMediaConfig.instagramProfilePictureLink !== undefined) setInstaProfilePic(socialMediaConfig.instagramProfilePictureLink);
+    if (socialMediaConfig.instagramFeedEnabled !== undefined) setInstaFeedEnabled(socialMediaConfig.instagramFeedEnabled);
+    if (socialMediaConfig.instagramGalleryEnabled !== undefined) setInstaGalleryEnabled(socialMediaConfig.instagramGalleryEnabled);
+    if (socialMediaConfig.instagramReviewIntegrationEnabled !== undefined) setInstaReviewEnabled(socialMediaConfig.instagramReviewIntegrationEnabled);
+
+    if (socialMediaConfig.youtubeChannelName !== undefined) setYtChannelName(socialMediaConfig.youtubeChannelName);
+    if (socialMediaConfig.youtubeChannelUrl !== undefined) setYtChannelUrl(socialMediaConfig.youtubeChannelUrl);
+    if (socialMediaConfig.youtubeSubscribeButtonText !== undefined) setYtSubscribeBtn(socialMediaConfig.youtubeSubscribeButtonText);
+    if (socialMediaConfig.youtubeShortsSectionEnabled !== undefined) setYtShortsEnabled(socialMediaConfig.youtubeShortsSectionEnabled);
+  }, [socialMediaConfig]);
+
   // Total metrics calculations
   const totalClicks = useMemo(() => {
-    return Object.values(socialAnalytics.clickCount || {}).reduce((acc: number, curr: any) => acc + (Number(curr) || 0), 0);
+    const clicksObj = socialAnalytics?.clickCount || DEFAULT_SOCIAL_ANALYTICS.clickCount || {};
+    return Object.values(clicksObj).reduce((acc: number, curr: any) => acc + (Number(curr) || 0), 0);
   }, [socialAnalytics]);
 
   const mostUsedPlatform = useMemo(() => {
     let maxClicks = -1;
     let popular = 'None';
-    Object.entries(socialAnalytics.clickCount || {}).forEach(([platId, clicks]: [string, any]) => {
+    const clicksObj = socialAnalytics?.clickCount || DEFAULT_SOCIAL_ANALYTICS.clickCount || {};
+    Object.entries(clicksObj).forEach(([platId, clicks]: [string, any]) => {
       const numClicks = Number(clicks) || 0;
       if (numClicks > maxClicks) {
         maxClicks = numClicks;
         popular = platId.toUpperCase();
       }
     });
-    return { name: popular, count: maxClicks };
+    return { name: popular, count: maxClicks > 0 ? maxClicks : 0 };
   }, [socialAnalytics]);
 
   // Click charts arrays
   const dailyClicksData = useMemo(() => {
-    return Object.entries(socialAnalytics.dailyClicks || {})
-      .map(([date, clicks]) => ({ date, clicks }))
+    const dailyObj = socialAnalytics?.dailyClicks || DEFAULT_SOCIAL_ANALYTICS.dailyClicks || {};
+    return Object.entries(dailyObj)
+      .map(([date, clicks]) => ({ date, clicks: Number(clicks) || 0 }))
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [socialAnalytics]);
 
   const platformClicksData = useMemo(() => {
-    return (socialMediaConfig.platforms || []).map((plat) => ({
+    const clickCounts = socialAnalytics?.clickCount || DEFAULT_SOCIAL_ANALYTICS.clickCount || {};
+    return platforms.map((plat) => ({
       name: plat.name,
-      clicks: socialAnalytics.clickCount[plat.id] || 0,
-      color: plat.iconColor
+      clicks: clickCounts[plat.id] || 0,
+      color: plat.iconColor || '#0B8F63'
     })).sort((a, b) => b.clicks - a.clicks);
-  }, [socialMediaConfig, socialAnalytics]);
+  }, [platforms, socialAnalytics]);
 
   // Trigger manual simulation of refreshing feed metadata
   const handleManualFeedRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => {
       // Add random likes/comments to show real-time synchronization
-      const updatedMedia = socialMediaConfig.instagramMedia.map(m => ({
+      const updatedMedia = (instagramMedia || []).map(m => ({
         ...m,
-        likes: m.likes + Math.floor(Math.random() * 45) + 5,
-        comments: m.comments + Math.floor(Math.random() * 8) + 1,
+        likes: (m.likes || 0) + Math.floor(Math.random() * 45) + 5,
+        comments: (m.comments || 0) + Math.floor(Math.random() * 8) + 1,
         createdAt: 'Just now refreshed'
       }));
 
@@ -242,7 +308,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleSavePlatform = async (platId: string) => {
     try {
-      const updatedPlatforms = socialMediaConfig.platforms.map((p) => {
+      const updatedPlatforms = (platforms || []).map((p) => {
         if (p.id === platId) {
           return {
             ...p,
@@ -287,7 +353,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleTogglePlatformActive = async (platId: string, currentVal: boolean) => {
     try {
-      const updated = socialMediaConfig.platforms.map(p => 
+      const updated = (platforms || []).map(p => 
         p.id === platId ? { ...p, enabled: !currentVal } : p
       );
       await updateSocialMediaConfig({ platforms: updated });
@@ -300,7 +366,7 @@ export const SocialMediaSettingsView: React.FC = () => {
   const handleDeletePlatform = async (platId: string) => {
     if (!window.confirm('Are you sure you want to delete this platform from your configuration?')) return;
     try {
-      const updated = socialMediaConfig.platforms.filter(p => p.id !== platId);
+      const updated = (platforms || []).filter(p => p.id !== platId);
       await updateSocialMediaConfig({ platforms: updated });
       showToast('Platform deleted successfully!');
     } catch (err: any) {
@@ -317,13 +383,13 @@ export const SocialMediaSettingsView: React.FC = () => {
 
     try {
       // Check for duplicate ID
-      if (socialMediaConfig.platforms.some(p => p.id === addId.trim().toLowerCase())) {
+      if ((platforms || []).some(p => p.id === addId.trim().toLowerCase())) {
         showToast('A platform with this ID already exists.', true);
         return;
       }
 
-      const nextOrder = socialMediaConfig.platforms.length > 0 
-        ? Math.max(...socialMediaConfig.platforms.map(p => p.displayOrder)) + 1 
+      const nextOrder = (platforms || []).length > 0 
+        ? Math.max(...(platforms || []).map(p => p.displayOrder)) + 1 
         : 1;
 
       const newPlat: SocialPlatformConfig = {
@@ -358,7 +424,7 @@ export const SocialMediaSettingsView: React.FC = () => {
         showOnCustomSection: false
       };
 
-      const updated = [...socialMediaConfig.platforms, newPlat];
+      const updated = [...(platforms || []), newPlat];
       await updateSocialMediaConfig({ platforms: updated });
 
       // Reset values
@@ -390,7 +456,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleMovePlatform = async (index: number, direction: 'up' | 'down') => {
     try {
-      const list = [...socialMediaConfig.platforms].sort((a,b) => a.displayOrder - b.displayOrder);
+      const list = [...(platforms || [])].sort((a,b) => a.displayOrder - b.displayOrder);
       const targetIndex = direction === 'up' ? index - 1 : index + 1;
       if (targetIndex < 0 || targetIndex >= list.length) return;
 
@@ -416,7 +482,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleSaveHighlight = async (id: string) => {
     try {
-      const updated = socialMediaConfig.instagramHighlights.map(h => 
+      const updated = (instagramHighlights || []).map(h => 
         h.id === id ? { ...h, title: hlTitle, coverUrl: hlCover, linkUrl: hlLink } : h
       );
       await updateSocialMediaConfig({ instagramHighlights: updated });
@@ -435,7 +501,7 @@ export const SocialMediaSettingsView: React.FC = () => {
         coverUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=120&q=80',
         linkUrl: 'https://instagram.com/marudhar_fashion_point'
       };
-      const updated = [...socialMediaConfig.instagramHighlights, newHl];
+      const updated = [...(instagramHighlights || []), newHl];
       await updateSocialMediaConfig({ instagramHighlights: updated });
       showToast('Story highlight added.');
     } catch (err) {
@@ -445,7 +511,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleDeleteHighlight = async (id: string) => {
     try {
-      const updated = socialMediaConfig.instagramHighlights.filter(h => h.id !== id);
+      const updated = (instagramHighlights || []).filter(h => h.id !== id);
       await updateSocialMediaConfig({ instagramHighlights: updated });
       showToast('Story highlight deleted.');
     } catch (err) {
@@ -465,7 +531,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleSaveInstagramMedia = async (id: string) => {
     try {
-      const updated = socialMediaConfig.instagramMedia.map(m => 
+      const updated = (instagramMedia || []).map(m => 
         m.id === id ? { 
           ...m, 
           caption: mediaCaption, 
@@ -495,7 +561,7 @@ export const SocialMediaSettingsView: React.FC = () => {
         postUrl: 'https://instagram.com/marudhar_fashion_point',
         createdAt: 'Just now'
       };
-      const updated = [...socialMediaConfig.instagramMedia, newItem];
+      const updated = [...(instagramMedia || []), newItem];
       await updateSocialMediaConfig({ instagramMedia: updated });
       showToast('New feed media added successfully.');
     } catch (err) {
@@ -505,7 +571,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleDeleteInstagramMedia = async (id: string) => {
     try {
-      const updated = socialMediaConfig.instagramMedia.filter(m => m.id !== id);
+      const updated = (instagramMedia || []).filter(m => m.id !== id);
       await updateSocialMediaConfig({ instagramMedia: updated });
       showToast('Media post deleted.');
     } catch (err) {
@@ -526,7 +592,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleSaveVideo = async (id: string) => {
     try {
-      const updated = socialMediaConfig.youtubeVideos.map(v => 
+      const updated = (youtubeVideos || []).map(v => 
         v.id === id ? {
           ...v,
           title: ytTitle,
@@ -556,7 +622,7 @@ export const SocialMediaSettingsView: React.FC = () => {
         videoUrl: 'https://youtube.com',
         thumbnailUrl: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=300&q=80'
       };
-      const updated = [...socialMediaConfig.youtubeVideos, newV];
+      const updated = [...(youtubeVideos || []), newV];
       await updateSocialMediaConfig({ youtubeVideos: updated });
       showToast('New YouTube showcase video added.');
     } catch (err) {
@@ -566,7 +632,7 @@ export const SocialMediaSettingsView: React.FC = () => {
 
   const handleDeleteVideo = async (id: string) => {
     try {
-      const updated = socialMediaConfig.youtubeVideos.filter(v => v.id !== id);
+      const updated = (youtubeVideos || []).filter(v => v.id !== id);
       await updateSocialMediaConfig({ youtubeVideos: updated });
       showToast('Video deleted.');
     } catch (err) {
@@ -1030,9 +1096,16 @@ export const SocialMediaSettingsView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            {(socialMediaConfig.platforms || [])
-              .sort((a,b) => a.displayOrder - b.displayOrder)
-              .map((plat, idx, sortedArr) => {
+            {(platforms || []).length === 0 ? (
+              <div className="w-full py-8 text-center text-xs text-neutral-400 bg-white rounded-2xl border border-dashed border-neutral-200">
+                <p className="font-semibold text-neutral-600">No social channels configured yet.</p>
+                <p className="text-[11px] text-neutral-400 mt-1">Click "Restore Standard Defaults" or "Add Custom Platform" above.</p>
+              </div>
+            ) : (
+              (platforms || [])
+                .slice()
+                .sort((a,b) => a.displayOrder - b.displayOrder)
+                .map((plat, idx, sortedArr) => {
                 const isEditing = editingPlatformId === plat.id;
 
                 return (
@@ -1422,7 +1495,8 @@ export const SocialMediaSettingsView: React.FC = () => {
                     </div>
                   </div>
                 );
-              })}
+              })
+            )}
           </div>
         </div>
       )}
@@ -1498,7 +1572,13 @@ export const SocialMediaSettingsView: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap gap-4 items-start pt-2">
-              {socialMediaConfig.instagramHighlights.map((hl) => {
+              {(instagramHighlights || []).length === 0 ? (
+                <div className="w-full py-8 text-center text-xs text-neutral-400 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200">
+                  <p className="font-semibold text-neutral-600">No Story Highlight bubbles configured yet.</p>
+                  <p className="text-[11px] text-neutral-400 mt-1">Click "+ ADD HIGHLIGHT BUBBLE" above to create circular highlight covers.</p>
+                </div>
+              ) : (
+                (instagramHighlights || []).map((hl) => {
                 const isEditing = editingHighlightId === hl.id;
 
                 return (
@@ -1552,7 +1632,8 @@ export const SocialMediaSettingsView: React.FC = () => {
                     )}
                   </div>
                 );
-              })}
+              })
+            )}
             </div>
           </div>
 
@@ -1581,8 +1662,15 @@ export const SocialMediaSettingsView: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-              {socialMediaConfig.instagramMedia.map((m) => {
+            <div className="pt-2">
+              {(instagramMedia || []).length === 0 ? (
+                <div className="w-full py-10 text-center text-xs text-neutral-400 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200">
+                  <p className="font-semibold text-neutral-600">No Instagram feed posts or reels configured yet.</p>
+                  <p className="text-[11px] text-neutral-400 mt-1">Click "+ SIMULATE INSTAGRAM POST" or "+ SIMULATE INSTAGRAM REEL" to showcase feed items on your homepage.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {(instagramMedia || []).map((m) => {
                 const isEditing = editingMediaId === m.id;
 
                 return (
@@ -1675,6 +1763,8 @@ export const SocialMediaSettingsView: React.FC = () => {
                   </div>
                 );
               })}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1754,8 +1844,15 @@ export const SocialMediaSettingsView: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {(socialMediaConfig.youtubeVideos || []).map((v) => {
+            <div className="pt-2">
+              {(youtubeVideos || []).length === 0 ? (
+                <div className="w-full py-8 text-center text-xs text-neutral-400 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200">
+                  <p className="font-semibold text-neutral-600">No YouTube showcase videos added yet.</p>
+                  <p className="text-[11px] text-neutral-400 mt-1">Click "+ ADD VLOG HIGHLIGHT" to feature videos on your storefront.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {(youtubeVideos || []).map((v) => {
                 const isEditing = editingVideoId === v.id;
 
                 return (
@@ -1854,6 +1951,8 @@ export const SocialMediaSettingsView: React.FC = () => {
                   </div>
                 );
               })}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -2185,7 +2284,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                     className="w-full bg-neutral-50 border p-3 rounded-xl focus:ring-1 focus:ring-[#0B8F63] outline-none"
                   >
                     <option value="All">All Platforms (Unified Context)</option>
-                    {socialMediaConfig.platforms.map(p => (
+                    {(platforms || []).map(p => (
                       <option key={p.id} value={p.name}>{p.name}</option>
                     ))}
                   </select>

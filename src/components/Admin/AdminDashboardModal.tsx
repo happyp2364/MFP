@@ -109,8 +109,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   onClose,
   initialTab,
 }) => {
-  if (!isOpen) return null;
-
   const store = useStore();
   const {
     products,
@@ -392,6 +390,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     };
     reader.readAsText(file);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
@@ -1350,7 +1350,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       type="file"
                       accept=".json"
                       onChange={handleBackupFileUpload}
-                      className="w-full text-xs text-neutral-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-neutral-100 file:text-neutral-700 hover:file:bg-neutral-200"
+                      className="w-full text-xs text-neutral-600 cursor-pointer file:cursor-pointer file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-neutral-100 file:text-neutral-700 hover:file:bg-neutral-200"
                     />
 
                     {backupRestoreJson && (

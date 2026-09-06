@@ -273,9 +273,10 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
     return () => clearTimeout(delayDebounce);
   }, [urlInput]);
 
-  const handleTriggerUpload = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleTriggerUpload = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     setUploadError(null);
     if (!isUploadingFile && fileInputRef.current) {
       fileInputRef.current.click();
@@ -609,20 +610,21 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
                 )}
 
                 <div
-                  onClick={handleTriggerUpload}
+                  onClick={() => handleTriggerUpload()}
                   onDragOver={handleDragOver}
                   onDragEnter={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   role="button"
                   tabIndex={0}
+                  aria-label="Click or drag photo to upload"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      handleTriggerUpload(e as any);
+                      handleTriggerUpload();
                     }
                   }}
-                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-5 cursor-pointer transition-all ${
+                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-5 cursor-pointer transition-all select-none ${
                     isDragging
                       ? 'border-emerald-500 bg-emerald-50 scale-[1.01]'
                       : 'border-neutral-300 hover:border-[#0B8F63] bg-white hover:bg-emerald-50/20'
@@ -635,14 +637,17 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
                     </div>
                   ) : (
                     <>
-                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#0B8F63] flex items-center justify-center mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#0B8F63] flex items-center justify-center mb-2 pointer-events-none">
                         <Upload className="w-5 h-5" />
                       </div>
-                      <span className="text-xs font-bold text-neutral-800">Click or Drag Photo to Upload</span>
-                      <span className="text-[10px] text-neutral-500 mt-0.5">Supports PNG, JPG, WEBP, GIF, SVG (Up to 8MB)</span>
+                      <span className="text-xs font-bold text-neutral-800 pointer-events-none">Click or Drag Photo to Upload</span>
+                      <span className="text-[10px] text-neutral-500 mt-0.5 pointer-events-none">Supports PNG, JPG, WEBP, GIF, SVG (Up to 8MB)</span>
                       <button
                         type="button"
-                        onClick={handleTriggerUpload}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTriggerUpload();
+                        }}
                         className="mt-2 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-[11px] font-bold cursor-pointer transition-colors shadow-sm"
                       >
                         Choose File from Device
@@ -656,8 +661,10 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml,image/*"
                     onChange={handleFileUpload}
-                    className="sr-only"
+                    onClick={(e) => e.stopPropagation()}
+                    className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none -z-10"
                     tabIndex={-1}
+                    aria-hidden="true"
                   />
                 </div>
               </div>

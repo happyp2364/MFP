@@ -281,13 +281,17 @@ export const TemplateMarketplaceView: React.FC<TemplateMarketplaceViewProps> = (
               type="file"
               accept=".json"
               onChange={handleImportPresetJSON}
-              className="sr-only hidden"
+              onClick={(e) => e.stopPropagation()}
+              className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none -z-10"
               tabIndex={-1}
               aria-hidden="true"
             />
             <button
               type="button"
-              onClick={() => jsonFileInputRef.current?.click()}
+              onClick={(e) => {
+                e.stopPropagation();
+                jsonFileInputRef.current?.click();
+              }}
               className="px-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Upload className="w-4 h-4" /> Import JSON

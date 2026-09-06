@@ -14,6 +14,9 @@ interface OrderContextType {
       targetRef?: string;
       subtotal: number;
       shippingFee: number;
+      razorpayOrderId?: string;
+      razorpayPaymentId?: string;
+      razorpaySignature?: string;
       cardNumber?: string;
       cardExpiry?: string;
       cardCvv?: string;
@@ -55,6 +58,9 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       targetRef?: string;
       subtotal: number;
       shippingFee: number;
+      razorpayOrderId?: string;
+      razorpayPaymentId?: string;
+      razorpaySignature?: string;
       cardNumber?: string;
       cardExpiry?: string;
       cardCvv?: string;
@@ -67,6 +73,17 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     paymentSettings?: PaymentSettings | null
   ): Promise<{ success: boolean; orderId?: string; message?: string }> => {
     try {
+      // Idempotency: Prevent duplicate orders from same Razorpay payment
+      if (details.razorpayPaymentId) {
+        const existingOrder = orders.find(
+          (o) => o.razorpayPaymentId === details.razorpayPaymentId || o.transactionId === details.razorpayPaymentId
+        );
+        if (existingOrder) {
+          console.warn('[Duplicate Order Guard] Order already recorded for Razorpay payment:', details.razorpayPaymentId);
+          return { success: true, orderId: existingOrder.id };
+        }
+      }
+
       const taxResult = calculateOrderTax(
         items.map(i => ({ product: i.product, quantity: i.quantity })),
         discountAmount,
@@ -103,8 +120,11 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         customerEmail: shippingInfo.email,
         customerPhone: shippingInfo.phone,
         shippingAddress: shippingInfo,
-        transactionId: details.targetRef || `tx_${Date.now()}`,
-        paymentReference: details.targetRef,
+        transactionId: details.razorpayPaymentId || details.targetRef || `tx_${Date.now()}`,
+        paymentReference: details.razorpayPaymentId || details.targetRef,
+        razorpayOrderId: details.razorpayOrderId,
+        razorpayPaymentId: details.razorpayPaymentId,
+        razorpaySignature: details.razorpaySignature,
         paymentTimestamp: new Date().toISOString(),
         couponCode,
         gstEnabled: taxResult.gstEnabled,
@@ -114,7 +134,14 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       };
 
       setOrders((prev) => [newOrder, ...prev]);
-      await saveOrderInFirestore(newOrder);
+      const saved = await saveOrderInFirestore(newOrder);
+      if (!saved) {
+        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        return {
+          success: false,
+          message: 'Unable to record order in database. Please check your internet connection and try again.',
+        };
+      }
       return { success: true, orderId };
     } catch (err: any) {
       console.error('placeOrderAndPay error:', err);

@@ -10,7 +10,7 @@ import {
   syncCustomerProfileInFirestore,
   recordAuditLog,
 } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential, User as FirebaseUser } from 'firebase/auth';
 import { recordAdminLoginHistory, fetchAdminUsers, saveAdminUser } from '../lib/adminService';
 
@@ -132,6 +132,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           createdAt: new Date().toISOString(),
           lastLogin: new Date().toISOString(),
         });
+
+        syncCustomerProfileInFirestore(user)
+          .then((fullProfile) => {
+            if (fullProfile) setCustomerProfile(fullProfile);
+          })
+          .catch((err) => {
+            console.warn('Could not sync customer profile:', err);
+          });
 
         try {
           const adminUser = await resolveAdminUser(user);
@@ -265,7 +273,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!customerUser) return;
     const updated = { ...customerProfile, ...updates } as CustomerProfile;
     setCustomerProfile(updated);
-    await syncCustomerProfileInFirestore(customerUser);
+    try {
+      const userRef = doc(db, 'users', customerUser.uid);
+      await setDoc(userRef, updates, { merge: true });
+    } catch (e) {
+      console.warn('Could not save customer profile updates to Firestore:', e);
+    }
   };
 
   return (

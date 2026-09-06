@@ -143,7 +143,7 @@ export function normalizeAdminUser(rawAdmin: any): AdminUser {
     status = 'active';
   }
 
-  return {
+  const admin: AdminUser = {
     uid: String(rawUid),
     id: String(rawId),
     name: rawName,
@@ -162,14 +162,42 @@ export function normalizeAdminUser(rawAdmin: any): AdminUser {
     createdAt: typeof rawAdmin.createdAt === 'string' && rawAdmin.createdAt ? rawAdmin.createdAt : new Date().toISOString(),
     updatedAt: typeof rawAdmin.updatedAt === 'string' && rawAdmin.updatedAt ? rawAdmin.updatedAt : new Date().toISOString(),
     createdBy: typeof rawAdmin.createdBy === 'string' && rawAdmin.createdBy ? rawAdmin.createdBy : 'system',
-    lastLogin: typeof rawAdmin.lastLogin === 'string' && rawAdmin.lastLogin ? rawAdmin.lastLogin : undefined,
+    lastLogin: typeof rawAdmin.lastLogin === 'string' && rawAdmin.lastLogin ? rawAdmin.lastLogin : new Date().toISOString(),
     deviceInfo: typeof rawAdmin.deviceInfo === 'string' && rawAdmin.deviceInfo ? rawAdmin.deviceInfo : 'Web Browser',
     loginHistory: Array.isArray(rawAdmin.loginHistory) ? rawAdmin.loginHistory : [],
     phoneNumber: typeof rawAdmin.phoneNumber === 'string' ? rawAdmin.phoneNumber : '',
     username: typeof rawAdmin.username === 'string' ? rawAdmin.username : '',
     isLoggedIn: Boolean(rawAdmin.isLoggedIn),
-    forceLoggedOutAt: typeof rawAdmin.forceLoggedOutAt === 'string' ? rawAdmin.forceLoggedOutAt : undefined,
   };
+
+  if (typeof rawAdmin.forceLoggedOutAt === 'string' && rawAdmin.forceLoggedOutAt) {
+    admin.forceLoggedOutAt = rawAdmin.forceLoggedOutAt;
+  }
+
+  return sanitizeForFirestore(admin);
+}
+
+/**
+ * Recursively strips any key with value `undefined` so Firestore setDoc/updateDoc
+ * will never fail with "Unsupported field value: undefined".
+ */
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return data;
+  }
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeForFirestore(item)) as unknown as T;
+  }
+  if (typeof data === 'object' && !(data instanceof Date)) {
+    const clean: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data as Record<string, any>)) {
+      if (value !== undefined) {
+        clean[key] = sanitizeForFirestore(value);
+      }
+    }
+    return clean as T;
+  }
+  return data;
 }
 
 /**

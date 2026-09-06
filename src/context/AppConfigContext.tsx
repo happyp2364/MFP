@@ -140,10 +140,18 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
     };
   }, []);
 
+  const safeSaveLocal = (key: string, val: string) => {
+    try {
+      localStorage.setItem(key, val);
+    } catch (e) {
+      console.warn(`Local storage write failed for ${key}:`, e);
+    }
+  };
+
   const updateProductFeedConfig = async (newConfig: Partial<ProductFeedConfig>) => {
     const merged = { ...productFeedConfig, ...newConfig };
     setProductFeedConfig(merged);
-    localStorage.setItem(STORAGE_KEYS.PRODUCT_FEED_CONFIG, JSON.stringify(merged));
+    safeSaveLocal(STORAGE_KEYS.PRODUCT_FEED_CONFIG, JSON.stringify(merged));
     try {
       await setDoc(doc(db, 'settings', 'product_feed'), merged, { merge: true });
     } catch (e) {
@@ -154,7 +162,7 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
   const updateButtonThemeConfig = async (newConfig: Partial<ButtonThemeConfig>) => {
     const merged = { ...buttonThemeConfig, ...newConfig };
     setButtonThemeConfig(merged);
-    localStorage.setItem(STORAGE_KEYS.BUTTON_THEME_CONFIG, JSON.stringify(merged));
+    safeSaveLocal(STORAGE_KEYS.BUTTON_THEME_CONFIG, JSON.stringify(merged));
     try {
       await setDoc(doc(db, 'settings', 'button_theme'), merged, { merge: true });
     } catch (e) {
@@ -182,7 +190,7 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const updateOpenBoxDeliveryConfig = async (newConfig: OpenBoxDeliveryConfig) => {
     setOpenBoxDeliveryConfig(newConfig);
-    localStorage.setItem(STORAGE_KEYS.OPEN_BOX_DELIVERY_CONFIG, JSON.stringify(newConfig));
+    safeSaveLocal(STORAGE_KEYS.OPEN_BOX_DELIVERY_CONFIG, JSON.stringify(newConfig));
     try {
       await setDoc(doc(db, 'settings', 'open_box_delivery'), newConfig, { merge: true });
     } catch (e) {
@@ -209,7 +217,7 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
       if (snap.exists()) {
         const verifiedData = snap.data() as PaymentSettings;
         setPaymentSettings(verifiedData);
-        localStorage.setItem(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(verifiedData));
+        safeSaveLocal(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(verifiedData));
         return true;
       } else {
         console.error('[TENANT PAYMENT VERIFICATION ERROR] Document not found after write');

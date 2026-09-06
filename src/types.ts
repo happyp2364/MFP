@@ -656,11 +656,10 @@ export interface PaymentSettings {
   maxOrderAmount?: number;
   gatewayProvider?: 'RAZORPAY' | 'PHONEPE' | 'CASHFREE' | 'PAYU' | 'DIRECT_UPI_QR';
   apiKey?: string;
-  apiSecret?: string;
   keyId?: string;
-  keySecret?: string;
   merchantId?: string;
-  webhookSecret?: string;
+  // Note: Razorpay Key Secret & Webhook Secret are strictly server-side environment variables
+  // (RAZORPAY_KEY_SECRET & RAZORPAY_WEBHOOK_SECRET) and must never be stored in client state or Firestore.
   enableUPI?: boolean;
   enableQR?: boolean;
   enableCards?: boolean;
@@ -740,6 +739,9 @@ export interface CustomerOrder {
   transactionId: string;
   paymentReference?: string;
   paymentTimestamp: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
   createdAt: string;
   updatedAt: string;
   statusHistory?: {
@@ -1195,11 +1197,11 @@ export interface YouTubeVideoItem {
 }
 
 export interface SocialMediaCenterConfig {
-  platforms: SocialPlatformConfig[];
-  instagramHighlights: InstagramStoryHighlight[];
-  instagramMedia: SocialInstagramMediaItem[];
-  youtubeVideos: YouTubeVideoItem[];
-  youtubeShorts: YouTubeVideoItem[];
+  platforms?: SocialPlatformConfig[];
+  instagramHighlights?: InstagramStoryHighlight[];
+  instagramMedia?: SocialInstagramMediaItem[];
+  youtubeVideos?: YouTubeVideoItem[];
+  youtubeShorts?: YouTubeVideoItem[];
   youtubeFeaturedVideo?: YouTubeVideoItem;
   youtubePlaylists?: { id: string; name: string; count: string; url: string }[];
   whatsappPredefinedMessage?: string;

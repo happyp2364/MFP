@@ -234,8 +234,9 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
         type="file"
         accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml,image/*"
         onChange={handleFileInputChange}
+        onClick={(e) => e.stopPropagation()}
         disabled={disabled || isUploading}
-        className="sr-only hidden"
+        className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none -z-10"
         tabIndex={-1}
         aria-hidden="true"
       />

@@ -30,6 +30,7 @@ import {
   validateTenantAccess,
   KNOWN_TENANTS,
   SUPER_ADMIN_EMAILS,
+  sanitizeForFirestore,
 } from './tenantUtils';
 
 export {
@@ -72,7 +73,7 @@ export async function ensureSuperAdminExists(
           status: 'active',
           updatedAt: new Date().toISOString(),
         };
-        await setDoc(userDocRef, updated, { merge: true });
+        await setDoc(userDocRef, sanitizeForFirestore(updated), { merge: true });
         return updated;
       }
       return normalized;
@@ -110,7 +111,7 @@ export async function ensureSuperAdminExists(
   });
 
   try {
-    await setDoc(userDocRef, newSuperAdmin);
+    await setDoc(userDocRef, sanitizeForFirestore(newSuperAdmin));
     recordAuditLog(
       'Super Admin Profile Initialized',
       'SECURITY',
@@ -193,7 +194,8 @@ export async function saveAdminUser(admin: Partial<AdminUser>): Promise<AdminUse
   const normalized = normalizeAdminUser(admin);
   const userRef = doc(db, 'admin_users', normalized.uid);
   try {
-    await setDoc(userRef, normalized, { merge: true });
+    const cleanData = sanitizeForFirestore(normalized);
+    await setDoc(userRef, cleanData, { merge: true });
     recordAuditLog(
       'Admin Profile Updated',
       'SECURITY',

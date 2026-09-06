@@ -205,9 +205,9 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
 
   const colorGalleryFileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingColorGallery, setIsUploadingColorGallery] = useState(false);
+  const [isDraggingColorGallery, setIsDraggingColorGallery] = useState(false);
 
-  const handleColorGalleryFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const processColorGalleryFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0 || !selectedColorForGallery) return;
 
     setIsUploadingColorGallery(true);
@@ -239,6 +239,21 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
       if (colorGalleryFileInputRef.current) {
         colorGalleryFileInputRef.current.value = '';
       }
+    }
+  };
+
+  const handleTriggerColorGalleryPicker = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    if (!isUploadingColorGallery && colorGalleryFileInputRef.current) {
+      colorGalleryFileInputRef.current.click();
+    }
+  };
+
+  const handleColorGalleryFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      processColorGalleryFiles(e.target.files);
     }
   };
 
@@ -1170,7 +1185,46 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                       {/* Device File Upload & Bulk URL Import */}
                       <div className="space-y-3">
                         {/* Device File Upload */}
-                        <div className="p-3 bg-white rounded-xl border border-dashed border-emerald-300 hover:border-emerald-500 transition-colors flex items-center justify-between gap-3">
+                        <div
+                          onClick={() => handleTriggerColorGalleryPicker()}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!isUploadingColorGallery) setIsDraggingColorGallery(true);
+                          }}
+                          onDragEnter={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!isUploadingColorGallery) setIsDraggingColorGallery(true);
+                          }}
+                          onDragLeave={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsDraggingColorGallery(false);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsDraggingColorGallery(false);
+                            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                              processColorGalleryFiles(e.dataTransfer.files);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Upload photos for ${selectedColorForGallery || 'Selected Color'}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleTriggerColorGalleryPicker();
+                            }
+                          }}
+                          className={`p-3 rounded-xl border-2 border-dashed transition-all flex items-center justify-between gap-3 cursor-pointer select-none ${
+                            isDraggingColorGallery
+                              ? 'border-emerald-500 bg-emerald-50 scale-[1.01]'
+                              : 'border-emerald-300 hover:border-emerald-500 bg-white hover:bg-emerald-50/20'
+                          }`}
+                        >
                           <input
                             ref={colorGalleryFileInputRef}
                             id={`color_gallery_upload_${selectedColorForGallery}`}
@@ -1178,11 +1232,12 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                             multiple
                             accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
                             onChange={handleColorGalleryFileUpload}
-                            className="sr-only hidden"
+                            onClick={(e) => e.stopPropagation()}
+                            className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none -z-10"
                             tabIndex={-1}
                             aria-hidden="true"
                           />
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex items-center gap-2.5 pointer-events-none">
                             <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
                               <Upload className="w-4 h-4" />
                             </div>
@@ -1191,15 +1246,18 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                                 Upload Photos for {selectedColorForGallery || 'Selected Color'}
                               </span>
                               <span className="text-[10px] text-neutral-500 block">
-                                Select one or multiple images from your computer or phone
+                                Click or drag & drop one or multiple images from your computer or phone
                               </span>
                             </div>
                           </div>
                           <button
                             type="button"
-                            onClick={() => colorGalleryFileInputRef.current?.click()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTriggerColorGalleryPicker();
+                            }}
                             disabled={isUploadingColorGallery}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-300 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-300 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs shrink-0"
                           >
                             {isUploadingColorGallery ? (
                               <>

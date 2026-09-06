@@ -19,7 +19,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   if (!isOpen || !order) return null;
 
   const handlePrint = () => {
-    window.print();
+    try {
+      window.print();
+    } catch (e) {
+      console.warn('Print dialog could not be opened:', e);
+    }
   };
 
   return (
@@ -195,7 +199,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     </>
                   )}
                   <div className="flex justify-between font-semibold text-neutral-700">
-                    <span>Total GST Tax:</span>
+                    <span>GST (Included in Item Price):</span>
                     <span className="font-mono">₹{order.taxAmount.toLocaleString()}</span>
                   </div>
                 </>

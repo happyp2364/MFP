@@ -26,7 +26,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+    } catch (e) {
+      console.warn('Could not persist cart to localStorage:', e);
+    }
   }, [cart]);
 
   const addToCart = (product: Product, variant?: ProductVariant, quantity = 1) => {

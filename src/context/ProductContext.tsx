@@ -70,11 +70,19 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
   }, []);
 
+  const safeSetLocalStorage = (key: string, val: string) => {
+    try {
+      localStorage.setItem(key, val);
+    } catch (e) {
+      console.warn(`Could not save ${key} to localStorage:`, e);
+    }
+  };
+
   const addProduct = async (p: Omit<Product, 'id'>) => {
     const newProduct: Product = { ...p, id: `prod_${Date.now()}` };
     const updated = [newProduct, ...products];
     setProducts(updated);
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
+    safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
     try {
       await setDoc(doc(db, 'products', newProduct.id), newProduct);
     } catch (e) {
@@ -85,7 +93,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
   const updateProduct = async (id: string, p: Partial<Product>) => {
     const updated = products.map((item) => (item.id === id ? { ...item, ...p } : item));
     setProducts(updated);
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
+    safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
     try {
       await setDoc(doc(db, 'products', id), p, { merge: true });
     } catch (e) {
@@ -96,7 +104,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
   const deleteProduct = async (id: string) => {
     const updated = products.filter((item) => item.id !== id);
     setProducts(updated);
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
+    safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
     try {
       await deleteDoc(doc(db, 'products', id));
     } catch (e) {
@@ -120,7 +128,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
     const updated = [newReview, ...reviews];
     setReviews(updated);
-    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
+    safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
     try {
       await setDoc(doc(db, 'reviews', newReview.id), newReview);
     } catch (e) {
@@ -131,13 +139,13 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
   const updateReview = async (id: string, r: Partial<Review>) => {
     const updated = reviews.map((item) => (item.id === id ? { ...item, ...r } : item));
     setReviews(updated);
-    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
+    safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
   };
 
   const deleteReview = async (id: string) => {
     const updated = reviews.filter((item) => item.id !== id);
     setReviews(updated);
-    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
+    safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
     try {
       await deleteDoc(doc(db, 'reviews', id));
     } catch (e) {
@@ -150,7 +158,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       rev.id === id ? { ...rev, helpfulCount: (rev.helpfulCount || 0) + 1 } : rev
     );
     setReviews(updated);
-    localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
+    safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
   };
 
   return (

@@ -363,13 +363,17 @@ export const WebsiteConfigurationView: React.FC = () => {
             type="file"
             accept=".json"
             onChange={handleImportConfig}
-            className="sr-only hidden"
+            onClick={(e) => e.stopPropagation()}
+            className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none -z-10"
             tabIndex={-1}
             aria-hidden="true"
           />
           <button
             type="button"
-            onClick={() => jsonConfigInputRef.current?.click()}
+            onClick={(e) => {
+              e.stopPropagation();
+              jsonConfigInputRef.current?.click();
+            }}
             className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs border border-slate-600 cursor-pointer"
             title="Import JSON backup"
           >

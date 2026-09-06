@@ -49,8 +49,6 @@ export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
   customRoles = [],
   currentUser = null,
 }) => {
-  if (!isOpen) return null;
-
   const isSuper = isSuperAdminUser(currentUser);
   const currentTenantId = normalizeTenantId(
     currentUser?.assignedWebsiteId || currentUser?.websiteId || 'tenant-masrudharfashionpoint'
@@ -145,6 +143,8 @@ export const CreateAdminModal: React.FC<CreateAdminModalProps> = ({
       setIsSubmitting(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">

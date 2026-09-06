@@ -183,9 +183,10 @@ export const CategoriesSettingsView: React.FC = () => {
     await updateMobileCategories(reordered);
   };
 
-  const handleTriggerMobileFilePicker = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleTriggerMobileFilePicker = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     setError(null);
     if (!isUploadingMobileFile && mobileFileInputRef.current) {
       mobileFileInputRef.current.click();
@@ -862,7 +863,10 @@ export const CategoriesSettingsView: React.FC = () => {
                       <div className="grid grid-cols-2 gap-2 pt-1">
                         <button
                           type="button"
-                          onClick={handleTriggerMobileFilePicker}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTriggerMobileFilePicker();
+                          }}
                           disabled={isUploadingMobileFile}
                           className="flex items-center justify-center gap-1.5 p-2 bg-white hover:bg-neutral-100 border border-neutral-200 rounded-xl cursor-pointer text-xs font-bold text-neutral-700 disabled:opacity-50"
                         >
@@ -879,7 +883,8 @@ export const CategoriesSettingsView: React.FC = () => {
                           type="file"
                           accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml,image/*"
                           onChange={handleMobileFileUpload}
-                          className="sr-only hidden"
+                          onClick={(e) => e.stopPropagation()}
+                          className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none -z-10"
                           tabIndex={-1}
                           aria-hidden="true"
                         />

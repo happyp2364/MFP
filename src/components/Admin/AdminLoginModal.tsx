@@ -13,8 +13,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   onClose,
   onLoginSuccess,
 }) => {
-  if (!isOpen) return null;
-
   const { loginWithGoogleAdmin } = useStore();
   const [error, setError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -44,6 +42,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       setIsAuthenticating(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

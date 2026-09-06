@@ -221,7 +221,9 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
 
   const triggerSuccessReveal = () => {
     if (selectedReward && selectedReward.couponCode) {
-      localStorage.setItem('mfp_scratched_coupon', selectedReward.couponCode.toUpperCase());
+      try {
+        localStorage.setItem('mfp_scratched_coupon', selectedReward.couponCode.toUpperCase());
+      } catch {}
     }
     triggerGlobalCelebration();
   };
@@ -301,7 +303,9 @@ export const ScratchCardPopup: React.FC<{ currentPath: string; cartSubtotal: num
   };
 
   const handlePermanentlyDisable = () => {
-    localStorage.setItem('mfp_scratch_permanently_disabled', 'true');
+    try {
+      localStorage.setItem('mfp_scratch_permanently_disabled', 'true');
+    } catch {}
     setIsVisible(false);
   };
 

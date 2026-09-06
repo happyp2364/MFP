@@ -122,9 +122,10 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
 
   const isAuthenticated = Boolean(customerUser || customerProfile);
 
-  const handleTriggerPhotoPicker = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleTriggerPhotoPicker = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     if (!isUploadingPhoto && reviewPhotoFileInputRef.current) {
       reviewPhotoFileInputRef.current.click();
     }
@@ -800,20 +801,21 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                     </div>
                   ) : (
                     <div
-                      onClick={handleTriggerPhotoPicker}
+                      onClick={() => handleTriggerPhotoPicker()}
                       onDragOver={handlePhotoDragOver}
                       onDragEnter={handlePhotoDragOver}
                       onDragLeave={handlePhotoDragLeave}
                       onDrop={handlePhotoDrop}
                       role="button"
                       tabIndex={0}
+                      aria-label="Click or drag to upload footwear photo"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          handleTriggerPhotoPicker(e as any);
+                          handleTriggerPhotoPicker();
                         }
                       }}
-                      className={`border-2 border-dashed transition-all rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer text-center group ${
+                      className={`border-2 border-dashed transition-all rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer text-center group select-none ${
                         isDraggingPhoto
                           ? 'border-[#0B8F63] bg-emerald-50 scale-[1.01]'
                           : 'border-neutral-300 hover:border-[#0B8F63] bg-neutral-50 hover:bg-emerald-50/30'
@@ -825,7 +827,8 @@ export const ReviewsSection: React.FC<ReviewsSectionProps> = ({
                         type="file"
                         accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
                         onChange={handlePhotoSelect}
-                        className="sr-only hidden"
+                        onClick={(e) => e.stopPropagation()}
+                        className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none -z-10"
                         tabIndex={-1}
                         aria-hidden="true"
                         disabled={isUploadingPhoto}

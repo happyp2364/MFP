@@ -17,6 +17,15 @@ export const SpinWheelPopup: React.FC<SpinWheelPopupProps> = ({ currentPath }) =
   const [hasSpun, setHasSpun] = useState(false);
 
   const wheelRef = useRef<HTMLDivElement>(null);
+  const spinTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (spinTimerRef.current) {
+        clearTimeout(spinTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!spinWheelConfig?.enabled) return;
@@ -60,15 +69,20 @@ export const SpinWheelPopup: React.FC<SpinWheelPopupProps> = ({ currentPath }) =
     
     setRotation(targetRotation);
 
-    setTimeout(() => {
+    if (spinTimerRef.current) clearTimeout(spinTimerRef.current);
+    spinTimerRef.current = setTimeout(() => {
       const winner = sections[winnerIdx];
       setResult(winner);
       setIsSpinning(false);
       setHasSpun(true);
-      localStorage.setItem('mfp_wheel_last_spun', Date.now().toString());
-      if (winner.couponCode) {
-        localStorage.setItem('mfp_active_coupon', winner.couponCode);
-        recordEngagementMetric('couponsWon');
+      try {
+        localStorage.setItem('mfp_wheel_last_spun', Date.now().toString());
+        if (winner.couponCode) {
+          localStorage.setItem('mfp_active_coupon', winner.couponCode);
+          recordEngagementMetric('couponsWon');
+        }
+      } catch (err) {
+        console.warn('Could not save spin reward to localStorage:', err);
       }
       if (spinWheelConfig.celebrationEnabled) {
         triggerGlobalCelebration();

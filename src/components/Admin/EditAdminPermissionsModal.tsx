@@ -23,6 +23,7 @@ import {
   NO_PERMISSIONS,
   FULL_PERMISSIONS,
   getEffectivePermissions,
+  createNoPermissionMatrix,
 } from '../../lib/adminPermissions';
 
 interface EditAdminPermissionsModalProps {
@@ -43,20 +44,20 @@ export const EditAdminPermissionsModal: React.FC<EditAdminPermissionsModalProps>
   customRoles = [],
   onSave,
 }) => {
-  if (!isOpen || !adminUser) return null;
-
   const allAvailableRoles = [...BUILTIN_ROLES, ...customRoles];
 
-  const [selectedRoleId, setSelectedRoleId] = useState<string>(adminUser.roleId || 'admin');
+  const [selectedRoleId, setSelectedRoleId] = useState<string>(adminUser?.roleId || 'admin');
   const [matrix, setMatrix] = useState<AdminPermissionMatrix>(() =>
-    getEffectivePermissions(adminUser, customRoles)
+    adminUser ? getEffectivePermissions(adminUser, customRoles) : createNoPermissionMatrix()
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setSelectedRoleId(adminUser.roleId || 'admin');
-    setMatrix(getEffectivePermissions(adminUser, customRoles));
+    if (adminUser) {
+      setSelectedRoleId(adminUser.roleId || 'admin');
+      setMatrix(getEffectivePermissions(adminUser, customRoles));
+    }
   }, [adminUser, customRoles]);
 
   const selectedRoleDef = allAvailableRoles.find((r) => r.id === selectedRoleId) || BUILTIN_ROLES[1];
@@ -104,6 +105,8 @@ export const EditAdminPermissionsModal: React.FC<EditAdminPermissionsModalProps>
       setIsSubmitting(false);
     }
   };
+
+  if (!isOpen || !adminUser) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">

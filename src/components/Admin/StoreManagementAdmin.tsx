@@ -101,9 +101,10 @@ export const StoreManagementAdmin: React.FC = () => {
   const [isDraggingGallery, setIsDraggingGallery] = useState(false);
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleTriggerGalleryFilePicker = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleTriggerGalleryFilePicker = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     setGalleryUploadError(null);
     if (!isUploadingGalleryPhoto && galleryFileInputRef.current) {
       galleryFileInputRef.current.click();
@@ -898,20 +899,21 @@ export const StoreManagementAdmin: React.FC = () => {
 
                   {/* Main File Upload Dropzone */}
                   <div
-                    onClick={handleTriggerGalleryFilePicker}
+                    onClick={() => handleTriggerGalleryFilePicker()}
                     onDragOver={handleGalleryDragOver}
                     onDragEnter={handleGalleryDragOver}
                     onDragLeave={handleGalleryDragLeave}
                     onDrop={handleGalleryDrop}
                     role="button"
                     tabIndex={0}
+                    aria-label="Click or drag photos from device to upload"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        handleTriggerGalleryFilePicker(e as any);
+                        handleTriggerGalleryFilePicker();
                       }
                     }}
-                    className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 ${
+                    className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 select-none ${
                       isDraggingGallery
                         ? 'border-emerald-500 bg-emerald-50 scale-[1.01]'
                         : 'border-neutral-300 hover:border-emerald-500 bg-white hover:bg-emerald-50/20'
@@ -924,18 +926,22 @@ export const StoreManagementAdmin: React.FC = () => {
                       </div>
                     ) : (
                       <>
-                        <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center pointer-events-none">
                           <Upload className="w-5 h-5" />
                         </div>
-                        <span className="text-xs font-bold text-neutral-800">
+                        <span className="text-xs font-bold text-neutral-800 pointer-events-none">
                           Click or Drag Photos from Device to Upload
                         </span>
-                        <span className="text-[10px] text-neutral-500">
+                        <span className="text-[10px] text-neutral-500 pointer-events-none">
                           PNG, JPG, WEBP (Supports multiple photo selection)
                         </span>
                         <button
                           type="button"
-                          className="mt-1 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-xs font-bold pointer-events-none"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTriggerGalleryFilePicker();
+                          }}
+                          className="mt-1 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-xs"
                         >
                           Choose Photo(s) from Device
                         </button>
@@ -948,7 +954,8 @@ export const StoreManagementAdmin: React.FC = () => {
                       multiple
                       accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
                       onChange={handleGalleryFileInputChange}
-                      className="sr-only hidden"
+                      onClick={(e) => e.stopPropagation()}
+                      className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none -z-10"
                       tabIndex={-1}
                       aria-hidden="true"
                     />

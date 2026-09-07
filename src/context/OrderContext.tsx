@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CustomerOrder, OrderStatus, PaymentMethodType, PaymentStatus, CartItem, ShippingAddressInfo, PaymentSettings } from '../types';
-import { saveOrderInFirestore, updateOrderStatusInFirestore, db } from '../lib/firebase';
+import { saveOrderInFirestore, updateOrderStatusInFirestore, fetchOrderByIdFromFirestore, updateOrderPaymentSuccess, db, auth } from '../lib/firebase';
 import { calculateOrderTax } from '../utils/taxUtils';
+import { generateWhatsAppOrderUrlWithPaymentLink, formatWhatsAppOrderMessageWithPaymentLink } from '../utils/whatsapp';
+import { getProductPrice } from '../utils/variantUtils';
+import { isValidCustomerValue } from '../utils/productUtils';
 import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 
 interface OrderContextType {
@@ -28,6 +31,29 @@ interface OrderContextType {
     discountAmount?: number,
     paymentSettings?: PaymentSettings | null
   ) => Promise<{ success: boolean; orderId?: string; message?: string }>;
+  createWhatsAppOrder: (
+    items: CartItem[],
+    couponCode?: string,
+    discountAmount?: number,
+    customerInfo?: { name?: string; phone?: string; email?: string },
+    shippingAddress?: Partial<ShippingAddressInfo>
+  ) => Promise<{
+    success: boolean;
+    order?: CustomerOrder;
+    orderId?: string;
+    paymentUrl?: string;
+    whatsappUrl?: string;
+    message?: string;
+  }>;
+  markOrderAsPaid: (
+    orderId: string,
+    paymentData: {
+      razorpayPaymentId: string;
+      razorpayOrderId: string;
+      razorpaySignature?: string;
+    }
+  ) => Promise<boolean>;
+  getOrderById: (orderId: string) => Promise<CustomerOrder | null>;
   updateOrderStatus: (orderId: string, status: OrderStatus, trackingNumber?: string, courierName?: string) => Promise<void>;
   cancelCustomerOrder: (orderId: string, reason: string) => Promise<void>;
 }
@@ -193,11 +219,221 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const createWhatsAppOrder = async (
+    items: CartItem[],
+    couponCode?: string,
+    discountAmount?: number,
+    customerInfo?: { name?: string; phone?: string; email?: string },
+    shippingAddress?: Partial<ShippingAddressInfo>
+  ) => {
+    try {
+      if (!items || items.length === 0) {
+        return { success: false, message: 'Cart items are empty' };
+      }
+
+      // 1. Authoritative Pricing Calculation
+      const subtotal = items.reduce((acc, item) => {
+        const itemPrice = getProductPrice(item.product, item.selectedSize, item.selectedColor);
+        return acc + itemPrice * (item.quantity || 1);
+      }, 0);
+
+      const shippingFee = subtotal >= 999 ? 0 : 80;
+      const validatedDiscount = Math.max(0, Math.min(Number(discountAmount) || 0, subtotal));
+      const totalAmount = Math.max(0, subtotal - validatedDiscount + shippingFee);
+
+      // 2. Generate Unique Order ID (Format: MFP-1025)
+      let randomNum = Math.floor(1000 + Math.random() * 9000);
+      let orderId = `MFP-${randomNum}`;
+      while (orders.some((o) => o.id === orderId)) {
+        randomNum = Math.floor(1000 + Math.random() * 9000);
+        orderId = `MFP-${randomNum}`;
+      }
+
+      // 3. Dynamic Website Origin & Payment Link
+      const isLocalHost =
+        typeof window !== 'undefined' &&
+        window.location.origin &&
+        (window.location.origin.includes('localhost') ||
+          window.location.origin.includes('127.0.0.1') ||
+          window.location.origin.includes('0.0.0.0'));
+      const origin =
+        !isLocalHost && typeof window !== 'undefined' && window.location.origin
+          ? window.location.origin
+          : 'https://www.marudharfashionpoint.com';
+      const cleanOrderId = orderId.replace(/^#/, '');
+      const paymentUrl = `${origin}/pay/${cleanOrderId}`;
+
+      const now = new Date().toISOString();
+
+      // Extract real user details if logged in
+      const currentAuthUser = auth.currentUser;
+      const resolvedName = (customerInfo?.name && isValidCustomerValue(customerInfo.name))
+        ? customerInfo.name.trim()
+        : (currentAuthUser?.displayName && isValidCustomerValue(currentAuthUser.displayName))
+        ? currentAuthUser.displayName.trim()
+        : '';
+
+      const resolvedPhone = (customerInfo?.phone && isValidCustomerValue(customerInfo.phone))
+        ? customerInfo.phone.trim()
+        : (currentAuthUser?.phoneNumber && isValidCustomerValue(currentAuthUser.phoneNumber))
+        ? currentAuthUser.phoneNumber.trim()
+        : '';
+
+      const resolvedEmail = (customerInfo?.email && isValidCustomerValue(customerInfo.email))
+        ? customerInfo.email.trim()
+        : (currentAuthUser?.email && isValidCustomerValue(currentAuthUser.email))
+        ? currentAuthUser.email.trim()
+        : '';
+
+      const resolvedStreet = (shippingAddress?.street && isValidCustomerValue(shippingAddress.street))
+        ? shippingAddress.street.trim()
+        : '';
+
+      const resolvedCity = (shippingAddress?.city && isValidCustomerValue(shippingAddress.city))
+        ? shippingAddress.city.trim()
+        : '';
+
+      const resolvedState = (shippingAddress?.state && isValidCustomerValue(shippingAddress.state))
+        ? shippingAddress.state.trim()
+        : '';
+
+      const resolvedPincode = (shippingAddress?.pincode && isValidCustomerValue(shippingAddress.pincode))
+        ? shippingAddress.pincode.trim()
+        : '';
+
+      const newOrder: CustomerOrder = {
+        id: orderId,
+        orderNumber: randomNum,
+        customerName: resolvedName,
+        customerPhone: resolvedPhone,
+        customerEmail: resolvedEmail,
+        shippingAddress: {
+          name: resolvedName || shippingAddress?.name || '',
+          street: resolvedStreet,
+          city: resolvedCity,
+          state: resolvedState || 'Rajasthan',
+          pincode: resolvedPincode,
+          phone: resolvedPhone || shippingAddress?.phone || '',
+          email: resolvedEmail || shippingAddress?.email || '',
+        },
+        items,
+        subtotal,
+        shippingFee,
+        discountAmount: validatedDiscount,
+        taxAmount: 0,
+        totalAmount,
+        paymentMethod: 'WHATSAPP',
+        paymentStatus: 'PENDING',
+        paymentVerificationStatus: 'pending',
+        orderStatus: 'PENDING',
+        transactionId: `wa_${Date.now()}`,
+        paymentTimestamp: now,
+        couponCode: couponCode || undefined,
+        source: 'WHATSAPP',
+        paymentLink: paymentUrl,
+        createdAt: now,
+        updatedAt: now,
+        statusHistory: [
+          {
+            status: 'PENDING',
+            timestamp: now,
+            note: `Order initiated via WhatsApp with payment link: ${paymentUrl}`,
+          },
+        ],
+      };
+
+      // 4. Save to Firestore
+      await saveOrderInFirestore(newOrder);
+
+      // 5. Update Local State
+      setOrders((prev) => [newOrder, ...prev.filter((o) => o.id !== orderId)]);
+
+      // 6. Generate Direct WhatsApp Message Link
+      const whatsappUrl = generateWhatsAppOrderUrlWithPaymentLink(newOrder, paymentUrl);
+
+      return {
+        success: true,
+        order: newOrder,
+        orderId,
+        paymentUrl,
+        whatsappUrl,
+      };
+    } catch (err: any) {
+      console.error('[createWhatsAppOrder error]:', err);
+      return {
+        success: false,
+        message: err.message || 'Failed to create WhatsApp order',
+      };
+    }
+  };
+
+  const markOrderAsPaid = async (
+    orderId: string,
+    paymentData: {
+      razorpayPaymentId: string;
+      razorpayOrderId: string;
+      razorpaySignature?: string;
+    }
+  ): Promise<boolean> => {
+    try {
+      const ok = await updateOrderPaymentSuccess(orderId, paymentData);
+      if (ok) {
+        setOrders((prev) =>
+          prev.map((o) => {
+            if (
+              o.id === orderId ||
+              o.id === `#${orderId}` ||
+              o.id.replace('#', '') === orderId.replace('#', '')
+            ) {
+              return {
+                ...o,
+                paymentStatus: 'PAID',
+                paymentVerificationStatus: 'verified',
+                orderStatus: 'PENDING',
+                razorpayPaymentId: paymentData.razorpayPaymentId,
+                razorpayOrderId: paymentData.razorpayOrderId,
+                razorpaySignature: paymentData.razorpaySignature || '',
+                transactionId: paymentData.razorpayPaymentId,
+                paymentVerifiedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return o;
+          })
+        );
+      }
+      return ok;
+    } catch (err) {
+      console.error('[markOrderAsPaid error]:', err);
+      return false;
+    }
+  };
+
+  const getOrderById = async (orderId: string): Promise<CustomerOrder | null> => {
+    if (!orderId) return null;
+    const cleanId = orderId.trim();
+
+    // 1. Check local in-memory context first
+    const local = orders.find(
+      (o) =>
+        o.id.toLowerCase() === cleanId.toLowerCase() ||
+        o.id.replace('#', '').toLowerCase() === cleanId.replace('#', '').toLowerCase() ||
+        String(o.orderNumber) === cleanId.replace(/\D/g, '')
+    );
+    if (local) return local;
+
+    // 2. Fetch from authoritative Firestore database
+    return await fetchOrderByIdFromFirestore(cleanId);
+  };
+
   return (
     <OrderContext.Provider
       value={{
         orders,
         placeOrderAndPay,
+        createWhatsAppOrder,
+        markOrderAsPaid,
+        getOrderById,
         updateOrderStatus,
         cancelCustomerOrder,
       }}

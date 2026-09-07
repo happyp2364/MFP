@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Heart,
   Eye,
@@ -28,6 +28,18 @@ import {
   getFirstAvailableInStockSize,
 } from '../../utils/sizeStockUtils';
 import { getProductPrice } from '../../utils/variantUtils';
+
+// Authentic, recognizable WhatsApp icon (phone handset inside speech bubble)
+const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2zm0 18.15c-1.49 0-2.94-.4-4.21-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.136 8.136 0 01-1.25-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 012.41 5.83c.01 4.54-3.68 8.23-8.23 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.06 0 1.21.89 2.39 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.07-.12-.23-.19-.48-.31z" />
+  </svg>
+);
 
 export interface ProductCardProps {
   product: Product;
@@ -68,6 +80,46 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const sizeStocks = normalizeProductSizeStocks(product);
   const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
+
+  const buttonRowRef = useRef<HTMLDivElement>(null);
+  const [isCompactButton, setIsCompactButton] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 1024;
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    const el = buttonRowRef.current;
+    if (!el) return;
+
+    const checkWidth = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0) {
+        // Under ~220px row width (each button under ~107px in 2-col row),
+        // use compact "Order from" to prevent compression or ellipsis.
+        setIsCompactButton(rect.width < 220);
+      }
+    };
+
+    checkWidth();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const w = entry.contentRect.width;
+          if (w > 0) {
+            setIsCompactButton(w < 220);
+          }
+        }
+      });
+      ro.observe(el);
+      return () => ro.disconnect();
+    } else {
+      window.addEventListener('resize', checkWidth);
+      return () => window.removeEventListener('resize', checkWidth);
+    }
+  }, []);
 
   const [selectedSize, setSelectedSize] = useState<string>(
     getFirstAvailableInStockSize(product) || (product.sizes && product.sizes[0]) || 'Free Size'
@@ -594,30 +646,66 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               )}
 
               {/* Secondary Buttons Row */}
-              <div className="grid grid-cols-2 gap-1.5">
+              <div
+                ref={buttonRowRef}
+                className={`w-full ${
+                  cfg.showAddToCart && paymentSettings.enableAddToCart !== false
+                    ? 'grid grid-cols-2 gap-1.5'
+                    : 'flex'
+                }`}
+              >
                 {paymentSettings.enableBuyWhatsApp !== false && (
                   <button
+                    type="button"
                     onClick={handleWhatsAppBuy}
-                    className="btn-liquid-base btn-liquid-emerald w-full text-white font-bold text-[10px] sm:text-[11px] py-2 px-1.5 rounded-xl shadow-xs flex items-center justify-center gap-1 transition-all cursor-pointer"
+                    aria-label="Order on WhatsApp"
+                    title="Order on WhatsApp"
+                    className="btn-liquid-base btn-liquid-emerald w-full text-white font-bold text-[10.5px] sm:text-[11px] py-2 px-1.5 sm:px-2 rounded-xl shadow-xs flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap min-w-0 select-none"
                     style={{
                       backgroundColor: cfg.whatsAppColor || paymentSettings.buyWhatsAppButtonColor || '#25D366',
                     }}
                   >
-                    <MessageCircle className="w-3.5 h-3.5 fill-current shrink-0" />
-                    <span className="truncate">{cfg.whatsAppText || paymentSettings.buyWhatsAppButtonText || 'व्हाट्सऐप • WHATSAPP'}</span>
+                    <WhatsAppIcon className="w-3.5 h-3.5 shrink-0 fill-current" />
+                    <span className="whitespace-nowrap font-bold tracking-tight">
+                      {isCompactButton ? (
+                        <>
+                          <span className="hidden xl:inline">Order on WhatsApp</span>
+                          <span className="xl:hidden">Order from</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="hidden sm:inline">
+                            {cfg.whatsAppText || paymentSettings.buyWhatsAppButtonText || 'Order on WhatsApp'}
+                          </span>
+                          <span className="sm:hidden">Order from</span>
+                        </>
+                      )}
+                    </span>
                   </button>
                 )}
 
                 {cfg.showAddToCart && paymentSettings.enableAddToCart !== false && (
                   <button
+                    type="button"
                     onClick={handleAddToCartAction}
-                    className="btn-liquid-base btn-liquid-dark w-full text-white font-bold text-[10px] sm:text-[11px] py-2 px-1.5 rounded-xl shadow-xs flex items-center justify-center gap-1 transition-all cursor-pointer"
+                    aria-label="Add to Bag"
+                    title="Add to Bag"
+                    className="btn-liquid-base btn-liquid-dark w-full text-white font-bold text-[10.5px] sm:text-[11px] py-2 px-1.5 sm:px-2 rounded-xl shadow-xs flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap min-w-0 select-none"
                     style={{
                       backgroundColor: cfg.addToCartColor || paymentSettings.addToBagButtonColor || '#171717',
                     }}
                   >
                     <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{cfg.addToCartText || paymentSettings.addToBagButtonText || 'बैग में जोड़ें • ADD'}</span>
+                    <span className="whitespace-nowrap font-bold tracking-tight">
+                      {isCompactButton ? (
+                        <>
+                          <span className="hidden sm:inline">Add to Bag</span>
+                          <span className="sm:hidden">Add</span>
+                        </>
+                      ) : (
+                        cfg.addToCartText || paymentSettings.addToBagButtonText || 'Add to Bag'
+                      )}
+                    </span>
                   </button>
                 )}
               </div>

@@ -57,7 +57,56 @@ export default async function handler(req: any, res: any) {
     const validatedDiscount = Math.max(0, Math.min(Number(discountAmount) || 0, serverSubtotal));
 
     // 4. GST-Inclusive Total: Subtotal - Discount + Delivery (Zero duplicate GST added)
-    const finalPayableAmount = Math.max(0, serverSubtotal - validatedDiscount + effectiveDeliveryFee);
+    let finalPayableAmount = Math.max(0, serverSubtotal - validatedDiscount + effectiveDeliveryFee);
+
+    // 5. Authoritative Order ID Validation from Firestore (for WhatsApp & Direct Order Payment Links)
+    const targetOrderId = (req.body.orderId || req.body.mfpOrderId || '').trim();
+    if (targetOrderId) {
+      try {
+        const cleanId = targetOrderId.replace(/^#/, '');
+        const candidateKeys = Array.from(new Set([cleanId, `#${cleanId}`, targetOrderId]));
+        let foundFsData: any = null;
+
+        for (const cand of candidateKeys) {
+          const firestoreUrl = `https://firestore.googleapis.com/v1/projects/gen-lang-client-0934233443/databases/ai-studio-marudharfashionp-84582cae-673f-469e-bad0-503eef199989/documents/orders/${encodeURIComponent(cand)}`;
+          const fsRes = await fetch(firestoreUrl);
+          if (fsRes.ok) {
+            foundFsData = await fsRes.json();
+            break;
+          }
+        }
+
+        if (foundFsData) {
+          const fields = foundFsData.fields || {};
+          const pStatus = fields.paymentStatus?.stringValue;
+          const oStatus = fields.orderStatus?.stringValue;
+          const fsTotal = fields.totalAmount?.doubleValue ?? fields.totalAmount?.integerValue;
+
+          if (pStatus === 'PAID') {
+            return res.status(400).json({
+              success: false,
+              message: 'इस ऑर्डर का भुगतान पहले ही हो चुका है। (This order is already paid.)',
+              alreadyPaid: true,
+            });
+          }
+
+          if (oStatus === 'CANCELLED') {
+            return res.status(400).json({
+              success: false,
+              message: 'यह ऑर्डर रद्द (Cancelled) हो चुका है। (This order is cancelled.)',
+              cancelled: true,
+            });
+          }
+
+          if (fsTotal && Number(fsTotal) > 0) {
+            finalPayableAmount = Number(fsTotal);
+          }
+        }
+      } catch (fsErr) {
+        console.warn('[Server Firestore check notice]:', fsErr);
+      }
+    }
+
     const amountInPaise = Math.round(finalPayableAmount * 100);
 
     if (amountInPaise <= 0) {

@@ -46,11 +46,130 @@ export function getProductSlug(product: Product): string {
  * Constructs the canonical public URL for a product
  */
 export function getProductUrl(product: Product, customOrigin?: string): string {
-  const defaultDomain = 'https://marudhar-fashion-point-1.vercel.app';
+  const defaultDomain = 'https://www.marudharfashionpoint.com';
   const origin = customOrigin || (typeof window !== 'undefined' && window.location.origin ? window.location.origin : defaultDomain);
-  // Use product.id (Firebase Document ID) or slug for permanent direct routing
-  const productIdOrSlug = product.id ? product.id.trim() : getProductSlug(product);
+  // Use product.slug if present, else product.id (Firebase Document ID), else getProductSlug
+  const productIdOrSlug = product.slug?.trim() || product.id?.trim() || getProductSlug(product);
   return `${origin}/product/${productIdOrSlug}`;
+}
+
+/**
+ * Resolves a clean, public HTTPS URL for a product image.
+ * CRITICAL REQUIREMENTS:
+ * 1. First use the product's actual primary image from existing product data (product.images[0]).
+ * 2. If it is a Firebase Storage or public HTTPS image, use that real public URL directly.
+ * 3. If multiple product images exist, use the actual primary product image (index 0).
+ * 4. NEVER replace a valid real product image with Unsplash or demo images.
+ * 5. NEVER put base64 image data (e.g. data:image/...) or internal blobs into WhatsApp.
+ * 6. If only internal base64/data image exists, proxies via the clean endpoint:
+ *    https://www.marudharfashionpoint.com/api/product-image/:id
+ * 7. If a product genuinely has no image, returns null so the image line is omitted.
+ */
+export function getPublicProductImageUrl(
+  product: Product,
+  selectedVariantImage?: string,
+  preferredOrigin: string = 'https://www.marudharfashionpoint.com'
+): string | null {
+  if (!product) return null;
+
+  const isSafePublicUrl = (url?: string | null): boolean => {
+    if (!url || typeof url !== 'string') return false;
+    const trimmed = url.trim();
+    if (trimmed.startsWith('data:') || trimmed.includes(';base64,')) return false;
+    if (trimmed.startsWith('blob:')) return false;
+    return trimmed.startsWith('https://') || trimmed.startsWith('http://');
+  };
+
+  // 1. Check selected variant image if provided (color/variant specific real image)
+  if (isSafePublicUrl(selectedVariantImage)) {
+    return selectedVariantImage!.trim();
+  }
+
+  // 2. Primary check: Product's actual primary image from existing product data/schema
+  // (index 0 is authoritative primary photo in Firebase/schema)
+  if (Array.isArray(product.images) && product.images.length > 0) {
+    for (const img of product.images) {
+      if (isSafePublicUrl(img)) {
+        return img.trim();
+      }
+      // If it's a relative path starting with /
+      if (typeof img === 'string' && img.startsWith('/') && !img.startsWith('//')) {
+        return `${preferredOrigin}${img}`;
+      }
+    }
+  }
+
+  // 3. Check product's meta ogImage
+  if (isSafePublicUrl(product.ogImage)) {
+    return product.ogImage!.trim();
+  }
+
+  // 4. If product has real image data that happens to be base64/data:image/,
+  // proxy it through our server endpoint so WhatsApp receives a clean HTTPS URL
+  const hasEmbeddedImageData = Boolean(
+    (selectedVariantImage && selectedVariantImage.trim().length > 0) ||
+    (Array.isArray(product.images) && product.images.some(img => typeof img === 'string' && img.trim().length > 0)) ||
+    (product.ogImage && product.ogImage.trim().length > 0)
+  );
+
+  const productId = (product.id || '').trim();
+  if (hasEmbeddedImageData && productId) {
+    return `${preferredOrigin}/api/product-image/${encodeURIComponent(productId)}`;
+  }
+
+  // 5. Product genuinely has no image -> return null (omit Product Image line)
+  return null;
+}
+
+/**
+ * Checks whether a customer value is real and non-placeholder.
+ * Rejects "undefined", "null", "N/A", "Customer", "Valued Customer", "Address Provided", etc.
+ */
+export function isValidCustomerValue(val?: string | null): boolean {
+  if (!val || typeof val !== 'string') return false;
+  const trimmed = val.trim();
+  if (!trimmed) return false;
+  const lower = trimmed.toLowerCase();
+  const invalidValues = [
+    'undefined',
+    'null',
+    'n/a',
+    'na',
+    'customer',
+    'valued customer',
+    'whatsapp shopper',
+    'whatsapp customer',
+    'address provided',
+    'will be confirmed on whatsapp',
+    'none',
+    '-'
+  ];
+  return !invalidValues.includes(lower);
+}
+
+/**
+ * Strips HTML entities (such as &#x20;, &nbsp;, &amp;) and unwanted base64 blobs,
+ * normalizing spaces, lines, and formatting for WhatsApp text.
+ */
+export function sanitizeWhatsAppText(raw: string): string {
+  if (!raw) return '';
+  return raw
+    .replace(/&#x20;/gi, ' ')
+    .replace(/&#32;/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#160;/g, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#x2F;/gi, '/')
+    // Remove accidental data:image or base64 strings
+    .replace(/data:image\/[a-zA-Z+.-]+;base64,[A-Za-z0-9+/=]+/g, '')
+    // Normalize excessive multiple empty lines
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /**

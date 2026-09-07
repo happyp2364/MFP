@@ -10,7 +10,7 @@ import {
   WHATSAPP_VARIABLES_LIST,
 } from '../data/defaultWhatsAppTemplates';
 import { STORE_INFO } from '../data/mockData';
-import { getProductSKU, getProductUrl } from './productUtils';
+import { getProductSKU, getProductUrl, sanitizeWhatsAppText } from './productUtils';
 import { getCustomerLanguage } from './customerLanguage';
 
 export interface WhatsAppPayloadData {
@@ -157,8 +157,16 @@ export function renderWhatsAppMessageText(
 
   const opts = template.advancedOptions;
   if (opts) {
-    if (opts.showProductImageLink && payload.productImageLink && !rendered.includes(payload.productImageLink)) {
-      rendered += `\n\n🖼️ *Product Image:* ${payload.productImageLink}`;
+    if (
+      opts.showProductImageLink &&
+      payload.productImageLink &&
+      typeof payload.productImageLink === 'string' &&
+      (payload.productImageLink.startsWith('https://') || payload.productImageLink.startsWith('http://')) &&
+      !payload.productImageLink.startsWith('data:') &&
+      !payload.productImageLink.includes(';base64,') &&
+      !rendered.includes(payload.productImageLink)
+    ) {
+      rendered += `\n\n🖼️ *Product Image:* ${payload.productImageLink.trim()}`;
     }
     if (opts.showProductURL && payload.productURL && !rendered.includes(payload.productURL)) {
       rendered += `\n\n🔗 *Product Page:* ${payload.productURL}`;
@@ -186,7 +194,7 @@ export function renderWhatsAppMessageText(
     }
   }
 
-  return rendered;
+  return sanitizeWhatsAppText(rendered);
 }
 
 export function generateWhatsAppLinkFromCategory(
@@ -196,9 +204,10 @@ export function generateWhatsAppLinkFromCategory(
   customWhatsAppNum?: string
 ): string {
   const template = getActiveTemplateForCategory(category, config);
-  const text = renderWhatsAppMessageText(template, payload);
+  const rawText = renderWhatsAppMessageText(template, payload);
+  const cleanText = sanitizeWhatsAppText(rawText);
   const targetNumber = customWhatsAppNum ? customWhatsAppNum.replace(/\D/g, '') : getActiveStorePhone();
-  return `https://wa.me/${targetNumber}?text=${encodeURIComponent(text)}`;
+  return `https://wa.me/${targetNumber}?text=${encodeURIComponent(cleanText)}`;
 }
 
 export function buildSamplePayloadForPreview(category: WhatsAppTemplateActionCategory): WhatsAppPayloadData {

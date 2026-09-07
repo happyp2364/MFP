@@ -31,6 +31,7 @@ import { SEOLiveScoreWidget } from './components/Admin/SEOLiveScoreWidget';
 import { SEOSchemaInjector } from './components/SEO/SEOSchemaInjector';
 import { CheckoutModal } from './components/Checkout/CheckoutModal';
 import { CheckoutErrorBoundary } from './components/Checkout/CheckoutErrorBoundary';
+import { OrderPaymentPage } from './components/Checkout/OrderPaymentPage';
 import { CustomerAuthGuardModal } from './components/Customer/CustomerAuthGuardModal';
 import { CustomerAccountModal } from './components/Customer/CustomerAccountModal';
 import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
@@ -113,7 +114,16 @@ function AppContent() {
   // --- DYNAMIC PUBLIC PRODUCT URL ROUTING ---
   const [productRouteSlug, setProductRouteSlug] = useState<string | null>(null);
 
-  const scratchCurrentPath = productRouteSlug ? `/product/${productRouteSlug}` : checkoutModalOpen ? '/checkout' : '/';
+  // --- DYNAMIC DIRECT ORDER PAYMENT ROUTING (/pay/:orderId) ---
+  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
+
+  const scratchCurrentPath = paymentOrderId
+    ? `/pay/${paymentOrderId}`
+    : productRouteSlug
+    ? `/product/${productRouteSlug}`
+    : checkoutModalOpen
+    ? '/checkout'
+    : '/';
   const scratchCartSubtotal = useMemo(() => {
     return cartItems.reduce((acc, item) => acc + getCartItemPrice(item) * item.quantity, 0);
   }, [cartItems]);
@@ -121,6 +131,40 @@ function AppContent() {
   React.useEffect(() => {
     const handleUrlChange = () => {
       const path = window.location.pathname;
+
+      // 1. Direct Order Payment Route: /pay/:orderId
+      if (path.startsWith('/pay/')) {
+        const rawOrderId = path.replace('/pay/', '').split('/')[0].split('?')[0];
+        if (rawOrderId) {
+          setPaymentOrderId(decodeURIComponent(rawOrderId));
+          setProductRouteSlug(null);
+          return;
+        }
+      }
+
+      // Query parameter payment route: ?pay=... or ?orderId=...
+      const searchParams = new URLSearchParams(window.location.search);
+      const queryPay = searchParams.get('pay') || searchParams.get('orderId');
+      if (queryPay) {
+        setPaymentOrderId(decodeURIComponent(queryPay));
+        setProductRouteSlug(null);
+        return;
+      }
+
+      // Hash payment route: #/pay/:orderId
+      if (window.location.hash.startsWith('#/pay/')) {
+        const hashOrderId = window.location.hash.replace('#/pay/', '').split('?')[0];
+        if (hashOrderId) {
+          setPaymentOrderId(decodeURIComponent(hashOrderId));
+          setProductRouteSlug(null);
+          return;
+        }
+      }
+
+      // Not on payment route
+      setPaymentOrderId(null);
+
+      // 2. Product Route
       if (path.startsWith('/product/')) {
         const rawSlug = path.replace('/product/', '').split('/')[0].split('?')[0];
         if (rawSlug) {
@@ -129,7 +173,6 @@ function AppContent() {
         }
       }
 
-      const searchParams = new URLSearchParams(window.location.search);
       const queryProduct = searchParams.get('product');
       if (queryProduct) {
         setProductRouteSlug(decodeURIComponent(queryProduct));
@@ -615,34 +658,48 @@ function AppContent() {
       />
 
       {/* Mobile Category Slider & Desktop Horizontal Category Bar */}
-      <div className="pt-[60px] sm:pt-[72px]">
-        <MobileScrollableCategories
-          activeCategory={activeCategory}
-          onSelectCategory={(cat) => {
-            if (cat === 'men' || cat === 'women' || cat === 'kids' || cat === 'all') {
-              handleSelectCategory(cat as GenderCategory);
-            } else {
-              setIsShopActive(true);
-            }
-          }}
-        />
-        <HorizontalCategoryBar
-          activeCategory={activeCategory}
-          onSelectCategory={handleSelectCategory}
-          onNavigateToSection={(sec) => {
-            if (sec === 'hero') {
-              setIsShopActive(false);
-              handleSelectCategory('all');
-              handleResetFilters();
-            } else if (sec === 'products') {
-              setIsShopActive(true);
-            }
-            handleNavigateToSection(sec);
-          }}
-        />
-      </div>
+      {paymentOrderId === null && (
+        <div className="pt-[60px] sm:pt-[72px]">
+          <MobileScrollableCategories
+            activeCategory={activeCategory}
+            onSelectCategory={(cat) => {
+              if (cat === 'men' || cat === 'women' || cat === 'kids' || cat === 'all') {
+                handleSelectCategory(cat as GenderCategory);
+              } else {
+                setIsShopActive(true);
+              }
+            }}
+          />
+          <HorizontalCategoryBar
+            activeCategory={activeCategory}
+            onSelectCategory={handleSelectCategory}
+            onNavigateToSection={(sec) => {
+              if (sec === 'hero') {
+                setIsShopActive(false);
+                handleSelectCategory('all');
+                handleResetFilters();
+              } else if (sec === 'products') {
+                setIsShopActive(true);
+              }
+              handleNavigateToSection(sec);
+            }}
+          />
+        </div>
+      )}
 
-      {productRouteSlug !== null ? (
+      {paymentOrderId !== null ? (
+        <div className="pt-[60px] sm:pt-[72px]">
+          <OrderPaymentPage
+            orderId={paymentOrderId}
+            onBackHome={() => {
+              setPaymentOrderId(null);
+              if (window.location.pathname.startsWith('/pay/')) {
+                window.history.pushState({}, '', '/');
+              }
+            }}
+          />
+        </div>
+      ) : productRouteSlug !== null ? (
         <ProductDetailPage
           product={activeRouteProduct}
           targetSlug={productRouteSlug}

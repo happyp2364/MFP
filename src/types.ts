@@ -631,7 +631,7 @@ export type OrderStatus =
 
 export type PaymentStatus = 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED';
 
-export type PaymentMethodType = 'UPI' | 'QR_SCAN' | 'ONLINE_UPI' | 'CARD' | 'NET_BANKING' | 'WALLET' | 'COD';
+export type PaymentMethodType = 'UPI' | 'QR_SCAN' | 'ONLINE_UPI' | 'CARD' | 'NET_BANKING' | 'WALLET' | 'COD' | 'WHATSAPP';
 
 export interface RefundRecord {
   id: string;
@@ -753,6 +753,9 @@ export interface CustomerOrder {
   couponCode?: string;
   isOpenBoxDelivery?: boolean;
   openBoxDeliveryNote?: string;
+  source?: 'WEBSITE' | 'WHATSAPP';
+  paymentLink?: string;
+  paymentVerifiedAt?: string;
 
   // Order Tax Calculation Snapshot (ensures historical orders retain original tax calculations)
   gstEnabled?: boolean;

@@ -186,30 +186,28 @@ export const OpenBoxDeliveryBadge: React.FC<OpenBoxDeliveryBadgeProps> = ({
     );
   }
 
-  // Variant 3: Checkout (Highlighted badge card for payment & checkout screens)
+  // Variant 3: Checkout (Compact trust banner for payment & checkout screens)
   if (variant === 'checkout') {
     return (
       <div
-        className={`p-3.5 rounded-xl transition-all shadow-xs ${containerBgClass} ${borderClass} ${className}`}
+        className={`px-3 py-2 rounded-xl border border-emerald-200/90 bg-emerald-50/60 transition-all flex items-center justify-between gap-2.5 ${className}`}
       >
-        <div className="flex items-start gap-3">
-          <div className={`p-2 rounded-xl shrink-0 shadow-sm ${badgeColorClass}`}>
-            {renderIcon(activeConfig.icon, 'w-4 h-4')}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            {renderIcon(activeConfig.icon, 'w-3.5 h-3.5')}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <h4 className={`text-xs font-bold tracking-tight ${textColorClass}`}>
-                {activeConfig.heading || 'Open Box Delivery Available'}
-              </h4>
-              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 tracking-wider">
-                Verified
-              </span>
-            </div>
-            <p className="text-[11px] leading-snug opacity-90">
-              {activeConfig.description}
+          <div className="min-w-0">
+            <span className="text-xs font-bold text-neutral-900 tracking-tight block truncate">
+              {activeConfig.heading || 'Open Box Delivery Available'}
+            </span>
+            <p className="text-[11px] text-neutral-600 leading-tight truncate">
+              डिलीवरी के समय पैकेज की जांच करें
             </p>
           </div>
         </div>
+        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-100/90 text-emerald-800 border border-emerald-200/80 shrink-0">
+          Verified
+        </span>
       </div>
     );
   }

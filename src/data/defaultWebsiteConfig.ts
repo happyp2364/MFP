@@ -244,7 +244,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
       ],
     },
     welcomeMessage: {
-      hi: 'आपका स्वागत है • मारूधर फैशन पॉइंट',
+      hi: 'आपका स्वागत है • मरुधर फैशन पॉइंट',
       en: 'Welcome to Marudhar Fashion Point',
     },
     orderConfirmationMessage: {

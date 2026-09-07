@@ -920,6 +920,150 @@ export async function saveOrderInFirestore(order: import('../types').CustomerOrd
   }
 }
 
+// Fetch Order by ID directly from Firestore (Supports exact ID, hashtag prefix, or case normalization)
+export async function fetchOrderByIdFromFirestore(rawOrderId: string): Promise<import('../types').CustomerOrder | null> {
+  try {
+    const cleanId = (rawOrderId || '').trim();
+    if (!cleanId) return null;
+
+    // 1. Direct Document Read
+    const docRef = doc(db, 'orders', cleanId);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return { id: snap.id, ...snap.data() } as import('../types').CustomerOrder;
+    }
+
+    // 2. Try normalized variants (#MFP-1025 vs MFP-1025)
+    const variants = [
+      cleanId.startsWith('#') ? cleanId.substring(1) : `#${cleanId}`,
+      cleanId.toUpperCase(),
+      cleanId.toLowerCase(),
+    ];
+
+    for (const variant of variants) {
+      if (variant === cleanId) continue;
+      const vRef = doc(db, 'orders', variant);
+      const vSnap = await getDoc(vRef);
+      if (vSnap.exists()) {
+        return { id: vSnap.id, ...vSnap.data() } as import('../types').CustomerOrder;
+      }
+    }
+
+    // 3. Query fallback if stored with custom ID field
+    const q = query(collection(db, 'orders'), limit(100));
+    const allSnaps = await getDocs(q);
+    for (const d of allSnaps.docs) {
+      const data = d.data() as import('../types').CustomerOrder;
+      if (
+        d.id.toLowerCase() === cleanId.toLowerCase() ||
+        (data.id && data.id.toLowerCase() === cleanId.toLowerCase()) ||
+        (data.id && data.id.replace('#', '').toLowerCase() === cleanId.replace('#', '').toLowerCase()) ||
+        String(data.orderNumber) === cleanId.replace(/\D/g, '')
+      ) {
+        return { id: d.id, ...data };
+      }
+    }
+
+    return null;
+  } catch (err) {
+    console.warn('[fetchOrderByIdFromFirestore notice]:', err);
+    return null;
+  }
+}
+
+// Atomically Update Order Payment to PAID after Cryptographic Server Verification
+export async function updateOrderPaymentSuccess(
+  orderId: string,
+  paymentData: {
+    razorpayPaymentId: string;
+    razorpayOrderId: string;
+    razorpaySignature?: string;
+  }
+): Promise<boolean> {
+  try {
+    const cleanId = (orderId || '').trim();
+    if (!cleanId) return false;
+
+    // Resolve exact doc ID if needed
+    let resolvedDocId = cleanId;
+    const docRef = doc(db, 'orders', resolvedDocId);
+    let snap = await getDoc(docRef);
+
+    if (!snap.exists()) {
+      // Find matching document
+      const fallbackOrder = await fetchOrderByIdFromFirestore(cleanId);
+      if (fallbackOrder) {
+        resolvedDocId = fallbackOrder.id;
+      } else {
+        return false;
+      }
+    }
+
+    const targetRef = doc(db, 'orders', resolvedDocId);
+    const existingSnap = await getDoc(targetRef);
+    if (!existingSnap.exists()) return false;
+
+    const existingOrder = existingSnap.data() as import('../types').CustomerOrder;
+
+    // Idempotency: If already paid, do not overwrite or create duplicate notifications
+    if (existingOrder.paymentStatus === 'PAID') {
+      return true;
+    }
+
+    const now = new Date().toISOString();
+    const updatePayload: Partial<import('../types').CustomerOrder> = {
+      paymentStatus: 'PAID',
+      paymentVerificationStatus: 'verified',
+      orderStatus: existingOrder.orderStatus === 'CANCELLED' ? 'CANCELLED' : 'PENDING',
+      razorpayPaymentId: paymentData.razorpayPaymentId,
+      razorpayOrderId: paymentData.razorpayOrderId,
+      razorpaySignature: paymentData.razorpaySignature || '',
+      transactionId: paymentData.razorpayPaymentId,
+      paymentReference: paymentData.razorpayPaymentId,
+      paymentVerifiedAt: now,
+      paymentTimestamp: now,
+      updatedAt: now,
+      statusHistory: [
+        ...(existingOrder.statusHistory || []),
+        {
+          status: 'PENDING',
+          timestamp: now,
+          note: `WhatsApp Order payment verified via Razorpay Standard (${paymentData.razorpayPaymentId})`,
+        },
+      ],
+    };
+
+    await setDoc(targetRef, updatePayload, { merge: true });
+
+    // Create Admin Notification in Firestore
+    const notifId = `notif-paid-${Date.now()}`;
+    const notifRef = doc(db, 'notifications', notifId);
+    await setDoc(notifRef, {
+      id: notifId,
+      orderId: resolvedDocId,
+      customerName: existingOrder.customerName || 'WhatsApp Customer',
+      totalAmount: existingOrder.totalAmount,
+      productCount: existingOrder.items?.reduce((s, i) => s + i.quantity, 0) || 1,
+      paymentStatus: 'PAID',
+      source: 'WHATSAPP',
+      timestamp: now,
+      read: false,
+    });
+
+    recordAuditLog(
+      'Order Payment Verified',
+      'SECURITY',
+      `Order ${resolvedDocId} marked PAID via Razorpay Payment ${paymentData.razorpayPaymentId}`,
+      'SUCCESS'
+    );
+
+    return true;
+  } catch (err) {
+    console.error('[updateOrderPaymentSuccess error]:', err);
+    return false;
+  }
+}
+
 // Update Order Status in Firestore
 export async function updateOrderStatusInFirestore(
   orderId: string,

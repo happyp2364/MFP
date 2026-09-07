@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Trash2, MessageCircle, ShoppingBag, ArrowRight, ShieldCheck, Truck } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Trash2, MessageCircle, ShoppingBag, ArrowRight, ShieldCheck, Truck, Loader2 } from 'lucide-react';
 import { CartItem } from '../../types';
 import { useStore } from '../../context/StoreContext';
 import { generateCartWhatsAppLink } from '../../utils/whatsapp';
@@ -26,7 +26,17 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
   onClearCart,
   onProceedToCheckout,
 }) => {
-  const { paymentSettings, playSiteSound } = useStore();
+  const {
+    paymentSettings,
+    playSiteSound,
+    createWhatsAppOrder,
+    customerProfile,
+    customerUser,
+    currentAdminUser,
+  } = useStore();
+  const [isCreatingWhatsAppOrder, setIsCreatingWhatsAppOrder] = useState(false);
+  const lastCreatedOrderRef = useRef<{ itemsHash: string; whatsappUrl: string } | null>(null);
+
   if (!isOpen) return null;
 
   const subtotal = cartItems.reduce(
@@ -39,10 +49,86 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
   const shippingFee = subtotal >= freeMin ? 0 : flatFee;
   const totalAmount = subtotal + shippingFee;
 
-  const handleWhatsAppCheckout = () => {
+  const handleWhatsAppCheckout = async () => {
+    if (isCreatingWhatsAppOrder) return;
     playSiteSound('addToCart');
-    const link = generateCartWhatsAppLink(cartItems);
-    window.open(link, '_blank');
+
+    // Prevent duplicate order creation if cart items haven't changed
+    const itemsHash = cartItems
+      .map((i) => `${i.product.id}-${i.selectedSize}-${i.selectedColor}-${i.quantity}`)
+      .join('|');
+
+    if (lastCreatedOrderRef.current && lastCreatedOrderRef.current.itemsHash === itemsHash) {
+      window.open(lastCreatedOrderRef.current.whatsappUrl, '_blank');
+      return;
+    }
+
+    const defaultSavedAddress =
+      customerProfile?.savedAddresses?.find((a) => a.isDefault) ||
+      customerProfile?.savedAddresses?.[0];
+
+    const resolvedName =
+      customerProfile?.name ||
+      customerUser?.displayName ||
+      currentAdminUser?.name ||
+      defaultSavedAddress?.name ||
+      '';
+
+    const resolvedEmail =
+      customerProfile?.email ||
+      customerUser?.email ||
+      currentAdminUser?.email ||
+      '';
+
+    const resolvedPhone =
+      customerProfile?.phoneNumber ||
+      customerUser?.phoneNumber ||
+      currentAdminUser?.phone ||
+      defaultSavedAddress?.phone ||
+      '';
+
+    const resolvedShippingAddress = defaultSavedAddress
+      ? {
+          name: resolvedName || defaultSavedAddress.name || '',
+          street: defaultSavedAddress.street || '',
+          city: defaultSavedAddress.city || '',
+          state: defaultSavedAddress.state || 'Rajasthan',
+          pincode: defaultSavedAddress.pincode || '',
+          phone: resolvedPhone || defaultSavedAddress.phone || '',
+          email: resolvedEmail,
+        }
+      : undefined;
+
+    setIsCreatingWhatsAppOrder(true);
+    try {
+      if (createWhatsAppOrder) {
+        const res = await createWhatsAppOrder(
+          cartItems,
+          undefined,
+          undefined,
+          {
+            name: resolvedName,
+            phone: resolvedPhone,
+            email: resolvedEmail,
+          },
+          resolvedShippingAddress
+        );
+        if (res.success && res.whatsappUrl) {
+          lastCreatedOrderRef.current = { itemsHash, whatsappUrl: res.whatsappUrl };
+          window.open(res.whatsappUrl, '_blank');
+          return;
+        }
+      }
+      // Fallback
+      const link = generateCartWhatsAppLink(cartItems);
+      window.open(link, '_blank');
+    } catch (e) {
+      console.warn('WhatsApp order checkout notice:', e);
+      const link = generateCartWhatsAppLink(cartItems);
+      window.open(link, '_blank');
+    } finally {
+      setIsCreatingWhatsAppOrder(false);
+    }
   };
 
   return (
@@ -214,10 +300,20 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
 
             <button
               onClick={handleWhatsAppCheckout}
-              className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2.5 rounded-2xl flex items-center justify-center gap-2 transition-all opacity-90"
+              disabled={isCreatingWhatsAppOrder}
+              className="w-full bg-emerald-700 hover:bg-emerald-800 disabled:opacity-75 text-white font-bold text-xs py-2.5 rounded-2xl flex items-center justify-center gap-2 transition-all opacity-90"
             >
-              <MessageCircle className="w-4 h-4" />
-              <span>व्हाट्सऐप पर ऑर्डर करें • Order via WhatsApp</span>
+              {isCreatingWhatsAppOrder ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>ऑर्डर लिंक तैयार हो रहा है...</span>
+                </>
+              ) : (
+                <>
+                  <MessageCircle className="w-4 h-4" />
+                  <span>व्हाट्सऐप पर ऑर्डर करें • Order via WhatsApp</span>
+                </>
+              )}
             </button>
 
             <button

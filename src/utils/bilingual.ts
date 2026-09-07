@@ -341,7 +341,7 @@ export const BILINGUAL_FOOTER = {
   passion: 'आपका स्टाइल, हमारा जुनून • Your Style, Our Passion',
   trustShopping: 'भरोसे के साथ फैशन की खरीदारी • Shop Fashion With Confidence',
   stayConnected: 'हमसे जुड़े रहें • Stay Connected With Us',
-  copyright: '© 2026 मारुधर फैशन पॉइंट • Marudhar Fashion Point. सर्वाधिकार सुरक्षित • All Rights Reserved.',
+  copyright: '© 2026 मरुधर फैशन पॉइंट • Marudhar Fashion Point. सर्वाधिकार सुरक्षित • All Rights Reserved.',
   madeWithPride: 'राजस्थान के गौरव व भरोसे के साथ निर्मित • Crafted with Pride in Rajasthan',
   quickLinks: 'त्वरित लिंक • Quick Links',
   shopCategories: 'कलेक्शन • Shop Categories',
@@ -351,7 +351,7 @@ export const BILINGUAL_FOOTER = {
 
 // 14. ADMIN PANEL HEADINGS & ACTIONS
 export const BILINGUAL_ADMIN = {
-  panelTitle: 'मारुधर एडमिन पोर्टल • Marudhar Command Center',
+  panelTitle: 'मरुधर एडमिन पोर्टल • Marudhar Command Center',
   storeInfo: 'स्टोर की जानकारी • Store Information',
   productMgmt: 'उत्पाद प्रबंधन • Product Management',
   ordersTracking: 'ऑर्डर और ट्रैकिंग • Orders & Tracking',

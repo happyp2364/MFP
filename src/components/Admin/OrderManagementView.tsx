@@ -16,6 +16,10 @@ import {
   XCircle,
   AlertCircle,
   RefreshCw,
+  MessageCircle,
+  Copy,
+  Check,
+  ExternalLink,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { CustomerOrder, OrderStatus } from '../../types';
@@ -41,6 +45,26 @@ export const OrderManagementView: React.FC = () => {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<CustomerOrder | null>(null);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
+
+  const handleCopyPaymentLink = (order: CustomerOrder, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const cleanId = (order.id || '').replace(/^#/, '');
+    const prodBase = 'https://www.marudharfashionpoint.com';
+    let url = order.paymentLink || `${prodBase}/pay/${cleanId}`;
+    if (
+      url.includes('localhost') ||
+      url.includes('127.0.0.1') ||
+      url.includes('0.0.0.0')
+    ) {
+      url = `${prodBase}/pay/${cleanId}`;
+    }
+    navigator.clipboard.writeText(url);
+    setCopiedOrderId(order.id);
+    setTimeout(() => {
+      setCopiedOrderId((prev) => (prev === order.id ? null : prev));
+    }, 2500);
+  };
 
   // Filter orders
   const filteredOrders = orders.filter((o) => {
@@ -142,11 +166,25 @@ export const OrderManagementView: React.FC = () => {
                       #{order.orderNumber || '1025'}
                     </span>
                     <div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className="font-mono font-bold text-sm text-neutral-900">{order.id}</span>
-                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded text-[10px]">
+                        <span
+                          className={`px-2 py-0.5 font-bold rounded text-[10px] ${
+                            order.paymentStatus === 'PAID'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : order.paymentStatus === 'FAILED'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
                           {order.paymentStatus}
                         </span>
+                        {order.source === 'WHATSAPP' && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-800 font-bold rounded text-[10px] flex items-center gap-1">
+                            <MessageCircle className="w-3 h-3 text-green-600" />
+                            WhatsApp
+                          </span>
+                        )}
                       </div>
                       <p className="text-neutral-500 text-[11px] mt-0.5">
                         Customer: <strong className="text-neutral-800">{order.customerName}</strong> • {order.customerPhone}
@@ -276,10 +314,55 @@ export const OrderManagementView: React.FC = () => {
                     </div>
 
                     {/* Payment & Audit Info */}
-                    <div className="flex flex-wrap items-center justify-between text-neutral-600 pt-2 border-t border-neutral-100 text-[11px]">
-                      <span>Payment Method: <strong className="text-neutral-900">{order.paymentMethod}</strong></span>
-                      <span>Transaction ID: <strong className="font-mono text-neutral-900">{order.transactionId}</strong></span>
-                      <span>Reference: <strong className="font-mono text-neutral-900">{order.paymentReference || 'N/A'}</strong></span>
+                    <div className="space-y-2 pt-2 border-t border-neutral-100 text-[11px] text-neutral-600">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span>Source: <strong className="text-neutral-900 font-semibold">{order.source || 'WEBSITE'}</strong></span>
+                        <span>Payment Method: <strong className="text-neutral-900">{order.paymentMethod}</strong></span>
+                        <span>Payment Status: <strong className={`font-semibold ${order.paymentStatus === 'PAID' ? 'text-emerald-700' : 'text-amber-700'}`}>{order.paymentStatus}</strong></span>
+                        <span>Transaction ID: <strong className="font-mono text-neutral-900">{order.transactionId || 'N/A'}</strong></span>
+                        {order.paymentVerifiedAt && (
+                          <span>Verified: <strong className="text-neutral-800">{new Date(order.paymentVerifiedAt).toLocaleString('en-IN')}</strong></span>
+                        )}
+                      </div>
+
+                      {/* Payment Link Card for Pending Orders */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 bg-neutral-50 p-2 rounded-lg border border-neutral-200">
+                        <div className="flex items-center gap-1.5 truncate max-w-sm">
+                          <span className="font-semibold text-neutral-700">Payment Link:</span>
+                          <span className="font-mono text-[10px] text-neutral-500 truncate">
+                            {order.paymentLink || `${window.location.origin}/pay/${encodeURIComponent(order.id)}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={(e) => handleCopyPaymentLink(order, e)}
+                            className="px-2.5 py-1 bg-white hover:bg-neutral-100 text-neutral-700 font-semibold rounded border border-neutral-300 flex items-center gap-1 transition-colors"
+                            title="Copy link to clipboard"
+                          >
+                            {copiedOrderId === order.id ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-600" />
+                                <span className="text-emerald-700">Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>Copy Link</span>
+                              </>
+                            )}
+                          </button>
+                          <a
+                            href={`/pay/${encodeURIComponent((order.id || '').replace(/^#/, ''))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold rounded border border-emerald-300 flex items-center gap-1 transition-colors"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Open Page</span>
+                          </a>
+                        </div>
+                      </div>
                     </div>
 
                   </div>

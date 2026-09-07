@@ -58,7 +58,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
           <div className="space-y-2 text-center lg:text-left max-w-xl">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0B8F63]/20 text-[#0B8F63] text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
-              मारुधर फैमिली क्लब • Join Marudhar Family Club
+              मरुधर फैमिली क्लब • Join Marudhar Family Club
             </div>
             <h3 className="font-serif-heading text-2xl sm:text-3xl font-bold">
               विशेष ऑफर और नए कलेक्शन की जानकारी • Get Exclusive Deals & Updates

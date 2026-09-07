@@ -278,6 +278,9 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
     // Orders
     orders: orders.orders,
     placeOrderAndPay: orders.placeOrderAndPay,
+    createWhatsAppOrder: orders.createWhatsAppOrder,
+    markOrderAsPaid: orders.markOrderAsPaid,
+    getOrderById: orders.getOrderById,
     updateOrderStatus: orders.updateOrderStatus,
     cancelCustomerOrder: orders.cancelCustomerOrder,
 

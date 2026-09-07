@@ -1349,7 +1349,55 @@ Respond strictly with valid JSON in format:
       // 4. GST-INCLUSIVE PRICING:
       // Product price is already tax-inclusive. No duplicate GST is added to the customer total.
       // Final Payable = Subtotal - Discount + Delivery Fee
-      const finalPayableAmount = Math.max(0, serverSubtotal - validatedDiscount + effectiveDeliveryFee);
+      let finalPayableAmount = Math.max(0, serverSubtotal - validatedDiscount + effectiveDeliveryFee);
+
+      // Authoritative Order ID Validation from Firestore (for WhatsApp & Direct Order Payment Links)
+      const targetOrderId = (req.body.orderId || req.body.mfpOrderId || "").trim();
+      if (targetOrderId) {
+        try {
+          const cleanId = targetOrderId.replace(/^#/, '');
+          const candidateKeys = Array.from(new Set([cleanId, `#${cleanId}`, targetOrderId]));
+          let foundFsData: any = null;
+
+          for (const cand of candidateKeys) {
+            const firestoreUrl = `https://firestore.googleapis.com/v1/projects/gen-lang-client-0934233443/databases/ai-studio-marudharfashionp-84582cae-673f-469e-bad0-503eef199989/documents/orders/${encodeURIComponent(cand)}`;
+            const fsRes = await fetch(firestoreUrl);
+            if (fsRes.ok) {
+              foundFsData = await fsRes.json();
+              break;
+            }
+          }
+
+          if (foundFsData) {
+            const fields = foundFsData.fields || {};
+            const pStatus = fields.paymentStatus?.stringValue;
+            const oStatus = fields.orderStatus?.stringValue;
+            const fsTotal = fields.totalAmount?.doubleValue ?? fields.totalAmount?.integerValue;
+
+            if (pStatus === "PAID") {
+              return res.status(400).json({
+                success: false,
+                message: "इस ऑर्डर का भुगतान पहले ही हो चुका है। (This order is already paid.)",
+                alreadyPaid: true,
+              });
+            }
+
+            if (oStatus === "CANCELLED") {
+              return res.status(400).json({
+                success: false,
+                message: "यह ऑर्डर रद्द (Cancelled) हो चुका है। (This order is cancelled.)",
+                cancelled: true,
+              });
+            }
+
+            if (fsTotal && Number(fsTotal) > 0) {
+              finalPayableAmount = Number(fsTotal);
+            }
+          }
+        } catch (fsErr) {
+          console.warn("[Server Firestore check notice]:", fsErr);
+        }
+      }
 
       // Convert to Integer Paise (Zero floating-point arithmetic errors)
       const amountInPaise = Math.round(finalPayableAmount * 100);
@@ -1964,6 +2012,84 @@ ${customerMessage || 'Please confirm availability.'}`;
 
   app.get("/product/:slug", handleProductRoute);
   app.get("/products/:slug", handleProductRoute);
+
+  // =========================================================================
+  // CLEAN PRODUCT IMAGE HOSTING & PROXY ROUTE
+  // Ensures WhatsApp and external links always get a clean HTTP/HTTPS image
+  // =========================================================================
+  app.get("/api/product-image/:id", async (req, res) => {
+    try {
+      const productId = req.params.id || "";
+      const target = productId.trim().toLowerCase();
+
+      if (!target) {
+        return res.status(404).send("Product image not found");
+      }
+
+      // 1. Check server product catalog for the real product image
+      const foundProduct = SERVER_PRODUCT_CATALOG.find(
+        (p) =>
+          p.id?.toLowerCase() === target ||
+          p.slug?.toLowerCase() === target ||
+          (p.sku && p.sku.toLowerCase() === target)
+      );
+
+      if (foundProduct && Array.isArray(foundProduct.images) && foundProduct.images.length > 0) {
+        const firstImg = foundProduct.images[0];
+        if (typeof firstImg === 'string' && firstImg.trim()) {
+          if (firstImg.startsWith('http://') || firstImg.startsWith('https://')) {
+            return res.redirect(302, firstImg);
+          }
+          if (firstImg.startsWith('data:image/')) {
+            const matches = firstImg.match(/^data:image\/([a-zA-Z+.-]+);base64,(.+)$/);
+            if (matches) {
+              const mimeType = `image/${matches[1]}`;
+              const imgBuffer = Buffer.from(matches[2], 'base64');
+              res.setHeader('Content-Type', mimeType);
+              res.setHeader('Cache-Control', 'public, max-age=86400');
+              return res.send(imgBuffer);
+            }
+          }
+        }
+      }
+
+      // 2. Check Firestore via REST API for the real uploaded product image
+      try {
+        const firestoreUrl = `https://firestore.googleapis.com/v1/projects/gen-lang-client-0934233443/databases/ai-studio-marudharfashionp-84582cae-673f-469e-bad0-503eef199989/documents/products/${encodeURIComponent(productId)}`;
+        const fsRes = await fetch(firestoreUrl);
+        if (fsRes.ok) {
+          const docData = await fsRes.json();
+          const fields = docData.fields || {};
+          const imagesValues = fields.images?.arrayValue?.values || [];
+          if (imagesValues.length > 0) {
+            const firstImg = imagesValues[0]?.stringValue;
+            if (typeof firstImg === 'string' && firstImg.trim()) {
+              if (firstImg.startsWith('http://') || firstImg.startsWith('https://')) {
+                return res.redirect(302, firstImg);
+              }
+              if (firstImg.startsWith('data:image/')) {
+                const matches = firstImg.match(/^data:image\/([a-zA-Z+.-]+);base64,(.+)$/);
+                if (matches) {
+                  const mimeType = `image/${matches[1]}`;
+                  const imgBuffer = Buffer.from(matches[2], 'base64');
+                  res.setHeader('Content-Type', mimeType);
+                  res.setHeader('Cache-Control', 'public, max-age=86400');
+                  return res.send(imgBuffer);
+                }
+              }
+            }
+          }
+        }
+      } catch (dbErr) {
+        console.warn('[api/product-image firestore fetch error]:', dbErr);
+      }
+
+      // 3. If product genuinely has no real image, return 404 rather than a fake demo image
+      return res.status(404).send("Product image not found");
+    } catch (err) {
+      return res.status(404).send("Product image not found");
+    }
+  });
 
   // =========================================================================
   // DYNAMIC SEO LOCATION PAGES

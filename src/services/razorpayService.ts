@@ -10,7 +10,9 @@
  */
 
 export interface RazorpayCreateOrderPayload {
-  items: Array<{
+  orderId?: string;
+  amount?: number;
+  items?: Array<{
     productId: string;
     productName: string;
     quantity: number;
@@ -18,7 +20,7 @@ export interface RazorpayCreateOrderPayload {
     selectedSize?: string;
     selectedColor?: string;
   }>;
-  shippingInfo: {
+  shippingInfo?: {
     name: string;
     email: string;
     phone: string;

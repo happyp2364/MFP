@@ -891,112 +891,173 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/70 backdrop-blur-xl p-4 overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden border border-white/80 my-auto animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-neutral-950/70 backdrop-blur-md p-0 sm:p-4 overflow-y-auto">
+      <div className="relative w-full max-w-xl bg-white rounded-t-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-neutral-200/80 my-0 sm:my-auto flex flex-col max-h-[96vh] sm:max-h-[92vh]">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-950 via-neutral-900 to-amber-950 px-6 py-4 text-white flex items-center justify-between border-b border-amber-800/30">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-amber-500/20 rounded-lg text-amber-400">
-              <ShieldCheck className="w-5 h-5" />
+        <div className="bg-neutral-900 text-white px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-neutral-800 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
             </div>
-            <div>
-              <h2 className="text-lg font-serif font-bold text-amber-100">
-                सुरक्षित भुगतान • Secure Checkout
-              </h2>
-              <p className="text-xs text-amber-200/70">
-                मारुधर फैशन पॉइंट • 100% सुरक्षित और एन्क्रिप्टेड
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight leading-tight">
+                  सुरक्षित भुगतान
+                </h2>
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full shrink-0">
+                  <Lock className="w-2.5 h-2.5" /> 100% सुरक्षित
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-neutral-400 font-medium truncate">
+                मरुधर फैशन पॉइंट • 100% सुरक्षित और एन्क्रिप्टेड
               </p>
             </div>
           </div>
           {step !== 'VERIFYING' && (
             <button
               onClick={onClose}
-              className="p-1.5 text-neutral-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+              aria-label="Close"
+              className="p-1.5 text-neutral-400 hover:text-white rounded-full hover:bg-neutral-800 transition-colors shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
           )}
         </div>
 
-        {/* Multi-Step Progress Tracker */}
-        <div className="bg-amber-50/60 px-6 py-2.5 border-b border-amber-100 flex items-center justify-between text-xs font-medium text-amber-900">
-          <div
-            className={`flex items-center space-x-1.5 ${
-              step === 'SHIPPING' ? 'text-amber-700 font-bold' : 'text-neutral-500'
-            }`}
-          >
+        {/* 4-Step Progress Tracker */}
+        <div className="bg-neutral-50 px-4 sm:px-6 py-2.5 border-b border-neutral-200/80 flex items-center justify-between text-xs shrink-0 select-none">
+          {/* 1. पता */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <span
-              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                step === 'SHIPPING' ? 'bg-amber-700 text-white' : 'bg-neutral-200 text-neutral-700'
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
+                step === 'SHIPPING'
+                  ? 'bg-neutral-900 text-white shadow-xs'
+                  : 'bg-emerald-600 text-white'
               }`}
             >
-              1
+              {step === 'SHIPPING' ? '1' : <Check className="w-3 h-3 stroke-[3]" />}
             </span>
-            <span>पता • Delivery</span>
-          </div>
-
-          <div className="w-6 h-[1px] bg-neutral-300" />
-
-          <div
-            className={`flex items-center space-x-1.5 ${
-              step === 'PAYMENT' ? 'text-amber-700 font-bold' : 'text-neutral-500'
-            }`}
-          >
             <span
-              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                step === 'PAYMENT' ? 'bg-amber-700 text-white' : 'bg-neutral-200 text-neutral-700'
+              className={`font-semibold tracking-tight text-xs ${
+                step === 'SHIPPING' ? 'text-neutral-900 font-bold' : 'text-neutral-700'
               }`}
             >
-              2
+              पता
             </span>
-            <span>भुगतान • Payment</span>
           </div>
 
-          <div className="w-6 h-[1px] bg-neutral-300" />
+          <div
+            className={`h-[1.5px] flex-1 mx-2 sm:mx-3 transition-colors ${
+              step !== 'SHIPPING' ? 'bg-emerald-600' : 'bg-neutral-200'
+            }`}
+          />
+
+          {/* 2. भुगतान */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
+                step === 'PAYMENT'
+                  ? 'bg-amber-800 text-white ring-2 ring-amber-800/20 shadow-xs'
+                  : step === 'VERIFYING' || step === 'PAYMENT_FAILED' || step === 'SUCCESS'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-neutral-200 text-neutral-500'
+              }`}
+            >
+              {step === 'VERIFYING' || step === 'PAYMENT_FAILED' || step === 'SUCCESS' ? (
+                <Check className="w-3 h-3 stroke-[3]" />
+              ) : (
+                '2'
+              )}
+            </span>
+            <span
+              className={`font-semibold tracking-tight text-xs ${
+                step === 'PAYMENT'
+                  ? 'text-amber-900 font-bold'
+                  : step === 'VERIFYING' || step === 'PAYMENT_FAILED' || step === 'SUCCESS'
+                  ? 'text-neutral-700'
+                  : 'text-neutral-400'
+              }`}
+            >
+              भुगतान
+            </span>
+          </div>
 
           <div
-            className={`flex items-center space-x-1.5 ${
-              step === 'VERIFYING' ? 'text-amber-700 font-bold' : 'text-neutral-500'
+            className={`h-[1.5px] flex-1 mx-2 sm:mx-3 transition-colors ${
+              step === 'VERIFYING' || step === 'PAYMENT_FAILED' || step === 'SUCCESS'
+                ? 'bg-emerald-600'
+                : 'bg-neutral-200'
             }`}
-          >
+          />
+
+          {/* 3. सत्यापन */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <span
-              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
                 step === 'VERIFYING'
-                  ? 'bg-amber-700 text-white animate-pulse'
-                  : 'bg-neutral-200 text-neutral-700'
+                  ? 'bg-amber-800 text-white animate-pulse ring-2 ring-amber-800/20'
+                  : step === 'PAYMENT_FAILED'
+                  ? 'bg-rose-600 text-white'
+                  : step === 'SUCCESS'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-neutral-200 text-neutral-500'
               }`}
             >
-              3
+              {step === 'SUCCESS' ? <Check className="w-3 h-3 stroke-[3]" /> : '3'}
             </span>
-            <span>सत्यापन • Verify</span>
+            <span
+              className={`font-semibold tracking-tight text-xs ${
+                step === 'VERIFYING'
+                  ? 'text-amber-900 font-bold'
+                  : step === 'PAYMENT_FAILED'
+                  ? 'text-rose-700 font-bold'
+                  : step === 'SUCCESS'
+                  ? 'text-neutral-700'
+                  : 'text-neutral-400'
+              }`}
+            >
+              सत्यापन
+            </span>
           </div>
 
-          <div className="w-6 h-[1px] bg-neutral-300" />
-
           <div
-            className={`flex items-center space-x-1.5 ${
-              step === 'SUCCESS' ? 'text-emerald-700 font-bold' : 'text-neutral-500'
+            className={`h-[1.5px] flex-1 mx-2 sm:mx-3 transition-colors ${
+              step === 'SUCCESS' ? 'bg-emerald-600' : 'bg-neutral-200'
             }`}
-          >
+          />
+
+          {/* 4. पुष्टि */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <span
-              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                step === 'SUCCESS' ? 'bg-emerald-600 text-white' : 'bg-neutral-200 text-neutral-700'
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
+                step === 'SUCCESS'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-neutral-200 text-neutral-500'
               }`}
             >
-              4
+              {step === 'SUCCESS' ? <Check className="w-3 h-3 stroke-[3]" /> : '4'}
             </span>
-            <span>पुष्टि • Confirmed</span>
+            <span
+              className={`font-semibold tracking-tight text-xs ${
+                step === 'SUCCESS' ? 'text-emerald-800 font-bold' : 'text-neutral-400'
+              }`}
+            >
+              पुष्टि
+            </span>
           </div>
         </div>
 
         {/* Global Error Banner */}
         {errorMessage && (
-          <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 text-xs text-red-700">
+          <div className="mx-4 sm:mx-6 mt-3 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-2 text-xs text-red-700 shrink-0">
             <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
+
+        {/* Modal Scrollable Body */}
+        <div className="overflow-y-auto flex-1">
 
         {/* STEP 1: SHIPPING ADDRESS */}
         {step === 'SHIPPING' && (
@@ -1352,95 +1413,188 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         {/* STEP 2: PAYMENT METHOD */}
         {step === 'PAYMENT' && (
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-neutral-900 uppercase tracking-wider">
-                Select Payment Mode
-              </h3>
+              <div>
+                <h3 className="text-sm font-bold text-neutral-900 tracking-tight">
+                  भुगतान का तरीका चुनें
+                </h3>
+                <p className="text-[11px] text-neutral-500 font-medium">
+                  100% सुरक्षित और तेज़ ऑनलाइन या कैश भुगतान
+                </p>
+              </div>
               <button
+                type="button"
                 onClick={() => setStep('SHIPPING')}
-                className="text-xs text-amber-700 hover:underline flex items-center space-x-1"
+                className="text-xs font-semibold text-neutral-600 hover:text-neutral-900 flex items-center gap-1 transition-colors px-2 py-1 rounded-md hover:bg-neutral-100"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Edit Address</span>
+                <span>पता बदलें (Edit)</span>
               </button>
             </div>
 
-            {/* Payment Tabs */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+            {/* Selectable Payment Method Cards */}
+            <div className="grid grid-cols-1 gap-2.5">
               {paymentSettings.enableUPI !== false && (
-                <button
-                  type="button"
+                <div
                   onClick={() => setSelectedMethod('ONLINE_UPI')}
-                  className={`p-3 rounded-xl border flex flex-col items-center justify-center space-y-1.5 transition-all ${
+                  className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                     selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-bold shadow-sm ring-1 ring-emerald-500'
-                      : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
+                      ? 'border-neutral-900 bg-neutral-50/90 shadow-xs ring-1 ring-neutral-900/10'
+                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50/50'
                   }`}
                 >
-                  <ShieldCheck className="w-5 h-5 text-emerald-700" />
-                  <span className="text-center font-bold">UPI / Pay Online</span>
-                  <span className="text-[10px] text-neutral-500 font-medium">GPay • PhonePe • Paytm • Cards</span>
-                </button>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD'
+                          ? 'bg-neutral-900 text-white'
+                          : 'bg-neutral-100 text-neutral-700'
+                      }`}
+                    >
+                      <Smartphone className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xs sm:text-sm font-bold text-neutral-900 tracking-tight">
+                          UPI / ऑनलाइन भुगतान
+                        </h4>
+                        <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-1.5 py-0.2 rounded">
+                          Fast &amp; Safe
+                        </span>
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-neutral-500 font-medium truncate">
+                        Google Pay • PhonePe • Paytm • Cards
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                      selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD'
+                        ? 'border-neutral-900 bg-neutral-900 text-white'
+                        : 'border-neutral-300 bg-white'
+                    }`}
+                  >
+                    {(selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD') && (
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    )}
+                  </div>
+                </div>
               )}
 
               {paymentSettings.enableCOD !== false && (
-                <button
-                  type="button"
+                <div
                   onClick={() => setSelectedMethod('COD')}
-                  className={`p-3 rounded-xl border flex flex-col items-center justify-center space-y-1.5 transition-all ${
+                  className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                     selectedMethod === 'COD'
-                      ? 'border-amber-700 bg-amber-50 text-amber-950 font-bold shadow-sm ring-1 ring-amber-500'
-                      : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
+                      ? 'border-neutral-900 bg-neutral-50/90 shadow-xs ring-1 ring-neutral-900/10'
+                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50/50'
                   }`}
                 >
-                  <Truck className="w-5 h-5 text-amber-700" />
-                  <span className="text-center font-bold">Cash on Delivery</span>
-                  <span className="text-[10px] text-neutral-500 font-medium">Pay upon delivery</span>
-                </button>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        selectedMethod === 'COD'
+                          ? 'bg-neutral-900 text-white'
+                          : 'bg-neutral-100 text-neutral-700'
+                      }`}
+                    >
+                      <Truck className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs sm:text-sm font-bold text-neutral-900 tracking-tight">
+                        कैश ऑन डिलीवरी
+                      </h4>
+                      <p className="text-[11px] sm:text-xs text-neutral-500 font-medium truncate">
+                        डिलीवरी के समय भुगतान करें
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                      selectedMethod === 'COD'
+                        ? 'border-neutral-900 bg-neutral-900 text-white'
+                        : 'border-neutral-300 bg-white'
+                    }`}
+                  >
+                    {selectedMethod === 'COD' && <Check className="w-3 h-3 stroke-[3]" />}
+                  </div>
+                </div>
               )}
 
               {paymentSettings.enableQR === true && paymentSettings.gatewayProvider !== 'RAZORPAY' && (
-                <button
-                  type="button"
+                <div
                   onClick={() => setSelectedMethod('QR_SCAN')}
-                  className={`p-3 rounded-xl border flex flex-col items-center justify-center space-y-1.5 transition-all ${
+                  className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                     selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
-                      ? 'border-neutral-800 bg-neutral-100 text-neutral-950 font-bold shadow-sm ring-1 ring-neutral-400'
-                      : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
+                      ? 'border-neutral-900 bg-neutral-50/90 shadow-xs ring-1 ring-neutral-900/10'
+                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50/50'
                   }`}
                 >
-                  <QrCode className="w-5 h-5 text-neutral-700" />
-                  <span className="text-center font-bold">Manual Bank Transfer / QR</span>
-                  <span className="text-[10px] text-neutral-500 font-medium">Offline UTR Review</span>
-                </button>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
+                          ? 'bg-neutral-900 text-white'
+                          : 'bg-neutral-100 text-neutral-700'
+                      }`}
+                    >
+                      <QrCode className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs sm:text-sm font-bold text-neutral-900 tracking-tight">
+                        बैंक ट्रांसफर / QR
+                      </h4>
+                      <p className="text-[11px] sm:text-xs text-neutral-500 font-medium truncate">
+                        मैनुअल भुगतान • UTR सत्यापन
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                      selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
+                        ? 'border-neutral-900 bg-neutral-900 text-white'
+                        : 'border-neutral-300 bg-white'
+                    }`}
+                  >
+                    {(selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI') && (
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    )}
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* TAB CONTENT: ONLINE UPI / RAZORPAY STANDARD GATEWAY */}
+            {/* TAB CONTENT: ONLINE UPI / RAZORPAY STANDARD GATEWAY (Compact Professional Trust Card) */}
             {(selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD') && (
-              <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200/90 space-y-4 text-xs">
-                <div className="flex items-center space-x-2 text-emerald-800 font-bold">
-                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                  <span>Razorpay Standard Checkout (Automated Instant Verification)</span>
+              <div className="bg-neutral-50 border border-neutral-200/90 rounded-xl p-3.5 sm:p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-neutral-900">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="font-bold text-xs sm:text-sm">Razorpay सुरक्षित भुगतान</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-neutral-600 bg-white border border-neutral-200 px-2 py-0.5 rounded-md">
+                    100% Encrypted
+                  </span>
                 </div>
-                <div className="space-y-2 text-neutral-600 leading-relaxed text-[11px]">
-                  <p className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
-                    <span><strong>Mobile Devices:</strong> Automatically opens your preferred UPI application (Google Pay, PhonePe, Paytm, BHIM) with verified merchant safety and zero risk policy alerts.</span>
-                  </p>
-                  <p className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
-                    <span><strong>Desktop:</strong> Displays official dynamic Razorpay UPI QR code, Credit/Debit Cards (Visa/Mastercard/RuPay), NetBanking (50+ banks), and Wallets.</span>
-                  </p>
-                  <p className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
-                    <span><strong>Security:</strong> 100% RBI &amp; PCI-DSS Level 1 compliant encryption. Zero convenience charges.</span>
-                  </p>
-                </div>
-                <div className="p-3 bg-white rounded-xl border border-neutral-200 flex items-center justify-between">
-                  <span className="text-neutral-500 font-medium">Total Payable Amount:</span>
-                  <span className="font-mono font-bold text-emerald-900 text-sm">₹{totalAmount.toLocaleString()}</span>
+
+                <p className="text-neutral-600 text-xs leading-relaxed">
+                  UPI, Cards, Net Banking और Wallets से सुरक्षित भुगतान करें.
+                </p>
+
+                <div className="pt-2 border-t border-neutral-200/70 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-neutral-700 font-medium">
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>सुरक्षित भुगतान</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>तुरंत भुगतान सत्यापन</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>UPI और Cards समर्थित</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -1623,100 +1777,113 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
             {/* TAB CONTENT: COD */}
             {selectedMethod === 'COD' && (
-              <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 space-y-2 text-xs text-amber-900">
-                <div className="flex items-center space-x-2 font-bold text-amber-900">
-                  <Truck className="w-5 h-5 text-amber-700" />
-                  <span>Cash / Pay on Delivery Selected</span>
+              <div className="bg-neutral-50 border border-neutral-200/90 rounded-xl p-3.5 sm:p-4 space-y-2 text-xs">
+                <div className="flex items-center gap-2 text-neutral-900 font-bold text-xs sm:text-sm">
+                  <Truck className="w-4 h-4 text-amber-800 shrink-0" />
+                  <span>कैश ऑन डिलीवरी (COD)</span>
                 </div>
-                <p className="text-amber-800/80">
-                  You can pay ₹{totalAmount.toLocaleString()} via Cash or Mobile Scanner to the
-                  courier agent upon delivery. Address will be verified prior to dispatch.
+                <p className="text-neutral-600 leading-relaxed text-[11px] sm:text-xs">
+                  डिलीवरी के समय कूरियर एजेंट को ₹{totalAmount.toLocaleString()} का भुगतान नकद या मोबाइल यूपीआई स्कैनर द्वारा करें।
                 </p>
               </div>
             )}
 
-            {/* Complete Payment Price Summary Breakdown */}
-            <div className="p-3.5 bg-neutral-50 rounded-xl border border-neutral-200 text-xs space-y-1.5">
-              <div className="flex justify-between text-neutral-600">
+            {/* Compact Premium Order Total Card */}
+            <div className="bg-neutral-50/90 rounded-xl border border-neutral-200/80 p-3.5 sm:p-4 text-xs space-y-2">
+              <div className="flex justify-between items-center text-neutral-600">
                 <span>Subtotal ({cartItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
                 <span className="font-mono font-medium text-neutral-900">₹{subtotal.toLocaleString()}</span>
               </div>
-              {discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-600 font-bold">
-                  <span>Discount Applied ({appliedCoupon?.code})</span>
-                  <span className="font-mono">-₹{discountAmount.toLocaleString()}</span>
+
+              <div className="flex justify-between items-center text-neutral-600">
+                <div className="flex items-center gap-1.5">
+                  <span>Delivery</span>
+                  {shippingFee === 0 && (
+                    <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.2 rounded font-medium">
+                      {subtotal >= freeThreshold ? '₹999+ Free' : 'Coupon'}
+                    </span>
+                  )}
                 </div>
-              )}
-              {freeGiftPromo && (
-                <div className="flex justify-between text-emerald-600 font-bold">
-                  <span>Free Promo Gift</span>
-                  <span>🎁 {freeGiftPromo}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-neutral-600">
-                <span>Delivery Charge</span>
                 <span>
                   {shippingFee === 0 ? (
-                    <span className="text-emerald-700 font-bold flex items-center gap-1">
-                      <span>FREE</span>
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
-                        {subtotal >= freeThreshold ? 'Orders ₹999+' : 'Coupon'}
-                      </span>
-                    </span>
+                    <span className="text-emerald-700 font-bold">FREE</span>
                   ) : (
                     <span className="font-mono font-medium text-neutral-900">₹{shippingFee}</span>
                   )}
                 </span>
               </div>
-              {taxResult.gstEnabled && (
-                <div className="flex justify-between text-neutral-500 text-[11px] pt-1 border-t border-dashed border-neutral-200">
-                  <span>GST ({taxResult.gstRate}%)</span>
-                  <span className="text-neutral-500 font-medium">Included in product prices (₹{taxAmount.toLocaleString()})</span>
+
+              {discountAmount > 0 && (
+                <div className="flex justify-between items-center text-emerald-700 font-medium">
+                  <span>Coupon ({appliedCoupon?.code})</span>
+                  <span className="font-mono font-bold">-₹{discountAmount.toLocaleString()}</span>
                 </div>
               )}
 
-              <div className="flex justify-between font-bold text-neutral-900 pt-2 border-t border-neutral-200 text-sm">
-                <span>Total Amount Payable</span>
-                <span className="text-amber-900 font-extrabold text-base">₹{totalAmount.toLocaleString()}</span>
+              {freeGiftPromo && (
+                <div className="flex justify-between items-center text-emerald-700 text-[11px] font-medium">
+                  <span>Free Gift Promo</span>
+                  <span className="font-semibold">🎁 {freeGiftPromo}</span>
+                </div>
+              )}
+
+              {taxResult.gstEnabled && (
+                <div className="flex justify-between items-center text-neutral-500 text-[11px] pt-1.5 border-t border-dashed border-neutral-200">
+                  <span>GST ({taxResult.gstRate}%)</span>
+                  <span className="text-neutral-500">कीमत में शामिल (Included in price)</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-baseline pt-2.5 border-t border-neutral-200/90 text-sm">
+                <span className="font-bold text-neutral-900">Total Payable</span>
+                <span className="font-bold text-base sm:text-lg text-neutral-900 font-mono tracking-tight">
+                  ₹{totalAmount.toLocaleString()}
+                </span>
               </div>
             </div>
 
             {/* Open Box Delivery Feature Badge */}
             <OpenBoxDeliveryBadge cartItems={cartItems} totalAmount={totalAmount} paymentMethod={selectedMethod} variant="checkout" />
 
-            {/* Complete & Verify Button */}
-            <button
-              type="button"
-              onClick={handleLaunchOfficialGatewayCheckout}
-              disabled={isSubmitting}
-              className={`w-full py-3.5 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-lg disabled:opacity-50 ${
-                selectedMethod === 'COD'
-                  ? 'bg-amber-800 hover:bg-amber-900 shadow-amber-900/20'
-                  : 'bg-[#0B8F63] hover:bg-[#086F4C] shadow-emerald-900/20'
-              }`}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Processing Payment Session...</span>
-                </>
-              ) : selectedMethod === 'COD' ? (
-                <>
-                  <Truck className="w-4 h-4 text-amber-300" />
-                  <span>Confirm Cash on Delivery Order (₹{totalAmount.toLocaleString()})</span>
-                </>
-              ) : selectedMethod === 'QR_SCAN' ? (
-                <>
-                  <QrCode className="w-4 h-4 text-emerald-300" />
-                  <span>Submit UTR for Verification (₹{totalAmount.toLocaleString()})</span>
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                  <span>Proceed to Pay via Razorpay (₹{totalAmount.toLocaleString()})</span>
-                </>
-              )}
-            </button>
+            {/* Sticky Bottom CTA Container */}
+            <div className="sticky bottom-0 bg-white/95 backdrop-blur-md pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] px-4 sm:px-6 border-t border-neutral-200/80 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 mt-4">
+              <button
+                type="button"
+                onClick={handleLaunchOfficialGatewayCheckout}
+                disabled={isSubmitting}
+                className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm tracking-wide transition-all flex items-center justify-center space-x-2 shadow-md hover:shadow-lg active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed ${
+                  selectedMethod === 'COD'
+                    ? 'bg-amber-800 hover:bg-amber-900 text-white'
+                    : 'bg-neutral-900 hover:bg-black text-white'
+                }`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>कृपया प्रतीक्षा करें... (Processing)</span>
+                  </>
+                ) : selectedMethod === 'COD' ? (
+                  <>
+                    <Truck className="w-4 h-4 text-amber-300" />
+                    <span>ऑर्डर कन्फर्म करें (COD) • ₹{totalAmount.toLocaleString()}</span>
+                  </>
+                ) : selectedMethod === 'QR_SCAN' ? (
+                  <>
+                    <QrCode className="w-4 h-4 text-emerald-300" />
+                    <span>UTR सत्यापन के लिए भेजें • ₹{totalAmount.toLocaleString()}</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Razorpay से भुगतान करें • ₹{totalAmount.toLocaleString()}</span>
+                  </>
+                )}
+              </button>
+              <div className="mt-1.5 flex items-center justify-center gap-1.5 text-[10px] text-neutral-500 font-medium">
+                <Lock className="w-2.5 h-2.5 text-neutral-400" />
+                <span>100% सुरक्षित और एन्क्रिप्टेड भुगतान • Marudhar Fashion Point</span>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1889,6 +2056,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
         )}
 
+        </div>
       </div>
 
       {/* Invoice Modal Popup */}

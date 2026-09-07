@@ -687,6 +687,7 @@ export interface PaymentSettings {
   enableBuyNow?: boolean;
   enableBuyWhatsApp?: boolean;
   enableAddToCart?: boolean;
+  enableRazorpay?: boolean;
   enableCashfree?: boolean;
   actionButtonsOrder?: string[];
   buyNowButtonText?: string;

@@ -144,11 +144,12 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
       const orderPayload = {
         orderId: order.id,
         amount: order.totalAmount,
+        paymentMethod: 'ONLINE_UPI',
         items: (order.items || []).map((item) => ({
-          productId: item.product.id,
-          productName: item.product.name,
+          productId: item.product?.id,
+          productName: item.product?.name,
           quantity: item.quantity,
-          price: item.product.price,
+          price: item.product?.price,
           selectedSize: item.selectedSize,
           selectedColor: item.selectedColor,
         })),
@@ -161,9 +162,11 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
           pincode: order.shippingAddress?.pincode || '342001',
         },
         discountAmount: order.discountAmount || 0,
+        flatShippingRate: order.shippingFee || 0,
+        convenienceFee: order.convenienceFee || 0,
         notes: {
           orderId: order.id,
-          source: 'WHATSAPP',
+          source: order.source || 'WHATSAPP',
           store: 'मरुधर फैशन पॉइंट',
         },
       };
@@ -555,22 +558,22 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
           <div className="flex justify-between items-center text-neutral-600">
             <span>उप-कुल (Subtotal):</span>
             <span className="font-mono font-semibold text-neutral-900">
-              ₹{order.subtotal.toLocaleString('en-IN')}
+              ₹{(order.subtotal ?? 0).toLocaleString('en-IN')}
             </span>
           </div>
 
           <div className="flex justify-between items-center text-neutral-600">
             <span>डिलीवरी शुल्क (Delivery):</span>
             <span className="font-mono font-semibold text-neutral-900">
-              {order.shippingFee <= 0 ? (
+              {(order.shippingFee ?? 0) <= 0 ? (
                 <span className="text-emerald-700 font-bold">मुफ्त (FREE)</span>
               ) : (
-                `₹${order.shippingFee.toLocaleString('en-IN')}`
+                `₹${(order.shippingFee ?? 0).toLocaleString('en-IN')}`
               )}
             </span>
           </div>
 
-          {order.discountAmount > 0 && (
+          {typeof order.discountAmount === 'number' && order.discountAmount > 0 && (
             <div className="flex justify-between items-center text-emerald-700">
               <span>छूट (Discount):</span>
               <span className="font-mono font-bold">
@@ -579,10 +582,19 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
             </div>
           )}
 
+          {typeof order.convenienceFee === 'number' && order.convenienceFee > 0 && (
+            <div className="flex justify-between items-center text-amber-900">
+              <span>सुविधा शुल्क (Convenience Fee):</span>
+              <span className="font-mono font-semibold">
+                +₹{order.convenienceFee.toLocaleString('en-IN')}
+              </span>
+            </div>
+          )}
+
           <div className="border-t border-neutral-200 pt-2.5 flex justify-between items-center">
             <span className="text-sm font-black text-neutral-900">कुल देय राशि (Total Payable):</span>
             <span className="text-lg font-black text-emerald-800 font-mono">
-              ₹{order.totalAmount.toLocaleString('en-IN')}
+              ₹{(order.totalAmount ?? 0).toLocaleString('en-IN')}
             </span>
           </div>
         </div>
@@ -620,7 +632,7 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
             ) : (
               <>
                 <Lock className="w-4 h-4" />
-                <span>सुरक्षित भुगतान करें • ₹{order.totalAmount.toLocaleString('en-IN')}</span>
+                <span>Razorpay से सुरक्षित भुगतान करें • ₹{(order.totalAmount ?? 0).toLocaleString('en-IN')}</span>
               </>
             )}
           </button>

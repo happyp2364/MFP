@@ -793,6 +793,7 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
   enableBuyNow: true,
   enableBuyWhatsApp: true,
   enableAddToCart: true,
+  enableRazorpay: true,
   enableCashfree: true,
   actionButtonsOrder: ['BUY_NOW', 'BUY_WHATSAPP', 'ADD_TO_BAG'],
   buyNowButtonText: 'BUY NOW',

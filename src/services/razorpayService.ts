@@ -35,6 +35,10 @@ export interface RazorpayCreateOrderPayload {
   discountAmount?: number;
   flatShippingRate?: number;
   freeShippingMinAmount?: number;
+  paymentMethod?: string;
+  enableConvenienceFee?: boolean;
+  convenienceFeePercent?: number;
+  convenienceFee?: number;
   notes?: Record<string, string>;
 }
 

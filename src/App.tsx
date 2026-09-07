@@ -960,7 +960,7 @@ function AppContent() {
         }}
       />
 
-      {/* Online Checkout Modal (UPI/QR, Cards, Netbanking, Cashfree, COD) */}
+      {/* Online Checkout Modal (UPI/QR, Cards, Netbanking, Razorpay, COD) */}
       <CheckoutErrorBoundary fallbackTitle="Checkout Process Notice">
         <CheckoutModal
           isOpen={checkoutModalOpen}

@@ -114,7 +114,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         items.map(i => ({ product: i.product, quantity: i.quantity })),
         discountAmount,
         details.shippingFee,
-        paymentSettings
+        paymentSettings,
+        paymentMethod
       );
 
       const orderNumber = Date.now();
@@ -132,6 +133,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         subtotal: taxResult.subtotal,
         shippingFee: taxResult.deliveryCharge,
         discountAmount: taxResult.discount,
+        convenienceFee: taxResult.convenienceFee ?? 0,
         taxAmount: taxResult.totalTax,
         taxableAmount: taxResult.taxableAmount,
         cgstAmount: taxResult.cgstAmount,
@@ -320,6 +322,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         subtotal,
         shippingFee,
         discountAmount: validatedDiscount,
+        convenienceFee: 0,
         taxAmount: 0,
         totalAmount,
         paymentMethod: 'WHATSAPP',

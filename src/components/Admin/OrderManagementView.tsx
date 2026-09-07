@@ -20,6 +20,7 @@ import {
   Copy,
   Check,
   ExternalLink,
+  Receipt,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { CustomerOrder, OrderStatus } from '../../types';
@@ -323,6 +324,60 @@ export const OrderManagementView: React.FC = () => {
                         {order.paymentVerifiedAt && (
                           <span>Verified: <strong className="text-neutral-800">{new Date(order.paymentVerifiedAt).toLocaleString('en-IN')}</strong></span>
                         )}
+                      </div>
+
+                      {/* Complete Authoritative Pricing Breakdown Card */}
+                      <div className="bg-neutral-50 rounded-xl p-3.5 border border-neutral-200/90 space-y-2 text-xs">
+                        <div className="flex items-center justify-between font-bold text-neutral-900 border-b border-neutral-200 pb-2">
+                          <span className="uppercase tracking-wider text-[11px] text-amber-950 flex items-center gap-1.5 font-black">
+                            <Receipt className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Payment & Price Breakdown</span>
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${order.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                            {order.paymentStatus}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1.5 pt-0.5 text-neutral-600 text-[11px]">
+                          <div className="flex justify-between items-center">
+                            <span>Subtotal ({(order.items || []).reduce((a, b) => a + (b.quantity || 1), 0)} items):</span>
+                            <span className="font-mono font-bold text-neutral-900">₹{(order.subtotal ?? 0).toLocaleString('en-IN')}</span>
+                          </div>
+
+                          {typeof order.discountAmount === 'number' && order.discountAmount > 0 && (
+                            <div className="flex justify-between items-center text-emerald-700 font-medium">
+                              <span>Discount Applied:</span>
+                              <span className="font-mono font-bold">-₹{order.discountAmount.toLocaleString('en-IN')}</span>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between items-center">
+                            <span>Delivery Charge:</span>
+                            <span className="font-mono font-semibold text-neutral-900">
+                              {(order.shippingFee ?? 0) <= 0 ? (
+                                <span className="text-emerald-700 font-bold">FREE</span>
+                              ) : (
+                                `₹${(order.shippingFee ?? 0).toLocaleString('en-IN')}`
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center">
+                            <span>Convenience Fee:</span>
+                            <span className="font-mono font-semibold text-neutral-900">
+                              {(order.convenienceFee ?? 0) > 0 ? (
+                                <span className="text-amber-900 font-bold">+₹{order.convenienceFee!.toLocaleString('en-IN')}</span>
+                              ) : (
+                                <span className="text-neutral-500 font-medium">₹0</span>
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center pt-2 border-t border-neutral-200 text-xs font-bold text-neutral-900">
+                            <span>Total Payable:</span>
+                            <span className="font-mono text-sm text-emerald-800 font-black">₹{(order.totalAmount ?? 0).toLocaleString('en-IN')}</span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Payment Link Card for Pending Orders */}

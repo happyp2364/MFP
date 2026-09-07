@@ -173,48 +173,48 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             <div className="w-full max-w-xs space-y-1.5 text-xs text-neutral-600">
               <div className="flex justify-between">
                 <span>Items Subtotal:</span>
-                <span className="font-mono">₹{order.subtotal.toLocaleString()}</span>
+                <span className="font-mono">₹{(order.subtotal ?? 0).toLocaleString()}</span>
               </div>
               {order.gstEnabled ? (
                 <>
                   <div className="flex justify-between text-neutral-500 text-[11px]">
                     <span>Taxable Amount:</span>
-                    <span className="font-mono">₹{(order.taxableAmount ?? (order.subtotal - order.discountAmount)).toLocaleString()}</span>
+                    <span className="font-mono">₹{(order.taxableAmount ?? ((order.subtotal ?? 0) - (order.discountAmount ?? 0))).toLocaleString()}</span>
                   </div>
                   {order.taxMode === 'IGST' ? (
                     <div className="flex justify-between text-neutral-500 text-[11px]">
                       <span>IGST ({order.gstRate || 18}%):</span>
-                      <span className="font-mono">₹{(order.igstAmount ?? order.taxAmount).toLocaleString()}</span>
+                      <span className="font-mono">₹{(order.igstAmount ?? order.taxAmount ?? 0).toLocaleString()}</span>
                     </div>
                   ) : (
                     <>
                       <div className="flex justify-between text-neutral-500 text-[11px]">
                         <span>CGST ({((order.gstRate || 18) / 2)}%):</span>
-                        <span className="font-mono">₹{(order.cgstAmount ?? (order.taxAmount / 2)).toLocaleString()}</span>
+                        <span className="font-mono">₹{(order.cgstAmount ?? ((order.taxAmount ?? 0) / 2)).toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between text-neutral-500 text-[11px]">
                         <span>SGST ({((order.gstRate || 18) / 2)}%):</span>
-                        <span className="font-mono">₹{(order.sgstAmount ?? (order.taxAmount / 2)).toLocaleString()}</span>
+                        <span className="font-mono">₹{(order.sgstAmount ?? ((order.taxAmount ?? 0) / 2)).toLocaleString()}</span>
                       </div>
                     </>
                   )}
                   <div className="flex justify-between font-semibold text-neutral-700">
                     <span>GST (Included in Item Price):</span>
-                    <span className="font-mono">₹{order.taxAmount.toLocaleString()}</span>
+                    <span className="font-mono">₹{(order.taxAmount ?? 0).toLocaleString()}</span>
                   </div>
                 </>
               ) : null}
               <div className="flex justify-between">
                 <span>Shipping Fee:</span>
-                <span className="font-mono">{order.shippingFee === 0 ? 'FREE' : `₹${order.shippingFee}`}</span>
+                <span className="font-mono">{(order.shippingFee ?? 0) <= 0 ? 'FREE' : `₹${order.shippingFee}`}</span>
               </div>
-              {!!order.convenienceFee && order.convenienceFee > 0 && (
+              {typeof order.convenienceFee === 'number' && order.convenienceFee > 0 && (
                 <div className="flex justify-between text-amber-900 font-medium">
-                  <span>Convenience Fee ({order.paymentMethod}):</span>
+                  <span>Convenience Fee:</span>
                   <span className="font-mono">+₹{order.convenienceFee.toLocaleString()}</span>
                 </div>
               )}
-              {order.discountAmount > 0 && (
+              {typeof order.discountAmount === 'number' && order.discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-700 font-medium">
                   <span>Discount Applied:</span>
                   <span className="font-mono">-₹{order.discountAmount.toLocaleString()}</span>
@@ -222,7 +222,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               )}
               <div className="flex justify-between font-bold text-sm text-neutral-900 pt-2 border-t border-neutral-300">
                 <span>Grand Total:</span>
-                <span className="font-mono text-amber-900">₹{order.totalAmount.toLocaleString()}</span>
+                <span className="font-mono text-amber-900">₹{(order.totalAmount ?? 0).toLocaleString()}</span>
               </div>
             </div>
           </div>

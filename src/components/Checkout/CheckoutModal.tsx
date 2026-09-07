@@ -441,16 +441,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const shippingFee = freeShippingPromo ? 0 : baseShippingFee;
 
   const orderItemsForTax = cartItems.map(item => ({ product: item.product, quantity: item.quantity }));
-  const taxResult = calculateOrderTax(orderItemsForTax, discountAmount, shippingFee, paymentSettings);
+  const taxResult = calculateOrderTax(orderItemsForTax, discountAmount, shippingFee, paymentSettings, selectedMethod);
 
   const taxAmount = taxResult.totalTax;
   const taxableAmount = taxResult.taxableAmount;
   const cgstAmount = taxResult.cgstAmount;
   const sgstAmount = taxResult.sgstAmount;
   const igstAmount = taxResult.igstAmount;
+  const convenienceFee = taxResult.convenienceFee;
 
-  // Authoritative GST-inclusive payable amount: Subtotal - Discount + Delivery Fee
-  const totalAmount = Math.max(0, subtotal - discountAmount + shippingFee);
+  // Authoritative GST-inclusive payable amount: Subtotal - Discount + Delivery Fee + Convenience Fee
+  const totalAmount = taxResult.grandTotal;
+
+  // Manual QR / UPI amount is strictly ₹0 convenience fee
+  const manualQrPayable = Math.max(0, subtotal - discountAmount + shippingFee);
 
   // Dynamic UPI Link & QR Image
   const dynamicOrderId = completedOrderId || `MFP${1025 + Math.floor(Math.random() * 8000)}`;
@@ -460,7 +464,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const upiLink = generateUPILink(
     sanitizedUpiId,
     paymentSettings.merchantName,
-    totalAmount,
+    manualQrPayable,
     dynamicOrderId
   );
   const qrImageUrl = getQRCodeImageUrl(upiLink, 320);
@@ -724,6 +728,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
       // 4. Create Authoritative Razorpay Order on the Server
       const orderData = await createRazorpayServerOrder({
+        paymentMethod: selectedMethod,
+        enableConvenienceFee: paymentSettings.enableConvenienceFee,
+        convenienceFeePercent: paymentSettings.convenienceFeePercent,
         items: cartItems.map((item) => ({
           productId: item.product.id,
           productName: item.product.name,
@@ -1386,6 +1393,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   )}
                 </span>
               </div>
+              {convenienceFee > 0 ? (
+                <div className="flex justify-between text-amber-900 font-medium">
+                  <span>सुविधा शुल्क • Convenience Fee ({paymentSettings.convenienceFeePercent ?? 2}%)</span>
+                  <span className="font-mono font-bold">+₹{convenienceFee.toLocaleString()}</span>
+                </div>
+              ) : (
+                paymentSettings.enableConvenienceFee !== false && (
+                  <div className="flex justify-between text-neutral-600">
+                    <span>सुविधा शुल्क • Convenience Fee</span>
+                    <span className="text-emerald-700 font-semibold">₹0</span>
+                  </div>
+                )
+              )}
               {taxResult.gstEnabled && (
                 <div className="flex justify-between text-neutral-500 text-[11px] pt-1 border-t border-dashed border-neutral-200">
                   <span>जीएसटी • GST ({taxResult.gstRate}%)</span>
@@ -1812,6 +1832,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   )}
                 </span>
               </div>
+
+              {convenienceFee > 0 ? (
+                <div className="flex justify-between items-center text-amber-900">
+                  <div className="flex items-center gap-1.5">
+                    <span>Convenience Fee ({paymentSettings.convenienceFeePercent ?? 2}%)</span>
+                    <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200/80 px-1.5 py-0.2 rounded font-medium">
+                      Online Payment
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold">+₹{convenienceFee.toLocaleString()}</span>
+                </div>
+              ) : (
+                paymentSettings.enableConvenienceFee !== false && (
+                  <div className="flex justify-between items-center text-neutral-600">
+                    <span>Convenience Fee</span>
+                    <span className="text-emerald-700 font-semibold">₹0</span>
+                  </div>
+                )
+              )}
 
               {discountAmount > 0 && (
                 <div className="flex justify-between items-center text-emerald-700 font-medium">

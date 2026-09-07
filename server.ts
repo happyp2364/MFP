@@ -1244,6 +1244,7 @@ Respond strictly with valid JSON in format:
     subtotal: number;
     deliveryFee: number;
     discountAmount: number;
+    convenienceFee?: number;
     receipt: string;
     createdAt: number;
   }
@@ -1346,10 +1347,22 @@ Respond strictly with valid JSON in format:
       // 3. Validate Discount
       const validatedDiscount = Math.max(0, Math.min(Number(discountAmount) || 0, serverSubtotal));
 
-      // 4. GST-INCLUSIVE PRICING:
+      // 4. Authoritative Convenience Fee Calculation for Online Razorpay Checkout
+      const isFeeEnabled = req.body.enableConvenienceFee !== false;
+      const feeRate = Math.min(10, Math.max(0, Number(req.body.convenienceFeePercent ?? 2)));
+      let serverConvenienceFee = 0;
+      if (isFeeEnabled && feeRate > 0) {
+        const feeBase = Math.max(0, serverSubtotal - validatedDiscount);
+        serverConvenienceFee = Math.round((feeBase * feeRate) / 100);
+      }
+
+      // 5. GST-INCLUSIVE PRICING:
       // Product price is already tax-inclusive. No duplicate GST is added to the customer total.
-      // Final Payable = Subtotal - Discount + Delivery Fee
-      let finalPayableAmount = Math.max(0, serverSubtotal - validatedDiscount + effectiveDeliveryFee);
+      // Final Payable = Subtotal - Discount + Delivery Fee + Convenience Fee
+      let finalPayableAmount = Math.max(
+        0,
+        serverSubtotal - validatedDiscount + effectiveDeliveryFee + serverConvenienceFee
+      );
 
       // Authoritative Order ID Validation from Firestore (for WhatsApp & Direct Order Payment Links)
       const targetOrderId = (req.body.orderId || req.body.mfpOrderId || "").trim();
@@ -1425,6 +1438,7 @@ Respond strictly with valid JSON in format:
           subtotal: `Rs.${serverSubtotal}`,
           delivery: `Rs.${effectiveDeliveryFee}`,
           discount: `Rs.${validatedDiscount}`,
+          convenienceFee: `Rs.${serverConvenienceFee}`,
           finalAmount: `Rs.${finalPayableAmount}`,
           ...notes,
         },
@@ -1438,6 +1452,7 @@ Respond strictly with valid JSON in format:
         subtotal: serverSubtotal,
         deliveryFee: effectiveDeliveryFee,
         discountAmount: validatedDiscount,
+        convenienceFee: serverConvenienceFee,
         receipt: orderReceipt,
         createdAt: Date.now(),
       });
@@ -1453,6 +1468,7 @@ Respond strictly with valid JSON in format:
         subtotal: serverSubtotal,
         deliveryFee: effectiveDeliveryFee,
         discountAmount: validatedDiscount,
+        convenienceFee: serverConvenienceFee,
         receipt: orderReceipt,
       });
     } catch (err: any) {

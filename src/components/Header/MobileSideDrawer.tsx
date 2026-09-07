@@ -72,7 +72,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
           <div className="p-5 bg-gradient-to-br from-emerald-950 via-neutral-900 to-neutral-950 border-b border-neutral-800 relative">
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800/80 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800/80 text-neutral-300 hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -91,7 +91,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                       VIP
                     </span>
                   </div>
-                  <p className="text-xs text-neutral-400 truncate max-w-[170px]">
+                  <p className="text-xs text-neutral-300 truncate max-w-[170px]">
                     {customerUser.email || customerUser.phoneNumber || 'LoggedIn Customer'}
                   </p>
                 </div>
@@ -104,7 +104,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                   </div>
                   <div>
                     <h3 className="text-sm font-black text-white">Welcome</h3>
-                    <p className="text-xs text-neutral-400">Sign in to track orders & earn rewards</p>
+                    <p className="text-xs text-neutral-300">Sign in to track orders & earn rewards</p>
                   </div>
                 </div>
 
@@ -191,7 +191,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
             <div className="pt-4 space-y-2">
               <button
                 onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                className="w-full flex items-center justify-between text-neutral-400 uppercase tracking-widest text-[10px] font-black px-1"
+                className="w-full flex items-center justify-between text-neutral-300 uppercase tracking-widest text-[10px] font-black px-1"
               >
                 <span>Shop By Category</span>
                 {isCategoriesOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
@@ -236,7 +236,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
 
             {/* Store Information & Customer Support */}
             <div className="pt-4 space-y-1">
-              <div className="text-neutral-400 uppercase tracking-widest text-[10px] font-black px-1 mb-2">
+              <div className="text-neutral-300 uppercase tracking-widest text-[10px] font-black px-1 mb-2">
                 Help & Support
               </div>
 

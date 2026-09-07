@@ -376,9 +376,37 @@ function AppContent() {
   };
 
   const handleNavigateToSection = (sectionId: string) => {
+    if (sectionId === 'products') {
+      setIsShopActive(true);
+      setTimeout(() => {
+        const el = document.getElementById('products');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 60);
+      return;
+    }
+
+    if (isShopActive) {
+      setIsShopActive(false);
+      setTimeout(() => {
+        const el = document.getElementById(sectionId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 60);
+      return;
+    }
+
     const el = document.getElementById(sectionId);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
+    } else if (sectionId === 'hero' || sectionId === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -668,18 +696,20 @@ function AppContent() {
           </div>
 
           {/* 6. Main Interactive Product Catalog */}
-          <ProductGrid
-            products={filteredProducts}
-            filterState={filterState}
-            onUpdateFilter={handleUpdateFilter}
-            onResetFilters={handleResetFilters}
-            availableSubcategories={availableSubcategories}
-            wishlistIds={wishlistIds}
-            onToggleWishlist={handleToggleWishlist}
-            onQuickView={(p) => setQuickViewProduct(p)}
-            onAddToCart={handleAddToCart}
-            onBuyNow={handleBuyNow}
-          />
+          <div id="products">
+            <ProductGrid
+              products={filteredProducts}
+              filterState={filterState}
+              onUpdateFilter={handleUpdateFilter}
+              onResetFilters={handleResetFilters}
+              availableSubcategories={availableSubcategories}
+              wishlistIds={wishlistIds}
+              onToggleWishlist={handleToggleWishlist}
+              onQuickView={(p) => setQuickViewProduct(p)}
+              onAddToCart={handleAddToCart}
+              onBuyNow={handleBuyNow}
+            />
+          </div>
         </>
       ) : (
         <>
@@ -696,12 +726,14 @@ function AppContent() {
           />
 
           {/* 3. Hero Section */}
-          <HeroSection onExploreClick={() => {
-            setIsShopActive(true);
-            setTimeout(() => {
-              handleNavigateToSection('products');
-            }, 100);
-          }} />
+          <div id="hero">
+            <HeroSection onExploreClick={() => {
+              setIsShopActive(true);
+              setTimeout(() => {
+                handleNavigateToSection('products');
+              }, 100);
+            }} />
+          </div>
 
           {/* 3b. Trending Shoes Collection */}
           <TrendingShoesSection
@@ -722,16 +754,18 @@ function AppContent() {
           />
 
           {/* 4. Family Category Cards */}
-          <CategorySection
-            activeCategory={activeCategory}
-            onSelectCategory={(cat) => {
-              handleSelectCategory(cat);
-              setIsShopActive(true);
-              setTimeout(() => {
-                handleNavigateToSection('products');
-              }, 100);
-            }}
-          />
+          <div id="categories">
+            <CategorySection
+              activeCategory={activeCategory}
+              onSelectCategory={(cat) => {
+                handleSelectCategory(cat);
+                setIsShopActive(true);
+                setTimeout(() => {
+                  handleNavigateToSection('products');
+                }, 100);
+              }}
+            />
+          </div>
 
           {/* 4b. Featured Collection Carousel */}
           <ProductCarousel
@@ -784,16 +818,22 @@ function AppContent() {
           />
 
           {/* 9. Customer Testimonials */}
-          <ReviewsSection />
+          <div id="reviews">
+            <ReviewsSection />
+          </div>
 
           {/* 10. About Us Storytelling */}
-          <AboutSection />
+          <div id="about">
+            <AboutSection />
+          </div>
 
           {/* 11. Contact & Store Locator */}
-          <ContactSection
-            onOpenCalendarModal={() => setCalendarModalOpen(true)}
-            onOpenGmailModal={() => setGmailModalOpen(true)}
-          />
+          <div id="contact">
+            <ContactSection
+              onOpenCalendarModal={() => setCalendarModalOpen(true)}
+              onOpenGmailModal={() => setGmailModalOpen(true)}
+            />
+          </div>
 
           {/* 12. Instagram Feed */}
           <InstagramFeed />

@@ -1479,7 +1479,7 @@ Respond strictly with valid JSON in format:
         crypto.timingSafeEqual(expectedBuf, receivedBuf);
 
       if (!isSignatureValid) {
-        console.error(`[Razorpay Signature Verification FAILED] Order: ${razorpay_order_id}, Payment: ${razorpay_payment_id}`);
+        console.warn(`[Razorpay Signature Verification Rejected] Signature mismatch for Order: ${razorpay_order_id}, Payment: ${razorpay_payment_id}`);
         return res.status(400).json({
           success: false,
           verified: false,

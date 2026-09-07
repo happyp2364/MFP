@@ -29,7 +29,7 @@ export const MarketingProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [subscribers, setSubscribers] = useState<MarketingSubscriber[]>([]);
 
   useEffect(() => {
-    const unsubCoupons = onSnapshot(collection(db, 'coupons'), (snapshot) => {
+    const unsubCoupons = onSnapshot(query(collection(db, 'coupons'), limit(100)), (snapshot) => {
       const loaded: PromoCoupon[] = [];
       snapshot.forEach((docSnap) => {
         loaded.push({ id: docSnap.id, ...docSnap.data() } as PromoCoupon);

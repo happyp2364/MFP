@@ -454,7 +454,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 <span>{product.rating}</span>
                 {product.reviewsCount && product.reviewsCount > 0 ? (
-                  <span className="text-neutral-400">({product.reviewsCount})</span>
+                  <span className="text-neutral-600 font-medium">({product.reviewsCount})</span>
                 ) : null}
               </div>
             ) : null}
@@ -466,14 +466,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </h3>
 
           {/* Subcategory & Material */}
-          <p className="text-xs text-neutral-500 line-clamp-1 font-medium">
+          <p className="text-xs text-neutral-600 line-clamp-1 font-medium">
             {product.subcategory} {product.material ? `• ${product.material}` : ''}
           </p>
 
           {/* Interactive Color Swatches */}
           {cfg.showColorSwatches && product.colors && product.colors.length > 0 && (
             <div className="flex items-center gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Colors:</span>
+              <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider">Colors:</span>
               <div className="flex items-center gap-1.5">
                 {product.colors.map((c, idx) => (
                   <button
@@ -495,7 +495,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* Interactive Size Availability Selector */}
           {cfg.showSizeSelector && sizeStocks.length > 0 && (
             <div className="pt-1.5" onClick={(e) => e.stopPropagation()}>
-              <div className="text-[10px] font-bold text-neutral-500 mb-1 flex justify-between uppercase tracking-wider">
+              <div className="text-[10px] font-bold text-neutral-700 mb-1 flex justify-between uppercase tracking-wider">
                 <span>Sizes:</span>
                 <span className="font-extrabold text-[#0B8F63]">{selectedSize}</span>
               </div>
@@ -518,7 +518,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                             ? 'bg-[#0B8F63] text-white border-[#0B8F63] shadow-xs scale-105'
                             : isInStock
                             ? 'bg-neutral-50 text-neutral-800 border-neutral-200 hover:border-neutral-400 hover:bg-white'
-                            : 'bg-neutral-100 text-neutral-400 border-neutral-200 line-through cursor-not-allowed opacity-60'
+                            : 'bg-neutral-100 text-neutral-500 border-neutral-200 line-through cursor-not-allowed opacity-75'
                         }`}
                       >
                         {item.size}
@@ -526,7 +526,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     );
                   })}
                 {sizeStocks.filter((s) => s.isAvailable).length > 6 && (
-                  <span className="text-[10px] text-neutral-400 self-center font-bold">
+                  <span className="text-[10px] text-neutral-600 self-center font-bold">
                     +{sizeStocks.filter((s) => s.isAvailable).length - 6}
                   </span>
                 )}
@@ -544,7 +544,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 ₹{currentPrice.toLocaleString('en-IN')}
               </span>
               {originalPrice > currentPrice && (
-                <span className="text-xs text-neutral-400 line-through">
+                <span className="text-xs text-neutral-500 line-through font-medium">
                   ₹{originalPrice.toLocaleString('en-IN')}
                 </span>
               )}

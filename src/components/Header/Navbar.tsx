@@ -221,7 +221,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                   .map((section) => (
                                     <div key={section.id} className="space-y-2">
                                       {category.sections.length > 1 && (
-                                        <h5 className="font-semibold text-[10px] text-neutral-400 uppercase tracking-wider">{section.title}</h5>
+                                        <h5 className="font-bold text-[10px] text-neutral-700 uppercase tracking-wider">{section.title}</h5>
                                       )}
                                       <ul className="space-y-1.5 text-xs text-neutral-600">
                                         {section.subcategories

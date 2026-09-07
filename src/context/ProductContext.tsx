@@ -54,7 +54,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
     }, () => {});
 
-    const unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
+    const unsubReviews = onSnapshot(query(collection(db, 'reviews'), limit(100)), (snapshot) => {
       if (!snapshot.empty) {
         const loaded: Review[] = [];
         snapshot.forEach((docSnap) => {

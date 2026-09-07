@@ -66,17 +66,17 @@ export const OrderManagementView: React.FC = () => {
       <div className="p-4 bg-white rounded-2xl border border-neutral-200 shadow-sm space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by Order ID (#MFP1025), Name, Phone, Email..."
-              className="w-full pl-9 pr-3 py-2 border border-neutral-300 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full pl-9 pr-3 py-2 border border-neutral-300 rounded-xl text-xs bg-white text-neutral-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
             />
           </div>
 
-          <div className="flex items-center space-x-2 text-xs font-semibold text-neutral-600">
+          <div className="flex items-center space-x-2 text-xs font-semibold text-neutral-700">
             <Package className="w-4 h-4 text-amber-700" />
             <span>Total Orders: <strong className="text-amber-900 font-bold">{orders.length}</strong></span>
           </div>
@@ -159,7 +159,7 @@ export const OrderManagementView: React.FC = () => {
                       <p className="font-bold text-sm text-amber-900">
                         ₹{order.totalAmount.toLocaleString()}
                       </p>
-                      <p className="text-[10px] text-neutral-400">
+                      <p className="text-[10px] text-neutral-600 font-medium">
                         {new Date(order.createdAt).toLocaleDateString('en-IN', {
                           month: 'short',
                           day: 'numeric',
@@ -177,7 +177,7 @@ export const OrderManagementView: React.FC = () => {
                         className={`px-3 py-1.5 rounded-lg font-bold text-xs border focus:ring-2 focus:ring-amber-500 focus:outline-none cursor-pointer ${currentStatusOpt?.color}`}
                       >
                         {STATUS_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
+                          <option key={opt.value} value={opt.value} className="bg-white text-neutral-900 font-medium">
                             {opt.label}
                           </option>
                         ))}
@@ -195,7 +195,7 @@ export const OrderManagementView: React.FC = () => {
                       <span>Invoice</span>
                     </button>
 
-                    <button className="text-neutral-400 hover:text-neutral-700 p-1">
+                    <button className="text-neutral-600 hover:text-neutral-900 p-1">
                       {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                   </div>

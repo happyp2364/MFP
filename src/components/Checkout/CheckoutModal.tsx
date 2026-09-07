@@ -123,9 +123,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [freeGiftPromo, setFreeGiftPromo] = useState<string | null>(null);
 
   // Payment Selection states (moved to top for Rules of Hooks compliance)
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType>('UPI');
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType>('ONLINE_UPI');
   const [paymentRef, setPaymentRef] = useState('');
-  const [directPaymentNotice, setDirectPaymentNotice] = useState<string | null>(null);
   const [paymentScreenshotName, setPaymentScreenshotName] = useState<string | null>(null);
 
   // Card details states
@@ -145,6 +144,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Reset all state variables
   const resetCheckoutState = () => {
     setStep('SHIPPING');
+    setSelectedMethod('ONLINE_UPI');
     setCopiedUPI(false);
     setIsSubmitting(false);
     setErrorMessage(null);
@@ -155,7 +155,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setShowInvoiceModal(false);
     setCompletedOrderId(null);
     setPaymentRef('');
-    setDirectPaymentNotice(null);
     setPaymentScreenshotName(null);
     isProcessingRef.current = false;
 
@@ -474,48 +473,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  const handlePayWithUPIApp = () => {
-    setDirectPaymentNotice(null);
-
-    // Validate that the UPI ID is not empty and valid before opening app
-    if (!sanitizedUpiId || !isUpiValid) {
-      setDirectPaymentNotice('Invalid UPI ID. Please contact the store.');
-      return;
-    }
-
-    const intentLink = generateUPILink(
-      sanitizedUpiId,
-      paymentSettings.merchantName,
-      totalAmount,
-      dynamicOrderId
-    );
-
-    if (!intentLink) {
-      setDirectPaymentNotice('Invalid UPI ID. Please contact the store.');
-      return;
-    }
-
-    try {
-      if (typeof window !== 'undefined' && ((import.meta as any)?.env?.DEV || process.env.NODE_ENV !== 'production')) {
-        console.log('[Opening UPI Intent Deep Link]:', intentLink);
-      }
-      // Attempt to launch the native UPI intent deep link
-      window.location.href = intentLink;
-
-      // Gracefully set provider restriction / scan fallback notice if app doesn't open or direct intent is blocked
-      setTimeout(() => {
-        setDirectPaymentNotice(
-          'Your payment app does not allow direct payment to this UPI ID. Please scan the QR Code to complete your payment.'
-        );
-      }, 1200);
-    } catch {
-      // Never display technical errors
-      setDirectPaymentNotice(
-        'Your payment app does not allow direct payment to this UPI ID. Please scan the QR Code to complete your payment.'
-      );
-    }
-  };
-
   // (Ref and upload state moved to top component header)
 
   const handleTriggerScreenshotPicker = (e?: React.MouseEvent | React.KeyboardEvent) => {
@@ -636,9 +593,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    // 4. Validate payment reference if UPI is selected
-    if (selectedMethod === 'UPI' && !explicitPayId && !paymentRef.trim()) {
-      setErrorMessage('Please enter UTR Transaction Reference Number or upload screenshot.');
+    // 4. Validate payment reference if manual QR / bank transfer is selected
+    if ((selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI') && !explicitPayId && !paymentRef.trim()) {
+      setErrorMessage('Please enter 12-digit UTR Transaction Reference Number or upload screenshot.');
       setStep('PAYMENT');
       setIsSubmitting(false);
       isProcessingRef.current = false;
@@ -710,7 +667,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           taxAmount,
           totalAmount,
           paymentMethod: selectedMethod,
-          paymentStatus: selectedMethod === 'COD' ? 'PENDING' : 'PAID',
+          paymentStatus: (selectedMethod === 'COD' || selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI') ? 'PENDING' : 'PAID',
           orderStatus: 'PENDING',
           transactionId: `TXN-${Date.now()}`,
           paymentReference: targetRef,
@@ -746,8 +703,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    // 2. Cash on delivery or Manual QR UPI bypass gateway modal
-    if (selectedMethod === 'COD' || selectedMethod === 'UPI') {
+    // 2. Cash on delivery or Manual Offline QR verification
+    if (selectedMethod === 'COD' || selectedMethod === 'QR_SCAN') {
       await handleStartPaymentVerification();
       return;
     }
@@ -916,7 +873,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       console.error('Razorpay checkout initiation error:', err);
       setIsSubmitting(false);
       isProcessingRef.current = false;
-      setErrorMessage(err?.message || 'Unable to start Razorpay payment. Please try Scan QR or Cash on Delivery.');
+      setErrorMessage(err?.message || 'Unable to start Razorpay payment. Please check your connection or choose Cash on Delivery.');
     }
   };
 
@@ -1258,7 +1215,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {/* Available Coupons & Intelligent Recommendation engine */}
               {coupons && coupons.filter(c => c.status === 'active' && c.visibility === 'public').length > 0 && (
                 <div className="space-y-2">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">
                     Recommended Deals For You
                   </div>
                   <div className="flex flex-col gap-2 max-h-36 overflow-y-auto pr-1">
@@ -1293,7 +1250,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                               </div>
                               <div className="font-bold text-neutral-800 text-[10px]">{coupon.name}</div>
                               {coupon.description && (
-                                <div className="text-[9px] text-neutral-400 leading-snug">{coupon.description}</div>
+                                <div className="text-[9px] text-neutral-600 font-medium leading-snug">{coupon.description}</div>
                               )}
                               
                               {/* Detailed real-time eligibility feedback */}
@@ -1423,23 +1380,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 >
                   <ShieldCheck className="w-5 h-5 text-emerald-700" />
                   <span className="text-center font-bold">UPI / Pay Online</span>
-                  <span className="text-[10px] text-neutral-500 font-medium">GPay • PhonePe • Paytm • BHIM</span>
-                </button>
-              )}
-
-              {paymentSettings.enableUPI !== false && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedMethod('UPI')}
-                  className={`p-3 rounded-xl border flex flex-col items-center justify-center space-y-1.5 transition-all ${
-                    selectedMethod === 'UPI'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-bold shadow-sm ring-1 ring-emerald-500'
-                      : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
-                  }`}
-                >
-                  <QrCode className="w-5 h-5 text-emerald-700" />
-                  <span className="text-center font-bold">Scan QR / Manual UPI</span>
-                  <span className="text-[10px] text-neutral-500 font-medium">0% Fee • Instant Verify</span>
+                  <span className="text-[10px] text-neutral-500 font-medium">GPay • PhonePe • Paytm • Cards</span>
                 </button>
               )}
 
@@ -1458,41 +1399,75 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span className="text-[10px] text-neutral-500 font-medium">Pay upon delivery</span>
                 </button>
               )}
+
+              {paymentSettings.enableQR === true && paymentSettings.gatewayProvider !== 'RAZORPAY' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedMethod('QR_SCAN')}
+                  className={`p-3 rounded-xl border flex flex-col items-center justify-center space-y-1.5 transition-all ${
+                    selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
+                      ? 'border-neutral-800 bg-neutral-100 text-neutral-950 font-bold shadow-sm ring-1 ring-neutral-400'
+                      : 'border-neutral-200 hover:bg-neutral-50 text-neutral-600'
+                  }`}
+                >
+                  <QrCode className="w-5 h-5 text-neutral-700" />
+                  <span className="text-center font-bold">Manual Bank Transfer / QR</span>
+                  <span className="text-[10px] text-neutral-500 font-medium">Offline UTR Review</span>
+                </button>
+              )}
             </div>
 
-            {/* TAB CONTENT: ONLINE UPI / GATEWAY INTENT */}
+            {/* TAB CONTENT: ONLINE UPI / RAZORPAY STANDARD GATEWAY */}
             {(selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD') && (
               <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200/90 space-y-4 text-xs">
                 <div className="flex items-center space-x-2 text-emerald-800 font-bold">
                   <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                  <span>Secure UPI Intent & Gateway Checkout</span>
+                  <span>Razorpay Standard Checkout (Automated Instant Verification)</span>
                 </div>
-                <p className="text-neutral-600 leading-relaxed">
-                  Pay securely using any installed UPI app (Google Pay, PhonePe, Paytm, BHIM) or supported online gateway checkout. No manual card details required.
-                </p>
+                <div className="space-y-2 text-neutral-600 leading-relaxed text-[11px]">
+                  <p className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
+                    <span><strong>Mobile Devices:</strong> Automatically opens your preferred UPI application (Google Pay, PhonePe, Paytm, BHIM) with verified merchant safety and zero risk policy alerts.</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
+                    <span><strong>Desktop:</strong> Displays official dynamic Razorpay UPI QR code, Credit/Debit Cards (Visa/Mastercard/RuPay), NetBanking (50+ banks), and Wallets.</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
+                    <span><strong>Security:</strong> 100% RBI &amp; PCI-DSS Level 1 compliant encryption. Zero convenience charges.</span>
+                  </p>
+                </div>
                 <div className="p-3 bg-white rounded-xl border border-neutral-200 flex items-center justify-between">
                   <span className="text-neutral-500 font-medium">Total Payable Amount:</span>
-                  <span className="font-mono font-bold text-amber-900 text-sm">₹{totalAmount.toLocaleString()}</span>
+                  <span className="font-mono font-bold text-emerald-900 text-sm">₹{totalAmount.toLocaleString()}</span>
                 </div>
               </div>
             )}
 
-            {/* TAB CONTENT: UPI / QR SCAN */}
-            {selectedMethod === 'UPI' && (
+            {/* TAB CONTENT: MANUAL OFFLINE QR SCAN */}
+            {(selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI') && (
               <div className="bg-neutral-50 p-4 sm:p-5 rounded-2xl border border-neutral-200/90 space-y-5">
                 {paymentSettings.paymentEnabled === false ? (
                   <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-center font-medium">
-                    Online UPI payments are temporarily paused by store administration. Please select
+                    Online payments are temporarily paused by store administration. Please select
                     Cash on Delivery or another method.
                   </div>
                 ) : (
                   <>
+                    <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-950 flex items-start gap-2">
+                      <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                      <p className="leading-relaxed">
+                        <strong>Manual Offline Transfer:</strong> Scan the QR code or send payment to the merchant UPI ID. After completing payment in your bank app, enter your 12-digit UTR below. An administrator will verify the payment before dispatch.
+                      </p>
+                    </div>
+
                     {/* 1. Large UPI QR Code Displayed Prominently */}
                     <div className="bg-white p-5 rounded-2xl border border-amber-200/80 text-center shadow-sm space-y-3">
                       <div className="flex items-center justify-between text-xs text-neutral-600 border-b border-neutral-100 pb-2.5">
                         <span className="font-bold text-neutral-900 flex items-center gap-1.5">
                           <QrCode className="w-4 h-4 text-amber-700" />
-                          Scan & Pay via UPI
+                          Manual Bank UPI QR
                         </span>
                         <span className="font-extrabold text-amber-900 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/80 text-xs">
                           Amount: ₹{totalAmount.toLocaleString()}
@@ -1503,7 +1478,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <div className="inline-block p-3.5 bg-gradient-to-b from-white to-amber-50/30 rounded-2xl border-2 border-amber-300/80 shadow-md my-1">
                         <img
                           src={paymentSettings.qrCodeCustomImage || qrImageUrl}
-                          alt="Large Prominent UPI QR Code"
+                          alt="Manual UPI QR Code"
                           className="w-52 h-52 sm:w-60 sm:h-60 mx-auto object-contain rounded-xl bg-white p-1 border border-neutral-100"
                         />
                         <div className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-amber-950 font-bold">
@@ -1546,29 +1521,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       </button>
                     </div>
 
-                    {/* 3 & 4 & 5. "Pay with Any UPI App" Button & Friendly Provider Restriction Notice */}
-                    <div className="space-y-2">
-                      <button
-                        type="button"
-                        onClick={handlePayWithUPIApp}
-                        className="w-full py-3 px-4 bg-gradient-to-r from-emerald-700 via-emerald-800 to-emerald-900 hover:from-emerald-800 hover:to-emerald-950 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-[0.99]"
-                      >
-                        <Smartphone className="w-4 h-4 text-emerald-300" />
-                        <span>Pay with Any UPI App</span>
-                      </button>
-
-                      {/* Friendly Notice for provider restrictions / fallback */}
-                      {directPaymentNotice && (
-                        <div className="p-3 bg-amber-50 border border-amber-200/90 rounded-xl flex items-start gap-2.5 text-xs text-amber-950 animate-fade-in shadow-xs">
-                          <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                          <p className="leading-relaxed font-medium">
-                            {directPaymentNotice}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 7. Clear 5-Step Instructions */}
+                    {/* Clear 5-Step Instructions */}
                     <div className="bg-white p-4 rounded-xl border border-neutral-200/90 space-y-2.5">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-800 flex items-center gap-1.5">
                         <Info className="w-3.5 h-3.5 text-amber-700" />
@@ -1736,17 +1689,31 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               type="button"
               onClick={handleLaunchOfficialGatewayCheckout}
               disabled={isSubmitting}
-              className="w-full py-3.5 bg-[#0B8F63] hover:bg-[#086F4C] text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-lg disabled:opacity-50"
+              className={`w-full py-3.5 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-lg disabled:opacity-50 ${
+                selectedMethod === 'COD'
+                  ? 'bg-amber-800 hover:bg-amber-900 shadow-amber-900/20'
+                  : 'bg-[#0B8F63] hover:bg-[#086F4C] shadow-emerald-900/20'
+              }`}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Processing Payment Session...</span>
                 </>
+              ) : selectedMethod === 'COD' ? (
+                <>
+                  <Truck className="w-4 h-4 text-amber-300" />
+                  <span>Confirm Cash on Delivery Order (₹{totalAmount.toLocaleString()})</span>
+                </>
+              ) : selectedMethod === 'QR_SCAN' ? (
+                <>
+                  <QrCode className="w-4 h-4 text-emerald-300" />
+                  <span>Submit UTR for Verification (₹{totalAmount.toLocaleString()})</span>
+                </>
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                  <span>Proceed to Pay (₹{totalAmount.toLocaleString()})</span>
+                  <span>Proceed to Pay via Razorpay (₹{totalAmount.toLocaleString()})</span>
                 </>
               )}
             </button>
@@ -1785,7 +1752,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   style={{ width: `${verificationProgress}%` }}
                 />
               </div>
-              <div className="flex justify-between text-[10px] text-neutral-400 font-mono">
+              <div className="flex justify-between text-[10px] text-neutral-600 font-medium font-mono">
                 <span>Verification Stage</span>
                 <span>{verificationProgress}%</span>
               </div>

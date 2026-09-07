@@ -266,17 +266,55 @@ input, textarea, select {
   caret-color: var(--color-primary);
 }
 
-/* 2. FORM CONTROLS: INPUTS, TEXTAREAS, SELECTS (SAFE DEFAULTS WITHOUT BREAKING CUSTOM CARDS) */
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
-textarea,
-select {
+/* 2. FORM CONTROLS: INPUTS, TEXTAREAS, SELECTS (SAFE LOW-SPECIFICITY DEFAULTS) */
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), textarea, select) {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   font-weight: 500;
   font-size: 0.875rem;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Explicit text contrast locks for inputs regardless of theme */
+input[class*="bg-white"],
+input[class*="bg-neutral-50"],
+input[class*="bg-neutral-100"],
+input[class*="bg-[#F7F7F7]"],
+input[class*="bg-gray-50"],
+input[class*="bg-slate-50"],
+textarea[class*="bg-white"],
+textarea[class*="bg-neutral-50"],
+textarea[class*="bg-neutral-100"],
+textarea[class*="bg-[#F7F7F7]"] {
+  color: #111827 !important;
+}
+
+input[class*="bg-white"]::placeholder,
+input[class*="bg-neutral-50"]::placeholder,
+input[class*="bg-neutral-100"]::placeholder,
+input[class*="bg-[#F7F7F7]"]::placeholder,
+textarea[class*="bg-white"]::placeholder,
+textarea[class*="bg-neutral-50"]::placeholder {
+  color: #6b7280 !important;
+}
+
+input[class*="bg-neutral-800"],
+input[class*="bg-neutral-900"],
+input[class*="bg-neutral-950"],
+input[class*="bg-black"],
+input[class*="bg-slate-800"],
+input[class*="bg-slate-900"],
+textarea[class*="bg-neutral-800"],
+textarea[class*="bg-neutral-900"],
+textarea[class*="bg-neutral-950"] {
+  color: #f8fafc !important;
+}
+
+input[class*="bg-neutral-800"]::placeholder,
+input[class*="bg-neutral-900"]::placeholder {
+  color: #94a3b8 !important;
 }
 
 /* 3. FOCUS STATES */
@@ -293,7 +331,7 @@ select:focus {
 input::placeholder,
 textarea::placeholder {
   color: var(--color-placeholder);
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 /* 5. SELECT MENU OPTIONS */
@@ -576,6 +614,80 @@ select:-webkit-autofill:focus {
 .border-default {
   border-color: var(--border);
 }
+
+/* 15. COMPREHENSIVE TEXT VISIBILITY & CONTRAST GUARANTEES */
+/* Ensure white/light container text is never inverted to unreadable white in dark mode */
+.dark .bg-white,
+.dark .bg-neutral-50,
+.dark .bg-neutral-100,
+.dark .bg-emerald-50,
+.dark .bg-amber-50,
+.dark .bg-rose-50,
+.dark .bg-blue-50 {
+  color: #111827;
+}
+
+.dark .bg-white p:not([class*="text-"]),
+.dark .bg-white span:not([class*="text-"]),
+.dark .bg-white label:not([class*="text-"]),
+.dark .bg-white h1:not([class*="text-"]),
+.dark .bg-white h2:not([class*="text-"]),
+.dark .bg-white h3:not([class*="text-"]),
+.dark .bg-white h4:not([class*="text-"]),
+.dark .bg-white h5:not([class*="text-"]),
+.dark .bg-white h6:not([class*="text-"]),
+.dark .bg-neutral-50 p:not([class*="text-"]),
+.dark .bg-neutral-50 span:not([class*="text-"]),
+.dark .bg-neutral-50 label:not([class*="text-"]),
+.dark .bg-neutral-100 p:not([class*="text-"]),
+.dark .bg-neutral-100 span:not([class*="text-"]) {
+  color: #111827;
+}
+
+/* Ensure dark containers always keep crisp light text in light mode */
+.bg-neutral-900,
+.bg-neutral-950,
+.bg-neutral-800,
+.bg-black,
+.bg-\[\#051C13\] {
+  color: #f8fafc;
+}
+
+/* Button text contrast guarantees */
+.btn-liquid-emerald,
+.btn-liquid-dark,
+button.bg-emerald-600,
+button.bg-emerald-700,
+button.bg-emerald-800,
+button.bg-\[\#0B8F63\],
+button.bg-neutral-900,
+button.bg-neutral-950,
+button.bg-black {
+  color: #ffffff !important;
+}
+
+.btn-liquid-emerald *,
+.btn-liquid-dark *,
+button.bg-emerald-600 *,
+button.bg-emerald-700 *,
+button.bg-emerald-800 *,
+button.bg-\[\#0B8F63\] *,
+button.bg-neutral-900 *,
+button.bg-neutral-950 *,
+button.bg-black * {
+  color: inherit;
+}
+
+/* Status Badges & Pills Contrast Guarantees */
+.badge-amber, .bg-amber-100 { background-color: #fef3c7 !important; color: #78350f !important; }
+.badge-emerald, .bg-emerald-100 { background-color: #d1fae5 !important; color: #065f46 !important; }
+.badge-rose, .bg-rose-100 { background-color: #ffe4e6 !important; color: #9f1239 !important; }
+.badge-blue, .bg-blue-100 { background-color: #dbeafe !important; color: #1e40af !important; }
+.badge-purple, .bg-purple-100 { background-color: #f3e8ff !important; color: #6b21a8 !important; }
+.badge-indigo, .bg-indigo-100 { background-color: #e0e7ff !important; color: #3730a3 !important; }
+.badge-teal, .bg-teal-100 { background-color: #ccfbf1 !important; color: #115e59 !important; }
+.badge-sky, .bg-sky-100 { background-color: #e0f2fe !important; color: #075985 !important; }
+
 
 
 

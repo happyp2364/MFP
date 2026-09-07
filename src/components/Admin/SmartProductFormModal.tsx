@@ -718,16 +718,16 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                   placeholder="e.g. Marudhar Fashion, Nike, Sparx"
                   value={productState.brand}
                   onChange={(e) => setProductState({ ...productState, brand: e.target.value })}
-                  className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#0B8F63] text-xs font-medium"
+                  className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#0B8F63] text-xs font-medium text-neutral-900"
                 />
                 <div className="flex flex-wrap gap-1 mt-1.5">
-                  <span className="text-[10px] text-neutral-400 font-bold self-center mr-1">Quick:</span>
+                  <span className="text-[10px] text-neutral-600 font-bold self-center mr-1">Quick:</span>
                   {POPULAR_BRANDS.map((b) => (
                     <button
                       key={b}
                       type="button"
                       onClick={() => setProductState({ ...productState, brand: b })}
-                      className="px-2 py-0.5 bg-neutral-100 hover:bg-neutral-200 rounded-md text-[10px] font-bold text-neutral-600 transition-colors"
+                      className="px-2 py-0.5 bg-neutral-100 hover:bg-neutral-200 rounded-md text-[10px] font-bold text-neutral-700 transition-colors"
                     >
                       {b}
                     </button>
@@ -1879,7 +1879,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
               placeholder="Enter key details, comfort specs, upper material, cushioning technology..."
               value={productState.description}
               onChange={(e) => setProductState({ ...productState, description: e.target.value })}
-              className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#0B8F63] text-xs leading-relaxed"
+              className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#0B8F63] text-xs leading-relaxed text-neutral-900"
             />
           </div>
 

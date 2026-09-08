@@ -21,7 +21,12 @@ export class AppErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[AppErrorBoundary] Caught global application error:', error, errorInfo);
+    console.error('[AppErrorBoundary] Caught global application error:', {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack,
+      componentStack: errorInfo?.componentStack,
+    });
   }
 
   private handleContactWhatsApp = () => {
@@ -46,6 +51,22 @@ export class AppErrorBoundary extends Component<Props, State> {
                 वेबसाइट लोड करने में अस्थायी समस्या आई है। आपका डेटा सुरक्षित है।
               </p>
             </div>
+
+            {this.state.error && (
+              <div className="p-3 bg-red-50 rounded-xl text-left border border-red-200 space-y-1">
+                <p className="text-[11px] font-bold text-red-800">
+                  त्रुटि विवरण (Diagnostic Info):
+                </p>
+                <p className="text-[11px] font-mono text-red-700 break-all">
+                  {this.state.error.name}: {this.state.error.message}
+                </p>
+                {this.state.error.stack && (
+                  <pre className="text-[9px] font-mono text-neutral-500 overflow-x-auto max-h-24 whitespace-pre-wrap">
+                    {this.state.error.stack.split('\n').slice(0, 4).join('\n')}
+                  </pre>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2 pt-2">
               <button

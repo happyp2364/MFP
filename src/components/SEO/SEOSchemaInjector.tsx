@@ -5,20 +5,20 @@ export const SEOSchemaInjector: React.FC = () => {
   const { seoConfig } = useStore();
 
   useEffect(() => {
-    // Generate JSON-LD Schema
+    // Generate JSON-LD Schema safely
     const schema = {
       "@context": "https://schema.org",
       "@type": "ShoeStore", // Specific type of LocalBusiness
-      "name": seoConfig.businessName || "Marudhar Fashion Point",
+      "name": seoConfig?.businessName || "Marudhar Fashion Point",
       "image": [
-        seoConfig.defaultOgImage || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
+        seoConfig?.defaultOgImage || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80"
       ],
-      "@id": window.location.origin,
-      "url": window.location.origin,
-      "telephone": seoConfig.contactNumber || "+919782482250",
+      "@id": typeof window !== 'undefined' ? window.location.origin : '',
+      "url": typeof window !== 'undefined' ? window.location.origin : '',
+      "telephone": seoConfig?.contactNumber || "+919782482250",
       "address": {
         "@type": "PostalAddress",
-        "streetAddress": seoConfig.businessAddress || "Pipar City",
+        "streetAddress": seoConfig?.businessAddress || "Pipar City",
         "addressLocality": "Pipar City",
         "addressRegion": "RJ",
         "postalCode": "342601",
@@ -26,8 +26,8 @@ export const SEOSchemaInjector: React.FC = () => {
       },
       "geo": {
         "@type": "GeoCoordinates",
-        "latitude": seoConfig.latitude || "26.3862",
-        "longitude": seoConfig.longitude || "73.5414"
+        "latitude": seoConfig?.latitude || "26.3862",
+        "longitude": seoConfig?.longitude || "73.5414"
       },
       "openingHoursSpecification": [
         {
@@ -46,7 +46,7 @@ export const SEOSchemaInjector: React.FC = () => {
         }
       ],
       "sameAs": [
-        seoConfig.gbpUrl,
+        seoConfig?.gbpUrl,
         "https://www.instagram.com/marudharfashionpoint/"
       ].filter(Boolean)
     };

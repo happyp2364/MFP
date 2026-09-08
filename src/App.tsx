@@ -629,6 +629,40 @@ function AppContent() {
     [wishlistIds, products]
   );
 
+  console.log('[PAYMENT_DEBUG_1_APP] AppContent rendered. Path:', typeof window !== 'undefined' ? window.location.pathname : '', 'paymentOrderId:', paymentOrderId);
+
+  // Dedicated Isolated Payment Route
+  if (paymentOrderId !== null) {
+    console.log('[PAYMENT_DEBUG_2_ROUTE] Dedicated Payment Route Active for orderId:', paymentOrderId);
+    return (
+      <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
+        <SEOHead 
+          title={`Order Payment #${paymentOrderId} | Marudhar Fashion Point`}
+          description="Complete your secure order payment via UPI, QR, Card, or Netbanking."
+        />
+        <PaymentErrorBoundary
+          orderId={paymentOrderId}
+          onBackHome={() => {
+            setPaymentOrderId(null);
+            if (window.location.pathname.startsWith('/pay/')) {
+              window.history.pushState({}, '', '/');
+            }
+          }}
+        >
+          <OrderPaymentPage
+            orderId={paymentOrderId}
+            onBackHome={() => {
+              setPaymentOrderId(null);
+              if (window.location.pathname.startsWith('/pay/')) {
+                window.history.pushState({}, '', '/');
+              }
+            }}
+          />
+        </PaymentErrorBoundary>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
       <SEOHead 
@@ -685,58 +719,34 @@ function AppContent() {
       />
 
       {/* Mobile Category Slider & Desktop Horizontal Category Bar */}
-      {paymentOrderId === null && (
-        <div className="pt-[60px] sm:pt-[72px]">
-          <MobileScrollableCategories
-            activeCategory={activeCategory}
-            onSelectCategory={(cat) => {
-              if (cat === 'men' || cat === 'women' || cat === 'kids' || cat === 'all') {
-                handleSelectCategory(cat as GenderCategory);
-              } else {
-                setIsShopActive(true);
-              }
-            }}
-          />
-          <HorizontalCategoryBar
-            activeCategory={activeCategory}
-            onSelectCategory={handleSelectCategory}
-            onNavigateToSection={(sec) => {
-              if (sec === 'hero') {
-                setIsShopActive(false);
-                handleSelectCategory('all');
-                handleResetFilters();
-              } else if (sec === 'products') {
-                setIsShopActive(true);
-              }
-              handleNavigateToSection(sec);
-            }}
-          />
-        </div>
-      )}
+      <div className="pt-[60px] sm:pt-[72px]">
+        <MobileScrollableCategories
+          activeCategory={activeCategory}
+          onSelectCategory={(cat) => {
+            if (cat === 'men' || cat === 'women' || cat === 'kids' || cat === 'all') {
+              handleSelectCategory(cat as GenderCategory);
+            } else {
+              setIsShopActive(true);
+            }
+          }}
+        />
+        <HorizontalCategoryBar
+          activeCategory={activeCategory}
+          onSelectCategory={handleSelectCategory}
+          onNavigateToSection={(sec) => {
+            if (sec === 'hero') {
+              setIsShopActive(false);
+              handleSelectCategory('all');
+              handleResetFilters();
+            } else if (sec === 'products') {
+              setIsShopActive(true);
+            }
+            handleNavigateToSection(sec);
+          }}
+        />
+      </div>
 
-      {paymentOrderId !== null ? (
-        <div className="pt-[60px] sm:pt-[72px]">
-          <PaymentErrorBoundary
-            orderId={paymentOrderId}
-            onBackHome={() => {
-              setPaymentOrderId(null);
-              if (window.location.pathname.startsWith('/pay/')) {
-                window.history.pushState({}, '', '/');
-              }
-            }}
-          >
-            <OrderPaymentPage
-              orderId={paymentOrderId}
-              onBackHome={() => {
-                setPaymentOrderId(null);
-                if (window.location.pathname.startsWith('/pay/')) {
-                  window.history.pushState({}, '', '/');
-                }
-              }}
-            />
-          </PaymentErrorBoundary>
-        </div>
-      ) : productRouteSlug !== null ? (
+      {productRouteSlug !== null ? (
         <ProductDetailPage
           product={activeRouteProduct}
           targetSlug={productRouteSlug}

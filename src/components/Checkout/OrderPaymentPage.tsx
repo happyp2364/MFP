@@ -43,6 +43,7 @@ function formatOrderDate(dateVal: any): string {
 }
 
 export const OrderPaymentPage: React.FC<OrderPaymentPageProps> = ({ orderId, onBackHome }) => {
+  console.log('[PAYMENT_DEBUG_3_ORDER_PAGE] Component mounted with orderId:', orderId);
   const { getOrderById, markOrderAsPaid } = useOrders();
 
   const [order, setOrder] = useState<CustomerOrder | null>(null);
@@ -71,9 +72,11 @@ export const OrderPaymentPage: React.FC<OrderPaymentPageProps> = ({ orderId, onB
       setFetchError(null);
 
       try {
+        console.log('[PAYMENT_DEBUG_4_ORDER_LOOKUP] Initiating getOrderById for:', orderId);
         const fetchedOrder = await getOrderById(orderId);
         if (!isMounted) return;
 
+        console.log('[PAYMENT_DEBUG_5_ORDER_RESULT] Lookup result for orderId:', orderId, 'Found:', !!fetchedOrder);
         if (fetchedOrder) {
           setOrder(fetchedOrder);
           if (fetchedOrder.paymentStatus === 'PAID') {
@@ -288,6 +291,8 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
       isProcessingRef.current = false;
     }
   };
+
+  console.log('[PAYMENT_DEBUG_6_RENDER] Rendering OrderPaymentPage. isLoading:', isLoading, 'hasOrder:', !!order, 'fetchError:', fetchError);
 
   // -------------------------------------------------------------
   // VIEW: LOADING SKELETON

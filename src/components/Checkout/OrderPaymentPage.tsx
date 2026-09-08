@@ -29,6 +29,19 @@ interface OrderPaymentPageProps {
   onBackHome?: () => void;
 }
 
+// Safe Date Formatter helper
+function formatOrderDate(dateVal: any): string {
+  if (!dateVal) return new Date().toLocaleDateString('en-IN');
+  if (typeof dateVal === 'object' && 'seconds' in dateVal) {
+    return new Date(dateVal.seconds * 1000).toLocaleDateString('en-IN');
+  }
+  if (typeof dateVal === 'object' && typeof dateVal.toDate === 'function') {
+    return dateVal.toDate().toLocaleDateString('en-IN');
+  }
+  const d = new Date(dateVal);
+  return isNaN(d.getTime()) ? new Date().toLocaleDateString('en-IN') : d.toLocaleDateString('en-IN');
+}
+
 export const OrderPaymentPage: React.FC<OrderPaymentPageProps> = ({ orderId, onBackHome }) => {
   const { getOrderById, markOrderAsPaid } = useOrders();
 
@@ -108,7 +121,7 @@ export const OrderPaymentPage: React.FC<OrderPaymentPageProps> = ({ orderId, onB
 
 Order ID: ${order.id}
 Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
-कुल भुगतान: ₹${order.totalAmount.toLocaleString('en-IN')}
+कुल भुगतान: ₹${(order.totalAmount ?? 0).toLocaleString('en-IN')}
 
 कृपया मेरा ऑर्डर कन्फर्म करें। धन्यवाद!`;
     const cleanText = sanitizeWhatsAppText(text);
@@ -378,7 +391,7 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
             <div className="flex justify-between items-center pb-2 border-b border-neutral-200">
               <span className="text-neutral-500">भुगतान राशि (Amount Paid):</span>
               <span className="font-bold text-base text-emerald-700">
-                ₹{order.totalAmount.toLocaleString('en-IN')}
+                ₹{(order.totalAmount ?? 0).toLocaleString('en-IN')}
               </span>
             </div>
 
@@ -526,22 +539,25 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
               <span>ऑर्डर किए गए उत्पाद ({order.items?.length || 0})</span>
             </div>
             <span className="text-[11px] text-neutral-500 font-mono">
-              {new Date(order.createdAt).toLocaleDateString('en-IN')}
+              {formatOrderDate(order.createdAt)}
             </span>
           </div>
 
           <div className="divide-y divide-neutral-100">
             {(order.items || []).map((item, idx) => {
+              const itemPrice = (item.product?.price ?? (item as any)?.price ?? 0);
+              const itemQty = item.quantity || 1;
+              const itemName = item.product?.name || (item as any)?.name || (item as any)?.productName || 'उत्पाद (Product)';
               const imageSrc =
-                (item.product?.images && item.product.images.length > 0
+                (item.product?.images && Array.isArray(item.product.images) && item.product.images.length > 0
                   ? item.product.images[0]
-                  : (item.product as any)?.image) || CLEAN_IMAGE_COMING_SOON_SVG;
+                  : (item.product as any)?.image || (item as any)?.image) || CLEAN_IMAGE_COMING_SOON_SVG;
 
               return (
                 <div key={idx} className="py-2.5 flex items-center gap-3">
                   <img
                     src={imageSrc}
-                    alt={item.product?.name || 'Product'}
+                    alt={itemName}
                     className="w-12 h-12 object-cover rounded-lg bg-neutral-50 border border-neutral-200 shrink-0"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
@@ -550,19 +566,19 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-neutral-900 truncate">
-                      {item.product?.name}
+                      {itemName}
                     </p>
                     <p className="text-[11px] text-neutral-500 flex items-center gap-2 mt-0.5">
                       {item.selectedSize && <span>Size: {item.selectedSize}</span>}
                       {item.selectedColor && item.selectedColor !== 'Standard' && (
                         <span>Color: {item.selectedColor}</span>
                       )}
-                      <span>× {item.quantity}</span>
+                      <span>× {itemQty}</span>
                     </p>
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-xs font-bold text-neutral-900 font-mono">
-                      ₹{(item.product?.price * item.quantity).toLocaleString('en-IN')}
+                      ₹{(itemPrice * itemQty).toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>

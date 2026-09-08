@@ -4,6 +4,7 @@ import App from './App.tsx';
 import { StoreProvider } from './context/StoreContext.tsx';
 import { initAutoContrastEngine } from './utils/autoContrastEngine.ts';
 import { HelmetProvider } from 'react-helmet-async';
+import { AppErrorBoundary } from './components/Common/AppErrorBoundary.tsx';
 import './index.css';
 
 // Safely initialize the global WCAG Auto Contrast accessibility engine
@@ -17,11 +18,13 @@ const rootElement = document.getElementById('root');
 if (rootElement) {
   createRoot(rootElement).render(
     <StrictMode>
-      <HelmetProvider>
-        <StoreProvider>
-          <App />
-        </StoreProvider>
-      </HelmetProvider>
+      <AppErrorBoundary>
+        <HelmetProvider>
+          <StoreProvider>
+            <App />
+          </StoreProvider>
+        </HelmetProvider>
+      </AppErrorBoundary>
     </StrictMode>,
   );
 }

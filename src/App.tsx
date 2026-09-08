@@ -32,6 +32,7 @@ import { SEOSchemaInjector } from './components/SEO/SEOSchemaInjector';
 import { CheckoutModal } from './components/Checkout/CheckoutModal';
 import { CheckoutErrorBoundary } from './components/Checkout/CheckoutErrorBoundary';
 import { OrderPaymentPage } from './components/Checkout/OrderPaymentPage';
+import { PaymentErrorBoundary } from './components/Checkout/PaymentErrorBoundary';
 import { CustomerAuthGuardModal } from './components/Customer/CustomerAuthGuardModal';
 import { CustomerAccountModal } from './components/Customer/CustomerAccountModal';
 import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
@@ -112,10 +113,36 @@ function AppContent() {
   const [workspaceHubOpen, setWorkspaceHubOpen] = useState(false);
 
   // --- DYNAMIC PUBLIC PRODUCT URL ROUTING ---
-  const [productRouteSlug, setProductRouteSlug] = useState<string | null>(null);
+  const [productRouteSlug, setProductRouteSlug] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const path = window.location.pathname;
+    if (path.startsWith('/product/')) {
+      const rawSlug = path.replace('/product/', '').split('/')[0].split('?')[0];
+      if (rawSlug) return decodeURIComponent(rawSlug);
+    }
+    const searchParams = new URLSearchParams(window.location.search);
+    const queryProduct = searchParams.get('product');
+    if (queryProduct) return decodeURIComponent(queryProduct);
+    return null;
+  });
 
   // --- DYNAMIC DIRECT ORDER PAYMENT ROUTING (/pay/:orderId) ---
-  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
+  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const path = window.location.pathname;
+    if (path.startsWith('/pay/')) {
+      const rawOrderId = path.replace('/pay/', '').split('/')[0].split('?')[0];
+      if (rawOrderId) return decodeURIComponent(rawOrderId);
+    }
+    const searchParams = new URLSearchParams(window.location.search);
+    const queryPay = searchParams.get('pay') || searchParams.get('orderId');
+    if (queryPay) return decodeURIComponent(queryPay);
+    if (window.location.hash.startsWith('#/pay/')) {
+      const hashOrderId = window.location.hash.replace('#/pay/', '').split('?')[0];
+      if (hashOrderId) return decodeURIComponent(hashOrderId);
+    }
+    return null;
+  });
 
   const scratchCurrentPath = paymentOrderId
     ? `/pay/${paymentOrderId}`
@@ -689,7 +716,7 @@ function AppContent() {
 
       {paymentOrderId !== null ? (
         <div className="pt-[60px] sm:pt-[72px]">
-          <OrderPaymentPage
+          <PaymentErrorBoundary
             orderId={paymentOrderId}
             onBackHome={() => {
               setPaymentOrderId(null);
@@ -697,7 +724,17 @@ function AppContent() {
                 window.history.pushState({}, '', '/');
               }
             }}
-          />
+          >
+            <OrderPaymentPage
+              orderId={paymentOrderId}
+              onBackHome={() => {
+                setPaymentOrderId(null);
+                if (window.location.pathname.startsWith('/pay/')) {
+                  window.history.pushState({}, '', '/');
+                }
+              }}
+            />
+          </PaymentErrorBoundary>
         </div>
       ) : productRouteSlug !== null ? (
         <ProductDetailPage

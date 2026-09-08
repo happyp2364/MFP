@@ -459,11 +459,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         </div>
       </div>
 
-      {/* Floating Back To Top Button */}
+      {/* Floating Back To Top Button (Desktop only) */}
       {showBackToTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 p-3 bg-[#0B8F63] hover:bg-[#086F4C] text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 flex items-center justify-center border border-[#0B8F63]/20"
+          className="fixed bottom-6 right-6 z-50 p-3 bg-[#0B8F63] hover:bg-[#086F4C] text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 hidden sm:flex items-center justify-center border border-[#0B8F63]/20"
           aria-label="Back to top"
         >
           <ArrowUp className="w-5 h-5" />

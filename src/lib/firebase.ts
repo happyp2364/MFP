@@ -956,10 +956,10 @@ export async function fetchOrderByIdFromFirestore(rawOrderId: string): Promise<i
     for (const d of allSnaps.docs) {
       const data = d.data() as import('../types').CustomerOrder;
       if (
-        d.id.toLowerCase() === cleanId.toLowerCase() ||
-        (data.id && data.id.toLowerCase() === cleanId.toLowerCase()) ||
-        (data.id && data.id.replace('#', '').toLowerCase() === cleanId.replace('#', '').toLowerCase()) ||
-        String(data.orderNumber) === cleanId.replace(/\D/g, '')
+        (d?.id && typeof d.id === 'string' && d.id.toLowerCase() === cleanId.toLowerCase()) ||
+        (data?.id && typeof data.id === 'string' && data.id.toLowerCase() === cleanId.toLowerCase()) ||
+        (data?.id && typeof data.id === 'string' && data.id.replace('#', '').toLowerCase() === cleanId.replace('#', '').toLowerCase()) ||
+        (data?.orderNumber !== undefined && String(data.orderNumber) === cleanId.replace(/\D/g, ''))
       ) {
         return { id: d.id, ...data };
       }

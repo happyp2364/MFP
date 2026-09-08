@@ -415,17 +415,22 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (!orderId) return null;
     const cleanId = orderId.trim();
 
-    // 1. Check local in-memory context first
-    const local = orders.find(
+    // 1. Check local in-memory context first with complete null-safety
+    const local = (orders || []).find(
       (o) =>
-        o.id.toLowerCase() === cleanId.toLowerCase() ||
-        o.id.replace('#', '').toLowerCase() === cleanId.replace('#', '').toLowerCase() ||
-        String(o.orderNumber) === cleanId.replace(/\D/g, '')
+        (o?.id && typeof o.id === 'string' && o.id.toLowerCase() === cleanId.toLowerCase()) ||
+        (o?.id && typeof o.id === 'string' && o.id.replace('#', '').toLowerCase() === cleanId.replace('#', '').toLowerCase()) ||
+        (o?.orderNumber !== undefined && String(o.orderNumber) === cleanId.replace(/\D/g, ''))
     );
     if (local) return local;
 
     // 2. Fetch from authoritative Firestore database
-    return await fetchOrderByIdFromFirestore(cleanId);
+    try {
+      return await fetchOrderByIdFromFirestore(cleanId);
+    } catch (fetchErr) {
+      console.warn('[OrderContext] fetchOrderByIdFromFirestore error:', fetchErr);
+      return null;
+    }
   };
 
   return (

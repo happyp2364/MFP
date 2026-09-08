@@ -50,9 +50,9 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
         : 'bottom-5 sm:bottom-6'
     }`}>
       
-      {/* Social Links Sub-Menu (Glassmorphism Circular Buttons with Tooltips) */}
+      {/* Social Links Sub-Menu (Glassmorphism Circular Buttons with Tooltips) - Desktop only */}
       {expandedSocials && (
-        <div className="flex flex-col items-end gap-3 mb-1 pointer-events-auto animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="hidden sm:flex flex-col items-end gap-3 mb-1 pointer-events-auto animate-in slide-in-from-bottom-4 fade-in duration-300">
           {floatingPlatforms.length > 0 ? (
             floatingPlatforms.map((plat) => {
               const getHoverStyle = (effect: string) => {
@@ -114,8 +114,8 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
       {/* Main Floating Action Cluster */}
       <div className="flex flex-col items-end gap-3 pointer-events-auto">
         
-        {/* Toggle Social Media links button */}
-        <div className="group relative flex items-center gap-2">
+        {/* Toggle Social Media links button (Desktop only) */}
+        <div className="hidden sm:flex group relative items-center gap-2">
           <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
             {expandedSocials ? 'बंद करें • Close' : 'सोशल मीडिया • Social Media'}
           </span>
@@ -132,9 +132,9 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
           </button>
         </div>
 
-        {/* Sound Settings Control Button */}
+        {/* Sound Settings Control Button (Desktop only) */}
         {onOpenSoundSettings && (
-          <div className="group relative flex items-center gap-2">
+          <div className="hidden sm:flex group relative items-center gap-2">
             <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
               {customerSoundSettings?.muted ? 'आवाज़ बंद • Sound Muted' : `ध्वनि • Sound: ${customerSoundSettings?.volume ?? 80}%`}
             </span>
@@ -156,8 +156,8 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
           </div>
         )}
 
-        {/* Quick Call Button */}
-        <div className="group relative flex items-center gap-2">
+        {/* Quick Call Button (Desktop only) */}
+        <div className="hidden sm:flex group relative items-center gap-2">
           <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
             कॉल करें • Call: {storeInfo.phone}
           </span>
@@ -170,9 +170,9 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
           </a>
         </div>
 
-        {/* Google Calendar Fitting Booking Floating Button */}
+        {/* Google Calendar Fitting Booking Floating Button (Desktop only) */}
         {onOpenCalendarModal && (
-          <div className="group relative flex items-center gap-2">
+          <div className="hidden sm:flex group relative items-center gap-2">
             <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
               फिटिंग बुक करें • Book VIP Fitting
             </span>
@@ -186,10 +186,10 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
           </div>
         )}
 
-        {/* Primary WhatsApp Floating Button */}
+        {/* Primary WhatsApp Floating Button (Visible on both Mobile and Desktop) */}
         <div className="group relative flex items-center gap-3">
-          {/* Support agent chat bubble indicator */}
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900 text-white p-3 rounded-2xl shadow-xl whitespace-nowrap backdrop-blur-md flex items-center gap-2.5 border border-white/10">
+          {/* Support agent chat bubble indicator (Desktop hover only) */}
+          <div className="hidden sm:flex opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900 text-white p-3 rounded-2xl shadow-xl whitespace-nowrap backdrop-blur-md items-center gap-2.5 border border-white/10 pointer-events-none">
             <img src={waSupportAvatar} alt={waSupportName} className="w-8 h-8 rounded-full border border-neutral-700 object-cover" />
             <div className="text-left leading-tight">
               <span className="font-bold text-[11px] block text-white">{waSupportName}</span>
@@ -201,7 +201,8 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
             onClick={() => recordSocialClick('whatsapp')}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-14 h-14 rounded-full bg-[#0B8F63] text-white flex items-center justify-center shadow-2xl shadow-[#0B8F63]/40 hover:scale-110 active:scale-95 transition-all duration-300 relative"
+            aria-label={`Inquire on WhatsApp with ${waSupportName}`}
+            className="w-14 h-14 rounded-full bg-[#0B8F63] text-white flex items-center justify-center shadow-2xl shadow-[#0B8F63]/40 hover:scale-110 active:scale-95 transition-all duration-300 relative focus:outline-none focus:ring-2 focus:ring-[#0B8F63] focus:ring-offset-2"
             title={`Inquire on WhatsApp with ${waSupportName}`}
           >
             <MessageCircle className="w-7 h-7 fill-white text-[#0B8F63]" />
@@ -210,9 +211,9 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
           </a>
         </div>
 
-        {/* Back To Top Button */}
+        {/* Back To Top Button (Desktop only) */}
         {showScrollTop && (
-          <div className="group relative flex items-center gap-2">
+          <div className="hidden sm:flex group relative items-center gap-2">
             <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900/90 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap backdrop-blur-md">
               ऊपर जाएं • Back To Top
             </span>

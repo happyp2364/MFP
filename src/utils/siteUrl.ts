@@ -73,12 +73,18 @@ export function sanitizePublicCustomerUrl(url?: string | null): string {
   }
   let clean = url.trim();
   
-  // Replace old domain variations
+  // Replace old domain variations (with or without protocol)
   clean = clean.replace(/https?:\/\/(www\.)?marudharfashionpoint\.com/gi, PUBLIC_SITE_URL);
   clean = clean.replace(/https?:\/\/(www\.)?marudharfashion\.com/gi, PUBLIC_SITE_URL);
+  clean = clean.replace(/(www\.)?marudharfashionpoint\.com/gi, PUBLIC_SITE_URL);
+  clean = clean.replace(/(www\.)?marudharfashion\.com/gi, PUBLIC_SITE_URL);
   
   // Replace local dev URLs
   clean = clean.replace(/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/gi, PUBLIC_SITE_URL);
+  clean = clean.replace(/^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/gi, PUBLIC_SITE_URL);
+
+  // Fix any duplicate protocol prefixes
+  clean = clean.replace(/^https?:\/\/https?:\/\//i, 'https://');
   
   if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
     clean = `${PUBLIC_SITE_URL}${clean.startsWith('/') ? '' : '/'}${clean}`;
@@ -86,3 +92,4 @@ export function sanitizePublicCustomerUrl(url?: string | null): string {
   
   return clean;
 }
+

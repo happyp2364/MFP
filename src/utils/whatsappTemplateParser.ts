@@ -12,7 +12,7 @@ import {
 import { STORE_INFO } from '../data/mockData';
 import { getProductSKU, getProductUrl, sanitizeWhatsAppText } from './productUtils';
 import { getCustomerLanguage } from './customerLanguage';
-import { PUBLIC_SITE_URL, getPublicSiteUrl } from './siteUrl';
+import { PUBLIC_SITE_URL, getPublicSiteUrl, sanitizePublicCustomerUrl } from './siteUrl';
 
 export interface WhatsAppPayloadData {
   customerName?: string;
@@ -161,16 +161,24 @@ export function renderWhatsAppMessageText(
     if (
       opts.showProductImageLink &&
       payload.productImageLink &&
-      typeof payload.productImageLink === 'string' &&
-      (payload.productImageLink.startsWith('https://') || payload.productImageLink.startsWith('http://')) &&
-      !payload.productImageLink.startsWith('data:') &&
-      !payload.productImageLink.includes(';base64,') &&
-      !rendered.includes(payload.productImageLink)
+      typeof payload.productImageLink === 'string'
     ) {
-      rendered += `\n\n🖼️ *Product Image:* ${payload.productImageLink.trim()}`;
+      const cleanImg = sanitizePublicCustomerUrl(payload.productImageLink.trim());
+      if (
+        cleanImg &&
+        (cleanImg.startsWith('https://') || cleanImg.startsWith('http://')) &&
+        !cleanImg.startsWith('data:') &&
+        !cleanImg.includes(';base64,') &&
+        !rendered.includes(cleanImg)
+      ) {
+        rendered += `\n\n🖼️ *Product Image:* ${cleanImg}`;
+      }
     }
-    if (opts.showProductURL && payload.productURL && !rendered.includes(payload.productURL)) {
-      rendered += `\n\n🔗 *Product Page:* ${payload.productURL}`;
+    if (opts.showProductURL && payload.productURL) {
+      const cleanProdUrl = sanitizePublicCustomerUrl(payload.productURL.trim());
+      if (cleanProdUrl && !rendered.includes(cleanProdUrl)) {
+        rendered += `\n\n🔗 *Product Page:* ${cleanProdUrl}`;
+      }
     }
     if (opts.showCouponDetails && payload.couponCode && payload.couponCode !== 'N/A' && !rendered.includes(payload.couponCode)) {
       rendered += `\n\n🎟️ *Applied Coupon:* ${payload.couponCode} (${payload.couponDiscount || 'Discount Applied'})`;

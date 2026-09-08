@@ -2070,9 +2070,9 @@ ${customerMessage || 'Please confirm availability.'}`;
   // CLEAN PRODUCT IMAGE HOSTING & PROXY ROUTE
   // Ensures WhatsApp and external links always get a clean HTTP/HTTPS image
   // =========================================================================
-  app.get("/api/product-image/:id", async (req, res) => {
+  const handleProductImageRequest = async (req: express.Request, res: express.Response) => {
     try {
-      const productId = req.params.id || "";
+      const productId = req.params.id || (req.query.id as string) || (req.query.productId as string) || "";
       const target = productId.trim().toLowerCase();
 
       if (!target) {
@@ -2142,7 +2142,10 @@ ${customerMessage || 'Please confirm availability.'}`;
     } catch (err) {
       return res.status(404).send("Product image not found");
     }
-  });
+  };
+
+  app.get("/api/product-image/:id", handleProductImageRequest);
+  app.get("/api/product-image", handleProductImageRequest);
 
   // =========================================================================
   // DYNAMIC SEO LOCATION PAGES

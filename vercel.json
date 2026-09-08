@@ -3,6 +3,22 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/product-image/:id",
+      "destination": "/api/product-image?id=:id"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    },
+    {
+      "source": "/pay/:orderId*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pay",
+      "destination": "/index.html"
+    },
+    {
       "source": "/product/:id*",
       "destination": "/index.html"
     },
@@ -11,12 +27,17 @@
       "destination": "/index.html"
     },
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "source": "/invoice/:id*",
+      "destination": "/index.html"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/store-locator",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:any*",
       "destination": "/index.html"
     }
   ]
 }
+

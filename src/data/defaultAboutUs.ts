@@ -1,4 +1,5 @@
 import { AboutUsConfig } from '../types';
+import { PUBLIC_SITE_URL } from '../utils/siteUrl';
 
 export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
   businessName: "Marudhar Fashion Point",
@@ -316,6 +317,6 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
     facebook: "https://facebook.com/marudharfashionpoint",
     youtube: "https://youtube.com/@marudharfashionpoint",
     whatsapp: "919829012345",
-    website: "https://marudharfashionpoint.com"
+    website: PUBLIC_SITE_URL
   }
 };

@@ -436,8 +436,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Price calculations using centralized tax engine
   const subtotal = cartItems.reduce((acc, item) => acc + getCartItemPrice(item) * item.quantity, 0);
-  const freeThreshold = paymentSettings.freeShippingMinAmount || 999;
-  const baseShippingFee = subtotal >= freeThreshold ? 0 : (paymentSettings.flatShippingRate ?? 80);
+  const freeThreshold = paymentSettings.freeShippingMinAmount !== undefined ? paymentSettings.freeShippingMinAmount : 999;
+  const baseShippingFee = subtotal >= freeThreshold ? 0 : Math.max(0, paymentSettings.flatShippingRate ?? 0);
   const shippingFee = freeShippingPromo ? 0 : baseShippingFee;
 
   const orderItemsForTax = cartItems.map(item => ({ product: item.product, quantity: item.quantity }));
@@ -742,8 +742,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         shippingInfo,
         couponCode: appliedCoupon?.code,
         discountAmount,
-        flatShippingRate: paymentSettings.flatShippingRate || 80,
-        freeShippingMinAmount: paymentSettings.freeShippingMinAmount || 999,
+        flatShippingRate: paymentSettings.flatShippingRate ?? 0,
+        freeShippingMinAmount: paymentSettings.freeShippingMinAmount ?? 999,
+        shippingFee,
+        subtotal,
+        totalAmount,
+        isFreeShipping: shippingFee === 0,
         notes: {
           store: 'Marudhar Fashion Point',
           customerName: shippingInfo.name,
@@ -751,7 +755,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         },
       });
 
-      // 5. Open Razorpay Standard Checkout
+      // 5. Pre-Launch Consistency Guard: Strict check before opening Razorpay modal
+      const rzpAmountInRupees = orderData.amount / 100;
+      const expectedAmount = totalAmount;
+      if (Math.abs(rzpAmountInRupees - expectedAmount) > 0.01) {
+        console.error(`[Razorpay Amount Mismatch Guard] Website displayed: ₹${expectedAmount}, Razorpay Order: ₹${rzpAmountInRupees} (${orderData.amount} paise)`);
+        setErrorMessage(
+          `पेमेंट राशि में अंतर (Pricing Mismatch): वेबसाइट पर ₹${expectedAmount} दिखाया गया है, लेकिन पेमेंट गेटवे ₹${rzpAmountInRupees} प्राप्त कर रहा है। सुरक्षा कारणों से पेमेंट रोक दी गई है।`
+        );
+        setIsSubmitting(false);
+        isProcessingRef.current = false;
+        return;
+      }
+
+      // 6. Open Razorpay Standard Checkout
       await openRazorpayCheckoutModal({
         orderId: orderData.orderId,
         amountInPaise: orderData.amount,
@@ -827,6 +844,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 subtotal,
                 shippingFee,
                 discountAmount,
+                convenienceFee,
                 taxAmount,
                 taxableAmount,
                 cgstAmount,

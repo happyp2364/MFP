@@ -12,6 +12,10 @@
 export interface RazorpayCreateOrderPayload {
   orderId?: string;
   amount?: number;
+  subtotal?: number;
+  shippingFee?: number;
+  totalAmount?: number;
+  isFreeShipping?: boolean;
   items?: Array<{
     productId: string;
     productName: string;
@@ -51,7 +55,9 @@ export interface RazorpayOrderResponse {
   calculatedAmount: number;
   subtotal: number;
   deliveryFee: number;
+  convenienceFee?: number;
   discountAmount: number;
+  totalAmount?: number;
   receipt?: string;
   message?: string;
 }

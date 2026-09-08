@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { SEOMetadataConfig } from '../types';
 import { db } from '../lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { PUBLIC_SITE_URL } from '../utils/siteUrl';
 
 export const DEFAULT_SEO_CONFIG: SEOMetadataConfig = {
   globalTitleTemplate: '%s | Marudhar Fashion Point',
@@ -10,7 +11,7 @@ export const DEFAULT_SEO_CONFIG: SEOMetadataConfig = {
   googleAnalyticsId: 'G-MEASUREMENT_ID',
   googleSearchConsoleVerification: 'gsc_verification_code',
   googleBusinessProfileId: 'gbp_profile_id',
-  robotsTxtContent: 'User-agent: *\nAllow: /\nSitemap: https://marudharfashionpoint.com/sitemap.xml',
+  robotsTxtContent: `User-agent: *\nAllow: /\nSitemap: ${PUBLIC_SITE_URL}/sitemap.xml`,
   businessName: 'Marudhar Fashion Point',
   businessCategory: 'Footwear Store',
   foundedYear: '2015',

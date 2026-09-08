@@ -12,6 +12,7 @@ import {
 import { STORE_INFO } from '../data/mockData';
 import { getProductSKU, getProductUrl, sanitizeWhatsAppText } from './productUtils';
 import { getCustomerLanguage } from './customerLanguage';
+import { PUBLIC_SITE_URL, getPublicSiteUrl } from './siteUrl';
 
 export interface WhatsAppPayloadData {
   customerName?: string;
@@ -109,7 +110,7 @@ export function renderWhatsAppMessageText(
   const shopName = payload.shopName || STORE_INFO.name || 'Marudhar Fashion Point';
   const shopPhone = payload.shopPhone || STORE_INFO.phone || '+91 97824 82250';
   const shopWhatsApp = payload.shopWhatsApp || STORE_INFO.whatsappNumber || '+91 97824 82250';
-  const website = payload.website || (typeof window !== 'undefined' ? window.location.origin : 'https://marudharfashion.com');
+  const website = payload.website ? getPublicSiteUrl(payload.website) : getPublicSiteUrl();
 
   const replacements: Record<string, string> = {
     '{customerName}': payload.customerName || 'Customer',
@@ -237,8 +238,8 @@ export function buildSamplePayloadForPreview(category: WhatsAppTemplateActionCat
     shopName: 'Marudhar Fashion Point',
     shopPhone: '+91 97824 82250',
     shopWhatsApp: '+91 97824 82250',
-    website: typeof window !== 'undefined' ? window.location.origin : 'https://marudharfashion.com',
-    productURL: 'https://marudharfashion.com/#product-velvet-loafers',
+    website: PUBLIC_SITE_URL,
+    productURL: `${PUBLIC_SITE_URL}/product/velvet-loafers`,
     productImageLink: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80',
     deliveryNotes: 'Please deliver after 2 PM',
   };

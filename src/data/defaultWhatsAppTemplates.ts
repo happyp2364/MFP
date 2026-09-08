@@ -1,4 +1,5 @@
 import { WhatsAppTemplate, WhatsAppTemplatesConfig, WhatsAppTemplateActionCategory } from '../types';
+import { PUBLIC_SITE_URL } from '../utils/siteUrl';
 
 export const ACTION_CATEGORY_INFO: Record<
   WhatsAppTemplateActionCategory,
@@ -77,8 +78,8 @@ export const WHATSAPP_VARIABLES_LIST = [
   { key: '{shopName}', label: 'Shop Name', sample: 'Marudhar Fashion Point', category: 'Store' },
   { key: '{shopPhone}', label: 'Shop Phone', sample: '+91 97824 82250', category: 'Store' },
   { key: '{shopWhatsApp}', label: 'Shop WhatsApp', sample: '+91 97824 82250', category: 'Store' },
-  { key: '{website}', label: 'Store URL', sample: 'https://marudharfashion.com', category: 'Store' },
-  { key: '{productURL}', label: 'Product Link', sample: 'https://marudharfashion.com/#product-one8-loafers', category: 'Product' },
+  { key: '{website}', label: 'Store URL', sample: PUBLIC_SITE_URL, category: 'Store' },
+  { key: '{productURL}', label: 'Product Link', sample: `${PUBLIC_SITE_URL}/product/one8-loafers`, category: 'Product' },
 ];
 
 const DEFAULT_ADVANCED_OPTIONS = {

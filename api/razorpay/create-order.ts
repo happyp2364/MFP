@@ -21,8 +21,11 @@ export default async function handler(req: any, res: any) {
       shippingInfo = {},
       couponCode,
       discountAmount = 0,
-      flatShippingRate = 80,
-      freeShippingMinAmount = 999,
+      flatShippingRate,
+      freeShippingMinAmount,
+      shippingFee,
+      isFreeShipping,
+      freeShippingPromo,
       receipt,
       notes = {},
     } = req.body || {};
@@ -36,7 +39,7 @@ export default async function handler(req: any, res: any) {
         serverSubtotal += unitPrice * qty;
       }
     } else {
-      serverSubtotal = Math.max(0, Number(req.body.amount) || 0);
+      serverSubtotal = Math.max(0, Number(req.body.subtotal ?? req.body.amount ?? req.body.totalAmount) || 0);
     }
 
     if (serverSubtotal <= 0) {
@@ -46,20 +49,51 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 2. Exact Free Delivery Threshold Rule: Subtotal >= ₹999 -> Free Delivery
-    const effectiveThreshold = 999;
+    // 2. Validate Discount
+    let validatedDiscount = Math.max(0, Math.min(Number(discountAmount) || 0, serverSubtotal));
+
+    // 3. Authoritative Delivery Fee: Zero Hidden Charges
+    // Free delivery applies if:
+    // - Explicitly marked as free shipping: isFreeShipping === true or freeShippingPromo === true
+    // - Shipping fee explicitly sent as 0
+    // - Subtotal >= freeShippingMinAmount (default threshold: 999)
+    // - flatShippingRate is explicitly configured as 0
+    const effectiveThreshold = Number(freeShippingMinAmount !== undefined ? freeShippingMinAmount : 999);
     let effectiveDeliveryFee = 0;
-    if (serverSubtotal < effectiveThreshold) {
-      effectiveDeliveryFee = Number(flatShippingRate) > 0 ? Number(flatShippingRate) : 80;
+    const isExplicitFreeDelivery = Boolean(isFreeShipping || freeShippingPromo);
+    const isThresholdMet = effectiveThreshold > 0 && serverSubtotal >= effectiveThreshold;
+
+    if (isExplicitFreeDelivery || isThresholdMet) {
+      effectiveDeliveryFee = 0;
+    } else if (shippingFee !== undefined && Number(shippingFee) >= 0) {
+      effectiveDeliveryFee = Number(shippingFee);
+    } else if (flatShippingRate !== undefined && Number(flatShippingRate) >= 0) {
+      effectiveDeliveryFee = Number(flatShippingRate);
+    } else {
+      // Default to 0 delivery fee if not specified, never silently add unrequested charges
+      effectiveDeliveryFee = 0;
     }
 
-    // 3. Validate Discount
-    const validatedDiscount = Math.max(0, Math.min(Number(discountAmount) || 0, serverSubtotal));
+    // 4. Authoritative Convenience Fee Calculation for Online Razorpay Checkout
+    const isFeeEnabled = req.body.enableConvenienceFee !== false;
+    const feeRate = Math.min(10, Math.max(0, Number(req.body.convenienceFeePercent ?? 2)));
+    const isManualPayment = req.body.paymentMethod === 'COD' || req.body.paymentMethod === 'QR_SCAN' || req.body.paymentMethod === 'UPI';
+    let serverConvenienceFee = 0;
 
-    // 4. GST-Inclusive Total: Subtotal - Discount + Delivery (Zero duplicate GST added)
-    let finalPayableAmount = Math.max(0, serverSubtotal - validatedDiscount + effectiveDeliveryFee);
+    if (!isManualPayment && isFeeEnabled && feeRate > 0) {
+      const feeBase = Math.max(0, serverSubtotal - validatedDiscount);
+      serverConvenienceFee = Math.round((feeBase * feeRate) / 100);
+    }
 
-    // 5. Authoritative Order ID Validation from Firestore (for WhatsApp & Direct Order Payment Links)
+    // 5. GST-INCLUSIVE PRICING:
+    // Product price is already tax-inclusive. No duplicate GST is added to the customer total.
+    // Final Payable = Subtotal - Discount + Delivery Fee + Convenience Fee
+    let finalPayableAmount = Math.max(
+      0,
+      serverSubtotal - validatedDiscount + effectiveDeliveryFee + serverConvenienceFee
+    );
+
+    // 6. Authoritative Order ID Validation from Firestore (for WhatsApp & Direct Order Payment Links)
     const targetOrderId = (req.body.orderId || req.body.mfpOrderId || '').trim();
     if (targetOrderId) {
       try {
@@ -81,6 +115,10 @@ export default async function handler(req: any, res: any) {
           const pStatus = fields.paymentStatus?.stringValue;
           const oStatus = fields.orderStatus?.stringValue;
           const fsTotal = fields.totalAmount?.doubleValue ?? fields.totalAmount?.integerValue;
+          const fsDelivery = fields.shippingFee?.doubleValue ?? fields.shippingFee?.integerValue;
+          const fsDiscount = fields.discountAmount?.doubleValue ?? fields.discountAmount?.integerValue;
+          const fsConvenience = fields.convenienceFee?.doubleValue ?? fields.convenienceFee?.integerValue;
+          const fsSubtotal = fields.subtotal?.doubleValue ?? fields.subtotal?.integerValue;
 
           if (pStatus === 'PAID') {
             return res.status(400).json({
@@ -98,8 +136,20 @@ export default async function handler(req: any, res: any) {
             });
           }
 
-          if (fsTotal && Number(fsTotal) > 0) {
+          if (fsTotal !== undefined && Number(fsTotal) > 0) {
             finalPayableAmount = Number(fsTotal);
+          }
+          if (fsDelivery !== undefined) {
+            effectiveDeliveryFee = Number(fsDelivery);
+          }
+          if (fsDiscount !== undefined) {
+            validatedDiscount = Number(fsDiscount);
+          }
+          if (fsConvenience !== undefined) {
+            serverConvenienceFee = Number(fsConvenience);
+          }
+          if (fsSubtotal !== undefined) {
+            serverSubtotal = Number(fsSubtotal);
           }
         }
       } catch (fsErr) {
@@ -136,6 +186,7 @@ export default async function handler(req: any, res: any) {
         subtotal: `Rs.${serverSubtotal}`,
         delivery: `Rs.${effectiveDeliveryFee}`,
         discount: `Rs.${validatedDiscount}`,
+        convenienceFee: `Rs.${serverConvenienceFee}`,
         finalAmount: `Rs.${finalPayableAmount}`,
         ...notes,
       },
@@ -152,6 +203,8 @@ export default async function handler(req: any, res: any) {
       subtotal: serverSubtotal,
       deliveryFee: effectiveDeliveryFee,
       discountAmount: validatedDiscount,
+      convenienceFee: serverConvenienceFee,
+      totalAmount: finalPayableAmount,
       receipt: orderReceipt,
     });
   } catch (err: any) {

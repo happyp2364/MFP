@@ -27,6 +27,8 @@ import {
   Package,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { PUBLIC_SITE_URL } from '../../utils/siteUrl';
+import { getProductUrl } from '../../utils/productUtils';
 import {
   MarketingCampaign,
   MarketingConsent,
@@ -64,7 +66,7 @@ const WHATSAPP_TEMPLATES = [
     language: 'en_US',
     status: 'APPROVED',
     body: 'Namaste {{1}}! Marudhar Fashion Point brings you the {{2}} Festival Offer! Get up to {{3}} off on top footwear. Shop now: {{4}}',
-    exampleParams: ['Rahul', 'Diwali Special', '40%', 'https://marudharfashionpoint.com'],
+    exampleParams: ['Rahul', 'Diwali Special', '40%', PUBLIC_SITE_URL],
   },
   {
     id: 'wa_tpl_flash_02',
@@ -73,7 +75,7 @@ const WHATSAPP_TEMPLATES = [
     language: 'en_US',
     status: 'APPROVED',
     body: 'Exclusive Alert for {{1}}! ⚡ Flash Sale on handcrafted leather & sports shoes. Use code {{2}} at checkout: {{3}}. Reply STOP to unsubscribe.',
-    exampleParams: ['Priya', 'FLASH20', 'https://marudharfashionpoint.com'],
+    exampleParams: ['Priya', 'FLASH20', PUBLIC_SITE_URL],
   },
   {
     id: 'wa_tpl_stock_03',
@@ -82,7 +84,7 @@ const WHATSAPP_TEMPLATES = [
     language: 'en_US',
     status: 'APPROVED',
     body: 'Hi {{1}}, your favorite product {{2}} is back in stock at Marudhar Fashion Point! Grab it before it runs out: {{3}}',
-    exampleParams: ['Ankit', 'One8 Burgundy Sneaker', 'https://marudharfashionpoint.com'],
+    exampleParams: ['Ankit', 'One8 Burgundy Sneaker', PUBLIC_SITE_URL],
   },
 ];
 
@@ -118,7 +120,7 @@ export const MarketingCenterView: React.FC = () => {
   const [pushMessage, setPushMessage] = useState('');
   const [htmlBody, setHtmlBody] = useState('');
   const [selectedWaTemplate, setSelectedWaTemplate] = useState(WHATSAPP_TEMPLATES[0].id);
-  const [targetLink, setTargetLink] = useState('https://marudharfashionpoint.com');
+  const [targetLink, setTargetLink] = useState(PUBLIC_SITE_URL);
   const [sendOption, setSendOption] = useState<'IMMEDIATE' | 'SCHEDULED'>('IMMEDIATE');
   const [scheduledDateTime, setScheduledDateTime] = useState('');
 
@@ -168,9 +170,10 @@ export const MarketingCenterView: React.FC = () => {
   // Product Selection handler in builder
   const handleSelectProduct = (p: Product) => {
     setSelectedProduct(p);
+    const prodUrl = getProductUrl(p);
     setEmailSubject(`Exclusive Offer: ${p.name} - Limited Stock Drop!`);
     setPushMessage(`🔥 ${p.name} is now available at ₹${p.price.toLocaleString('en-IN')}! Tap to view details.`);
-    setTargetLink(`https://marudharfashionpoint.com?product=${p.id}`);
+    setTargetLink(prodUrl);
     setHtmlBody(`
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #faf8f5; border: 1px solid #e5dccb; border-radius: 16px; padding: 24px;">
         <div style="text-align: center; padding-bottom: 16px; border-bottom: 2px solid #78350f;">
@@ -194,7 +197,7 @@ export const MarketingCenterView: React.FC = () => {
             ${p.description || 'Crafted with premium materials for unmatched comfort, durability, and contemporary style.'}
           </p>
 
-          <a href="https://marudharfashionpoint.com?product=${p.id}" style="display: inline-block; background: #78350f; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 32px; border-radius: 8px; font-size: 15px;">
+          <a href="${prodUrl}" style="display: inline-block; background: #78350f; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 32px; border-radius: 8px; font-size: 15px;">
             Shop Exclusive Drop Now
           </a>
         </div>
@@ -260,7 +263,7 @@ export const MarketingCenterView: React.FC = () => {
     setPushMessage('');
     setHtmlBody('');
     setSelectedProduct(null);
-    setTargetLink('https://marudharfashionpoint.com');
+    setTargetLink(PUBLIC_SITE_URL);
     setSendOption('IMMEDIATE');
     setScheduledDateTime('');
   };

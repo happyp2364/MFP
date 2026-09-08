@@ -8,8 +8,13 @@ import {
   isValidCustomerValue,
   sanitizeWhatsAppText,
 } from './productUtils';
+import {
+  PUBLIC_SITE_URL,
+  getPublicOrderPaymentUrl,
+  sanitizePublicCustomerUrl,
+} from './siteUrl';
 import { generateWhatsAppLinkFromCategory, WhatsAppPayloadData, getActiveStorePhone } from './whatsappTemplateParser';
-export { getActiveStorePhone, sanitizeWhatsAppText, getPublicProductImageUrl, isValidCustomerValue };
+export { getActiveStorePhone, sanitizeWhatsAppText, getPublicProductImageUrl, isValidCustomerValue, PUBLIC_SITE_URL };
 import { getProductPrice } from './variantUtils';
 
 export function generateProductWhatsAppLink(
@@ -22,7 +27,7 @@ export function generateProductWhatsAppLink(
   const sizeText = selectedSize || (product.sizes.length > 0 ? product.sizes[0] : 'Standard');
   const colorText = selectedColor || (product.colors.length > 0 ? product.colors[0].name : 'Standard');
   const sku = getProductSKU(product);
-  const productUrl = getProductUrl(product, 'https://www.marudharfashionpoint.com');
+  const productUrl = getProductUrl(product);
   const cleanImage = getPublicProductImageUrl(product) || undefined;
   const currentPrice = getProductPrice(product, sizeText, colorText);
 
@@ -75,7 +80,7 @@ export function generateCartWhatsAppLink(
     couponCode: couponCode || 'N/A',
     couponDiscount: couponDiscount || 'N/A',
     quantity: items.reduce((acc, curr) => acc + curr.quantity, 0),
-    productURL: firstItem ? getProductUrl(firstItem, 'https://www.marudharfashionpoint.com') : undefined,
+    productURL: firstItem ? getProductUrl(firstItem) : undefined,
     productImageLink: firstItem ? (getPublicProductImageUrl(firstItem) || undefined) : undefined,
   };
 
@@ -154,7 +159,7 @@ export function formatWhatsAppOrderMessageWithPaymentLink(order: CustomerOrder, 
     const category = p.category ? (p.category.charAt(0).toUpperCase() + p.category.slice(1)) : 'Footwear';
 
     const cleanImgUrl = getPublicProductImageUrl(p, item.selectedVariant?.images?.[0]);
-    const productUrl = getProductUrl(p, 'https://www.marudharfashionpoint.com');
+    const productUrl = getProductUrl(p);
 
     const lines = [
       `📦 *प्रोडक्ट:* ${p.name}`,
@@ -229,22 +234,22 @@ export function formatWhatsAppOrderMessageWithPaymentLink(order: CustomerOrder, 
   const deliveryText = shippingFeeNum <= 0 ? 'FREE' : `₹${shippingFeeNum.toLocaleString('en-IN')}`;
   const discountAmountNum = typeof order.discountAmount === 'number' ? order.discountAmount : 0;
   const discountLine = discountAmountNum > 0 ? `Discount: ₹${discountAmountNum.toLocaleString('en-IN')}\n` : '';
+  const convenienceFeeNum = typeof order.convenienceFee === 'number' ? order.convenienceFee : 0;
+  const convenienceFeeLine = convenienceFeeNum > 0 ? `Convenience Fee: ₹${convenienceFeeNum.toLocaleString('en-IN')}\n` : '';
   const subtotalNum = typeof order.subtotal === 'number' ? order.subtotal : (order.totalAmount || 0);
   const totalAmountNum = typeof order.totalAmount === 'number' ? order.totalAmount : subtotalNum;
 
-  const summarySection = `━━━━━━━━━━━━━━\n💰 *ORDER SUMMARY*\n━━━━━━━━━━━━━━\n\nSubtotal: ₹${subtotalNum.toLocaleString('en-IN')}\nDelivery: ${deliveryText}\n${discountLine}*Total Payable: ₹${totalAmountNum.toLocaleString('en-IN')}*`;
+  const summarySection = `━━━━━━━━━━━━━━\n💰 *ORDER SUMMARY*\n━━━━━━━━━━━━━━\n\nSubtotal: ₹${subtotalNum.toLocaleString('en-IN')}\nDelivery: ${deliveryText}\n${discountLine}${convenienceFeeLine}*Total Payable: ₹${totalAmountNum.toLocaleString('en-IN')}*`;
 
   // 4. PAYMENT SECTION
   let prodPaymentUrl = paymentUrl;
   if (!prodPaymentUrl || !prodPaymentUrl.startsWith('http')) {
-    prodPaymentUrl = `https://www.marudharfashionpoint.com/pay/${cleanOrderId}`;
+    prodPaymentUrl = getPublicOrderPaymentUrl(cleanOrderId);
+  } else {
+    prodPaymentUrl = sanitizePublicCustomerUrl(prodPaymentUrl);
   }
-  prodPaymentUrl = prodPaymentUrl.replace(
-    /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?/,
-    'https://www.marudharfashionpoint.com'
-  );
 
-  const paymentSection = `━━━━━━━━━━━━━━\n💳 *PAYMENT*\n━━━━━━━━━━━━━━\n\nभुगतान अभी बाकी है।\n\n🔐 *सुरक्षित भुगतान लिंक:*\n${prodPaymentUrl}\n\n🌐 *Website:*\nhttps://www.marudharfashionpoint.com\n\nकृपया स्टॉक उपलब्धता और ऑर्डर की पुष्टि करें।\n\nधन्यवाद 🙏\n*मरुधर फैशन पॉइंट*`;
+  const paymentSection = `━━━━━━━━━━━━━━\n💳 *PAYMENT*\n━━━━━━━━━━━━━━\n\nभुगतान अभी बाकी है।\n\n🔐 *सुरक्षित भुगतान लिंक:*\n${prodPaymentUrl}\n\n🌐 *Website:*\n${PUBLIC_SITE_URL}\n\nकृपया स्टॉक उपलब्धता और ऑर्डर की पुष्टि करें।\n\nधन्यवाद 🙏\n*मरुधर फैशन पॉइंट*`;
 
   // 5. COMBINE
   const messageBlocks = [

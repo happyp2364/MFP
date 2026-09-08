@@ -1290,8 +1290,11 @@ Respond strictly with valid JSON in format:
         shippingInfo = {},
         couponCode,
         discountAmount = 0,
-        flatShippingRate = 80,
-        freeShippingMinAmount = 999,
+        flatShippingRate,
+        freeShippingMinAmount,
+        shippingFee,
+        isFreeShipping,
+        freeShippingPromo,
         receipt,
         notes = {},
       } = req.body || {};
@@ -1327,7 +1330,7 @@ Respond strictly with valid JSON in format:
         }
       } else {
         // Direct amount fallback if items array not provided
-        serverSubtotal = Math.max(0, Number(req.body.amount) || 0);
+        serverSubtotal = Math.max(0, Number(req.body.subtotal ?? req.body.amount ?? req.body.totalAmount) || 0);
       }
 
       if (serverSubtotal <= 0) {
@@ -1337,21 +1340,38 @@ Respond strictly with valid JSON in format:
         });
       }
 
-      // 2. Apply Exact Free Delivery Threshold Rule (Subtotal >= ₹999 -> Free Delivery)
-      const effectiveThreshold = Number(freeShippingMinAmount) || 999;
-      let effectiveDeliveryFee = 0;
-      if (serverSubtotal < effectiveThreshold) {
-        effectiveDeliveryFee = Number(flatShippingRate) > 0 ? Number(flatShippingRate) : 80;
-      }
+      // 2. Validate Discount
+      let validatedDiscount = Math.max(0, Math.min(Number(discountAmount) || 0, serverSubtotal));
 
-      // 3. Validate Discount
-      const validatedDiscount = Math.max(0, Math.min(Number(discountAmount) || 0, serverSubtotal));
+      // 3. Authoritative Delivery Fee: Zero Hidden Charges
+      // Free delivery applies if:
+      // - Explicitly marked as free shipping (e.g. coupon / promo / store policy): isFreeShipping === true or freeShippingPromo === true
+      // - Shipping fee explicitly sent as 0
+      // - Subtotal >= freeShippingMinAmount (default threshold: 999)
+      // - flatShippingRate is explicitly configured as 0
+      const effectiveThreshold = Number(freeShippingMinAmount !== undefined ? freeShippingMinAmount : 999);
+      let effectiveDeliveryFee = 0;
+      const isExplicitFreeDelivery = Boolean(isFreeShipping || freeShippingPromo);
+      const isThresholdMet = effectiveThreshold > 0 && serverSubtotal >= effectiveThreshold;
+
+      if (isExplicitFreeDelivery || isThresholdMet) {
+        effectiveDeliveryFee = 0;
+      } else if (shippingFee !== undefined && Number(shippingFee) >= 0) {
+        effectiveDeliveryFee = Number(shippingFee);
+      } else if (flatShippingRate !== undefined && Number(flatShippingRate) >= 0) {
+        effectiveDeliveryFee = Number(flatShippingRate);
+      } else {
+        // Default to 0 delivery fee if not specified, never silently add unrequested charges
+        effectiveDeliveryFee = 0;
+      }
 
       // 4. Authoritative Convenience Fee Calculation for Online Razorpay Checkout
       const isFeeEnabled = req.body.enableConvenienceFee !== false;
       const feeRate = Math.min(10, Math.max(0, Number(req.body.convenienceFeePercent ?? 2)));
+      const isManualPayment = req.body.paymentMethod === 'COD' || req.body.paymentMethod === 'QR_SCAN' || req.body.paymentMethod === 'UPI';
       let serverConvenienceFee = 0;
-      if (isFeeEnabled && feeRate > 0) {
+
+      if (!isManualPayment && isFeeEnabled && feeRate > 0) {
         const feeBase = Math.max(0, serverSubtotal - validatedDiscount);
         serverConvenienceFee = Math.round((feeBase * feeRate) / 100);
       }
@@ -1386,6 +1406,10 @@ Respond strictly with valid JSON in format:
             const pStatus = fields.paymentStatus?.stringValue;
             const oStatus = fields.orderStatus?.stringValue;
             const fsTotal = fields.totalAmount?.doubleValue ?? fields.totalAmount?.integerValue;
+            const fsDelivery = fields.shippingFee?.doubleValue ?? fields.shippingFee?.integerValue;
+            const fsDiscount = fields.discountAmount?.doubleValue ?? fields.discountAmount?.integerValue;
+            const fsConvenience = fields.convenienceFee?.doubleValue ?? fields.convenienceFee?.integerValue;
+            const fsSubtotal = fields.subtotal?.doubleValue ?? fields.subtotal?.integerValue;
 
             if (pStatus === "PAID") {
               return res.status(400).json({
@@ -1403,8 +1427,20 @@ Respond strictly with valid JSON in format:
               });
             }
 
-            if (fsTotal && Number(fsTotal) > 0) {
+            if (fsTotal !== undefined && Number(fsTotal) > 0) {
               finalPayableAmount = Number(fsTotal);
+            }
+            if (fsDelivery !== undefined) {
+              effectiveDeliveryFee = Number(fsDelivery);
+            }
+            if (fsDiscount !== undefined) {
+              validatedDiscount = Number(fsDiscount);
+            }
+            if (fsConvenience !== undefined) {
+              serverConvenienceFee = Number(fsConvenience);
+            }
+            if (fsSubtotal !== undefined) {
+              serverSubtotal = Number(fsSubtotal);
             }
           }
         } catch (fsErr) {
@@ -1469,6 +1505,7 @@ Respond strictly with valid JSON in format:
         deliveryFee: effectiveDeliveryFee,
         discountAmount: validatedDiscount,
         convenienceFee: serverConvenienceFee,
+        totalAmount: finalPayableAmount,
         receipt: orderReceipt,
       });
     } catch (err: any) {
@@ -2159,14 +2196,14 @@ ${customerMessage || 'Please confirm availability.'}`;
   // DYNAMIC SITEMAP AND ROBOTS.TXT
   // =========================================================================
   app.get("/robots.txt", (req, res) => {
-    const host = req.get("host") || "marudharfashionpoint.com";
+    const host = req.get("host") || "marudhar-fashion-point-1.vercel.app";
     const protocol = req.protocol || "https";
     res.type('text/plain');
     res.send(`User-agent: *\nAllow: /\nSitemap: ${protocol}://${host}/sitemap.xml`);
   });
 
   app.get("/sitemap.xml", (req, res) => {
-    const host = req.get("host") || "marudharfashionpoint.com";
+    const host = req.get("host") || "marudhar-fashion-point-1.vercel.app";
     const protocol = req.protocol || "https";
     const baseUrl = `${protocol}://${host}`;
     

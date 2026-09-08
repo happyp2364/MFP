@@ -144,7 +144,12 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
       const orderPayload = {
         orderId: order.id,
         amount: order.totalAmount,
+        subtotal: order.subtotal || order.totalAmount,
+        totalAmount: order.totalAmount,
+        shippingFee: order.shippingFee ?? 0,
+        isFreeShipping: (order.shippingFee ?? 0) === 0,
         paymentMethod: 'ONLINE_UPI',
+        enableConvenienceFee: false, // Already baked into order total if any
         items: (order.items || []).map((item) => ({
           productId: item.product?.id,
           productName: item.product?.name,
@@ -162,8 +167,8 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
           pincode: order.shippingAddress?.pincode || '342001',
         },
         discountAmount: order.discountAmount || 0,
-        flatShippingRate: order.shippingFee || 0,
-        convenienceFee: order.convenienceFee || 0,
+        flatShippingRate: order.shippingFee ?? 0,
+        convenienceFee: order.convenienceFee ?? 0,
         notes: {
           orderId: order.id,
           source: order.source || 'WHATSAPP',
@@ -175,6 +180,19 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
 
       if (!serverOrderRes || !serverOrderRes.orderId) {
         throw new Error(serverOrderRes?.message || 'सर्वर पर पेमेंट ऑर्डर तैयार नहीं हो सका।');
+      }
+
+      // Pre-Launch Consistency Guard: Strict verification before showing Razorpay popup
+      const rzpAmountInRupees = serverOrderRes.amount / 100;
+      const expectedAmount = order.totalAmount;
+      if (Math.abs(rzpAmountInRupees - expectedAmount) > 0.01) {
+        console.error(`[OrderPaymentPage Amount Mismatch Guard] Order total: ₹${expectedAmount}, Razorpay Order: ₹${rzpAmountInRupees} (${serverOrderRes.amount} paise)`);
+        setPaymentError(
+          `पेमेंट राशि में अंतर (Pricing Mismatch): ऑर्डर राशि ₹${expectedAmount} है, लेकिन पेमेंट गेटवे ₹${rzpAmountInRupees} मांग रहा है। सुरक्षा कारणों से पेमेंट रोक दी गई है।`
+        );
+        setIsPaying(false);
+        isProcessingRef.current = false;
+        return;
       }
 
       // 2. Open Existing Razorpay Standard Checkout Modal

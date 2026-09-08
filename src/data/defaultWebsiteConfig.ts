@@ -1,4 +1,5 @@
 import { WebsiteConfig, SocialLinkItem } from '../types';
+import { PUBLIC_SITE_URL } from '../utils/siteUrl';
 
 export const DEFAULT_SOCIAL_LINKS: SocialLinkItem[] = [
   {
@@ -83,7 +84,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     supportEmail: 'support@marudharfashionpoint.com',
     salesEmail: 'sales@marudharfashionpoint.com',
     billingEmail: 'billing@marudharfashionpoint.com',
-    websiteUrl: 'https://marudharfashionpoint.com',
+    websiteUrl: PUBLIC_SITE_URL,
   },
 
   // Section 3: Address
@@ -129,7 +130,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     metaTitle: 'Marudhar Fashion Point — Best Family Shoe Store in Rajasthan',
     metaDescription: 'Discover high-grade athletic sneakers, royal leather loafers, and Rajasthani juttis at Marudhar Fashion Point. Order online with free delivery and COD.',
     keywords: ['Marudhar Fashion Point', 'Shoe Store Pipar City', 'Athletic Shoes', 'Rajasthani Jutti', 'Leather Shoes', 'Sneakers Jodhpur'],
-    canonicalUrl: 'https://marudharfashionpoint.com',
+    canonicalUrl: PUBLIC_SITE_URL,
     ogImageUrl: '/logo.png',
     twitterCard: 'summary_large_image',
     structuredDataJson: JSON.stringify({
@@ -215,7 +216,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     gstNumber: '08AAAAA0000A1Z5',
     phone: '+91 9782482250',
     email: 'marudharfashionpoint@gmail.com',
-    website: 'https://marudharfashionpoint.com',
+    website: PUBLIC_SITE_URL,
     qrCodeUrl: '',
     footerText: 'Thank you for your purchase from Marudhar Fashion Point! Returns accepted within 7 days with valid invoice.',
   },

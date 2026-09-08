@@ -26,6 +26,7 @@ import { useStore } from '../../context/StoreContext';
 import { CustomerOrder, OrderStatus } from '../../types';
 import { InvoiceModal } from '../Customer/InvoiceModal';
 import { getProductPrice, getProductImage } from '../../utils/variantUtils';
+import { getPublicOrderPaymentUrl, sanitizePublicCustomerUrl } from '../../utils/siteUrl';
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string; color: string }[] = [
   { value: 'PENDING', label: 'Pending', color: 'bg-amber-100 text-amber-900 border-amber-300' },
@@ -51,15 +52,7 @@ export const OrderManagementView: React.FC = () => {
   const handleCopyPaymentLink = (order: CustomerOrder, e: React.MouseEvent) => {
     e.stopPropagation();
     const cleanId = (order.id || '').replace(/^#/, '');
-    const prodBase = 'https://www.marudharfashionpoint.com';
-    let url = order.paymentLink || `${prodBase}/pay/${cleanId}`;
-    if (
-      url.includes('localhost') ||
-      url.includes('127.0.0.1') ||
-      url.includes('0.0.0.0')
-    ) {
-      url = `${prodBase}/pay/${cleanId}`;
-    }
+    let url = order.paymentLink ? sanitizePublicCustomerUrl(order.paymentLink) : getPublicOrderPaymentUrl(cleanId);
     navigator.clipboard.writeText(url);
     setCopiedOrderId(order.id);
     setTimeout(() => {
@@ -385,7 +378,7 @@ export const OrderManagementView: React.FC = () => {
                         <div className="flex items-center gap-1.5 truncate max-w-sm">
                           <span className="font-semibold text-neutral-700">Payment Link:</span>
                           <span className="font-mono text-[10px] text-neutral-500 truncate">
-                            {order.paymentLink || `${window.location.origin}/pay/${encodeURIComponent(order.id)}`}
+                            {order.paymentLink ? sanitizePublicCustomerUrl(order.paymentLink) : getPublicOrderPaymentUrl(order.id)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">

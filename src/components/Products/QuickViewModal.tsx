@@ -381,14 +381,14 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             <div className="grid grid-cols-2 gap-2 text-[11px] font-medium">
               <div className="bg-black/40 p-2 rounded-xl border border-white/10">
                 <span className="font-extrabold text-emerald-300 block">
-                  {currentPrice >= (paymentSettings.freeShippingMinAmount || 999)
+                  {currentPrice >= (paymentSettings.freeShippingMinAmount ?? 999) || (paymentSettings.flatShippingRate ?? 0) === 0
                     ? '🚚 FREE DELIVERY'
-                    : `🚚 ₹${paymentSettings.flatShippingRate || 80} Shipping`}
+                    : `🚚 ₹${paymentSettings.flatShippingRate ?? 0} Shipping`}
                 </span>
                 <span className="text-[9px] text-neutral-300">
-                  {currentPrice >= (paymentSettings.freeShippingMinAmount || 999)
+                  {currentPrice >= (paymentSettings.freeShippingMinAmount ?? 999) || (paymentSettings.flatShippingRate ?? 0) === 0
                     ? 'Free Standard Delivery'
-                    : `Min ₹${paymentSettings.freeShippingMinAmount || 999} for Free Shipping`}
+                    : `Min ₹${paymentSettings.freeShippingMinAmount ?? 999} for Free Shipping`}
                 </span>
               </div>
 

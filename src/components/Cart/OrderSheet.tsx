@@ -45,7 +45,7 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
   );
 
   const freeMin = paymentSettings.freeShippingMinAmount ?? 999;
-  const flatFee = paymentSettings.flatShippingRate ?? 80;
+  const flatFee = paymentSettings.flatShippingRate ?? 0;
   const shippingFee = subtotal >= freeMin ? 0 : flatFee;
   const totalAmount = subtotal + shippingFee;
 
@@ -111,7 +111,8 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
             phone: resolvedPhone,
             email: resolvedEmail,
           },
-          resolvedShippingAddress
+          resolvedShippingAddress,
+          shippingFee
         );
         if (res.success && res.whatsappUrl) {
           lastCreatedOrderRef.current = { itemsHash, whatsappUrl: res.whatsappUrl };

@@ -5,6 +5,7 @@ import { calculateOrderTax } from '../utils/taxUtils';
 import { generateWhatsAppOrderUrlWithPaymentLink, formatWhatsAppOrderMessageWithPaymentLink } from '../utils/whatsapp';
 import { getProductPrice } from '../utils/variantUtils';
 import { isValidCustomerValue } from '../utils/productUtils';
+import { getPublicOrderPaymentUrl } from '../utils/siteUrl';
 import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 
 interface OrderContextType {
@@ -36,7 +37,8 @@ interface OrderContextType {
     couponCode?: string,
     discountAmount?: number,
     customerInfo?: { name?: string; phone?: string; email?: string },
-    shippingAddress?: Partial<ShippingAddressInfo>
+    shippingAddress?: Partial<ShippingAddressInfo>,
+    shippingFeeOverride?: number
   ) => Promise<{
     success: boolean;
     order?: CustomerOrder;
@@ -226,7 +228,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     couponCode?: string,
     discountAmount?: number,
     customerInfo?: { name?: string; phone?: string; email?: string },
-    shippingAddress?: Partial<ShippingAddressInfo>
+    shippingAddress?: Partial<ShippingAddressInfo>,
+    shippingFeeOverride?: number
   ) => {
     try {
       if (!items || items.length === 0) {
@@ -239,7 +242,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         return acc + itemPrice * (item.quantity || 1);
       }, 0);
 
-      const shippingFee = subtotal >= 999 ? 0 : 80;
+      const defaultShipping = subtotal >= 999 ? 0 : 0;
+      const shippingFee = shippingFeeOverride !== undefined ? Math.max(0, shippingFeeOverride) : defaultShipping;
       const validatedDiscount = Math.max(0, Math.min(Number(discountAmount) || 0, subtotal));
       const totalAmount = Math.max(0, subtotal - validatedDiscount + shippingFee);
 
@@ -252,18 +256,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
 
       // 3. Dynamic Website Origin & Payment Link
-      const isLocalHost =
-        typeof window !== 'undefined' &&
-        window.location.origin &&
-        (window.location.origin.includes('localhost') ||
-          window.location.origin.includes('127.0.0.1') ||
-          window.location.origin.includes('0.0.0.0'));
-      const origin =
-        !isLocalHost && typeof window !== 'undefined' && window.location.origin
-          ? window.location.origin
-          : 'https://www.marudharfashionpoint.com';
       const cleanOrderId = orderId.replace(/^#/, '');
-      const paymentUrl = `${origin}/pay/${cleanOrderId}`;
+      const paymentUrl = getPublicOrderPaymentUrl(cleanOrderId);
 
       const now = new Date().toISOString();
 

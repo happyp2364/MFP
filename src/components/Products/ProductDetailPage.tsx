@@ -732,14 +732,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <Truck className="w-4 h-4 text-emerald-400 shrink-0" />
                 <div>
                   <span className="font-extrabold text-emerald-300 block">
-                    {displayPrice >= (paymentSettings.freeShippingMinAmount || 999)
+                    {displayPrice >= (paymentSettings.freeShippingMinAmount ?? 999) || (paymentSettings.flatShippingRate ?? 0) === 0
                       ? '🚚 FREE DELIVERY'
-                      : `🚚 ₹${paymentSettings.flatShippingRate || 80} Delivery`}
+                      : `🚚 ₹${paymentSettings.flatShippingRate ?? 0} Delivery`}
                   </span>
                   <span className="text-[10px] text-neutral-300">
-                    {displayPrice >= (paymentSettings.freeShippingMinAmount || 999)
+                    {displayPrice >= (paymentSettings.freeShippingMinAmount ?? 999) || (paymentSettings.flatShippingRate ?? 0) === 0
                       ? 'Eligible for Free Standard Delivery'
-                      : `Add ₹${((paymentSettings.freeShippingMinAmount || 999) - displayPrice).toLocaleString()} for Free Delivery`}
+                      : `Add ₹${Math.max(0, (paymentSettings.freeShippingMinAmount ?? 999) - displayPrice).toLocaleString()} for Free Delivery`}
                   </span>
                 </div>
               </div>

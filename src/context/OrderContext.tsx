@@ -85,7 +85,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     details: {
       targetRef?: string;
       subtotal: number;
-      shippingFee: number;
+      shippingFee?: number;
       razorpayOrderId?: string;
       razorpayPaymentId?: string;
       razorpaySignature?: string;
@@ -95,6 +95,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       cardName?: string;
       selectedBank?: string;
       selectedWallet?: string;
+      isFreeShipping?: boolean;
+      freeShippingPromo?: boolean;
     },
     couponCode?: string,
     discountAmount: number = 0,
@@ -112,12 +114,15 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
       }
 
+      const isExplicitFreeShipping = Boolean(details.isFreeShipping || details.freeShippingPromo);
+
       const taxResult = calculateOrderTax(
         items.map(i => ({ product: i.product, quantity: i.quantity })),
         discountAmount,
         details.shippingFee,
         paymentSettings,
-        paymentMethod
+        paymentMethod,
+        isExplicitFreeShipping
       );
 
       const orderNumber = Date.now();

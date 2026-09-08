@@ -434,15 +434,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Price calculations using centralized tax engine
+  // Price calculations using centralized authoritative tax engine
   const subtotal = cartItems.reduce((acc, item) => acc + getCartItemPrice(item) * item.quantity, 0);
   const freeThreshold = paymentSettings.freeShippingMinAmount !== undefined ? paymentSettings.freeShippingMinAmount : 999;
-  const baseShippingFee = subtotal >= freeThreshold ? 0 : Math.max(0, paymentSettings.flatShippingRate ?? 0);
-  const shippingFee = freeShippingPromo ? 0 : baseShippingFee;
+  const isExplicitFreeShipping = Boolean(freeShippingPromo || appliedCoupon?.type === 'FREE_SHIPPING');
 
   const orderItemsForTax = cartItems.map(item => ({ product: item.product, quantity: item.quantity }));
-  const taxResult = calculateOrderTax(orderItemsForTax, discountAmount, shippingFee, paymentSettings, selectedMethod);
+  const taxResult = calculateOrderTax(
+    orderItemsForTax,
+    discountAmount,
+    paymentSettings.flatShippingRate,
+    paymentSettings,
+    selectedMethod,
+    isExplicitFreeShipping
+  );
 
+  const shippingFee = taxResult.deliveryCharge;
   const taxAmount = taxResult.totalTax;
   const taxableAmount = taxResult.taxableAmount;
   const cgstAmount = taxResult.cgstAmount;
@@ -1403,18 +1410,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <span className="text-emerald-700 font-bold flex items-center gap-1">
                       <span>मुफ्त • FREE</span>
                       <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
-                        {subtotal >= freeThreshold ? '₹999+ ऑर्डर' : 'Coupon'}
+                        {isExplicitFreeShipping
+                          ? 'कूपन • Coupon'
+                          : (subtotal - discountAmount) >= freeThreshold
+                          ? '₹999+ ऑर्डर'
+                          : 'स्टोर ऑफर'}
                       </span>
                     </span>
                   ) : (
-                    <span className="font-semibold text-neutral-900">₹{shippingFee}</span>
+                    <span className="font-semibold text-neutral-900 font-mono">₹{shippingFee}</span>
                   )}
                 </span>
               </div>
               {convenienceFee > 0 ? (
                 <div className="flex justify-between text-amber-900 font-medium">
                   <span>सुविधा शुल्क • Convenience Fee ({paymentSettings.convenienceFeePercent ?? 2}%)</span>
-                  <span className="font-mono font-bold">+₹{convenienceFee.toLocaleString()}</span>
+                  <span className="font-mono font-bold">
+                    +₹{convenienceFee % 1 === 0 ? convenienceFee.toLocaleString('en-IN') : convenienceFee.toFixed(2)}
+                  </span>
                 </div>
               ) : (
                 paymentSettings.enableConvenienceFee !== false && (
@@ -1427,12 +1440,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {taxResult.gstEnabled && (
                 <div className="flex justify-between text-neutral-500 text-[11px] pt-1 border-t border-dashed border-neutral-200">
                   <span>जीएसटी • GST ({taxResult.gstRate}%)</span>
-                  <span className="text-neutral-500 font-medium">कीमत में शामिल • Included in Price (₹{taxAmount.toLocaleString()})</span>
+                  <span className="text-neutral-500 font-medium">कीमत में शामिल • Included in Price (₹{taxAmount.toLocaleString('en-IN')})</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-neutral-900 pt-2 border-t border-neutral-200 text-sm">
                 <span>कुल भुगतान राशि • Total Payable</span>
-                <span className="text-amber-800 font-extrabold text-base">₹{totalAmount.toLocaleString()}</span>
+                <span className="text-amber-800 font-extrabold text-base font-mono">
+                  ₹{totalAmount % 1 === 0 ? totalAmount.toLocaleString('en-IN') : totalAmount.toFixed(2)}
+                </span>
               </div>
             </div>
 
@@ -1830,7 +1845,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <div className="bg-neutral-50/90 rounded-xl border border-neutral-200/80 p-3.5 sm:p-4 text-xs space-y-2">
               <div className="flex justify-between items-center text-neutral-600">
                 <span>Subtotal ({cartItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
-                <span className="font-mono font-medium text-neutral-900">₹{subtotal.toLocaleString()}</span>
+                <span className="font-mono font-medium text-neutral-900">₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
 
               <div className="flex justify-between items-center text-neutral-600">
@@ -1838,7 +1853,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span>Delivery</span>
                   {shippingFee === 0 && (
                     <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.2 rounded font-medium">
-                      {subtotal >= freeThreshold ? '₹999+ Free' : 'Coupon'}
+                      {isExplicitFreeShipping
+                        ? 'Coupon FREE'
+                        : (subtotal - discountAmount) >= freeThreshold
+                        ? '₹999+ Free'
+                        : 'Store Offer'}
                     </span>
                   )}
                 </div>
@@ -1859,7 +1878,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       Online Payment
                     </span>
                   </div>
-                  <span className="font-mono font-bold">+₹{convenienceFee.toLocaleString()}</span>
+                  <span className="font-mono font-bold">
+                    +₹{convenienceFee % 1 === 0 ? convenienceFee.toLocaleString('en-IN') : convenienceFee.toFixed(2)}
+                  </span>
                 </div>
               ) : (
                 paymentSettings.enableConvenienceFee !== false && (
@@ -1873,7 +1894,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {discountAmount > 0 && (
                 <div className="flex justify-between items-center text-emerald-700 font-medium">
                   <span>Coupon ({appliedCoupon?.code})</span>
-                  <span className="font-mono font-bold">-₹{discountAmount.toLocaleString()}</span>
+                  <span className="font-mono font-bold">-₹{discountAmount.toLocaleString('en-IN')}</span>
                 </div>
               )}
 
@@ -1894,7 +1915,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="flex justify-between items-baseline pt-2.5 border-t border-neutral-200/90 text-sm">
                 <span className="font-bold text-neutral-900">Total Payable</span>
                 <span className="font-bold text-base sm:text-lg text-neutral-900 font-mono tracking-tight">
-                  ₹{totalAmount.toLocaleString()}
+                  ₹{totalAmount % 1 === 0 ? totalAmount.toLocaleString('en-IN') : totalAmount.toFixed(2)}
                 </span>
               </div>
             </div>

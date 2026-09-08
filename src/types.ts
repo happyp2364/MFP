@@ -850,7 +850,7 @@ export interface MarketingCampaign {
   whatsAppTemplate?: string;
   whatsAppImage?: string;
   targetLink?: string;
-  status: 'DRAFT' | 'SCHEDULED' | 'SENT';
+  status: 'DRAFT' | 'SCHEDULED' | 'SENT' | 'ACTIVE' | 'PAUSED';
   scheduledAt?: string;
   sentAt?: string;
   recipientsCount: number;
@@ -858,6 +858,7 @@ export interface MarketingCampaign {
   openCount: number;
   clickCount: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CustomerProfile {

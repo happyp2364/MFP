@@ -314,6 +314,9 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
     saveCampaign: marketing.saveCampaign,
     deleteCampaign: marketing.deleteCampaign,
     sendCampaign: marketing.sendCampaign,
+    pauseCampaign: marketing.pauseCampaign,
+    resumeCampaign: marketing.resumeCampaign,
+    duplicateCampaign: marketing.duplicateCampaign,
     updateSubscriberConsent: marketing.updateSubscriberConsent,
     refreshMarketingData: marketing.refreshMarketingData,
 

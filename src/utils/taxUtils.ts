@@ -29,10 +29,11 @@ export interface TaxCalculationResult {
  * Rules:
  * 1. If Convenience Fee is disabled in Admin: Fee is always ₹0.
  * 2. If Apply Fee ONLY to Online Payments is enabled:
- *    - Online Razorpay (UPI, Cards, Netbanking): configured % (default 2%, max 10%)
+ *    - Online Razorpay (UPI, Cards, Netbanking, Wallets): configured % (default 2%, max 10%)
  *    - COD: ₹0
  *    - Manual Bank Transfer / UPI / Scan QR: ₹0
- * 3. Base is net merchandise subtotal (rawSubtotal - discount).
+ * 3. Base is net merchandise subtotal (subtotal - discount).
+ * 4. Exact currency rounding to 2 decimal places to support precise paise calculation without floating-point error.
  */
 export function calculateConvenienceFee(
   subtotal: number,
@@ -59,8 +60,12 @@ export function calculateConvenienceFee(
   }
 
   // Manual QR Scan / Bank Transfer / UPI transfer
-  const isManualQR = paymentMethod === 'QR_SCAN' || paymentMethod === 'UPI';
-  if (isManualQR && applyFeeToOnlineOnly) {
+  const isManualPayment =
+    paymentMethod === 'QR_SCAN' ||
+    paymentMethod === 'UPI' ||
+    paymentMethod === 'MANUAL_QR' ||
+    paymentMethod === 'BANK_TRANSFER';
+  if (isManualPayment && applyFeeToOnlineOnly) {
     return { fee: 0, rate, isEnabled, applied: false };
   }
 
@@ -68,9 +73,12 @@ export function calculateConvenienceFee(
   const isOnline =
     paymentMethod === 'ONLINE_UPI' ||
     paymentMethod === 'CARD' ||
+    paymentMethod === 'NET_BANKING' ||
+    paymentMethod === 'NETBANKING' ||
+    paymentMethod === 'WALLET' ||
     paymentMethod === 'RAZORPAY' ||
     paymentMethod === 'WHATSAPP' ||
-    !isManualQR;
+    !isManualPayment;
 
   if (applyFeeToOnlineOnly && !isOnline) {
     return { fee: 0, rate, isEnabled, applied: false };
@@ -78,7 +86,9 @@ export function calculateConvenienceFee(
 
   // Base for fee calculation is net merchandise value (subtotal after validated discount)
   const feeBase = Math.max(0, (subtotal || 0) - Math.max(0, discountAmount || 0));
-  const fee = Math.round((feeBase * rate) / 100);
+  const rawFee = (feeBase * rate) / 100;
+  // Precise 2-decimal rounding to avoid float inaccuracies and support exact paise
+  const fee = Math.round(rawFee * 100) / 100;
 
   return {
     fee,
@@ -91,14 +101,15 @@ export function calculateConvenienceFee(
 export function calculateOrderTax(
   items: OrderItemForTax[],
   discountAmount: number = 0,
-  deliveryCharge: number = 0,
+  deliveryCharge?: number,
   paymentSettings?: PaymentSettings | null,
-  paymentMethod: PaymentMethodType | string = 'ONLINE_UPI'
+  paymentMethod: PaymentMethodType | string = 'ONLINE_UPI',
+  isExplicitFreeShipping: boolean = false
 ): TaxCalculationResult {
   const gstEnabled = Boolean(paymentSettings?.gstEnabled);
   const defaultRate = paymentSettings?.defaultGstRate ?? 18;
   const taxMode = paymentSettings?.taxMode ?? 'CGST_SGST';
-  const freeThreshold = paymentSettings?.freeShippingMinAmount ?? 999;
+  const freeThreshold = paymentSettings?.freeShippingMinAmount !== undefined ? paymentSettings.freeShippingMinAmount : 999;
 
   let rawSubtotal = 0;
   for (const item of items) {
@@ -108,11 +119,20 @@ export function calculateOrderTax(
   }
 
   const discount = Math.max(0, Math.min(discountAmount, rawSubtotal));
+  const netDiscountedSubtotal = Math.max(0, rawSubtotal - discount);
 
-  // Determine actual delivery charge respecting the free delivery threshold
-  let effectiveDelivery = Math.max(0, deliveryCharge);
-  if (rawSubtotal >= freeThreshold) {
+  // Determine actual delivery charge respecting the free delivery threshold post-discount
+  const isThresholdMet = freeThreshold > 0 && netDiscountedSubtotal >= freeThreshold;
+  let effectiveDelivery = 0;
+
+  if (isExplicitFreeShipping || isThresholdMet) {
     effectiveDelivery = 0;
+  } else if (deliveryCharge !== undefined && Number(deliveryCharge) >= 0) {
+    effectiveDelivery = Number(deliveryCharge);
+  } else if (paymentSettings?.flatShippingRate !== undefined && Number(paymentSettings.flatShippingRate) >= 0) {
+    effectiveDelivery = Number(paymentSettings.flatShippingRate);
+  } else {
+    effectiveDelivery = 80;
   }
 
   // Authoritative convenience fee calculation
@@ -127,11 +147,10 @@ export function calculateOrderTax(
   // Subtotal - Discount + Delivery + Convenience Fee (Zero additional hidden markup)
   const grandTotal = Math.max(
     0,
-    Math.round((rawSubtotal - discount + effectiveDelivery + convenienceFee) * 100) / 100
+    Math.round((netDiscountedSubtotal + effectiveDelivery + convenienceFee) * 100) / 100
   );
 
   // Business / Invoice calculation (GST extracted from inclusive total for legal invoicing)
-  const netDiscountedSubtotal = Math.max(0, rawSubtotal - discount);
   const rateFraction = defaultRate / 100;
   const taxableAmount = Math.round((netDiscountedSubtotal / (1 + rateFraction)) * 100) / 100;
   const totalTax = Math.round((netDiscountedSubtotal - taxableAmount) * 100) / 100;
@@ -171,8 +190,9 @@ export function calculateOrderTax(
 export function calculateOrderPricing({
   subtotal,
   discountAmount = 0,
-  shippingFee = 0,
+  shippingFee,
   freeShippingMinAmount = 999,
+  isExplicitFreeShipping = false,
   paymentMethod = 'ONLINE_UPI',
   paymentSettings,
 }: {
@@ -180,26 +200,50 @@ export function calculateOrderPricing({
   discountAmount?: number;
   shippingFee?: number;
   freeShippingMinAmount?: number;
+  isExplicitFreeShipping?: boolean;
   paymentMethod?: PaymentMethodType | string;
   paymentSettings?: PaymentSettings | null;
 }) {
-  const freeThreshold = paymentSettings?.freeShippingMinAmount ?? freeShippingMinAmount ?? 999;
+  const freeThreshold = paymentSettings?.freeShippingMinAmount !== undefined ? paymentSettings.freeShippingMinAmount : (freeShippingMinAmount ?? 999);
   const validatedDiscount = Math.max(0, Math.min(discountAmount, subtotal));
-  const effectiveDelivery = subtotal >= freeThreshold ? 0 : Math.max(0, shippingFee);
+  const netMerchandise = Math.max(0, subtotal - validatedDiscount);
+
+  // Free delivery threshold is evaluated on post-discount net merchandise
+  const isThresholdMet = freeThreshold > 0 && netMerchandise >= freeThreshold;
+
+  let effectiveDelivery = 0;
+  if (isExplicitFreeShipping || isThresholdMet) {
+    effectiveDelivery = 0;
+  } else if (shippingFee !== undefined && Number(shippingFee) >= 0) {
+    effectiveDelivery = Number(shippingFee);
+  } else if (paymentSettings?.flatShippingRate !== undefined && Number(paymentSettings.flatShippingRate) >= 0) {
+    effectiveDelivery = Number(paymentSettings.flatShippingRate);
+  } else {
+    effectiveDelivery = 80;
+  }
+
   const { fee: convenienceFee } = calculateConvenienceFee(
     subtotal,
     validatedDiscount,
     paymentMethod,
     paymentSettings
   );
-  const totalAmount = Math.max(0, subtotal - validatedDiscount + effectiveDelivery + convenienceFee);
+
+  const totalAmount = Math.max(
+    0,
+    Math.round((netMerchandise + effectiveDelivery + convenienceFee) * 100) / 100
+  );
 
   return {
     subtotal,
     discountAmount: validatedDiscount,
+    netMerchandise,
     shippingFee: effectiveDelivery,
     convenienceFee,
     totalAmount,
+    isFreeShipping: effectiveDelivery === 0,
+    freeDeliveryReason: effectiveDelivery === 0 ? (isExplicitFreeShipping ? 'Coupon' : (isThresholdMet ? 'Threshold' : 'StoreConfig')) : null,
   };
 }
+
 

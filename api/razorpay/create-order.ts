@@ -51,17 +51,17 @@ export default async function handler(req: any, res: any) {
 
     // 2. Validate Discount
     let validatedDiscount = Math.max(0, Math.min(Number(discountAmount) || 0, serverSubtotal));
+    const netMerchandise = Math.max(0, serverSubtotal - validatedDiscount);
 
     // 3. Authoritative Delivery Fee: Zero Hidden Charges
     // Free delivery applies if:
     // - Explicitly marked as free shipping: isFreeShipping === true or freeShippingPromo === true
-    // - Shipping fee explicitly sent as 0
-    // - Subtotal >= freeShippingMinAmount (default threshold: 999)
+    // - Net merchandise (post-discount) >= freeShippingMinAmount (default threshold: 999)
     // - flatShippingRate is explicitly configured as 0
     const effectiveThreshold = Number(freeShippingMinAmount !== undefined ? freeShippingMinAmount : 999);
     let effectiveDeliveryFee = 0;
     const isExplicitFreeDelivery = Boolean(isFreeShipping || freeShippingPromo);
-    const isThresholdMet = effectiveThreshold > 0 && serverSubtotal >= effectiveThreshold;
+    const isThresholdMet = effectiveThreshold > 0 && netMerchandise >= effectiveThreshold;
 
     if (isExplicitFreeDelivery || isThresholdMet) {
       effectiveDeliveryFee = 0;
@@ -70,19 +70,23 @@ export default async function handler(req: any, res: any) {
     } else if (flatShippingRate !== undefined && Number(flatShippingRate) >= 0) {
       effectiveDeliveryFee = Number(flatShippingRate);
     } else {
-      // Default to 0 delivery fee if not specified, never silently add unrequested charges
-      effectiveDeliveryFee = 0;
+      effectiveDeliveryFee = 80;
     }
 
     // 4. Authoritative Convenience Fee Calculation for Online Razorpay Checkout
     const isFeeEnabled = req.body.enableConvenienceFee !== false;
     const feeRate = Math.min(10, Math.max(0, Number(req.body.convenienceFeePercent ?? 2)));
-    const isManualPayment = req.body.paymentMethod === 'COD' || req.body.paymentMethod === 'QR_SCAN' || req.body.paymentMethod === 'UPI';
+    const isManualPayment =
+      req.body.paymentMethod === 'COD' ||
+      req.body.paymentMethod === 'QR_SCAN' ||
+      req.body.paymentMethod === 'UPI' ||
+      req.body.paymentMethod === 'MANUAL_QR' ||
+      req.body.paymentMethod === 'BANK_TRANSFER';
     let serverConvenienceFee = 0;
 
     if (!isManualPayment && isFeeEnabled && feeRate > 0) {
-      const feeBase = Math.max(0, serverSubtotal - validatedDiscount);
-      serverConvenienceFee = Math.round((feeBase * feeRate) / 100);
+      const rawFee = (netMerchandise * feeRate) / 100;
+      serverConvenienceFee = Math.round(rawFee * 100) / 100;
     }
 
     // 5. GST-INCLUSIVE PRICING:
@@ -90,7 +94,7 @@ export default async function handler(req: any, res: any) {
     // Final Payable = Subtotal - Discount + Delivery Fee + Convenience Fee
     let finalPayableAmount = Math.max(
       0,
-      serverSubtotal - validatedDiscount + effectiveDeliveryFee + serverConvenienceFee
+      Math.round((netMerchandise + effectiveDeliveryFee + serverConvenienceFee) * 100) / 100
     );
 
     // 6. Authoritative Order ID Validation from Firestore (for WhatsApp & Direct Order Payment Links)

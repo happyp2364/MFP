@@ -1,5 +1,6 @@
 import { WebsiteConfig, SocialLinkItem } from '../types';
 import { PUBLIC_SITE_URL } from '../utils/siteUrl';
+import { CANONICAL_STORE_LOCATION } from './storeLocation';
 
 export const DEFAULT_SOCIAL_LINKS: SocialLinkItem[] = [
   {
@@ -89,19 +90,19 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
 
   // Section 3: Address
   address: {
-    shopAddress: 'JOJRI NADI KE PASS, MISTRI MARKET, PIPAR CITY, Rajasthan 342601',
-    billingAddress: 'JOJRI NADI KE PASS, MISTRI MARKET, PIPAR CITY, Rajasthan 342601',
-    warehouseAddress: 'JOJRI NADI KE PASS, MISTRI MARKET, PIPAR CITY, Rajasthan 342601',
-    returnAddress: 'JOJRI NADI KE PASS, MISTRI MARKET, PIPAR CITY, Rajasthan 342601',
-    googleMapsLink: 'https://maps.google.com/?q=Pipar+City+Rajasthan',
-    latitude: 26.3862,
-    longitude: 73.5414,
-    landmark: 'Near Jojri Nadi & Mistri Market',
-    city: 'Pipar City',
-    district: 'Jodhpur',
-    state: 'Rajasthan',
-    country: 'India',
-    pinCode: '342601',
+    shopAddress: CANONICAL_STORE_LOCATION.address,
+    billingAddress: CANONICAL_STORE_LOCATION.address,
+    warehouseAddress: CANONICAL_STORE_LOCATION.address,
+    returnAddress: CANONICAL_STORE_LOCATION.address,
+    googleMapsLink: CANONICAL_STORE_LOCATION.googleMapsUrl,
+    latitude: CANONICAL_STORE_LOCATION.latitude,
+    longitude: CANONICAL_STORE_LOCATION.longitude,
+    landmark: CANONICAL_STORE_LOCATION.landmark,
+    city: CANONICAL_STORE_LOCATION.city,
+    district: CANONICAL_STORE_LOCATION.district,
+    state: CANONICAL_STORE_LOCATION.state,
+    country: CANONICAL_STORE_LOCATION.country,
+    pinCode: CANONICAL_STORE_LOCATION.pincode,
   },
 
   // Section 4: Social Media

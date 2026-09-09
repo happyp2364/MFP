@@ -815,6 +815,16 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
 // Fetch Payment Settings from Firestore
 export async function fetchPaymentSettingsFromFirestore(): Promise<import('../types').PaymentSettings> {
   try {
+    const primaryRef = doc(db, 'settings', 'payment_settings');
+    const primarySnap = await getDoc(primaryRef);
+    if (primarySnap.exists()) {
+      const data = { ...primarySnap.data() };
+      delete (data as any).keySecret;
+      delete (data as any).apiSecret;
+      delete (data as any).secret;
+      return { ...DEFAULT_PAYMENT_SETTINGS, ...data } as import('../types').PaymentSettings;
+    }
+
     const docRef = doc(db, 'paymentSettings', 'config');
     const snap = await getDoc(docRef);
     if (snap.exists()) {
@@ -826,7 +836,7 @@ export async function fetchPaymentSettingsFromFirestore(): Promise<import('../ty
     }
   } catch (err) {
     try {
-      handleFirestoreError(err, OperationType.GET, 'paymentSettings/config');
+      handleFirestoreError(err, OperationType.GET, 'settings/payment_settings');
     } catch (e) {
       console.warn('Payment settings fetch notice:', e);
     }
@@ -839,16 +849,23 @@ export async function savePaymentSettingsInFirestore(
   settings: import('../types').PaymentSettings
 ): Promise<boolean> {
   try {
-    const docRef = doc(db, 'paymentSettings', 'config');
-    // Sanitize any accidental secret fields to guarantee zero secret leakage into Firestore
-    const sanitizedSettings = { ...settings };
-    delete (sanitizedSettings as any).keySecret;
-    delete (sanitizedSettings as any).apiSecret;
-    delete (sanitizedSettings as any).secret;
-    delete (sanitizedSettings as any).webhookSecret;
+    const primaryRef = doc(db, 'settings', 'payment_settings');
+    const legacyRef = doc(db, 'paymentSettings', 'config');
 
-    // Direct merge update to single document
-    await setDoc(docRef, sanitizedSettings, { merge: true });
+    // Remove undefined values and secret fields to guarantee safe write
+    const sanitizedSettings: any = {};
+    for (const [k, v] of Object.entries(settings || {})) {
+      if (v !== undefined && !['keySecret', 'apiSecret', 'secret', 'webhookSecret'].includes(k)) {
+        sanitizedSettings[k] = v;
+      }
+    }
+
+    // Direct merge update to primary authoritative document
+    await setDoc(primaryRef, sanitizedSettings, { merge: true });
+    // Mirror update to legacy path for backward compatibility
+    await setDoc(legacyRef, sanitizedSettings, { merge: true }).catch((e) => {
+      console.warn('Legacy paymentSettings/config mirror write non-fatal warning:', e);
+    });
 
     // Non-blocking asynchronous security audit log
     recordAuditLog(

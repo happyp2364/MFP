@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import {
   ProductFeedConfig,
   ButtonThemeConfig,
@@ -50,6 +50,27 @@ const STORAGE_KEYS = {
   PAYMENT_SETTINGS: 'mfp_payment_settings_live',
   OPEN_BOX_DELIVERY_CONFIG: 'mfp_open_box_delivery_config_live',
 };
+
+function sanitizeFirestorePayload<T extends Record<string, any>>(obj: T): T {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  const result: any = Array.isArray(obj) ? [] : {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) {
+      continue;
+    }
+    if (['keySecret', 'apiSecret', 'secret', 'webhookSecret'].includes(key)) {
+      continue;
+    }
+    if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
+      result[key] = sanitizeFirestorePayload(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result as T;
+}
 
 export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [productFeedConfig, setProductFeedConfig] = useState<ProductFeedConfig>(() => {
@@ -108,12 +129,21 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
       }
     }, () => {});
 
-    const tenantId = getCurrentTenantId();
-    const paymentDocRef = doc(db, 'websites', tenantId, 'payment', 'config');
-    const unsubPayment = onSnapshot(paymentDocRef, (snapshot) => {
+    const paymentDocRefPrimary = doc(db, 'settings', 'payment_settings');
+    const unsubPayment = onSnapshot(paymentDocRefPrimary, async (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as PaymentSettings;
         setPaymentSettings((prev) => ({ ...prev, ...data }));
+      } else {
+        try {
+          const fallbackSnap = await getDoc(doc(db, 'paymentSettings', 'config'));
+          if (fallbackSnap.exists()) {
+            const fallbackData = fallbackSnap.data() as PaymentSettings;
+            setPaymentSettings((prev) => ({ ...prev, ...fallbackData }));
+          }
+        } catch (e) {
+          console.warn('Payment settings fallback fetch error:', e);
+        }
       }
     }, () => {});
 
@@ -199,56 +229,65 @@ export const AppConfigProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   const updatePaymentSettings = async (newSettings: PaymentSettings): Promise<boolean> => {
-    const tenantId = getCurrentTenantId();
-    if (!tenantId) {
-      console.error('[TENANT PAYMENT SAVE ERROR] Invalid tenantId');
-      return false;
-    }
-    const merged = { ...paymentSettings, ...newSettings };
-    try {
-      const docRef = doc(db, 'websites', tenantId, 'payment', 'config');
-      const backupRef = doc(db, 'settings', 'payment_settings');
-      
-      await setDoc(docRef, merged, { merge: true });
-      await setDoc(backupRef, merged, { merge: true }).catch(() => {});
+    const rawMerged = { ...paymentSettings, ...newSettings };
+    const sanitized = sanitizeFirestorePayload(rawMerged);
 
-      // Read-after-write verification
-      const snap = await getDoc(docRef);
+    try {
+      const primaryDocRef = doc(db, 'settings', 'payment_settings');
+      const secondaryDocRef = doc(db, 'paymentSettings', 'config');
+      
+      // Save to primary settings collection (allowed by match /settings/{id})
+      await setDoc(primaryDocRef, sanitized, { merge: true });
+
+      // Also save to secondary collection (allowed by match /paymentSettings/{configId})
+      await setDoc(secondaryDocRef, sanitized, { merge: true }).catch((err) => {
+        console.warn('Secondary paymentSettings write non-fatal warning:', err);
+      });
+
+      // Update local React state and storage
+      setPaymentSettings(sanitized);
+      safeSaveLocal(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(sanitized));
+
+      // Read-after-write verification on primary doc
+      const snap = await getDoc(primaryDocRef);
       if (snap.exists()) {
         const verifiedData = snap.data() as PaymentSettings;
         setPaymentSettings(verifiedData);
         safeSaveLocal(STORAGE_KEYS.PAYMENT_SETTINGS, JSON.stringify(verifiedData));
-        return true;
-      } else {
-        console.error('[TENANT PAYMENT VERIFICATION ERROR] Document not found after write');
-        return false;
       }
+      return true;
     } catch (e: any) {
-      console.error('[TENANT PAYMENT SAVE ERROR]', {
-        tenantId,
-        error: e?.message || e,
+      console.error('[PAYMENT SAVE FIRESTORE ERROR]', {
+        message: e?.message || e,
         code: e?.code,
+        error: e,
       });
       return false;
     }
   };
 
+  const contextValue = useMemo(() => ({
+    productFeedConfig,
+    updateProductFeedConfig,
+    buttonThemeConfig,
+    updateButtonThemeConfig,
+    whatsappTemplatesConfig,
+    updateWhatsAppTemplatesConfig,
+    resetWhatsAppTemplatesToDefault,
+    openBoxDeliveryConfig,
+    updateOpenBoxDeliveryConfig,
+    paymentSettings,
+    updatePaymentSettings,
+  }), [
+    productFeedConfig,
+    buttonThemeConfig,
+    whatsappTemplatesConfig,
+    openBoxDeliveryConfig,
+    paymentSettings,
+  ]);
+
   return (
-    <AppConfigContext.Provider
-      value={{
-        productFeedConfig,
-        updateProductFeedConfig,
-        buttonThemeConfig,
-        updateButtonThemeConfig,
-        whatsappTemplatesConfig,
-        updateWhatsAppTemplatesConfig,
-        resetWhatsAppTemplatesToDefault,
-        openBoxDeliveryConfig,
-        updateOpenBoxDeliveryConfig,
-        paymentSettings,
-        updatePaymentSettings,
-      }}
-    >
+    <AppConfigContext.Provider value={contextValue}>
       {children}
     </AppConfigContext.Provider>
   );

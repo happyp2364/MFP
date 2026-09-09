@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { PhysicalStore } from '../types';
 import { DEFAULT_PHYSICAL_STORES } from '../data/defaultStores';
+import { CANONICAL_STORE_LOCATION } from '../data/storeLocation';
 import { db } from '../lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
@@ -16,25 +17,56 @@ const STORAGE_KEYS = {
   PHYSICAL_STORES: 'mfp_physical_stores_live',
 };
 
+// Normalize store 1 to canonical store location
+const normalizeStore = (store: PhysicalStore): PhysicalStore => {
+  if (
+    store.id === 'store-pipar-main' ||
+    store.id === 'store-jodhpur-flagship' ||
+    store.city?.toLowerCase().includes('pipar') ||
+    (store.address && store.address.toUpperCase().includes('PIPAR'))
+  ) {
+    return {
+      ...store,
+      id: 'store-pipar-main',
+      name: CANONICAL_STORE_LOCATION.legalName,
+      address: 'JOJRI NADI KE PASS, MISTRI MARKET, PIPAR CITY',
+      city: CANONICAL_STORE_LOCATION.city,
+      state: CANONICAL_STORE_LOCATION.state,
+      pincode: CANONICAL_STORE_LOCATION.pincode,
+      latitude: CANONICAL_STORE_LOCATION.latitude,
+      longitude: CANONICAL_STORE_LOCATION.longitude,
+      googleMapsUrl: CANONICAL_STORE_LOCATION.googleMapsUrl,
+    };
+  }
+  return store;
+};
+
 const StoreLocatorContext = createContext<StoreLocatorContextType | undefined>(undefined);
 
 export const StoreLocatorProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [physicalStores, setPhysicalStores] = useState<PhysicalStore[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PHYSICAL_STORES);
-      return saved ? JSON.parse(saved) : DEFAULT_PHYSICAL_STORES;
+      const storesToLoad: PhysicalStore[] = saved ? JSON.parse(saved) : DEFAULT_PHYSICAL_STORES;
+      return storesToLoad.map(normalizeStore);
     } catch {
-      return DEFAULT_PHYSICAL_STORES;
+      return DEFAULT_PHYSICAL_STORES.map(normalizeStore);
     }
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'physical_stores'), (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data().stores as PhysicalStore[];
-        if (Array.isArray(data)) setPhysicalStores(data);
-      }
-    }, () => {});
+    const unsub = onSnapshot(
+      doc(db, 'settings', 'physical_stores'),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data().stores as PhysicalStore[];
+          if (Array.isArray(data)) {
+            setPhysicalStores(data.map(normalizeStore));
+          }
+        }
+      },
+      () => {}
+    );
 
     return () => unsub();
   }, []);

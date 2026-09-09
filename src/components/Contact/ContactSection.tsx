@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { MapPin, Phone, Mail, Clock, MessageCircle, CheckCircle2, Calendar, Sparkles, ExternalLink, Navigation, Layers } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { ContactFormInput } from '../../types';
+import { LeafletStoreMap } from '../Map/LeafletStoreMap';
+import { CANONICAL_STORE_LOCATION, getGoogleMapsDirectionsUrl, getGoogleMapsOpenUrl } from '../../data/storeLocation';
 
 interface ContactSectionProps {
   onOpenCalendarModal?: () => void;
@@ -25,12 +27,11 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
 
   const [submitted, setSubmitted] = useState(false);
 
-  const googleMapsUrl = storeInfo.googleMapsLink || 'https://maps.app.goo.gl/WuqcuomVPaRVofyN9';
-  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(storeInfo.name + ' ' + storeInfo.address)}`;
+  const lat = storeInfo.latitude || CANONICAL_STORE_LOCATION.latitude;
+  const lng = storeInfo.longitude || CANONICAL_STORE_LOCATION.longitude;
 
-  const mapIframeSrc = mapViewMode === 'satellite'
-    ? `https://maps.google.com/maps?q=${encodeURIComponent(storeInfo.name + ' ' + storeInfo.address)}&t=k&z=17&ie=UTF8&iwloc=&output=embed`
-    : (storeInfo.googleMapsEmbed || `https://maps.google.com/maps?q=${encodeURIComponent(storeInfo.name + ' ' + storeInfo.address)}&t=&z=16&ie=UTF8&iwloc=&output=embed`);
+  const googleMapsUrl = getGoogleMapsOpenUrl(lat, lng);
+  const directionsUrl = getGoogleMapsDirectionsUrl(lat, lng);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,15 +231,13 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
                 </div>
               </div>
 
-              {/* Map Iframe */}
-              <div className="relative aspect-video w-full bg-neutral-100">
-                <iframe
-                  title="Marudhar Fashion Point Location"
-                  src={mapIframeSrc}
-                  className="w-full h-full border-0"
-                  allowFullScreen={true}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
+              {/* Map Canvas */}
+              <div className="relative aspect-video w-full bg-neutral-100 min-h-[320px]">
+                <LeafletStoreMap
+                  center={{ lat, lng }}
+                  zoom={15}
+                  mapViewMode={mapViewMode}
+                  className="w-full h-full min-h-[320px]"
                 />
               </div>
 

@@ -40,11 +40,14 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
               <div
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.id as GenderCategory)}
-                className={`group relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-500 border ${
+                className={`group relative overflow-hidden cursor-pointer transition-all duration-500 border ${
                   isSelected
                     ? 'ring-2 ring-[#0B8F63] border-transparent shadow-xl'
                     : 'border-neutral-200/80 shadow-sm hover:shadow-2xl hover:-translate-y-1.5'
                 }`}
+                style={{
+                  borderRadius: 'var(--mfp-category-radius)',
+                }}
               >
                 {/* Background Image Container */}
                 <div className="aspect-[4/5] sm:aspect-[3/4] w-full relative overflow-hidden bg-neutral-100">

@@ -2,6 +2,8 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import { StoreProvider } from './context/StoreContext.tsx';
+import { WebsiteDesignProvider } from './context/WebsiteDesignContext.tsx';
+import { AdminNavProvider } from './context/AdminNavContext.tsx';
 import { initAutoContrastEngine } from './utils/autoContrastEngine.ts';
 import { HelmetProvider } from 'react-helmet-async';
 import { AppErrorBoundary } from './components/Common/AppErrorBoundary.tsx';
@@ -20,9 +22,13 @@ if (rootElement) {
     <StrictMode>
       <AppErrorBoundary>
         <HelmetProvider>
-          <StoreProvider>
-            <App />
-          </StoreProvider>
+          <WebsiteDesignProvider>
+            <AdminNavProvider>
+              <StoreProvider>
+                <App />
+              </StoreProvider>
+            </AdminNavProvider>
+          </WebsiteDesignProvider>
         </HelmetProvider>
       </AppErrorBoundary>
     </StrictMode>,

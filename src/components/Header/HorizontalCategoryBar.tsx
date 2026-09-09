@@ -70,13 +70,21 @@ export const HorizontalCategoryBar: React.FC<HorizontalCategoryBarProps> = ({
               <button
                 key={cat.id}
                 onClick={() => handleClick(cat.id as GenderCategory)}
-                className={`flex items-center gap-2.5 p-1.5 pr-4 rounded-2xl border transition-all shrink-0 ${
+                className={`flex items-center gap-2.5 p-1.5 pr-4 border transition-all shrink-0 ${
                   isSelected
                     ? 'bg-[#0B8F63]/10 border-[#0B8F63] ring-1 ring-[#0B8F63] text-[#0B8F63] shadow-sm'
                     : 'bg-[#F7F7F7] border-neutral-200/80 hover:border-neutral-300 text-neutral-800'
                 }`}
+                style={{
+                  borderRadius: 'var(--mfp-category-radius)',
+                }}
               >
-                <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-white shadow-xs border border-neutral-200/50">
+                <div
+                  className="w-10 h-10 overflow-hidden shrink-0 bg-white shadow-xs border border-neutral-200/50"
+                  style={{
+                    borderRadius: 'calc(var(--mfp-category-radius) - 4px)',
+                  }}
+                >
                   <img
                     src={cat.image}
                     alt={cat.name}

@@ -51,7 +51,7 @@ export interface ProductCardProps {
   customConfig?: Partial<ProductCardDesignerConfig>;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
+const ProductCardComponent: React.FC<ProductCardProps> = ({
   product,
   onQuickView,
   onToggleWishlist,
@@ -317,6 +317,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onClick={() => onQuickView(product)}
       className={getStyleClasses()}
       style={{
+        borderRadius: 'var(--mfp-product-card-radius)',
+        padding: 'var(--mfp-product-card-padding)',
         transitionDuration:
           cfg.animationSpeed === 'fast'
             ? '200ms'
@@ -331,7 +333,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       )}
 
       {/* Top Image Box */}
-      <div className={`relative ${cfg.aspectRatio} w-full bg-neutral-50 overflow-hidden flex items-center justify-center`}>
+      <div
+        className={`relative ${cfg.aspectRatio} w-full bg-neutral-50 overflow-hidden flex items-center justify-center`}
+        style={{
+          borderRadius: 'var(--mfp-product-image-radius)',
+        }}
+      >
         {(!rawImageSrc || imageError) ? (
           <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-50/90">
             <div className="w-12 h-12 rounded-2xl bg-[#0B8F63]/10 text-[#0B8F63] flex items-center justify-center mb-2 shadow-inner">
@@ -721,3 +728,5 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     </div>
   );
 };
+
+export const ProductCard = React.memo(ProductCardComponent);

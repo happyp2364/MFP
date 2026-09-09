@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  APIProvider,
-  Map,
-  AdvancedMarker,
-  Pin,
-  InfoWindow,
-} from '@vis.gl/react-google-maps';
-import {
   MapPin,
   Search,
   Navigation,
@@ -21,20 +14,17 @@ import {
   ShieldCheck,
   X,
   ExternalLink,
-  Info,
-  Car,
-  CreditCard,
-  Package,
-  Footprints,
-  Accessibility,
-  UserCheck,
-  Tag,
-  Share2,
-  Copy,
+  Layers,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { PhysicalStore } from '../../types';
 import { StoreGallerySwiper } from './StoreGallerySwiper';
+import { LeafletStoreMap } from '../Map/LeafletStoreMap';
+import {
+  CANONICAL_STORE_LOCATION,
+  getGoogleMapsDirectionsUrl,
+  getGoogleMapsOpenUrl,
+} from '../../data/storeLocation';
 
 interface StoreLocatorPageProps {
   isOpen: boolean;
@@ -54,11 +44,12 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState<Record<string, number>>({});
+  const [mapViewMode, setMapViewMode] = useState<'roadmap' | 'satellite'>('roadmap');
 
-  // Active Map Center (Defaults to Jodhpur 26.2918, 73.0168)
+  // Active Map Center (Defaults to Canonical Pipar City Store Location)
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
-    lat: 26.2918,
-    lng: 73.0168,
+    lat: CANONICAL_STORE_LOCATION.latitude,
+    lng: CANONICAL_STORE_LOCATION.longitude,
   });
   const [mapZoom, setMapZoom] = useState(11);
 
@@ -389,12 +380,12 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                     </div>
 
                     {/* Store Action Buttons */}
-                    <div className="grid grid-cols-3 gap-2 mt-3.5 pt-3 border-t border-neutral-100">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-3.5 pt-3 border-t border-neutral-100">
                       {/* Call Button */}
                       <a
                         href={`tel:${store.phone}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="px-2 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-900 text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+                        className="px-2 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-900 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
                       >
                         <Phone className="w-3.5 h-3.5 text-emerald-600" />
                         <span>Call</span>
@@ -402,23 +393,35 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
 
                       {/* WhatsApp Button */}
                       <a
-                        href={`https://wa.me/${store.whatsapp || '919829012345'}?text=Hi%20Marudhar%20Fashion%20Point%20${encodeURIComponent(store.name)},%20I%20want%20to%20inquire%20about%20shoe%20stock.`}
+                        href={`https://wa.me/${store.whatsapp || '919782482250'}?text=Hi%20Marudhar%20Fashion%20Point%20${encodeURIComponent(store.name)},%20I%20want%20to%20inquire%20about%20shoe%20stock.`}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="px-2 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs"
+                        className="px-2 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs"
                       >
                         <MessageCircle className="w-3.5 h-3.5" />
                         <span>WhatsApp</span>
                       </a>
 
-                      {/* Get Directions Button */}
+                      {/* Open Map Button */}
                       <a
-                        href={store.googleMapsUrl || `https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}`}
+                        href={getGoogleMapsOpenUrl(store.latitude, store.longitude)}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="px-2 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs"
+                        className="px-2 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Open Map</span>
+                      </a>
+
+                      {/* Get Directions Button */}
+                      <a
+                        href={getGoogleMapsDirectionsUrl(store.latitude, store.longitude)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="px-2 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs"
                       >
                         <Navigation className="w-3.5 h-3.5" />
                         <span>Directions</span>
@@ -431,82 +434,40 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
           </div>
         </div>
 
-        {/* Right Section: Interactive Google Map */}
-        <div className="flex-1 bg-neutral-900 relative min-h-[350px] lg:min-h-full">
-          {API_KEY ? (
-            <APIProvider apiKey={API_KEY}>
-              <Map
-                style={{ width: '100%', height: '100%' }}
-                defaultCenter={mapCenter}
-                center={mapCenter}
-                defaultZoom={mapZoom}
-                zoom={mapZoom}
-                gestureHandling="greedy"
-                disableDefaultUI={false}
-                mapId="DEMO_MAP_ID"
-                internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
-              >
-                {filteredStores.map((store) => (
-                  <AdvancedMarker
-                    key={store.id}
-                    position={{ lat: store.latitude, lng: store.longitude }}
-                    onClick={() => handleSelectStore(store)}
-                  >
-                    <Pin
-                      background={selectedStore?.id === store.id ? '#0B8F63' : '#111827'}
-                      borderColor="#FFFFFF"
-                      glyphColor="#FFFFFF"
-                    />
-                  </AdvancedMarker>
-                ))}
-
-                {userLocation && (
-                  <AdvancedMarker position={userLocation}>
-                    <div className="p-2 bg-blue-600 text-white rounded-full shadow-lg border-2 border-white animate-pulse">
-                      <Navigation className="w-4 h-4" />
-                    </div>
-                  </AdvancedMarker>
-                )}
-
-                {selectedStore && (
-                  <InfoWindow
-                    position={{ lat: selectedStore.latitude, lng: selectedStore.longitude }}
-                    onCloseClick={() => setSelectedStore(null)}
-                  >
-                    <div className="p-2 space-y-1 text-neutral-900 max-w-xs">
-                      <h4 className="font-extrabold text-sm text-neutral-900">{selectedStore.name}</h4>
-                      <p className="text-xs text-neutral-600">{selectedStore.address}</p>
-                      <div className="flex items-center gap-2 pt-1 text-xs">
-                        <span className="font-bold text-amber-600">⭐ {selectedStore.rating}</span>
-                        <a
-                          href={`https://www.google.com/maps/dir/?api=1&destination=${selectedStore.latitude},${selectedStore.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 font-bold underline text-xs"
-                        >
-                          Directions →
-                        </a>
-                      </div>
-                    </div>
-                  </InfoWindow>
-                )}
-              </Map>
-            </APIProvider>
-          ) : (
-            /* Fallback Interactive Map Container */
-            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-white bg-gradient-to-br from-neutral-900 via-neutral-950 to-black relative">
-              <iframe
-                title="Marudhar Stores Map Preview"
-                src={`https://maps.google.com/maps?q=${mapCenter.lat},${mapCenter.lng}&z=12&output=embed`}
-                className="w-full h-full border-0 absolute inset-0 opacity-80"
-                loading="lazy"
-              />
-              <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-md p-3 rounded-2xl border border-white/20 text-xs font-bold text-emerald-400 shadow-xl flex items-center gap-2 z-10">
-                <MapPin className="w-4 h-4" />
-                <span>Showing {filteredStores.length} Stores on Map</span>
-              </div>
+        {/* Right Section: Interactive Leaflet Store Map */}
+        <div className="flex-1 bg-neutral-900 relative min-h-[350px] lg:min-h-full flex flex-col">
+          {/* Map Header Overlay Bar */}
+          <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between gap-2 pointer-events-none">
+            <div className="bg-neutral-950/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 text-xs font-bold text-white shadow-xl flex items-center gap-2 pointer-events-auto">
+              <MapPin className="w-4 h-4 text-emerald-400" />
+              <span>Showing {filteredStores.length} Active Stores</span>
             </div>
-          )}
+
+            <div className="flex items-center gap-2 pointer-events-auto">
+              <button
+                type="button"
+                onClick={() => setMapViewMode(mapViewMode === 'roadmap' ? 'satellite' : 'roadmap')}
+                className="bg-neutral-950/80 hover:bg-black/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 text-xs font-bold text-white shadow-xl flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{mapViewMode === 'roadmap' ? 'Satellite View' : 'Map View'}</span>
+              </button>
+            </div>
+          </div>
+
+          <LeafletStoreMap
+            center={mapCenter}
+            zoom={mapZoom}
+            stores={filteredStores}
+            selectedStoreId={selectedStore?.id}
+            onSelectStore={(st) => {
+              const match = enabledStores.find((s) => s.id === st.id);
+              if (match) handleSelectStore(match);
+            }}
+            userLocation={userLocation}
+            mapViewMode={mapViewMode}
+            className="w-full h-full min-h-[400px] flex-1"
+          />
         </div>
       </div>
 
@@ -637,7 +598,15 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                   <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
                 </a>
                 <a
-                  href={detailModalStore.googleMapsUrl || `https://www.google.com/maps/dir/?api=1&destination=${detailModalStore.latitude},${detailModalStore.longitude}`}
+                  href={getGoogleMapsOpenUrl(detailModalStore.latitude, detailModalStore.longitude)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-extrabold text-xs flex items-center gap-1.5 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Open Map
+                </a>
+                <a
+                  href={getGoogleMapsDirectionsUrl(detailModalStore.latitude, detailModalStore.longitude)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition-colors"

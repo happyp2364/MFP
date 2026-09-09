@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { AnnouncementBar } from './components/Header/AnnouncementBar';
 import { Navbar } from './components/Header/Navbar';
@@ -23,8 +23,6 @@ import { QuickViewModal } from './components/Products/QuickViewModal';
 import { OrderSheet } from './components/Cart/OrderSheet';
 import { LiveSearchModal } from './components/Search/LiveSearchModal';
 import { WishlistModal } from './components/Wishlist/WishlistModal';
-import { AdminLoginModal } from './components/Admin/AdminLoginModal';
-import { AdminDashboardModal } from './components/Admin/AdminDashboardModal';
 import { AdminErrorBoundary } from './components/Admin/AdminErrorBoundary';
 import { FloatingAdminButton } from './components/Admin/FloatingAdminButton';
 import { SEOLiveScoreWidget } from './components/Admin/SEOLiveScoreWidget';
@@ -36,13 +34,19 @@ import { PaymentErrorBoundary } from './components/Checkout/PaymentErrorBoundary
 import { CustomerAuthGuardModal } from './components/Customer/CustomerAuthGuardModal';
 import { CustomerAccountModal } from './components/Customer/CustomerAccountModal';
 import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
-import { CalendarBookingModal } from './components/GoogleWorkspace/CalendarBookingModal';
-import { GmailInquiryModal } from './components/GoogleWorkspace/GmailInquiryModal';
-import { WorkspaceHubDrawer } from './components/GoogleWorkspace/WorkspaceHubDrawer';
-import { StoreLocatorPage } from './components/StoreLocator/StoreLocatorPage';
 import { ProductDetailPage } from './components/Products/ProductDetailPage';
 import { HomepageRenderer } from './components/Customer/HomepageRenderer';
+
+// Lazy loaded modals to keep initial bundle ultra-light
+const AdminLoginModal = lazy(() => import('./components/Admin/AdminLoginModal').then(m => ({ default: m.AdminLoginModal })));
+const AdminDashboardModal = lazy(() => import('./components/Admin/AdminDashboardModal').then(m => ({ default: m.AdminDashboardModal })));
+const CalendarBookingModal = lazy(() => import('./components/GoogleWorkspace/CalendarBookingModal').then(m => ({ default: m.CalendarBookingModal })));
+const GmailInquiryModal = lazy(() => import('./components/GoogleWorkspace/GmailInquiryModal').then(m => ({ default: m.GmailInquiryModal })));
+const WorkspaceHubDrawer = lazy(() => import('./components/GoogleWorkspace/WorkspaceHubDrawer').then(m => ({ default: m.WorkspaceHubDrawer })));
+const StoreLocatorPage = lazy(() => import('./components/StoreLocator/StoreLocatorPage').then(m => ({ default: m.StoreLocatorPage })));
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { useWebsiteDesign } from './context/WebsiteDesignContext';
+import { SectionResponsiveConfig } from './types/websiteDesign';
 import { ScratchCardPopup } from './components/Promo/ScratchCardPopup';
 import { SpinWheelPopup } from './components/Promo/SpinWheelPopup';
 import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebration';
@@ -90,6 +94,7 @@ function PaymentRouteView({ orderId, onBackHome }: PaymentRouteViewProps) {
 function StorefrontView() {
   const { products, isAdmin, toastMessage, productFeedConfig, seoConfig, customerUser, showToast } = useStore();
   const { backgroundGradientClass } = useTheme();
+  const { draftDesignSettings } = useWebsiteDesign();
 
   // --- STATE ---
   const [activeCategory, setActiveCategory] = useState<GenderCategory>('all');
@@ -667,7 +672,7 @@ function StorefrontView() {
       />
 
       {/* Mobile Category Slider & Desktop Horizontal Category Bar */}
-      <div className="pt-[60px] sm:pt-[72px]">
+      <div style={{ paddingTop: 'var(--mfp-header-height)' }}>
         <MobileScrollableCategories
           activeCategory={activeCategory}
           onSelectCategory={(cat) => {
@@ -765,7 +770,6 @@ function StorefrontView() {
         </>
       ) : (
         <>
-          {/* Dynamic AI Experience Builder Homepage */}
           <HomepageRenderer
             onSelectProduct={(p) => setQuickViewProduct(p)}
             onNavigateCategory={(cat) => {
@@ -777,121 +781,190 @@ function StorefrontView() {
             }}
           />
 
-          {/* 3. Hero Section */}
-          <div id="hero">
-            <HeroSection onExploreClick={() => {
-              setIsShopActive(true);
-              setTimeout(() => {
-                handleNavigateToSection('products');
-              }, 100);
-            }} />
-          </div>
+          {(() => {
+            const layout = draftDesignSettings.layout;
+            const order = layout?.homeSectionOrder || [
+              'hero', 'trending_shoes', 'price_point_699', 'categories', 'featured_products',
+              'best_sellers', 'trending_products', 'trending_collections', 'new_arrivals',
+              'reviews', 'about', 'contact', 'instagram', 'social'
+            ];
+            const secConfigs = layout?.sections || {};
 
-          {/* 3b. Trending Shoes Collection */}
-          <TrendingShoesSection
-            wishlistIds={wishlistIds}
-            onToggleWishlist={handleToggleWishlist}
-            onQuickView={(p) => setQuickViewProduct(p)}
-            onAddToCart={handleAddToCart}
-            onBuyNow={handleBuyNow}
-          />
+            return order.map((secId) => {
+              const config = secConfigs[secId];
+              if (config && config.visible === false) return null;
 
-          {/* 3c. 🔥 ₹699 Shoe Collection Section */}
-          <PricePointCollectionSection
-            wishlistIds={wishlistIds}
-            onToggleWishlist={handleToggleWishlist}
-            onQuickView={(p) => setQuickViewProduct(p)}
-            onAddToCart={handleAddToCart}
-            onBuyNow={handleBuyNow}
-          />
+              const desktop: Partial<SectionResponsiveConfig> = config?.desktop || {};
+              const sectionStyle: React.CSSProperties = {
+                paddingTop: `${desktop.paddingTop ?? 16}px`,
+                paddingBottom: `${desktop.paddingBottom ?? 16}px`,
+                paddingLeft: `${desktop.paddingLeft ?? 16}px`,
+                paddingRight: `${desktop.paddingRight ?? 16}px`,
+                marginTop: `${desktop.marginTop ?? 0}px`,
+                marginBottom: `${desktop.marginBottom ?? 16}px`,
+                borderRadius: `${desktop.borderRadius ?? 0}px`,
+              };
 
-          {/* 4. Family Category Cards */}
-          <div id="categories">
-            <CategorySection
-              activeCategory={activeCategory}
-              onSelectCategory={(cat) => {
-                handleSelectCategory(cat);
-                setIsShopActive(true);
-                setTimeout(() => {
-                  handleNavigateToSection('products');
-                }, 100);
-              }}
-            />
-          </div>
+              let widthClass = 'w-full';
+              if (desktop.width === 'wide') widthClass = 'max-w-7xl mx-auto';
+              else if (desktop.width === 'standard') widthClass = 'max-w-5xl mx-auto';
+              else if (desktop.width === 'compact') widthClass = 'max-w-3xl mx-auto';
 
-          {/* 4b. Featured Collection Carousel */}
-          <ProductCarousel
-            title="Featured Collection"
-            subtitle="Handpicked Styles"
-            products={featuredProducts}
-            wishlistIds={wishlistIds}
-            onToggleWishlist={handleToggleWishlist}
-            onQuickView={(p) => setQuickViewProduct(p)}
-            onAddToCart={handleAddToCart}
-            onBuyNow={handleBuyNow}
-          />
-
-          {/* 5. Best Sellers Auto Carousel */}
-          <ProductCarousel
-            title="Best Sellers in Store"
-            subtitle="Customer Favorites"
-            products={bestSellers}
-            wishlistIds={wishlistIds}
-            onToggleWishlist={handleToggleWishlist}
-            onQuickView={(p) => setQuickViewProduct(p)}
-            onAddToCart={handleAddToCart}
-            onBuyNow={handleBuyNow}
-          />
-
-          {/* 7. Trending Products Carousel */}
-          <ProductCarousel
-            title="Trending Products"
-            subtitle="Hot Right Now"
-            products={trendingProducts}
-            wishlistIds={wishlistIds}
-            onToggleWishlist={handleToggleWishlist}
-            onQuickView={(p) => setQuickViewProduct(p)}
-            onAddToCart={handleAddToCart}
-            onBuyNow={handleBuyNow}
-          />
-
-          <TrendingCollections onSelectCollection={handleSelectCollection} />
-
-          {/* 8. New Season Arrivals Carousel */}
-          <ProductCarousel
-            title="New Season Arrivals"
-            subtitle="Fresh Drops"
-            products={newArrivals}
-            wishlistIds={wishlistIds}
-            onToggleWishlist={handleToggleWishlist}
-            onQuickView={(p) => setQuickViewProduct(p)}
-            onAddToCart={handleAddToCart}
-            onBuyNow={handleBuyNow}
-          />
-
-          {/* 9. Customer Testimonials */}
-          <div id="reviews">
-            <ReviewsSection />
-          </div>
-
-          {/* 10. About Us Storytelling */}
-          <div id="about">
-            <AboutSection />
-          </div>
-
-          {/* 11. Contact & Store Locator */}
-          <div id="contact">
-            <ContactSection
-              onOpenCalendarModal={() => setCalendarModalOpen(true)}
-              onOpenGmailModal={() => setGmailModalOpen(true)}
-            />
-          </div>
-
-          {/* 12. Instagram Feed */}
-          <InstagramFeed />
-
-          {/* 13. Social Follow CTA */}
-          <SocialFollowCTA />
+              switch (secId) {
+                case 'hero':
+                  return (
+                    <div id="hero" key="hero" style={sectionStyle} className={widthClass}>
+                      <HeroSection onExploreClick={() => {
+                        setIsShopActive(true);
+                        setTimeout(() => {
+                          handleNavigateToSection('products');
+                        }, 100);
+                      }} />
+                    </div>
+                  );
+                case 'trending_shoes':
+                  return (
+                    <div id="trending_shoes" key="trending_shoes" style={sectionStyle} className={widthClass}>
+                      <TrendingShoesSection
+                        wishlistIds={wishlistIds}
+                        onToggleWishlist={handleToggleWishlist}
+                        onQuickView={(p) => setQuickViewProduct(p)}
+                        onAddToCart={handleAddToCart}
+                        onBuyNow={handleBuyNow}
+                      />
+                    </div>
+                  );
+                case 'price_point_699':
+                  return (
+                    <div id="price_point_699" key="price_point_699" style={sectionStyle} className={widthClass}>
+                      <PricePointCollectionSection
+                        wishlistIds={wishlistIds}
+                        onToggleWishlist={handleToggleWishlist}
+                        onQuickView={(p) => setQuickViewProduct(p)}
+                        onAddToCart={handleAddToCart}
+                        onBuyNow={handleBuyNow}
+                      />
+                    </div>
+                  );
+                case 'categories':
+                  return (
+                    <div id="categories" key="categories" style={sectionStyle} className={widthClass}>
+                      <CategorySection
+                        activeCategory={activeCategory}
+                        onSelectCategory={(cat) => {
+                          handleSelectCategory(cat);
+                          setIsShopActive(true);
+                          setTimeout(() => {
+                            handleNavigateToSection('products');
+                          }, 100);
+                        }}
+                      />
+                    </div>
+                  );
+                case 'featured_products':
+                  return (
+                    <div id="featured_products" key="featured_products" style={sectionStyle} className={widthClass}>
+                      <ProductCarousel
+                        title="Featured Collection"
+                        subtitle="Handpicked Styles"
+                        products={featuredProducts}
+                        wishlistIds={wishlistIds}
+                        onToggleWishlist={handleToggleWishlist}
+                        onQuickView={(p) => setQuickViewProduct(p)}
+                        onAddToCart={handleAddToCart}
+                        onBuyNow={handleBuyNow}
+                      />
+                    </div>
+                  );
+                case 'best_sellers':
+                  return (
+                    <div id="best_sellers" key="best_sellers" style={sectionStyle} className={widthClass}>
+                      <ProductCarousel
+                        title="Best Sellers in Store"
+                        subtitle="Customer Favorites"
+                        products={bestSellers}
+                        wishlistIds={wishlistIds}
+                        onToggleWishlist={handleToggleWishlist}
+                        onQuickView={(p) => setQuickViewProduct(p)}
+                        onAddToCart={handleAddToCart}
+                        onBuyNow={handleBuyNow}
+                      />
+                    </div>
+                  );
+                case 'trending_products':
+                  return (
+                    <div id="trending_products" key="trending_products" style={sectionStyle} className={widthClass}>
+                      <ProductCarousel
+                        title="Trending Products"
+                        subtitle="Hot Right Now"
+                        products={trendingProducts}
+                        wishlistIds={wishlistIds}
+                        onToggleWishlist={handleToggleWishlist}
+                        onQuickView={(p) => setQuickViewProduct(p)}
+                        onAddToCart={handleAddToCart}
+                        onBuyNow={handleBuyNow}
+                      />
+                    </div>
+                  );
+                case 'trending_collections':
+                  return (
+                    <div id="trending_collections" key="trending_collections" style={sectionStyle} className={widthClass}>
+                      <TrendingCollections onSelectCollection={handleSelectCollection} />
+                    </div>
+                  );
+                case 'new_arrivals':
+                  return (
+                    <div id="new_arrivals" key="new_arrivals" style={sectionStyle} className={widthClass}>
+                      <ProductCarousel
+                        title="New Season Arrivals"
+                        subtitle="Fresh Drops"
+                        products={newArrivals}
+                        wishlistIds={wishlistIds}
+                        onToggleWishlist={handleToggleWishlist}
+                        onQuickView={(p) => setQuickViewProduct(p)}
+                        onAddToCart={handleAddToCart}
+                        onBuyNow={handleBuyNow}
+                      />
+                    </div>
+                  );
+                case 'reviews':
+                  return (
+                    <div id="reviews" key="reviews" style={sectionStyle} className={widthClass}>
+                      <ReviewsSection />
+                    </div>
+                  );
+                case 'about':
+                  return (
+                    <div id="about" key="about" style={sectionStyle} className={widthClass}>
+                      <AboutSection />
+                    </div>
+                  );
+                case 'contact':
+                  return (
+                    <div id="contact" key="contact" style={sectionStyle} className={widthClass}>
+                      <ContactSection
+                        onOpenCalendarModal={() => setCalendarModalOpen(true)}
+                        onOpenGmailModal={() => setGmailModalOpen(true)}
+                      />
+                    </div>
+                  );
+                case 'instagram':
+                  return (
+                    <div id="instagram" key="instagram" style={sectionStyle} className={widthClass}>
+                      <InstagramFeed />
+                    </div>
+                  );
+                case 'social':
+                  return (
+                    <div id="social" key="social" style={sectionStyle} className={widthClass}>
+                      <SocialFollowCTA />
+                    </div>
+                  );
+                default:
+                  return null;
+              }
+            });
+          })()}
         </>
       )}
 
@@ -1022,47 +1095,49 @@ function StorefrontView() {
         onQuickView={(p) => setQuickViewProduct(p)}
       />
 
-      {/* Admin Login Modal */}
-      <AdminLoginModal
-        isOpen={adminLoginOpen}
-        onClose={() => setAdminLoginOpen(false)}
-        onLoginSuccess={() => setAdminDashboardOpen(true)}
-      />
-
-      {/* Admin Dashboard Modal */}
-      <AdminErrorBoundary fallbackTitle="Admin Panel Shell Notice">
-        <AdminDashboardModal
-          isOpen={adminDashboardOpen}
-          onClose={() => setAdminDashboardOpen(false)}
-          initialTab={adminActiveTab}
+      <Suspense fallback={null}>
+        {/* Admin Login Modal */}
+        <AdminLoginModal
+          isOpen={adminLoginOpen}
+          onClose={() => setAdminLoginOpen(false)}
+          onLoginSuccess={() => setAdminDashboardOpen(true)}
         />
-      </AdminErrorBoundary>
 
-      {/* Google Calendar VIP Store Fitting Booking Modal */}
-      <CalendarBookingModal
-        isOpen={calendarModalOpen}
-        onClose={() => setCalendarModalOpen(false)}
-      />
+        {/* Admin Dashboard Modal */}
+        <AdminErrorBoundary fallbackTitle="Admin Panel Shell Notice">
+          <AdminDashboardModal
+            isOpen={adminDashboardOpen}
+            onClose={() => setAdminDashboardOpen(false)}
+            initialTab={adminActiveTab}
+          />
+        </AdminErrorBoundary>
 
-      {/* Gmail Direct Inquiry Modal */}
-      <GmailInquiryModal
-        isOpen={gmailModalOpen}
-        onClose={() => setGmailModalOpen(false)}
-      />
+        {/* Google Calendar VIP Store Fitting Booking Modal */}
+        <CalendarBookingModal
+          isOpen={calendarModalOpen}
+          onClose={() => setCalendarModalOpen(false)}
+        />
 
-      {/* Google Workspace Account Hub Drawer */}
-      <WorkspaceHubDrawer
-        isOpen={workspaceHubOpen}
-        onClose={() => setWorkspaceHubOpen(false)}
-        onOpenCalendarModal={() => setCalendarModalOpen(true)}
-        onOpenGmailModal={() => setGmailModalOpen(true)}
-      />
+        {/* Gmail Direct Inquiry Modal */}
+        <GmailInquiryModal
+          isOpen={gmailModalOpen}
+          onClose={() => setGmailModalOpen(false)}
+        />
 
-      {/* Nearby Stores Full-Screen Locator Page */}
-      <StoreLocatorPage
-        isOpen={storeLocatorOpen}
-        onClose={() => setStoreLocatorOpen(false)}
-      />
+        {/* Google Workspace Account Hub Drawer */}
+        <WorkspaceHubDrawer
+          isOpen={workspaceHubOpen}
+          onClose={() => setWorkspaceHubOpen(false)}
+          onOpenCalendarModal={() => setCalendarModalOpen(true)}
+          onOpenGmailModal={() => setGmailModalOpen(true)}
+        />
+
+        {/* Nearby Stores Full-Screen Locator Page */}
+        <StoreLocatorPage
+          isOpen={storeLocatorOpen}
+          onClose={() => setStoreLocatorOpen(false)}
+        />
+      </Suspense>
 
       {/* Toast Notification Banner */}
       {toastMessage && (

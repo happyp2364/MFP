@@ -133,13 +133,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 flex items-center ${
           isScrolled
-            ? 'bg-white/95 backdrop-blur-md shadow-sm py-2.5 border-b border-neutral-100'
-            : 'bg-white/90 backdrop-blur-sm py-3'
+            ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-neutral-100'
+            : 'bg-white/90 backdrop-blur-sm'
         }`}
+        style={{
+          minHeight: 'var(--mfp-header-height)',
+          paddingTop: 'var(--mfp-header-padding-y)',
+          paddingBottom: 'var(--mfp-header-padding-y)',
+          paddingLeft: 'var(--mfp-header-padding-x)',
+          paddingRight: 'var(--mfp-header-padding-x)',
+        }}
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto w-full">
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             
             {/* Left Section: Mobile Hamburger Toggle + Logo */}
@@ -150,7 +157,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="md:hidden p-2 rounded-xl text-neutral-800 hover:bg-neutral-100 active:scale-95 transition-all"
                 aria-label="Open Side Navigation Drawer"
               >
-                <Menu className="w-6 h-6" />
+                <Menu style={{ width: 'var(--mfp-icon-header-size)', height: 'var(--mfp-icon-header-size)' }} />
               </button>
 
               {/* Brand Logo */}
@@ -159,12 +166,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={handleLogoClick}
                   className="flex items-center gap-2 text-left group"
                 >
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0B8F63] flex items-center justify-center text-white shadow-md shadow-[#0B8F63]/20 group-hover:scale-105 transition-transform duration-300">
+                  <div
+                    className="rounded-xl bg-[#0B8F63] flex items-center justify-center text-white shadow-md shadow-[#0B8F63]/20 group-hover:scale-105 transition-transform duration-300 shrink-0"
+                    style={{
+                      width: 'var(--mfp-logo-width)',
+                      height: 'var(--mfp-logo-height)',
+                    }}
+                  >
                     <Footprints className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="flex items-center gap-1">
-                      <span className="font-serif-heading font-extrabold text-base sm:text-xl text-neutral-900 tracking-tight">
+                      <span className="font-serif-heading font-extrabold text-base sm:text-lg text-neutral-900 tracking-tight">
                         {websiteConfig?.businessIdentity?.businessName || storeInfo?.name || 'Shop'}
                       </span>
                     </div>
@@ -177,7 +190,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {/* Middle Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+            <nav className="hidden md:flex items-center" style={{ gap: 'var(--mfp-nav-gap)' }}>
               <button
                 onClick={() => handleNavClick('hero')}
                 className="text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors"
@@ -395,7 +408,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 href={generateGeneralInquiryWhatsAppLink()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden lg:flex items-center gap-2 bg-[#0B8F63] hover:bg-[#086F4C] text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-md shadow-[#0B8F63]/20 hover:scale-105 transition-all duration-300"
+                className="hidden lg:flex items-center gap-2 bg-[#0B8F63] hover:bg-[#086F4C] text-white text-xs font-bold px-4 shadow-md shadow-[#0B8F63]/20 hover:scale-105 transition-all duration-300"
+                style={{
+                  height: 'var(--mfp-whatsapp-btn-height)',
+                  borderRadius: 'var(--mfp-whatsapp-btn-radius)',
+                }}
                 title="व्हाट्सऐप पर ऑर्डर करें • Order on WhatsApp"
               >
                 <MessageCircle className="w-4 h-4 fill-white text-[#0B8F63]" />

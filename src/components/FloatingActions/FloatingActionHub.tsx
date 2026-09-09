@@ -202,10 +202,14 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Inquire on WhatsApp with ${waSupportName}`}
-            className="w-14 h-14 rounded-full bg-[#0B8F63] text-white flex items-center justify-center shadow-2xl shadow-[#0B8F63]/40 hover:scale-110 active:scale-95 transition-all duration-300 relative focus:outline-none focus:ring-2 focus:ring-[#0B8F63] focus:ring-offset-2"
+            style={{
+              width: 'var(--mfp-floating-btn-size, 56px)',
+              height: 'var(--mfp-floating-btn-size, 56px)',
+            }}
+            className="rounded-full bg-[#0B8F63] text-white flex items-center justify-center shadow-2xl shadow-[#0B8F63]/40 hover:scale-110 active:scale-95 transition-all duration-300 relative focus:outline-none focus:ring-2 focus:ring-[#0B8F63] focus:ring-offset-2"
             title={`Inquire on WhatsApp with ${waSupportName}`}
           >
-            <MessageCircle className="w-7 h-7 fill-white text-[#0B8F63]" />
+            <MessageCircle style={{ width: 'var(--mfp-floating-icon-size, 28px)', height: 'var(--mfp-floating-icon-size, 28px)' }} className="fill-white text-[#0B8F63]" />
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-white animate-ping" />
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-white" />
           </a>

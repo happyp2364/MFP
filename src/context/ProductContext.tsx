@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { Product, Review } from '../types';
 import { PRODUCTS_DATA, REVIEWS_DATA } from '../data/mockData';
 import { db } from '../lib/firebase';
@@ -161,21 +161,21 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
   };
 
+  const contextValue = useMemo(() => ({
+    products,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    toggleInStock,
+    reviews,
+    addReview,
+    updateReview,
+    deleteReview,
+    voteHelpfulReview,
+  }), [products, reviews]);
+
   return (
-    <ProductContext.Provider
-      value={{
-        products,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        toggleInStock,
-        reviews,
-        addReview,
-        updateReview,
-        deleteReview,
-        voteHelpfulReview,
-      }}
-    >
+    <ProductContext.Provider value={contextValue}>
       {children}
     </ProductContext.Provider>
   );

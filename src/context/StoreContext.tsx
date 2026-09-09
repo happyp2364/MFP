@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useMemo, ReactNode } from 'react';
 import { recordAuditLog } from '../lib/firebase';
 import { mapTabToModule } from '../lib/adminPermissions';
 
@@ -11,6 +11,7 @@ import { AuditProvider, useAudit } from './AuditContext';
 import { PermissionProvider, usePermission } from './PermissionContext';
 import { WebsiteIdentityProvider, useWebsiteIdentity } from './WebsiteIdentityContext';
 import { AppearanceProvider, useAppearance } from './AppearanceContext';
+import { WebsiteDesignProvider, useWebsiteDesign } from './WebsiteDesignContext';
 import { SEOProvider, useSEO } from './SEOContext';
 import { StoreLocatorProvider, useStoreLocator } from './StoreLocatorContext';
 import { PolicyProvider, usePolicy } from './PolicyContext';
@@ -45,37 +46,39 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               <PermissionProvider>
                 <WebsiteIdentityProvider>
                   <AppearanceProvider>
-                    <SEOProvider>
-                      <StoreLocatorProvider>
-                        <PolicyProvider>
-                          <AIPetProvider>
-                            <AISEOProvider>
-                              <AIMarketingProvider>
-                                <AIRecommendationProvider>
-                                  <AuthProvider>
-                                    <ProductProvider>
-                                      <OrderProvider>
-                                        <CartProvider>
-                                          <CustomerProvider>
-                                            <MarketingProvider>
-                                              <AdminProvider>
-                                                <NotificationProvider>
-                                                  <StoreContextFacadeBridge>{children}</StoreContextFacadeBridge>
-                                                </NotificationProvider>
-                                              </AdminProvider>
-                                            </MarketingProvider>
-                                          </CustomerProvider>
-                                        </CartProvider>
-                                      </OrderProvider>
-                                    </ProductProvider>
-                                  </AuthProvider>
-                                </AIRecommendationProvider>
-                              </AIMarketingProvider>
-                            </AISEOProvider>
-                          </AIPetProvider>
-                        </PolicyProvider>
-                      </StoreLocatorProvider>
-                    </SEOProvider>
+                    <WebsiteDesignProvider>
+                      <SEOProvider>
+                        <StoreLocatorProvider>
+                          <PolicyProvider>
+                            <AIPetProvider>
+                              <AISEOProvider>
+                                <AIMarketingProvider>
+                                  <AIRecommendationProvider>
+                                    <AuthProvider>
+                                      <ProductProvider>
+                                        <OrderProvider>
+                                          <CartProvider>
+                                            <CustomerProvider>
+                                              <MarketingProvider>
+                                                <AdminProvider>
+                                                  <NotificationProvider>
+                                                    <StoreContextFacadeBridge>{children}</StoreContextFacadeBridge>
+                                                  </NotificationProvider>
+                                                </AdminProvider>
+                                              </MarketingProvider>
+                                            </CustomerProvider>
+                                          </CartProvider>
+                                        </OrderProvider>
+                                      </ProductProvider>
+                                    </AuthProvider>
+                                  </AIRecommendationProvider>
+                                </AIMarketingProvider>
+                              </AISEOProvider>
+                            </AIPetProvider>
+                          </PolicyProvider>
+                        </StoreLocatorProvider>
+                      </SEOProvider>
+                    </WebsiteDesignProvider>
                   </AppearanceProvider>
                 </WebsiteIdentityProvider>
               </PermissionProvider>
@@ -96,6 +99,7 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
   const permission = usePermission();
   const websiteIdentity = useWebsiteIdentity();
   const appearance = useAppearance();
+  const websiteDesign = useWebsiteDesign();
   const seo = useSEO();
   const storeLocator = useStoreLocator();
   const policy = usePolicy();
@@ -113,7 +117,7 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
   const notifications = useNotifications();
 
   // Unified facade value preserving 100% of the original useStore() interface
-  const combinedContextValue = {
+  const combinedContextValue = useMemo(() => ({
     // Products & Reviews
     products: products.products,
     addProduct: products.addProduct,
@@ -205,6 +209,13 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
     updateWebsiteConfig: websiteIdentity.updateWebsiteConfig,
 
     // Appearance & Customization
+    websiteDesignSettings: websiteDesign.websiteDesignSettings,
+    draftDesignSettings: websiteDesign.draftDesignSettings,
+    updateDraftDesignSettings: websiteDesign.updateDraftDesignSettings,
+    saveWebsiteDesignSettings: websiteDesign.saveWebsiteDesignSettings,
+    resetSectionDesign: websiteDesign.resetSectionDesign,
+    resetAllDesign: websiteDesign.resetAllDesign,
+    isDesignLoading: websiteDesign.isDesignLoading,
     homepageConfig: appearance.homepageConfig,
     updateHomepageConfig: appearance.updateHomepageConfig,
     homepageVersions: appearance.homepageVersions,
@@ -345,7 +356,32 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
     previewMode: 'live',
     togglePreviewMode: () => {},
     discardDraft: async () => {},
-  };
+  }), [
+    products,
+    platform,
+    appConfig,
+    featureFlags,
+    media,
+    audit,
+    permission,
+    websiteIdentity,
+    appearance,
+    websiteDesign,
+    seo,
+    storeLocator,
+    policy,
+    aiPet,
+    aiSEO,
+    aiMarketing,
+    aiRecommendation,
+    auth,
+    orders,
+    cart,
+    customer,
+    marketing,
+    admin,
+    notifications,
+  ]);
 
   return <StoreContext.Provider value={combinedContextValue}>{children}</StoreContext.Provider>;
 };

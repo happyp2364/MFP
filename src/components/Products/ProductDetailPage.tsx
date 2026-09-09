@@ -77,6 +77,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
+  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false);
 
   // Sync state when product loads or changes
   useEffect(() => {
@@ -323,8 +324,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const displayImageSrc = (!rawImageSrc || imageError)
     ? CLEAN_IMAGE_COMING_SOON_SVG
     : rawImageSrc;
-
-  const [isBuyNowLoading, setIsBuyNowLoading] = useState(false);
 
   const handleWhatsAppBuy = () => {
     const link = generateProductWhatsAppLink(product, selectedSize, selectedColor, quantity);

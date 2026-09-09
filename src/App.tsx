@@ -54,7 +54,40 @@ import { getCartItemPrice } from './utils/variantUtils';
 import { SEOHead } from './components/SEO/SEOHead';
 import { generateOrganizationSchema, generateLocalBusinessSchema, generateBreadcrumbSchema, generateFAQSchema } from './utils/seo';
 
-function AppContent() {
+// =============================================================
+// ISOLATED DIRECT ORDER PAYMENT VIEW
+// =============================================================
+interface PaymentRouteViewProps {
+  orderId: string;
+  onBackHome: () => void;
+}
+
+function PaymentRouteView({ orderId, onBackHome }: PaymentRouteViewProps) {
+  const { backgroundGradientClass } = useTheme();
+
+  return (
+    <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
+      <SEOHead 
+        title={`Order Payment #${orderId} | Marudhar Fashion Point`}
+        description="Complete your secure order payment via UPI, QR, Card, or Netbanking."
+      />
+      <PaymentErrorBoundary
+        orderId={orderId}
+        onBackHome={onBackHome}
+      >
+        <OrderPaymentPage
+          orderId={orderId}
+          onBackHome={onBackHome}
+        />
+      </PaymentErrorBoundary>
+    </div>
+  );
+}
+
+// =============================================================
+// STOREFRONT APPLICATION VIEW
+// =============================================================
+function StorefrontView() {
   const { products, isAdmin, toastMessage, productFeedConfig, seoConfig, customerUser, showToast } = useStore();
   const { backgroundGradientClass } = useTheme();
 
@@ -126,27 +159,7 @@ function AppContent() {
     return null;
   });
 
-  // --- DYNAMIC DIRECT ORDER PAYMENT ROUTING (/pay/:orderId) ---
-  const [paymentOrderId, setPaymentOrderId] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const path = window.location.pathname;
-    if (path.startsWith('/pay/')) {
-      const rawOrderId = path.replace('/pay/', '').split('/')[0].split('?')[0];
-      if (rawOrderId) return decodeURIComponent(rawOrderId);
-    }
-    const searchParams = new URLSearchParams(window.location.search);
-    const queryPay = searchParams.get('pay') || searchParams.get('orderId');
-    if (queryPay) return decodeURIComponent(queryPay);
-    if (window.location.hash.startsWith('#/pay/')) {
-      const hashOrderId = window.location.hash.replace('#/pay/', '').split('?')[0];
-      if (hashOrderId) return decodeURIComponent(hashOrderId);
-    }
-    return null;
-  });
-
-  const scratchCurrentPath = paymentOrderId
-    ? `/pay/${paymentOrderId}`
-    : productRouteSlug
+  const scratchCurrentPath = productRouteSlug
     ? `/product/${productRouteSlug}`
     : checkoutModalOpen
     ? '/checkout'
@@ -158,40 +171,9 @@ function AppContent() {
   React.useEffect(() => {
     const handleUrlChange = () => {
       const path = window.location.pathname;
-
-      // 1. Direct Order Payment Route: /pay/:orderId
-      if (path.startsWith('/pay/')) {
-        const rawOrderId = path.replace('/pay/', '').split('/')[0].split('?')[0];
-        if (rawOrderId) {
-          setPaymentOrderId(decodeURIComponent(rawOrderId));
-          setProductRouteSlug(null);
-          return;
-        }
-      }
-
-      // Query parameter payment route: ?pay=... or ?orderId=...
       const searchParams = new URLSearchParams(window.location.search);
-      const queryPay = searchParams.get('pay') || searchParams.get('orderId');
-      if (queryPay) {
-        setPaymentOrderId(decodeURIComponent(queryPay));
-        setProductRouteSlug(null);
-        return;
-      }
 
-      // Hash payment route: #/pay/:orderId
-      if (window.location.hash.startsWith('#/pay/')) {
-        const hashOrderId = window.location.hash.replace('#/pay/', '').split('?')[0];
-        if (hashOrderId) {
-          setPaymentOrderId(decodeURIComponent(hashOrderId));
-          setProductRouteSlug(null);
-          return;
-        }
-      }
-
-      // Not on payment route
-      setPaymentOrderId(null);
-
-      // 2. Product Route
+      // Product Route
       if (path.startsWith('/product/')) {
         const rawSlug = path.replace('/product/', '').split('/')[0].split('?')[0];
         if (rawSlug) {
@@ -628,40 +610,6 @@ function AppContent() {
     () => products.filter((p) => wishlistIds.includes(p.id)),
     [wishlistIds, products]
   );
-
-  console.log('[PAYMENT_DEBUG_1_APP] AppContent rendered. Path:', typeof window !== 'undefined' ? window.location.pathname : '', 'paymentOrderId:', paymentOrderId);
-
-  // Dedicated Isolated Payment Route
-  if (paymentOrderId !== null) {
-    console.log('[PAYMENT_DEBUG_2_ROUTE] Dedicated Payment Route Active for orderId:', paymentOrderId);
-    return (
-      <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
-        <SEOHead 
-          title={`Order Payment #${paymentOrderId} | Marudhar Fashion Point`}
-          description="Complete your secure order payment via UPI, QR, Card, or Netbanking."
-        />
-        <PaymentErrorBoundary
-          orderId={paymentOrderId}
-          onBackHome={() => {
-            setPaymentOrderId(null);
-            if (window.location.pathname.startsWith('/pay/')) {
-              window.history.pushState({}, '', '/');
-            }
-          }}
-        >
-          <OrderPaymentPage
-            orderId={paymentOrderId}
-            onBackHome={() => {
-              setPaymentOrderId(null);
-              if (window.location.pathname.startsWith('/pay/')) {
-                window.history.pushState({}, '', '/');
-              }
-            }}
-          />
-        </PaymentErrorBoundary>
-      </div>
-    );
-  }
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
@@ -1162,6 +1110,80 @@ function AppContent() {
       <OrderSuccessCelebration />
     </div>
   );
+}
+
+// =============================================================
+// ROUTER COORDINATOR
+// =============================================================
+export type AppRoute = 
+  | { type: 'payment'; orderId: string }
+  | { type: 'storefront' };
+
+export function parseAppRoute(): AppRoute {
+  if (typeof window === 'undefined') return { type: 'storefront' };
+
+  // 1. Direct path routing: /pay/:orderId
+  const path = window.location.pathname;
+  if (path.startsWith('/pay/')) {
+    const rawOrderId = path.replace('/pay/', '').split('/')[0].split('?')[0];
+    if (rawOrderId) {
+      return { type: 'payment', orderId: decodeURIComponent(rawOrderId) };
+    }
+  }
+
+  // 2. Query param routing: ?pay=... or ?orderId=...
+  const searchParams = new URLSearchParams(window.location.search);
+  const queryPay = searchParams.get('pay') || searchParams.get('orderId');
+  if (queryPay) {
+    return { type: 'payment', orderId: decodeURIComponent(queryPay) };
+  }
+
+  // 3. Hash routing: #/pay/:orderId
+  if (window.location.hash.startsWith('#/pay/')) {
+    const hashOrderId = window.location.hash.replace('#/pay/', '').split('?')[0];
+    if (hashOrderId) {
+      return { type: 'payment', orderId: decodeURIComponent(hashOrderId) };
+    }
+  }
+
+  return { type: 'storefront' };
+}
+
+function AppContent() {
+  const [route, setRoute] = useState<AppRoute>(() => parseAppRoute());
+
+  useEffect(() => {
+    const handleUrlChange = () => {
+      setRoute(parseAppRoute());
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
+  }, []);
+
+  const handleBackHomeFromPayment = () => {
+    setRoute({ type: 'storefront' });
+    if (window.location.pathname.startsWith('/pay/')) {
+      window.history.pushState({}, '', '/');
+    }
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
+  if (route.type === 'payment') {
+    return (
+      <PaymentRouteView
+        orderId={route.orderId}
+        onBackHome={handleBackHomeFromPayment}
+      />
+    );
+  }
+
+  return <StorefrontView />;
 }
 
 export default function App() {

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { safeStorage } from '../utils/safeStorage';
 
 export type ThemeMode = 'light' | 'dark' | 'auto';
 export type TimePeriod = 'morning' | 'afternoon' | 'evening' | 'night';
@@ -17,9 +18,13 @@ const LOCAL_STORAGE_KEY = 'mfp_theme_mode_pref';
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (saved === 'light' || saved === 'dark' || saved === 'auto') {
-      return saved;
+    try {
+      const saved = safeStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved === 'light' || saved === 'dark' || saved === 'auto') {
+        return saved;
+      }
+    } catch {
+      // Fallback
     }
     return 'auto';
   });
@@ -49,9 +54,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, mode);
-    } catch {}
+    safeStorage.setItem(LOCAL_STORAGE_KEY, mode);
   };
 
   // Determine if effectively dark theme

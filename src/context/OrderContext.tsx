@@ -416,11 +416,15 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const cleanId = orderId.trim();
 
     // 1. Check local in-memory context first with complete null-safety
+    const numericOnly = cleanId.replace(/\D/g, '');
     const local = (orders || []).find(
       (o) =>
         (o?.id && typeof o.id === 'string' && o.id.toLowerCase() === cleanId.toLowerCase()) ||
         (o?.id && typeof o.id === 'string' && o.id.replace('#', '').toLowerCase() === cleanId.replace('#', '').toLowerCase()) ||
-        (o?.orderNumber !== undefined && String(o.orderNumber) === cleanId.replace(/\D/g, ''))
+        (numericOnly && o?.id && typeof o.id === 'string' && o.id.toLowerCase() === `mfp-ord-${numericOnly}`) ||
+        (numericOnly && o?.id && typeof o.id === 'string' && o.id.toLowerCase() === `mfp-${numericOnly}`) ||
+        (numericOnly && o?.id && typeof o.id === 'string' && o.id.toLowerCase() === `ord_${numericOnly}`) ||
+        (numericOnly && o?.orderNumber !== undefined && String(o.orderNumber) === numericOnly)
     );
     if (local) return local;
 

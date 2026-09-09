@@ -31,6 +31,7 @@ import {
   addDoc,
   getDocs,
   query,
+  where,
   orderBy,
   limit,
 } from 'firebase/firestore';
@@ -921,25 +922,35 @@ export async function saveOrderInFirestore(order: import('../types').CustomerOrd
   }
 }
 
-// Fetch Order by ID directly from Firestore (Supports exact ID, hashtag prefix, or case normalization)
+// Fetch Order by ID directly from Firestore (Supports exact ID, hashtag prefix, numeric orderNumber, or case normalization)
 export async function fetchOrderByIdFromFirestore(rawOrderId: string): Promise<import('../types').CustomerOrder | null> {
   try {
     const cleanId = (rawOrderId || '').trim();
     if (!cleanId) return null;
 
-    // 1. Direct Document Read
+    // 1. Direct Document Read (O(1))
     const docRef = doc(db, 'orders', cleanId);
     const snap = await getDoc(docRef);
     if (snap.exists()) {
       return { id: snap.id, ...snap.data() } as import('../types').CustomerOrder;
     }
 
-    // 2. Try normalized variants (#MFP-1025 vs MFP-1025)
-    const variants = [
+    // 2. Try normalized variants (#MFP-1025 vs MFP-1025, MFP-ORD- vs MFP- vs ord_)
+    const numericOnly = cleanId.replace(/\D/g, '');
+    const variants: string[] = [
       cleanId.startsWith('#') ? cleanId.substring(1) : `#${cleanId}`,
       cleanId.toUpperCase(),
       cleanId.toLowerCase(),
     ];
+
+    if (numericOnly) {
+      variants.push(
+        `MFP-ORD-${numericOnly}`,
+        `MFP-${numericOnly}`,
+        `ord_${numericOnly}`,
+        numericOnly
+      );
+    }
 
     for (const variant of variants) {
       if (variant === cleanId) continue;
@@ -950,9 +961,36 @@ export async function fetchOrderByIdFromFirestore(rawOrderId: string): Promise<i
       }
     }
 
-    // 3. Query fallback if stored with custom ID field
-    const q = query(collection(db, 'orders'), limit(100));
-    const allSnaps = await getDocs(q);
+    // 3. Targeted Firestore Queries by orderNumber or id field (Indexed, O(1) reads)
+    if (numericOnly) {
+      const num = Number(numericOnly);
+      if (!isNaN(num) && num > 0) {
+        const qNum = query(collection(db, 'orders'), where('orderNumber', '==', num), limit(1));
+        const sNum = await getDocs(qNum);
+        if (!sNum.empty) {
+          const d = sNum.docs[0];
+          return { id: d.id, ...d.data() } as import('../types').CustomerOrder;
+        }
+      }
+    }
+
+    const qStrOrderNum = query(collection(db, 'orders'), where('orderNumber', '==', cleanId), limit(1));
+    const sStrOrderNum = await getDocs(qStrOrderNum);
+    if (!sStrOrderNum.empty) {
+      const d = sStrOrderNum.docs[0];
+      return { id: d.id, ...d.data() } as import('../types').CustomerOrder;
+    }
+
+    const qId = query(collection(db, 'orders'), where('id', '==', cleanId), limit(1));
+    const sId = await getDocs(qId);
+    if (!sId.empty) {
+      const d = sId.docs[0];
+      return { id: d.id, ...d.data() } as import('../types').CustomerOrder;
+    }
+
+    // 4. Fallback bounded scan for legacy or irregularly stored documents
+    const qFallback = query(collection(db, 'orders'), limit(50));
+    const allSnaps = await getDocs(qFallback);
     for (const d of allSnaps.docs) {
       const data = d.data() as import('../types').CustomerOrder;
       if (

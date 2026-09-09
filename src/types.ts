@@ -757,6 +757,7 @@ export interface CustomerOrder {
   source?: 'WEBSITE' | 'WHATSAPP';
   paymentLink?: string;
   paymentVerifiedAt?: string;
+  inventoryDeducted?: boolean;
 
   // Order Tax Calculation Snapshot (ensures historical orders retain original tax calculations)
   gstEnabled?: boolean;

@@ -34,9 +34,11 @@ import {
   where,
   orderBy,
   limit,
+  runTransaction,
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { CustomerProfile, MarketingConsent, MarketingSubscriber, MarketingCampaign } from '../types';
+import { sanitizeForFirestore } from './tenantUtils';
 
 // Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
@@ -887,51 +889,178 @@ export async function savePaymentSettingsInFirestore(
   }
 }
 
+// Automatically deduct variant stock quantities for completed orders
+export async function deductInventoryForOrder(order: import('../types').CustomerOrder): Promise<boolean> {
+  if (!order || !order.id || !order.items || !Array.isArray(order.items) || order.items.length === 0) {
+    return true; // Nothing to deduct
+  }
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const orderRef = doc(db, 'orders', order.id);
+      const orderSnap = await transaction.get(orderRef);
+      if (orderSnap.exists() && orderSnap.data()?.inventoryDeducted === true) {
+        // Inventory has already been successfully deducted for this order. Exit transaction safely.
+        return;
+      }
+
+      for (const item of order.items) {
+        if (!item.product || !item.product.id) continue;
+        const prodRef = doc(db, 'products', item.product.id);
+        const prodSnap = await transaction.get(prodRef);
+        if (!prodSnap.exists()) continue;
+
+        const liveProduct = prodSnap.data() as import('../types').Product;
+        const orderQty = Math.max(1, item.quantity || 1);
+
+        if (item.selectedSize && Array.isArray(liveProduct.sizeStocks) && liveProduct.sizeStocks.length > 0) {
+          let sizeMatchFound = false;
+          const updatedSizeStocks = liveProduct.sizeStocks.map((s) => {
+            if (s.size === item.selectedSize) {
+              sizeMatchFound = true;
+              const currentQty = typeof s.stockQuantity === 'number' ? s.stockQuantity : 0;
+              const nextQty = Math.max(0, currentQty - orderQty);
+              const isAvail = nextQty > 0;
+              return {
+                ...s,
+                stockQuantity: nextQty,
+                inStock: isAvail,
+                isAvailable: isAvail,
+              };
+            }
+            return s;
+          });
+
+          if (sizeMatchFound) {
+            const hasStockLeft = updatedSizeStocks.some((s) => (s.stockQuantity ?? 0) > 0 && s.isAvailable !== false);
+            const nextStatus = hasStockLeft ? (liveProduct.status === 'out_of_stock' ? 'active' : liveProduct.status) : 'out_of_stock';
+
+            transaction.update(
+              prodRef,
+              sanitizeForFirestore({
+                sizeStocks: updatedSizeStocks,
+                inStock: hasStockLeft,
+                status: nextStatus,
+              })
+            );
+          }
+        }
+      }
+
+      // Stamping inventoryDeducted = true occurs ATOMICALLY alongside product stock updates
+      if (orderSnap.exists()) {
+        transaction.update(orderRef, { inventoryDeducted: true });
+      } else {
+        transaction.set(orderRef, { inventoryDeducted: true }, { merge: true });
+      }
+    });
+    return true;
+  } catch (err) {
+    console.warn(`[Inventory Deduction Notice] Atomic transaction failed for order ${order.id}:`, err);
+    return false;
+  }
+}
+
 // Save Order in Firestore
 export async function saveOrderInFirestore(order: import('../types').CustomerOrder): Promise<boolean> {
   try {
+    if (!order || !order.id) {
+      console.error('[Save Order Error] Invalid order payload provided to saveOrderInFirestore:', order);
+      return false;
+    }
+
+    // 1. Check existing document to prevent duplicate inventory deduction on retries
     const docRef = doc(db, 'orders', order.id);
-    await setDoc(docRef, order);
+    let alreadyDeducted = (order as any).inventoryDeducted === true;
+    try {
+      const existingSnap = await getDoc(docRef);
+      if (existingSnap.exists() && existingSnap.data()?.inventoryDeducted === true) {
+        alreadyDeducted = true;
+      }
+    } catch (checkErr) {
+      console.warn('[Order Save] Pre-check notice:', checkErr);
+    }
 
-    // Create persistent Admin Notification in Firestore collection
-    const notifId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    const notifRef = doc(db, 'notifications', notifId);
-    await setDoc(notifRef, {
-      id: notifId,
-      orderId: order.id,
-      customerName: order.customerName,
-      totalAmount: order.totalAmount,
-      productCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
-      paymentStatus: order.paymentStatus,
-      timestamp: new Date().toISOString(),
-      read: false,
+    // 2. Sanitize payload to strip all `undefined` values before Firestore setDoc.
+    // inventoryDeducted is initialized to alreadyDeducted (false for new orders),
+    // and will only be stamped true upon successful atomic transaction in deductInventoryForOrder.
+    const cleanOrder = sanitizeForFirestore({
+      ...order,
+      inventoryDeducted: alreadyDeducted,
     });
+    await setDoc(docRef, cleanOrder);
 
-    // If order is linked to a logged-in user, also sync to customer's order history array
+    // 3. Deduct size-wise inventory stock for purchased products atomically if not already deducted
+    if (!alreadyDeducted) {
+      try {
+        await deductInventoryForOrder(order);
+      } catch (invErr) {
+        console.warn('[Order Save] Inventory deduction notice:', invErr);
+      }
+    }
+
+    // 4. Create persistent Admin Notification in Firestore collection
+    try {
+      const notifId = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      const notifRef = doc(db, 'notifications', notifId);
+      await setDoc(
+        notifRef,
+        sanitizeForFirestore({
+          id: notifId,
+          orderId: order.id,
+          customerName: order.customerName || 'Customer',
+          totalAmount: order.totalAmount || 0,
+          productCount: (order.items || []).reduce((sum, item) => sum + (item.quantity || 1), 0),
+          paymentStatus: order.paymentStatus || 'PENDING',
+          timestamp: new Date().toISOString(),
+          read: false,
+        })
+      );
+    } catch (notifErr) {
+      console.warn('[Order Save] Admin notification creation notice:', notifErr);
+    }
+
+    // 5. If order is linked to a logged-in user, sync to customer order history
     if (order.userId) {
       try {
         const userRef = doc(db, 'users', order.userId);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const profile = userSnap.data() as import('../types').CustomerProfile;
-          const updatedHistory = [order, ...(profile.orderHistory || []).filter((o) => o.id !== order.id)];
-          await setDoc(userRef, { orderHistory: updatedHistory }, { merge: true });
+          const updatedHistory = [cleanOrder, ...(profile.orderHistory || []).filter((o) => o.id !== order.id)];
+          await setDoc(userRef, sanitizeForFirestore({ orderHistory: updatedHistory }), { merge: true });
         }
       } catch (e) {
-        console.warn('Could not sync order to user profile document:', e);
+        console.warn('[Order Save] Customer order history sync notice:', e);
       }
     }
 
-    recordAuditLog(
-      'New Order Placed',
-      'PRODUCT',
-      `Order ${order.id} placed by ${order.customerName} for ₹${order.totalAmount} (${order.paymentStatus})`,
-      'SUCCESS'
-    );
-    return true;
-  } catch (err) {
+    // 6. Audit Logging
     try {
-      handleFirestoreError(err, OperationType.WRITE, `orders/${order.id}`);
+      recordAuditLog(
+        'New Order Placed',
+        'PRODUCT',
+        `Order ${order.id} placed by ${order.customerName || 'Customer'} for ₹${order.totalAmount || 0} (${order.paymentStatus})`,
+        'SUCCESS'
+      );
+    } catch (auditErr) {
+      console.warn('[Order Save] Audit log notice:', auditErr);
+    }
+
+    return true;
+  } catch (err: any) {
+    console.error(`[Save Order Error] Primary order write to orders/${order?.id} failed:`, {
+      code: err?.code,
+      message: err?.message,
+      orderId: order?.id,
+      customerName: order?.customerName,
+      totalAmount: order?.totalAmount,
+      paymentMethod: order?.paymentMethod,
+      errorStack: err,
+    });
+
+    try {
+      handleFirestoreError(err, OperationType.WRITE, `orders/${order?.id}`);
     } catch (e) {
       console.warn('Save order notice:', e);
     }
@@ -1089,22 +1218,38 @@ export async function updateOrderPaymentSuccess(
       ],
     };
 
-    await setDoc(targetRef, updatePayload, { merge: true });
+    // If inventory was not deducted during draft creation, deduct it now atomically
+    if (!existingOrder.inventoryDeducted) {
+      try {
+        await deductInventoryForOrder(existingOrder);
+      } catch (invErr) {
+        console.warn('[updateOrderPaymentSuccess] Inventory deduction notice:', invErr);
+      }
+    }
+
+    await setDoc(targetRef, sanitizeForFirestore(updatePayload), { merge: true });
 
     // Create Admin Notification in Firestore
-    const notifId = `notif-paid-${Date.now()}`;
-    const notifRef = doc(db, 'notifications', notifId);
-    await setDoc(notifRef, {
-      id: notifId,
-      orderId: resolvedDocId,
-      customerName: existingOrder.customerName || 'WhatsApp Customer',
-      totalAmount: existingOrder.totalAmount,
-      productCount: existingOrder.items?.reduce((s, i) => s + i.quantity, 0) || 1,
-      paymentStatus: 'PAID',
-      source: 'WHATSAPP',
-      timestamp: now,
-      read: false,
-    });
+    try {
+      const notifId = `notif-paid-${Date.now()}`;
+      const notifRef = doc(db, 'notifications', notifId);
+      await setDoc(
+        notifRef,
+        sanitizeForFirestore({
+          id: notifId,
+          orderId: resolvedDocId,
+          customerName: existingOrder.customerName || 'WhatsApp Customer',
+          totalAmount: existingOrder.totalAmount || 0,
+          productCount: existingOrder.items?.reduce((s, i) => s + (i.quantity || 1), 0) || 1,
+          paymentStatus: 'PAID',
+          source: 'WHATSAPP',
+          timestamp: now,
+          read: false,
+        })
+      );
+    } catch (notifErr) {
+      console.warn('[updateOrderPaymentSuccess] Non-critical notification notice:', notifErr);
+    }
 
     recordAuditLog(
       'Order Payment Verified',

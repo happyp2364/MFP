@@ -136,6 +136,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         orderNumber,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        userId: auth.currentUser?.uid || undefined,
         items,
         subtotal: taxResult.subtotal,
         shippingFee: taxResult.deliveryCharge,
@@ -151,17 +152,17 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         paymentStatus: paymentStatus as PaymentStatus,
         paymentVerificationStatus: paymentVerificationStatus as any,
         orderStatus: 'PENDING' as OrderStatus,
-        customerName: shippingInfo.name,
-        customerEmail: shippingInfo.email,
-        customerPhone: shippingInfo.phone,
+        customerName: shippingInfo.name || 'Valued Customer',
+        customerEmail: shippingInfo.email || '',
+        customerPhone: shippingInfo.phone || '',
         shippingAddress: shippingInfo,
         transactionId: details.razorpayPaymentId || details.targetRef || `tx_${Date.now()}`,
-        paymentReference: details.razorpayPaymentId || details.targetRef,
-        razorpayOrderId: details.razorpayOrderId,
-        razorpayPaymentId: details.razorpayPaymentId,
-        razorpaySignature: details.razorpaySignature,
+        paymentReference: details.razorpayPaymentId || details.targetRef || '',
+        razorpayOrderId: details.razorpayOrderId || '',
+        razorpayPaymentId: details.razorpayPaymentId || '',
+        razorpaySignature: details.razorpaySignature || '',
         paymentTimestamp: new Date().toISOString(),
-        couponCode,
+        couponCode: couponCode || undefined,
         gstEnabled: taxResult.gstEnabled,
         gstRate: taxResult.gstRate,
         priceIncludesGst: taxResult.priceIncludesGst,
@@ -171,6 +172,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setOrders((prev) => [newOrder, ...prev]);
       const saved = await saveOrderInFirestore(newOrder);
       if (!saved) {
+        console.error('[placeOrderAndPay Error] saveOrderInFirestore returned false for order ID:', orderId);
         setOrders((prev) => prev.filter((o) => o.id !== orderId));
         return {
           success: false,
@@ -179,7 +181,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
       return { success: true, orderId };
     } catch (err: any) {
-      console.error('placeOrderAndPay error:', err);
+      console.error('placeOrderAndPay exception:', err);
       return { success: false, message: err?.message || 'Payment verification failed. Please verify your details.' };
     }
   };

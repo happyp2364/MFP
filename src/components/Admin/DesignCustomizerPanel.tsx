@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useWebsiteDesign } from '../../context/WebsiteDesignContext';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -16,8 +16,14 @@ import {
   Smartphone,
   Eye,
   AlertCircle,
+  Undo,
+  Redo,
 } from 'lucide-react';
-import { WebsiteDesignSettings } from '../../types/websiteDesign';
+import { WebsiteDesignSettings, ResponsiveDevice } from '../../types/websiteDesign';
+import { calculateDesignDiffs, DesignDiffItem } from '../../utils/designDiffUtils';
+import { PreviewToolbar, PreviewMode } from './Preview/PreviewToolbar';
+import { LiveWebsitePreviewCanvas } from './Preview/LiveWebsitePreviewCanvas';
+import { ChangeListDrawer } from './Preview/ChangeListDrawer';
 
 export const DesignCustomizerPanel: React.FC<{ showToast?: (msg: string, type: 'success' | 'error' | 'info') => void }> = ({ showToast }) => {
   const {
@@ -27,6 +33,10 @@ export const DesignCustomizerPanel: React.FC<{ showToast?: (msg: string, type: '
     saveWebsiteDesignSettings,
     resetSectionDesign,
     resetAllDesign,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
   } = useWebsiteDesign();
 
   const { currentAdminUser } = useAuth();
@@ -34,8 +44,30 @@ export const DesignCustomizerPanel: React.FC<{ showToast?: (msg: string, type: '
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  // Live Preview System States
+  const [selectedDevice, setSelectedDevice] = useState<ResponsiveDevice>('desktop');
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('live');
+  const [showAffectedArea, setShowAffectedArea] = useState<boolean>(true);
+  const [isDiffDrawerOpen, setIsDiffDrawerOpen] = useState<boolean>(false);
+  const [selectedDiff, setSelectedDiff] = useState<DesignDiffItem | null>(null);
+
   // Helper to check if current draft differs from saved
   const hasUnsavedChanges = JSON.stringify(draftDesignSettings) !== JSON.stringify(websiteDesignSettings);
+
+  // Dynamic Diffs calculation
+  const diffs = useMemo(() => {
+    return calculateDesignDiffs(websiteDesignSettings, draftDesignSettings, selectedDevice);
+  }, [websiteDesignSettings, draftDesignSettings, selectedDevice]);
+
+  // Target area mapping for active tab
+  const tabAreaMapping: Record<string, string> = {
+    header: 'header',
+    categories: 'category-card',
+    products: 'product-card',
+    buttons: 'button',
+    icons: 'icon',
+    sections: 'section-spacing',
+  };
 
   const handleSliderChange = (
     section: keyof WebsiteDesignSettings,
@@ -50,6 +82,11 @@ export const DesignCustomizerPanel: React.FC<{ showToast?: (msg: string, type: '
       },
     };
     updateDraftDesignSettings(updated);
+
+    // Auto set active diff for prompt information panel if available
+    const keyPath = `${section}.${field}`;
+    const matched = diffs.find((d) => d.keyPath === keyPath);
+    if (matched) setSelectedDiff(matched);
   };
 
   const handleSave = async () => {
@@ -58,6 +95,8 @@ export const DesignCustomizerPanel: React.FC<{ showToast?: (msg: string, type: '
       await saveWebsiteDesignSettings(draftDesignSettings, currentAdminUser?.email || 'Admin');
       setIsSaving(false);
       setSavedSuccess(true);
+      setSelectedDiff(null);
+      setIsDiffDrawerOpen(false);
       if (showToast) showToast('Website design settings saved & applied live!', 'success');
       setTimeout(() => setSavedSuccess(false), 2500);
     } catch (e) {
@@ -74,6 +113,7 @@ export const DesignCustomizerPanel: React.FC<{ showToast?: (msg: string, type: '
   const handleResetAll = async () => {
     if (window.confirm('Are you sure you want to reset ALL design settings to default values?')) {
       await resetAllDesign(currentAdminUser?.email || 'Admin');
+      setSelectedDiff(null);
       if (showToast) showToast('All design settings reset to default!', 'success');
     }
   };
@@ -90,7 +130,7 @@ export const DesignCustomizerPanel: React.FC<{ showToast?: (msg: string, type: '
             </div>
             <div>
               <h2 className="text-xl font-bold tracking-tight text-amber-100 font-serif-heading">
-                Website Design Customizer & Tokens
+                Website Design Customizer & Live Preview
               </h2>
               <p className="text-xs text-amber-200/80 mt-0.5">
                 Adjust header dimensions, card radii, button scales, and section spacing live across desktop and mobile.
@@ -137,10 +177,30 @@ export const DesignCustomizerPanel: React.FC<{ showToast?: (msg: string, type: '
         {hasUnsavedChanges && (
           <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-xs text-amber-300">
             <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
-            <span>You have unsaved design changes. Changes are reflected in live preview locally. Click <strong>Save Design</strong> to apply permanently.</span>
+            <span>You have {diffs.length} unsaved design changes in draft. Click <strong>Save Design</strong> to apply permanently.</span>
           </div>
         )}
       </div>
+
+      {/* PROMINENT LIVE PREVIEW TOOLBAR */}
+      <PreviewToolbar
+        previewMode={previewMode}
+        setPreviewMode={setPreviewMode}
+        selectedDevice={selectedDevice}
+        setSelectedDevice={setSelectedDevice}
+        showAffectedArea={showAffectedArea}
+        setShowAffectedArea={setShowAffectedArea}
+        diffCount={diffs.length}
+        onOpenDiffDrawer={() => setIsDiffDrawerOpen(true)}
+        hasUnsavedChanges={hasUnsavedChanges}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={undo}
+        onRedo={redo}
+        onReset={handleResetAll}
+        onSave={handleSave}
+        isSaving={isSaving}
+      />
 
       {/* Navigation Sub-Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-neutral-200/80 pb-2">
@@ -217,575 +277,415 @@ export const DesignCustomizerPanel: React.FC<{ showToast?: (msg: string, type: '
         </button>
       </div>
 
-      {/* Main Form Body */}
-      <div className="bg-white rounded-2xl p-6 border border-neutral-200/80 shadow-sm space-y-6">
-        
-        {/* TAB 1: HEADER */}
-        {activeTab === 'header' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div>
-                <h3 className="text-base font-bold text-neutral-900">Header Dimensions & Spacing</h3>
-                <p className="text-xs text-neutral-500">Fine-tune header height, padding, logo dimensions, and nav gaps.</p>
-              </div>
-              <button
-                onClick={() => handleResetSection('header')}
-                className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Header</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Header Height */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Header Height</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.header.height}px
-                  </span>
+      {/* SPLIT LAYOUT: LEFT SLIDER CONTROLS + RIGHT LIVE PREVIEW CANVAS */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* LEFT COLUMN: Customizer Controls (5 cols) */}
+        <div className="lg:col-span-5 bg-white rounded-2xl p-6 border border-neutral-200/80 shadow-sm space-y-6">
+          {/* TAB 1: HEADER */}
+          {activeTab === 'header' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-neutral-900">Header Dimensions & Spacing</h3>
+                  <p className="text-xs text-neutral-500">Fine-tune header height, padding, logo dimensions, and nav gaps.</p>
                 </div>
-                <input
-                  type="range"
-                  min="40"
-                  max="120"
-                  step="2"
-                  value={draftDesignSettings.header.height}
-                  onChange={(e) => handleSliderChange('header', 'height', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-                <p className="text-[11px] text-neutral-500">Compact top navigation bar height on desktop & mobile.</p>
+                <button
+                  onClick={() => handleResetSection('header')}
+                  className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset</span>
+                </button>
               </div>
 
-              {/* Header Vertical Padding */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Vertical Padding (Top/Bottom)</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.header.verticalPadding}px
-                  </span>
+              <div className="space-y-4">
+                {/* Header Height */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Header Height</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.header.height}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="40"
+                    max="120"
+                    step="2"
+                    value={draftDesignSettings.header.height}
+                    onChange={(e) => handleSliderChange('header', 'height', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
+                  <p className="text-[11px] text-neutral-500">Compact top navigation bar height on desktop & mobile.</p>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="40"
-                  step="1"
-                  value={draftDesignSettings.header.verticalPadding}
-                  onChange={(e) => handleSliderChange('header', 'verticalPadding', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-                <p className="text-[11px] text-neutral-500">Controls empty space above and below header elements.</p>
-              </div>
 
-              {/* Logo Width */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Logo Icon Width</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.header.logoWidth}px
-                  </span>
+                {/* Header Vertical Padding */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Vertical Padding (Top/Bottom)</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.header.verticalPadding}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="40"
+                    step="1"
+                    value={draftDesignSettings.header.verticalPadding}
+                    onChange={(e) => handleSliderChange('header', 'verticalPadding', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="24"
-                  max="80"
-                  step="2"
-                  value={draftDesignSettings.header.logoWidth}
-                  onChange={(e) => handleSliderChange('header', 'logoWidth', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
 
-              {/* Logo Height */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Logo Icon Height</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.header.logoHeight}px
-                  </span>
+                {/* Logo Width */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Logo Icon Width</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.header.logoWidth}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="24"
+                    max="80"
+                    step="2"
+                    value={draftDesignSettings.header.logoWidth}
+                    onChange={(e) => handleSliderChange('header', 'logoWidth', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="24"
-                  max="80"
-                  step="2"
-                  value={draftDesignSettings.header.logoHeight}
-                  onChange={(e) => handleSliderChange('header', 'logoHeight', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
 
-              {/* Navigation Gap */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Navigation Link Gap</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.header.navGap}px
-                  </span>
+                {/* Button Radius */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Header Button Corner Radius</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.header.buttonRadius}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="36"
+                    step="1"
+                    value={draftDesignSettings.header.buttonRadius}
+                    onChange={(e) => handleSliderChange('header', 'buttonRadius', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="12"
-                  max="60"
-                  step="2"
-                  value={draftDesignSettings.header.navGap}
-                  onChange={(e) => handleSliderChange('header', 'navGap', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
-
-              {/* Header Icon Size */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Header Utilities Icon Size</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.header.iconSize}px
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="14"
-                  max="36"
-                  step="1"
-                  value={draftDesignSettings.header.iconSize}
-                  onChange={(e) => handleSliderChange('header', 'iconSize', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
-
-              {/* WhatsApp Button Height */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Header WhatsApp Button Height</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.header.buttonHeight}px
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="28"
-                  max="60"
-                  step="2"
-                  value={draftDesignSettings.header.buttonHeight}
-                  onChange={(e) => handleSliderChange('header', 'buttonHeight', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
-
-              {/* WhatsApp Button Radius */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Header WhatsApp Button Radius</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.header.buttonRadius}px
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="30"
-                  step="1"
-                  value={draftDesignSettings.header.buttonRadius}
-                  onChange={(e) => handleSliderChange('header', 'buttonRadius', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* TAB 2: CATEGORY CARDS */}
-        {activeTab === 'categories' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div>
-                <h3 className="text-base font-bold text-neutral-900">Category & Collection Cards</h3>
-                <p className="text-xs text-neutral-500">Customize corner radius and padding for green-accented collection cards.</p>
-              </div>
-              <button
-                onClick={() => handleResetSection('categoryCards')}
-                className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Categories</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Category Card Border Radius */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Card Corner Radius</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.categoryCards.borderRadius}px
-                  </span>
+          {/* TAB 2: CATEGORY CARDS */}
+          {activeTab === 'categories' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-neutral-900">Category Card Styling</h3>
+                  <p className="text-xs text-neutral-500">Configure corner radii, card height, and grid spacing.</p>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="40"
-                  step="2"
-                  value={draftDesignSettings.categoryCards.borderRadius}
-                  onChange={(e) => handleSliderChange('categoryCards', 'borderRadius', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-                <p className="text-[11px] text-neutral-500">Sets the rounded corner curvature for all category & collection cards.</p>
+                <button
+                  onClick={() => handleResetSection('categoryCards')}
+                  className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset</span>
+                </button>
               </div>
 
-              {/* Category Cards Gap */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Category Grid Gap</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.categoryCards.gap}px
-                  </span>
+              <div className="space-y-4">
+                {/* Border Radius */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Border Radius</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.categoryCards.borderRadius}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="48"
+                    step="2"
+                    value={draftDesignSettings.categoryCards.borderRadius}
+                    onChange={(e) => handleSliderChange('categoryCards', 'borderRadius', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="8"
-                  max="48"
-                  step="2"
-                  value={draftDesignSettings.categoryCards.gap}
-                  onChange={(e) => handleSliderChange('categoryCards', 'gap', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* TAB 3: PRODUCT CARDS */}
-        {activeTab === 'products' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div>
-                <h3 className="text-base font-bold text-neutral-900">Product Cards Styling</h3>
-                <p className="text-xs text-neutral-500">Configure product card corner radius, image box radius, and internal padding.</p>
-              </div>
-              <button
-                onClick={() => handleResetSection('productCards')}
-                className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Product Cards</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Product Card Radius */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Product Card Corner Radius</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.productCards.borderRadius}px
-                  </span>
+                {/* Card Height */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Card Height</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.categoryCards.height}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="140"
+                    max="400"
+                    step="10"
+                    value={draftDesignSettings.categoryCards.height}
+                    onChange={(e) => handleSliderChange('categoryCards', 'height', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="36"
-                  step="2"
-                  value={draftDesignSettings.productCards.borderRadius}
-                  onChange={(e) => handleSliderChange('productCards', 'borderRadius', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
-
-              {/* Product Image Radius */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Inner Product Image Radius</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.productCards.imageRadius}px
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="32"
-                  step="2"
-                  value={draftDesignSettings.productCards.imageRadius}
-                  onChange={(e) => handleSliderChange('productCards', 'imageRadius', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
-
-              {/* Product Card Padding */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Product Card Padding</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.productCards.padding}px
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="4"
-                  max="32"
-                  step="2"
-                  value={draftDesignSettings.productCards.padding}
-                  onChange={(e) => handleSliderChange('productCards', 'padding', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
-
-              {/* Product Grid Gap */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Product Grid Gap</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.productCards.gap}px
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="8"
-                  max="48"
-                  step="2"
-                  value={draftDesignSettings.productCards.gap}
-                  onChange={(e) => handleSliderChange('productCards', 'gap', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* TAB 4: BUTTONS */}
-        {activeTab === 'buttons' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div>
-                <h3 className="text-base font-bold text-neutral-900">Button Tokens & Radii</h3>
-                <p className="text-xs text-neutral-500">Control global button corner radii, height, and padding across the app.</p>
-              </div>
-              <button
-                onClick={() => handleResetSection('buttons')}
-                className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Buttons</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Button Border Radius */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Button Corner Radius</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.buttons.borderRadius}px
-                  </span>
+          {/* TAB 3: PRODUCT CARDS */}
+          {activeTab === 'products' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-neutral-900">Product Cards Styling</h3>
+                  <p className="text-xs text-neutral-500">Corner rounding for product card containers and images.</p>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="36"
-                  step="2"
-                  value={draftDesignSettings.buttons.borderRadius}
-                  onChange={(e) => handleSliderChange('buttons', 'borderRadius', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
+                <button
+                  onClick={() => handleResetSection('productCards')}
+                  className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset</span>
+                </button>
               </div>
 
-              {/* Button Height */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Button Height</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.buttons.height}px
-                  </span>
+              <div className="space-y-4">
+                {/* Border Radius */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Card Border Radius</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.productCards.borderRadius}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="40"
+                    step="2"
+                    value={draftDesignSettings.productCards.borderRadius}
+                    onChange={(e) => handleSliderChange('productCards', 'borderRadius', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="28"
-                  max="64"
-                  step="2"
-                  value={draftDesignSettings.buttons.height}
-                  onChange={(e) => handleSliderChange('buttons', 'height', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
 
-              {/* Button Horizontal Padding */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Horizontal Button Padding</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.buttons.horizontalPadding}px
-                  </span>
+                {/* Image Radius */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Product Image Radius</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.productCards.imageRadius}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="36"
+                    step="2"
+                    value={draftDesignSettings.productCards.imageRadius}
+                    onChange={(e) => handleSliderChange('productCards', 'imageRadius', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="8"
-                  max="48"
-                  step="2"
-                  value={draftDesignSettings.buttons.horizontalPadding}
-                  onChange={(e) => handleSliderChange('buttons', 'horizontalPadding', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* TAB 5: ICONS */}
-        {activeTab === 'icons' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div>
-                <h3 className="text-base font-bold text-neutral-900">Icon Sizing Tokens</h3>
-                <p className="text-xs text-neutral-500">Adjust icon scale for header, products, categories, and floating actions.</p>
-              </div>
-              <button
-                onClick={() => handleResetSection('icons')}
-                className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Icons</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Header Icons */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Header Icon Size</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.icons.headerSize}px
-                  </span>
+          {/* TAB 4: BUTTONS */}
+          {activeTab === 'buttons' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-neutral-900">Button Corner Radius & Dimensions</h3>
+                  <p className="text-xs text-neutral-500">Pill shape vs square buttons across store.</p>
                 </div>
-                <input
-                  type="range"
-                  min="14"
-                  max="32"
-                  step="1"
-                  value={draftDesignSettings.icons.headerSize}
-                  onChange={(e) => handleSliderChange('icons', 'headerSize', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
+                <button
+                  onClick={() => handleResetSection('buttons')}
+                  className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset</span>
+                </button>
               </div>
 
-              {/* Product Icons */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Product Card Icon Size</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-[#0B8F63]/10 text-[#0B8F63] px-2 py-0.5 rounded">
-                    {draftDesignSettings.icons.productSize}px
-                  </span>
+              <div className="space-y-4">
+                {/* Button Radius */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Button Corner Radius</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.buttons.borderRadius}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="36"
+                    step="2"
+                    value={draftDesignSettings.buttons.borderRadius}
+                    onChange={(e) => handleSliderChange('buttons', 'borderRadius', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="12"
-                  max="28"
-                  step="1"
-                  value={draftDesignSettings.icons.productSize}
-                  onChange={(e) => handleSliderChange('icons', 'productSize', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
 
-              {/* Floating Action Icons */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Floating Button Icon Size</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.icons.floatingActionSize}px
-                  </span>
+                {/* Button Height */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Button Height</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.buttons.height}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="32"
+                    max="64"
+                    step="2"
+                    value={draftDesignSettings.buttons.height}
+                    onChange={(e) => handleSliderChange('buttons', 'height', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="16"
-                  max="36"
-                  step="1"
-                  value={draftDesignSettings.icons.floatingActionSize}
-                  onChange={(e) => handleSliderChange('icons', 'floatingActionSize', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* TAB 6: SECTION SPACING */}
-        {activeTab === 'sections' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div>
-                <h3 className="text-base font-bold text-neutral-900">Global Section & Content Spacing</h3>
-                <p className="text-xs text-neutral-500">Control vertical padding between homepage sections and content margins.</p>
-              </div>
-              <button
-                onClick={() => handleResetSection('sections')}
-                className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Spacing</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Top Spacing */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Section Top Spacing</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.sections.topSpacing}px
-                  </span>
+          {/* TAB 5: ICONS & FLOATING */}
+          {activeTab === 'icons' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-neutral-900">Icons & Floating Actions</h3>
+                  <p className="text-xs text-neutral-500">Size scale for icons and WhatsApp floating hub.</p>
                 </div>
-                <input
-                  type="range"
-                  min="12"
-                  max="96"
-                  step="4"
-                  value={draftDesignSettings.sections.topSpacing}
-                  onChange={(e) => handleSliderChange('sections', 'topSpacing', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
+                <button
+                  onClick={() => handleResetSection('icons')}
+                  className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset</span>
+                </button>
               </div>
 
-              {/* Bottom Spacing */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Section Bottom Spacing</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.sections.bottomSpacing}px
-                  </span>
+              <div className="space-y-4">
+                {/* Floating Size */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">WhatsApp Hub Size</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.floatingActions.size}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="36"
+                    max="72"
+                    step="2"
+                    value={draftDesignSettings.floatingActions.size}
+                    onChange={(e) => handleSliderChange('floatingActions', 'size', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="12"
-                  max="96"
-                  step="4"
-                  value={draftDesignSettings.sections.bottomSpacing}
-                  onChange={(e) => handleSliderChange('sections', 'bottomSpacing', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
-              </div>
-
-              {/* Content Padding */}
-              <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-neutral-800">Container Side Padding</label>
-                  <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {draftDesignSettings.sections.contentPadding}px
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="8"
-                  max="48"
-                  step="2"
-                  value={draftDesignSettings.sections.contentPadding}
-                  onChange={(e) => handleSliderChange('sections', 'contentPadding', Number(e.target.value))}
-                  className="w-full accent-amber-800 cursor-pointer"
-                />
               </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* TAB 6: SECTIONS */}
+          {activeTab === 'sections' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b pb-4">
+                <div>
+                  <h3 className="text-base font-bold text-neutral-900">Global Section & Grid Spacing</h3>
+                  <p className="text-xs text-neutral-500">Vertical padding and grid gap between product cards.</p>
+                </div>
+                <button
+                  onClick={() => handleResetSection('sections')}
+                  className="text-xs text-amber-800 hover:text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset</span>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Top Spacing */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Section Top Spacing</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.sections.topSpacing}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="12"
+                    max="96"
+                    step="4"
+                    value={draftDesignSettings.sections.topSpacing}
+                    onChange={(e) => handleSliderChange('sections', 'topSpacing', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
+                </div>
+
+                {/* Grid Gap */}
+                <div className="space-y-2 p-4 bg-neutral-50 rounded-xl border border-neutral-200/60">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-neutral-800">Product Grid Gap</label>
+                    <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                      {draftDesignSettings.sections.gridGap}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="8"
+                    max="48"
+                    step="2"
+                    value={draftDesignSettings.sections.gridGap}
+                    onChange={(e) => handleSliderChange('sections', 'gridGap', Number(e.target.value))}
+                    className="w-full accent-amber-800 cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN: REAL LIVE WEBSITE PREVIEW CANVAS (7 cols) */}
+        <div className="lg:col-span-7">
+          <LiveWebsitePreviewCanvas
+            savedSettings={websiteDesignSettings}
+            draftSettings={draftDesignSettings}
+            previewMode={previewMode}
+            selectedDevice={selectedDevice}
+            showAffectedArea={showAffectedArea}
+            activeDiff={selectedDiff}
+            totalDiffsCount={diffs.length}
+            onOpenDiffDrawer={() => setIsDiffDrawerOpen(true)}
+            selectedSectionId={tabAreaMapping[activeTab]}
+          />
+        </div>
       </div>
+
+      {/* CHANGE LIST DRAWER */}
+      <ChangeListDrawer
+        isOpen={isDiffDrawerOpen}
+        onClose={() => setIsDiffDrawerOpen(false)}
+        diffs={diffs}
+        activeDiffId={selectedDiff?.id}
+        onSelectDiff={(diff) => {
+          setSelectedDiff(diff);
+          setIsDiffDrawerOpen(false);
+        }}
+        onSave={handleSave}
+        onReset={handleResetAll}
+        isSaving={isSaving}
+      />
     </div>
   );
 };

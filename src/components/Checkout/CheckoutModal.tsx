@@ -1440,7 +1440,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {taxResult.gstEnabled && (
                 <div className="flex justify-between text-neutral-500 text-[11px] pt-1 border-t border-dashed border-neutral-200">
                   <span>जीएसटी • GST ({taxResult.gstRate}%)</span>
-                  <span className="text-neutral-500 font-medium">कीमत में शामिल • Included in Price (₹{taxAmount.toLocaleString('en-IN')})</span>
+                  <span className="text-neutral-500 font-medium">कीमत में शामिल • Included in Price (₹{(taxAmount ?? 0).toLocaleString('en-IN')})</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-neutral-900 pt-2 border-t border-neutral-200 text-sm">
@@ -1677,7 +1677,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           Manual Bank UPI QR
                         </span>
                         <span className="font-extrabold text-amber-900 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/80 text-xs">
-                          Amount: ₹{totalAmount.toLocaleString()}
+                          Amount: ₹{(totalAmount ?? 0).toLocaleString()}
                         </span>
                       </div>
 
@@ -1836,7 +1836,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span>कैश ऑन डिलीवरी (COD)</span>
                 </div>
                 <p className="text-neutral-600 leading-relaxed text-[11px] sm:text-xs">
-                  डिलीवरी के समय कूरियर एजेंट को ₹{totalAmount.toLocaleString()} का भुगतान नकद या मोबाइल यूपीआई स्कैनर द्वारा करें।
+                  डिलीवरी के समय कूरियर एजेंट को ₹{(totalAmount ?? 0).toLocaleString()} का भुगतान नकद या मोबाइल यूपीआई स्कैनर द्वारा करें।
                 </p>
               </div>
             )}
@@ -1845,7 +1845,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <div className="bg-neutral-50/90 rounded-xl border border-neutral-200/80 p-3.5 sm:p-4 text-xs space-y-2">
               <div className="flex justify-between items-center text-neutral-600">
                 <span>Subtotal ({cartItems.reduce((a, b) => a + b.quantity, 0)} items)</span>
-                <span className="font-mono font-medium text-neutral-900">₹{subtotal.toLocaleString('en-IN')}</span>
+                <span className="font-mono font-medium text-neutral-900">₹{(subtotal ?? 0).toLocaleString('en-IN')}</span>
               </div>
 
               <div className="flex justify-between items-center text-neutral-600">
@@ -1894,7 +1894,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {discountAmount > 0 && (
                 <div className="flex justify-between items-center text-emerald-700 font-medium">
                   <span>Coupon ({appliedCoupon?.code})</span>
-                  <span className="font-mono font-bold">-₹{discountAmount.toLocaleString('en-IN')}</span>
+                  <span className="font-mono font-bold">-₹{(discountAmount ?? 0).toLocaleString('en-IN')}</span>
                 </div>
               )}
 
@@ -1943,17 +1943,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 ) : selectedMethod === 'COD' ? (
                   <>
                     <Truck className="w-4 h-4 text-amber-300" />
-                    <span>ऑर्डर कन्फर्म करें (COD) • ₹{totalAmount.toLocaleString()}</span>
+                    <span>ऑर्डर कन्फर्म करें (COD) • ₹{(totalAmount ?? 0).toLocaleString()}</span>
                   </>
                 ) : selectedMethod === 'QR_SCAN' ? (
                   <>
                     <QrCode className="w-4 h-4 text-emerald-300" />
-                    <span>UTR सत्यापन के लिए भेजें • ₹{totalAmount.toLocaleString()}</span>
+                    <span>UTR सत्यापन के लिए भेजें • ₹{(totalAmount ?? 0).toLocaleString()}</span>
                   </>
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Razorpay से भुगतान करें • ₹{totalAmount.toLocaleString()}</span>
+                    <span>Razorpay से भुगतान करें • ₹{(totalAmount ?? 0).toLocaleString()}</span>
                   </>
                 )}
               </button>

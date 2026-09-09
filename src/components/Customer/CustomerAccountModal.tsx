@@ -353,7 +353,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
 
                       {/* Footer Info */}
                       <div className="flex items-center justify-between text-xs pt-2 border-t border-neutral-100 text-neutral-600">
-                        <span>Total: <strong className="text-amber-900 font-bold">₹{order.totalAmount.toLocaleString()}</strong> ({order.paymentMethod})</span>
+                        <span>Total: <strong className="text-amber-900 font-bold">₹{(order.totalAmount ?? 0).toLocaleString()}</strong> ({order.paymentMethod})</span>
 
                         {(order.orderStatus === 'PENDING' || order.orderStatus === 'ACCEPTED') && (
                           <button
@@ -687,7 +687,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
                     <div key={p.id} className="p-2.5 bg-white border border-neutral-200 rounded-xl space-y-2">
                       <img src={p.images[0]} alt={p.name} className="w-full h-32 object-cover rounded-lg" />
                       <p className="font-bold text-xs text-neutral-900 line-clamp-1">{p.name}</p>
-                      <p className="text-xs text-amber-900 font-bold">₹{p.price.toLocaleString()}</p>
+                      <p className="text-xs text-amber-900 font-bold">₹{(p.price ?? 0).toLocaleString()}</p>
                       {onQuickViewProduct && (
                         <button
                           onClick={() => onQuickViewProduct(p)}

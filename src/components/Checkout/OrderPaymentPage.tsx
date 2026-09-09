@@ -616,7 +616,7 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
             <div className="flex justify-between items-center text-emerald-700">
               <span>छूट (Discount):</span>
               <span className="font-mono font-bold">
-                -₹{order.discountAmount.toLocaleString('en-IN')}
+                -₹{(order.discountAmount ?? 0).toLocaleString('en-IN')}
               </span>
             </div>
           )}
@@ -625,7 +625,7 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
             <div className="flex justify-between items-center text-amber-900">
               <span>सुविधा शुल्क (Convenience Fee):</span>
               <span className="font-mono font-semibold">
-                +₹{order.convenienceFee.toLocaleString('en-IN')}
+                +₹{(order.convenienceFee ?? 0).toLocaleString('en-IN')}
               </span>
             </div>
           )}

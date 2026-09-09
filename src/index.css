@@ -688,6 +688,39 @@ button.bg-black * {
 .badge-teal, .bg-teal-100 { background-color: #ccfbf1 !important; color: #115e59 !important; }
 .badge-sky, .bg-sky-100 { background-color: #e0f2fe !important; color: #075985 !important; }
 
+/* High-Contrast Robust Product Price Tokens */
+.product-card-sale-price {
+  color: #09090b !important;
+  font-weight: 900 !important;
+}
+
+.dark .product-card-sale-price,
+[data-theme="dark"] .product-card-sale-price,
+.bg-neutral-900 .product-card-sale-price,
+.bg-neutral-950 .product-card-sale-price,
+.bg-black .product-card-sale-price,
+.dark\:bg-neutral-900\/90 .product-card-sale-price,
+.glass-dark-luxury .product-card-sale-price {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+.product-card-mrp-price {
+  color: #64748b !important;
+  text-decoration: line-through !important;
+}
+
+.dark .product-card-mrp-price,
+[data-theme="dark"] .product-card-mrp-price,
+.bg-neutral-900 .product-card-mrp-price,
+.bg-neutral-950 .product-card-mrp-price,
+.bg-black .product-card-mrp-price,
+.dark\:bg-neutral-900\/90 .product-card-mrp-price,
+.glass-dark-luxury .product-card-mrp-price {
+  color: #94a3b8 !important;
+}
+
+
 
 
 

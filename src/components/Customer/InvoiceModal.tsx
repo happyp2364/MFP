@@ -211,13 +211,13 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               {typeof order.convenienceFee === 'number' && order.convenienceFee > 0 && (
                 <div className="flex justify-between text-amber-900 font-medium">
                   <span>Convenience Fee:</span>
-                  <span className="font-mono">+₹{order.convenienceFee.toLocaleString()}</span>
+                  <span className="font-mono">+₹{(order.convenienceFee ?? 0).toLocaleString()}</span>
                 </div>
               )}
               {typeof order.discountAmount === 'number' && order.discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-700 font-medium">
                   <span>Discount Applied:</span>
-                  <span className="font-mono">-₹{order.discountAmount.toLocaleString()}</span>
+                  <span className="font-mono">-₹{(order.discountAmount ?? 0).toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-sm text-neutral-900 pt-2 border-t border-neutral-300">

@@ -427,7 +427,7 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
                           {p.name}
                         </div>
                         <div className="text-[10px] text-neutral-500 font-medium">
-                          {p.category.toUpperCase()} • ₹{p.price.toLocaleString('en-IN')}
+                          {(p.category || 'Footwear').toUpperCase()} • ₹{(p.price ?? 0).toLocaleString('en-IN')}
                         </div>
                       </div>
                     </div>

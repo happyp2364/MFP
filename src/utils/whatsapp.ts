@@ -111,11 +111,11 @@ export function generateOrderWhatsAppLink(order: CustomerOrder, whatsappNum?: st
     const delivery = order.shippingFee;
     const totalTax = order.taxAmount;
     if (order.taxMode === 'IGST') {
-      productDetailsText += `\nTaxable Amount: ₹${taxable.toLocaleString()}\nIGST ${taxRate}%: ₹${totalTax.toLocaleString()}\nDelivery: ₹${delivery.toLocaleString()}\nGrand Total: ₹${order.totalAmount.toLocaleString()}`;
+      productDetailsText += `\nTaxable Amount: ₹${(taxable ?? 0).toLocaleString()}\nIGST ${taxRate}%: ₹${(totalTax ?? 0).toLocaleString()}\nDelivery: ₹${(delivery ?? 0).toLocaleString()}\nGrand Total: ₹${(order.totalAmount ?? 0).toLocaleString()}`;
     } else {
       const cgst = order.cgstAmount ?? (totalTax / 2);
       const sgst = order.sgstAmount ?? (totalTax / 2);
-      productDetailsText += `\nTaxable Amount: ₹${taxable.toLocaleString()}\nCGST ${halfRate}%: ₹${cgst.toLocaleString()}\nSGST ${halfRate}%: ₹${sgst.toLocaleString()}\nDelivery: ₹${delivery.toLocaleString()}\nGrand Total: ₹${order.totalAmount.toLocaleString()}`;
+      productDetailsText += `\nTaxable Amount: ₹${(taxable ?? 0).toLocaleString()}\nCGST ${halfRate}%: ₹${(cgst ?? 0).toLocaleString()}\nSGST ${halfRate}%: ₹${(sgst ?? 0).toLocaleString()}\nDelivery: ₹${(delivery ?? 0).toLocaleString()}\nGrand Total: ₹${(order.totalAmount ?? 0).toLocaleString()}`;
     }
   }
 
@@ -168,7 +168,7 @@ export function formatWhatsAppOrderMessageWithPaymentLink(order: CustomerOrder, 
       `📏 *साइज:* ${size}`,
       `🎨 *कलर:* ${color}`,
       `🔢 *मात्रा:* ${item.quantity}`,
-      `💰 *कीमत:* ₹${itemPrice.toLocaleString('en-IN')}`,
+      `💰 *कीमत:* ₹${(itemPrice ?? 0).toLocaleString('en-IN')}`,
     ];
 
     if (cleanImgUrl) {

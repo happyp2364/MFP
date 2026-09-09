@@ -513,19 +513,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
 
           {/* Product Title */}
-          <h3 className="font-bold text-neutral-900 text-sm sm:text-base line-clamp-1 group-hover:text-[#0B8F63] transition-colors">
+          <h3 className="font-bold text-neutral-900 dark:text-white text-sm sm:text-base line-clamp-1 group-hover:text-[#0B8F63] dark:group-hover:text-emerald-400 transition-colors">
             {product.name}
           </h3>
 
           {/* Subcategory & Material */}
-          <p className="text-xs text-neutral-600 line-clamp-1 font-medium">
+          <p className="text-xs text-neutral-600 dark:text-neutral-300 line-clamp-1 font-medium">
             {product.subcategory} {product.material ? `• ${product.material}` : ''}
           </p>
 
           {/* Interactive Color Swatches */}
           {cfg.showColorSwatches && product.colors && product.colors.length > 0 && (
             <div className="flex items-center gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
-              <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider">Colors:</span>
+              <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Colors:</span>
               <div className="flex items-center gap-1.5">
                 {product.colors.map((c, idx) => (
                   <button
@@ -547,9 +547,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* Interactive Size Availability Selector */}
           {cfg.showSizeSelector && sizeStocks.length > 0 && (
             <div className="pt-1.5" onClick={(e) => e.stopPropagation()}>
-              <div className="text-[10px] font-bold text-neutral-700 mb-1 flex justify-between uppercase tracking-wider">
+              <div className="text-[10px] font-bold text-neutral-700 dark:text-neutral-300 mb-1 flex justify-between uppercase tracking-wider">
                 <span>Sizes:</span>
-                <span className="font-extrabold text-[#0B8F63]">{selectedSize}</span>
+                <span className="font-extrabold text-[#0B8F63] dark:text-emerald-400">{selectedSize}</span>
               </div>
               <div className="flex flex-wrap gap-1">
                 {sizeStocks
@@ -569,8 +569,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                           isSelected
                             ? 'bg-[#0B8F63] text-white border-[#0B8F63] shadow-xs scale-105'
                             : isInStock
-                            ? 'bg-neutral-50 text-neutral-800 border-neutral-200 hover:border-neutral-400 hover:bg-white'
-                            : 'bg-neutral-100 text-neutral-500 border-neutral-200 line-through cursor-not-allowed opacity-75'
+                            ? 'bg-neutral-50 dark:bg-neutral-800/90 text-neutral-800 dark:text-neutral-100 border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-white dark:hover:bg-neutral-700'
+                            : 'bg-neutral-100 dark:bg-neutral-900/80 text-neutral-400 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 line-through cursor-not-allowed opacity-75'
                         }`}
                       >
                         {item.size}
@@ -578,7 +578,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     );
                   })}
                 {sizeStocks.filter((s) => s.isAvailable).length > 6 && (
-                  <span className="text-[10px] text-neutral-600 self-center font-bold">
+                  <span className="text-[10px] text-neutral-600 dark:text-neutral-400 self-center font-bold">
                     +{sizeStocks.filter((s) => s.isAvailable).length - 6}
                   </span>
                 )}
@@ -588,27 +588,32 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Pricing & Actions Footer */}
-        <div className="pt-2 border-t border-neutral-200/60 space-y-2">
+        <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80 space-y-2">
           {/* Price & Stock Badge Row */}
-          <div className="flex items-baseline justify-between">
-            <div className="flex items-baseline gap-2">
-              <span className="font-extrabold text-lg text-neutral-900 tracking-tight">
-                ₹{currentPrice.toLocaleString('en-IN')}
+          <div className="flex items-baseline justify-between gap-2">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="font-black text-xl sm:text-2xl text-neutral-950 dark:text-white tracking-tight leading-none product-card-sale-price">
+                ₹{(currentPrice ?? 0).toLocaleString('en-IN')}
               </span>
               {originalPrice > currentPrice && (
-                <span className="text-xs text-neutral-500 line-through font-medium">
-                  ₹{originalPrice.toLocaleString('en-IN')}
+                <span className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 line-through font-bold product-card-mrp-price">
+                  ₹{(originalPrice ?? 0).toLocaleString('en-IN')}
+                </span>
+              )}
+              {originalPrice > currentPrice && (
+                <span className="text-[10px] font-black text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/70 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/60">
+                  {Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}% छूट
                 </span>
               )}
             </div>
 
             {cfg.showStockStatus && (
               isCompletelyOutOfStock ? (
-                <span className="text-[10px] font-extrabold text-rose-700 bg-rose-50 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-extrabold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-900/60 px-2 py-0.5 rounded shrink-0">
                   स्टॉक समाप्त • Out of Stock
                 </span>
               ) : (
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-900/60 px-1.5 py-0.5 rounded shrink-0">
                   उपलब्ध • In Stock
                 </span>
               )

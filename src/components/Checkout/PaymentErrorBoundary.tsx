@@ -54,21 +54,15 @@ export class PaymentErrorBoundary extends Component<Props, State> {
               </p>
             </div>
 
-            {this.state.error && (
-              <div className="p-3 bg-red-50 rounded-xl text-left border border-red-200 space-y-1">
-                <p className="text-[11px] font-bold text-red-800">
-                  त्रुटि विवरण (Diagnostic Info):
-                </p>
-                <p className="text-[11px] font-mono text-red-700 break-all">
-                  {this.state.error.name}: {this.state.error.message}
-                </p>
-                {this.state.error.stack && (
-                  <pre className="text-[9px] font-mono text-neutral-500 overflow-x-auto max-h-24 whitespace-pre-wrap">
-                    {this.state.error.stack.split('\n').slice(0, 4).join('\n')}
-                  </pre>
-                )}
-              </div>
-            )}
+            {/* Customer-friendly message without internal stack traces */}
+            <div className="p-3 bg-amber-50 rounded-xl text-left border border-amber-200 space-y-1">
+              <p className="text-[11px] font-bold text-amber-900">
+                क्या करें (Helpful Tip):
+              </p>
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                यदि राशि आपके खाते से कट गई है, तो घबराएं नहीं। कृपया 'WhatsApp सहायता' बटन दबाकर हमारे सपोर्ट से संपर्क करें।
+              </p>
+            </div>
 
             <div className="space-y-2 pt-2">
               <button

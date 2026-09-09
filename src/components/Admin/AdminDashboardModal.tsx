@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import {
   X,
   LayoutDashboard,
@@ -59,40 +59,46 @@ import { auth } from '../../lib/firebase';
 import { Product, Review, StoreInfo, AuditLogItem, StoreBackupSnapshot, PublishProgressState, PublishResult } from '../../types';
 import { SizeStockManager } from './SizeStockManager';
 import { ChangePasswordView } from './ChangePasswordView';
-import { OrderManagementView } from './OrderManagementView';
-import { PaymentSettingsView } from './PaymentSettingsView';
-import { ReportsAnalyticsView } from './ReportsAnalyticsView';
-import { AIShoePetSettingsView } from './AIShoePetSettingsView';
-import { MarketingCenterView } from './MarketingCenterView';
-import { CategoriesSettingsView } from './CategoriesSettingsView';
-import { ReviewsSettingsView } from './ReviewsSettingsView';
-import { SocialMediaSettingsView } from './SocialMediaSettingsView';
-import { VersionHistoryView } from './VersionHistoryView';
-import { TopAnnouncementBarSettingsView } from './TopAnnouncementBarSettingsView';
 import { SmartProductFormModal } from './SmartProductFormModal';
 import { AdminNotificationDrawer } from './AdminNotificationDrawer';
-import { CouponManagementView } from './CouponManagementView';
-import { SpinWheelSettingsView } from './SpinWheelSettingsView';
-import { EngagementAnalyticsView } from './EngagementAnalyticsView';
-import { WhatsAppTemplateManager } from './WhatsAppTemplateManager';
-import { ScratchAndWinSettingsView } from './ScratchAndWinSettingsView';
-import { OrderCelebrationSettingsView } from './OrderCelebrationSettingsView';
-import { OpenBoxDeliverySettingsView } from './OpenBoxDeliverySettingsView';
-import { AdminManagementView } from './AdminManagementView';
-import { HomepageBuilderTab } from './HomepageBuilder/HomepageBuilderTab';
 import { AdminErrorBoundary } from './AdminErrorBoundary';
-import { AboutUsSettingsView } from './AboutUsSettingsView';
-import { ProductFeedSettingsView } from './ProductFeedSettingsView';
-import { ProductCardDesignerSettingsView } from './ProductCardDesignerSettingsView';
-import { TrendingShoesSettingsView } from './TrendingShoesSettingsView';
-import { PricePointSettingsView } from './PricePointSettingsView';
-import { StoreManagementAdmin } from './StoreManagementAdmin';
-import { SEOAuthorityCenterView } from './SEOAuthorityCenterView';
-import { AIMarketingGrowthView } from './AIMarketingGrowthView';
-import { CustomerIntelligenceCRMView } from './CustomerIntelligenceCRMView';
-import { SoundSettingsView } from './SoundSettingsView';
-import { WebsiteConfigurationView } from './WebsiteConfigurationView';
-import { MapPin, Users, Volume2, Crown } from 'lucide-react';
+
+// Lazy load heavy admin views to reduce initial bundle execution
+const OrderManagementView = lazy(() => import('./OrderManagementView').then(m => ({ default: m.OrderManagementView })));
+const PaymentSettingsView = lazy(() => import('./PaymentSettingsView').then(m => ({ default: m.PaymentSettingsView })));
+const ReportsAnalyticsView = lazy(() => import('./ReportsAnalyticsView').then(m => ({ default: m.ReportsAnalyticsView })));
+const AIShoePetSettingsView = lazy(() => import('./AIShoePetSettingsView').then(m => ({ default: m.AIShoePetSettingsView })));
+const MarketingCenterView = lazy(() => import('./MarketingCenterView').then(m => ({ default: m.MarketingCenterView })));
+const CategoriesSettingsView = lazy(() => import('./CategoriesSettingsView').then(m => ({ default: m.CategoriesSettingsView })));
+const ReviewsSettingsView = lazy(() => import('./ReviewsSettingsView').then(m => ({ default: m.ReviewsSettingsView })));
+const SocialMediaSettingsView = lazy(() => import('./SocialMediaSettingsView').then(m => ({ default: m.SocialMediaSettingsView })));
+const VersionHistoryView = lazy(() => import('./VersionHistoryView').then(m => ({ default: m.VersionHistoryView })));
+const TopAnnouncementBarSettingsView = lazy(() => import('./TopAnnouncementBarSettingsView').then(m => ({ default: m.TopAnnouncementBarSettingsView })));
+const CouponManagementView = lazy(() => import('./CouponManagementView').then(m => ({ default: m.CouponManagementView })));
+const SpinWheelSettingsView = lazy(() => import('./SpinWheelSettingsView').then(m => ({ default: m.SpinWheelSettingsView })));
+const EngagementAnalyticsView = lazy(() => import('./EngagementAnalyticsView').then(m => ({ default: m.EngagementAnalyticsView })));
+const WhatsAppTemplateManager = lazy(() => import('./WhatsAppTemplateManager').then(m => ({ default: m.WhatsAppTemplateManager })));
+const ScratchAndWinSettingsView = lazy(() => import('./ScratchAndWinSettingsView').then(m => ({ default: m.ScratchAndWinSettingsView })));
+const OrderCelebrationSettingsView = lazy(() => import('./OrderCelebrationSettingsView').then(m => ({ default: m.OrderCelebrationSettingsView })));
+const OpenBoxDeliverySettingsView = lazy(() => import('./OpenBoxDeliverySettingsView').then(m => ({ default: m.OpenBoxDeliverySettingsView })));
+const AdminManagementView = lazy(() => import('./AdminManagementView').then(m => ({ default: m.AdminManagementView })));
+const HomepageBuilderTab = lazy(() => import('./HomepageBuilder/HomepageBuilderTab').then(m => ({ default: m.HomepageBuilderTab })));
+const AboutUsSettingsView = lazy(() => import('./AboutUsSettingsView').then(m => ({ default: m.AboutUsSettingsView })));
+const ProductFeedSettingsView = lazy(() => import('./ProductFeedSettingsView').then(m => ({ default: m.ProductFeedSettingsView })));
+const ProductCardDesignerSettingsView = lazy(() => import('./ProductCardDesignerSettingsView').then(m => ({ default: m.ProductCardDesignerSettingsView })));
+const TrendingShoesSettingsView = lazy(() => import('./TrendingShoesSettingsView').then(m => ({ default: m.TrendingShoesSettingsView })));
+const PricePointSettingsView = lazy(() => import('./PricePointSettingsView').then(m => ({ default: m.PricePointSettingsView })));
+const StoreManagementAdmin = lazy(() => import('./StoreManagementAdmin').then(m => ({ default: m.StoreManagementAdmin })));
+const SEOAuthorityCenterView = lazy(() => import('./SEOAuthorityCenterView').then(m => ({ default: m.SEOAuthorityCenterView })));
+const AIMarketingGrowthView = lazy(() => import('./AIMarketingGrowthView').then(m => ({ default: m.AIMarketingGrowthView })));
+const CustomerIntelligenceCRMView = lazy(() => import('./CustomerIntelligenceCRMView').then(m => ({ default: m.CustomerIntelligenceCRMView })));
+const SoundSettingsView = lazy(() => import('./SoundSettingsView').then(m => ({ default: m.SoundSettingsView })));
+const WebsiteConfigurationView = lazy(() => import('./WebsiteConfigurationView').then(m => ({ default: m.WebsiteConfigurationView })));
+const DesignCustomizerPanel = lazy(() => import('./DesignCustomizerPanel').then(m => ({ default: m.DesignCustomizerPanel })));
+const VisualWebsiteBuilder = lazy(() => import('./VisualWebsiteBuilder').then(m => ({ default: m.VisualWebsiteBuilder })));
+const AdminNavCustomizer = lazy(() => import('./AdminNavCustomizer').then(m => ({ default: m.AdminNavCustomizer })));
+import { useAdminNav } from '../../context/AdminNavContext';
+import { MapPin, Users, Volume2, Crown, Paintbrush, Layout, SlidersHorizontal, ChevronDown, ChevronRight, Boxes, PackageCheck } from 'lucide-react';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -102,7 +108,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'website_design' | 'visual_builder' | 'nav_customizer';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -176,6 +182,86 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   }, [initialTab, isOpen]);
   const [saveNotification, setSaveNotification] = useState<string | null>(null);
   const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
+
+  const { draftNavConfig, toggleGroupCollapse } = useAdminNav();
+  const [sidebarSearch, setSidebarSearch] = useState('');
+
+  const renderTabIcon = (id: string) => {
+    switch (id) {
+      case 'orders': return <Package className="w-4 h-4 text-amber-500 shrink-0" />;
+      case 'open_box_delivery': return <PackageCheck className="w-4 h-4 text-emerald-500 shrink-0" />;
+      case 'products': return <Boxes className="w-4 h-4 text-emerald-600 shrink-0" />;
+      case 'customer_crm': return <Users className="w-4 h-4 text-blue-600 shrink-0" />;
+      case 'coupons': return <Ticket className="w-4 h-4 text-emerald-600 shrink-0" />;
+      case 'whatsapp_templates': return <MessageSquare className="w-4 h-4 text-emerald-500 shrink-0" />;
+      case 'marketing': return <Megaphone className="w-4 h-4 text-amber-600 shrink-0" />;
+      case 'ai_marketing_growth': return <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />;
+      case 'reviews': return <Star className="w-4 h-4 text-amber-400 shrink-0" />;
+      case 'spin_wheel': return <Sparkles className="w-4 h-4 text-pink-500 shrink-0" />;
+      case 'lucky_box': return <Gift className="w-4 h-4 text-amber-500 shrink-0" />;
+      case 'order_celebration': return <PartyPopper className="w-4 h-4 text-indigo-500 shrink-0" />;
+      case 'engagement_analytics': return <TrendingUp className="w-4 h-4 text-blue-500 shrink-0" />;
+      case 'instagram': return <Share2 className="w-4 h-4 text-emerald-500 shrink-0" />;
+      case 'ai_pet_shoe': return <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />;
+      case 'trending_shoes': return <Flame className="w-4 h-4 text-[#0B8F63] shrink-0" />;
+      case 'price_point_699': return <Zap className="w-4 h-4 text-emerald-500 shrink-0" />;
+      case 'payment_settings': return <CreditCard className="w-4 h-4 text-emerald-600 shrink-0" />;
+      case 'reports': return <TrendingUp className="w-4 h-4 text-indigo-600 shrink-0" />;
+      case 'overview': return <LayoutDashboard className="w-4 h-4 text-indigo-500 shrink-0" />;
+      case 'website_configuration': return <Sliders className="w-4 h-4 text-neutral-600 shrink-0" />;
+      case 'website_design': return <Paintbrush className="w-4 h-4 text-amber-500 shrink-0" />;
+      case 'visual_builder': return <Layout className="w-4 h-4 text-emerald-500 shrink-0" />;
+      case 'product_card_designer': return <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />;
+      case 'product_feed_settings': return <Sliders className="w-4 h-4 text-emerald-600 shrink-0" />;
+      case 'categories': return <Layers className="w-4 h-4 text-amber-600 shrink-0" />;
+      case 'homepage': return <Home className="w-4 h-4 text-neutral-600 shrink-0" />;
+      case 'about_us': return <Heart className="w-4 h-4 text-amber-500 shrink-0" />;
+      case 'top_announcement_bar': return <Layers className="w-4 h-4 text-emerald-500 shrink-0" />;
+      case 'seo_local_business': return <Search className="w-4 h-4 text-emerald-500 shrink-0" />;
+      case 'store_management': return <MapPin className="w-4 h-4 text-emerald-500 shrink-0" />;
+      case 'nav_customizer': return <SlidersHorizontal className="w-4 h-4 text-[#0B8F63] shrink-0" />;
+      case 'admin_management': return <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />;
+      case 'audit': return <FileText className="w-4 h-4 text-emerald-600 shrink-0" />;
+      case 'backups': return <Database className="w-4 h-4 text-indigo-600 shrink-0" />;
+      case 'settings': return <Settings className="w-4 h-4 text-amber-600 shrink-0" />;
+      case 'sound': return <Volume2 className="w-4 h-4 text-blue-600 shrink-0" />;
+      case 'versions': return <History className="w-4 h-4 text-emerald-600 shrink-0" />;
+      case 'password': return <KeyRound className="w-4 h-4 text-emerald-600 shrink-0" />;
+      default: return <Sliders className="w-4 h-4 text-neutral-500 shrink-0" />;
+    }
+  };
+
+  const renderTabBadge = (id: string) => {
+    if (id === 'orders') {
+      return (
+        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 rounded font-bold text-[10px]">
+          {orders.length}
+        </span>
+      );
+    }
+    if (id === 'products') {
+      return (
+        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-900 rounded font-bold text-[10px]">
+          {products.length}
+        </span>
+      );
+    }
+    if (id === 'reviews') {
+      return (
+        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 rounded font-bold text-[10px]">
+          {reviews.length}
+        </span>
+      );
+    }
+    if (id === 'versions') {
+      return (
+        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-900 rounded font-bold text-[10px]">
+          Live
+        </span>
+      );
+    }
+    return null;
+  };
 
   const isGoogleUser = auth.currentUser?.providerData.some((p) => p.providerId === 'google.com');
 
@@ -476,469 +562,109 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           
           {/* Sidebar Navigation */}
-          <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-2.5 sm:p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto scrollbar-none touch-pan-x">
+          <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-2 sm:p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto md:overflow-y-auto scrollbar-none">
             
-            {/* Store Identity & Configuration Navigation */}
+            {/* Sidebar Quick Search */}
+            <div className="relative mb-1 hidden md:block">
+              <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search menu..."
+                value={sidebarSearch}
+                onChange={(e) => setSidebarSearch(e.target.value)}
+                className="w-full pl-8 pr-2.5 py-1.5 bg-neutral-100 border border-neutral-200/80 rounded-xl text-[11px] font-medium text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-[#0B8F63]"
+              />
+            </div>
+
+            {/* Customize Menu Button Direct Access */}
             <button
-              onClick={() => setActiveTab('website_configuration')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left border ${
-                activeTab === 'website_configuration'
+              onClick={() => setActiveTab('nav_customizer')}
+              className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap text-left border ${
+                activeTab === 'nav_customizer'
                   ? 'bg-neutral-900 text-white border-neutral-900 shadow-md'
-                  : 'bg-white text-neutral-800 border-neutral-200 hover:bg-neutral-100'
+                  : 'bg-emerald-50/80 text-[#0B8F63] border-emerald-200/80 hover:bg-emerald-100/80'
               }`}
             >
-              <Globe className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
-              <span>Store Identity & Config</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('orders')}
-              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'orders'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Package className="w-4 h-4 text-amber-500" />
-                <span>Orders & Tracking</span>
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-[#0B8F63]" />
+                <span>Customize Menu</span>
               </div>
-              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 rounded font-bold text-[10px]">
-                {orders.length}
+              <span className="px-1.5 py-0.5 bg-emerald-200/80 text-emerald-900 rounded font-black text-[9px] uppercase tracking-wider">
+                Edit
               </span>
             </button>
 
-            <button
-              onClick={() => setActiveTab('open_box_delivery')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'open_box_delivery'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <Package className="w-4 h-4 text-emerald-500" />
-              <span>📦 Open Box Delivery</span>
-            </button>
+            {draftNavConfig.groups.map((group) => {
+              if (!group.visible && !sidebarSearch) return null;
 
-            <button
-              onClick={() => setActiveTab('marketing')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'marketing'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <Megaphone className="w-4 h-4 text-amber-600" />
-              <span>Marketing & Campaigns</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('ai_marketing_growth')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'ai_marketing_growth'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-indigo-600" />
-              <span>AI Marketing & Growth</span>
-            </button>
+              const query = sidebarSearch.toLowerCase().trim();
+              const visibleItems = group.items.filter((item) => {
+                if (!item.visible && !query) return false;
+                if (item.id === 'admin_management' && !canAccessTab('admin_management')) return false;
+                if (item.id === 'password' && isGoogleUser) return false;
+                if (query) {
+                  return item.label.toLowerCase().includes(query) || item.id.toLowerCase().includes(query);
+                }
+                return true;
+              });
 
-            <button
-              onClick={() => setActiveTab('customer_crm')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'customer_crm'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <Users className="w-4 h-4 text-blue-600" />
-              <span>Customer CRM</span>
-            </button>
+              if (visibleItems.length === 0) return null;
 
-            <button
-              onClick={() => setActiveTab('coupons')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'coupons'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <Ticket className="w-4 h-4 text-emerald-600" />
-              <span>Coupon & Promotions</span>
-            </button>
+              return (
+                <div key={group.id} className="space-y-1 my-0.5">
+                  {/* Group Collapsible Header */}
+                  <button
+                    onClick={() => toggleGroupCollapse(group.id)}
+                    className="w-full hidden md:flex items-center justify-between px-2.5 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-wider hover:text-neutral-700 transition-colors"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span>{group.icon}</span>
+                      <span>{group.label}</span>
+                    </span>
+                    {group.collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  </button>
 
-            <button
-              onClick={() => setActiveTab('whatsapp_templates')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'whatsapp_templates'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4 text-emerald-500" />
-              <span>📱 WhatsApp Templates</span>
-            </button>
-
-            <div className="my-1 border-t border-neutral-200 hidden md:block" />
-            <div className="px-3.5 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-widest hidden md:block">Reward Center</div>
-
-            <button
-              onClick={() => setActiveTab('spin_wheel')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'spin_wheel'
-                  ? 'bg-pink-600 text-white shadow-md shadow-pink-600/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-pink-500" />
-              <span>Spin the Wheel</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('lucky_box')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'lucky_box'
-                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <Gift className="w-4 h-4 text-amber-500" />
-              <span>Lucky Box (Scratch Card)</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('order_celebration')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'order_celebration'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <PartyPopper className="w-4 h-4 text-indigo-500" />
-              <span>Order Success Celebration</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('engagement_analytics')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'engagement_analytics'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <TrendingUp className="w-4 h-4 text-blue-500" />
-              <span>Reward Analytics</span>
-            </button>
-
-            <div className="my-1 border-t border-neutral-200 hidden md:block" />
-
-            <button
-              onClick={() => setActiveTab('store_management')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'store_management'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <MapPin className="w-4 h-4 text-emerald-500" />
-              <span>📍 Nearby Stores & Outlets</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('seo_local_business')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'seo_local_business'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <Search className="w-4 h-4 text-emerald-500" />
-              <span>🔍 SEO & Local Business</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('payment_settings')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'payment_settings'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <CreditCard className="w-4 h-4 text-emerald-600" />
-              <span>Payment & UPI Setup</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('reports')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'reports'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <TrendingUp className="w-4 h-4 text-indigo-600" />
-              <span>Sales & Reports</span>
-            </button>
-
-            <div className="my-1 border-t border-neutral-200 hidden md:block" />
-
-            <button
-              onClick={() => setActiveTab('products')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'products'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Package className="w-4 h-4" />
-              <span>Products & Stock ({products.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('product_card_designer')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'product_card_designer'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-emerald-500" />
-              <span>Product Card Designer</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('product_feed_settings')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'product_feed_settings'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Sliders className="w-4 h-4 text-emerald-600" />
-              <span>Product Feed Settings</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('trending_shoes')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'trending_shoes'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Flame className="w-4 h-4 text-[#0B8F63]" />
-              <span>🔥 Trending Shoes Manager</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('price_point_699')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'price_point_699'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Zap className="w-4 h-4 text-emerald-500" />
-              <span>🔥 ₹699 Collection Manager</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('homepage')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'homepage'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Home className="w-4 h-4" />
-              <span>Store Info & Contact</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('about_us')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'about_us'
-                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <Heart className="w-4 h-4 text-amber-500" />
-              <span>About Us Manager</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('top_announcement_bar')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'top_announcement_bar'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Layers className="w-4 h-4 text-emerald-500" />
-              <span>Top Announcement Bar</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('ai_pet_shoe')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'ai_pet_shoe'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>AI Pet Shoe Mascot</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('instagram')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'instagram'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Share2 className="w-4 h-4 text-emerald-500" />
-              <span>Social Media Center</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('categories')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'categories'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              <span>Categories & Highlights</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('reviews')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'reviews'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Star className="w-4 h-4" />
-              <span>Reviews ({reviews.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'overview'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              <span>Catalog Analytics</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('versions')}
-              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'versions'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <History className="w-4 h-4 text-emerald-600" />
-                <span>Version History & Rollbacks</span>
-              </div>
-              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-900 rounded font-bold text-[10px]">
-                Live
-              </span>
-            </button>
-
-            <div className="my-1 border-t border-neutral-200 hidden md:block" />
-
-            {canAccessTab('admin_management') && (
-              <button
-                onClick={() => setActiveTab('admin_management')}
-                className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                  activeTab === 'admin_management'
-                    ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                    : 'text-neutral-600 hover:bg-neutral-100'
-                }`}
-              >
-                <ShieldCheck className="w-4 h-4 text-amber-500" />
-                <span>Multi Admin & RBAC</span>
-              </button>
-            )}
-
-            {/* SECURITY & BACKUP TABS */}
-            <button
-              onClick={() => setActiveTab('audit')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'audit'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <FileText className="w-4 h-4 text-emerald-600" />
-              <span>Audit & Security Logs</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('backups')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'backups'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Database className="w-4 h-4 text-indigo-600" />
-              <span>Backup & Disaster Recovery</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'settings'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Settings className="w-4 h-4 text-amber-600" />
-              <span>2FA & Security Settings</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('sound')}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                activeTab === 'sound'
-                  ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              <Volume2 className="w-4 h-4 text-blue-600" />
-              <span>Sound Settings</span>
-            </button>
-
-            {!isGoogleUser && (
-              <button
-                onClick={() => setActiveTab('password')}
-                className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
-                  activeTab === 'password'
-                    ? 'bg-[#0B8F63] text-white shadow-md shadow-[#0B8F63]/20'
-                    : 'text-neutral-600 hover:bg-neutral-100'
-                }`}
-              >
-                <KeyRound className="w-4 h-4 text-emerald-600" />
-                <span>Change Password</span>
-              </button>
-            )}
+                  {/* Group Items */}
+                  {(!group.collapsed || !!sidebarSearch) && (
+                    <div className="flex md:flex-col gap-1">
+                      {visibleItems.map((item) => {
+                        const isActive = activeTab === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => setActiveTab(item.id as TabType)}
+                            className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-left ${
+                              isActive
+                                ? 'bg-[#0B8F63] text-white shadow-sm shadow-[#0B8F63]/20 font-extrabold'
+                                : 'text-neutral-700 hover:bg-neutral-100'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {renderTabIcon(item.id)}
+                              <span>{item.label}</span>
+                            </div>
+                            {renderTabBadge(item.id)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Main Content Body */}
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-[#F7F7F7]">
             <AdminErrorBoundary key={activeTab} fallbackTitle="Admin Tab View Display Notice">
+              <Suspense
+                fallback={
+                  <div className="flex flex-col items-center justify-center p-12 space-y-3 bg-white rounded-2xl border border-neutral-200/80 shadow-sm">
+                    <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-bold text-neutral-500">Loading Admin View...</span>
+                  </div>
+                }
+              >
             
             {/* ----------------- TAB: MULTI ADMIN & RBAC MANAGEMENT ----------------- */}
             {activeTab === 'admin_management' && (
@@ -1818,6 +1544,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             </div>
           )}
 
+            {activeTab === 'nav_customizer' && (
+              <AdminNavCustomizer showToast={(msg) => setSaveNotification(msg)} />
+            )}
+
+            {activeTab === 'visual_builder' && (
+              <VisualWebsiteBuilder showToast={(msg) => setSaveNotification(msg)} />
+            )}
+
+            {activeTab === 'website_design' && (
+              <DesignCustomizerPanel showToast={(msg) => setSaveNotification(msg)} />
+            )}
+
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1843,6 +1581,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               </div>
             )}
 
+              </Suspense>
             </AdminErrorBoundary>
           </div>
         </div>

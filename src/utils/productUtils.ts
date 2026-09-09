@@ -1,4 +1,6 @@
 import { Product } from '../types';
+import { PUBLIC_SITE_URL, getPublicSiteUrl, sanitizePublicCustomerUrl } from './siteUrl';
+export { PUBLIC_SITE_URL, getPublicSiteUrl, sanitizePublicCustomerUrl };
 
 /**
  * Converts a string into a clean, URL-safe slug
@@ -46,11 +48,10 @@ export function getProductSlug(product: Product): string {
  * Constructs the canonical public URL for a product
  */
 export function getProductUrl(product: Product, customOrigin?: string): string {
-  const defaultDomain = 'https://www.marudharfashionpoint.com';
-  const origin = customOrigin || (typeof window !== 'undefined' && window.location.origin ? window.location.origin : defaultDomain);
+  const origin = getPublicSiteUrl(customOrigin);
   // Use product.slug if present, else product.id (Firebase Document ID), else getProductSlug
   const productIdOrSlug = product.slug?.trim() || product.id?.trim() || getProductSlug(product);
-  return `${origin}/product/${productIdOrSlug}`;
+  return sanitizePublicCustomerUrl(`${origin}/product/${productIdOrSlug}`);
 }
 
 /**
@@ -62,13 +63,13 @@ export function getProductUrl(product: Product, customOrigin?: string): string {
  * 4. NEVER replace a valid real product image with Unsplash or demo images.
  * 5. NEVER put base64 image data (e.g. data:image/...) or internal blobs into WhatsApp.
  * 6. If only internal base64/data image exists, proxies via the clean endpoint:
- *    https://www.marudharfashionpoint.com/api/product-image/:id
+ *    /api/product-image/:id
  * 7. If a product genuinely has no image, returns null so the image line is omitted.
  */
 export function getPublicProductImageUrl(
   product: Product,
   selectedVariantImage?: string,
-  preferredOrigin: string = 'https://www.marudharfashionpoint.com'
+  preferredOrigin: string = PUBLIC_SITE_URL
 ): string | null {
   if (!product) return null;
 
@@ -82,7 +83,7 @@ export function getPublicProductImageUrl(
 
   // 1. Check selected variant image if provided (color/variant specific real image)
   if (isSafePublicUrl(selectedVariantImage)) {
-    return selectedVariantImage!.trim();
+    return sanitizePublicCustomerUrl(selectedVariantImage!.trim());
   }
 
   // 2. Primary check: Product's actual primary image from existing product data/schema
@@ -90,18 +91,18 @@ export function getPublicProductImageUrl(
   if (Array.isArray(product.images) && product.images.length > 0) {
     for (const img of product.images) {
       if (isSafePublicUrl(img)) {
-        return img.trim();
+        return sanitizePublicCustomerUrl(img.trim());
       }
       // If it's a relative path starting with /
       if (typeof img === 'string' && img.startsWith('/') && !img.startsWith('//')) {
-        return `${preferredOrigin}${img}`;
+        return sanitizePublicCustomerUrl(`${preferredOrigin}${img}`);
       }
     }
   }
 
   // 3. Check product's meta ogImage
   if (isSafePublicUrl(product.ogImage)) {
-    return product.ogImage!.trim();
+    return sanitizePublicCustomerUrl(product.ogImage!.trim());
   }
 
   // 4. If product has real image data that happens to be base64/data:image/,
@@ -114,7 +115,8 @@ export function getPublicProductImageUrl(
 
   const productId = (product.id || '').trim();
   if (hasEmbeddedImageData && productId) {
-    return `${preferredOrigin}/api/product-image/${encodeURIComponent(productId)}`;
+    const origin = getPublicSiteUrl(preferredOrigin);
+    return sanitizePublicCustomerUrl(`${origin}/api/product-image/${encodeURIComponent(productId)}`);
   }
 
   // 5. Product genuinely has no image -> return null (omit Product Image line)
@@ -167,6 +169,11 @@ export function sanitizeWhatsAppText(raw: string): string {
     .replace(/&#x2F;/gi, '/')
     // Remove accidental data:image or base64 strings
     .replace(/data:image\/[a-zA-Z+.-]+;base64,[A-Za-z0-9+/=]+/g, '')
+    // Normalize old unpurchased domains to production Vercel domain
+    .replace(/https?:\/\/(www\.)?marudharfashionpoint\.com/gi, PUBLIC_SITE_URL)
+    .replace(/https?:\/\/(www\.)?marudharfashion\.com/gi, PUBLIC_SITE_URL)
+    .replace(/(www\.)?marudharfashionpoint\.com/gi, PUBLIC_SITE_URL)
+    .replace(/(www\.)?marudharfashion\.com/gi, PUBLIC_SITE_URL)
     // Normalize excessive multiple empty lines
     .replace(/\n{3,}/g, '\n\n')
     .trim();

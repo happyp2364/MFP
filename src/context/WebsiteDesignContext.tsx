@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { WebsiteDesignSettings, ResponsiveDevice, SectionResponsiveConfig, PageSectionConfig } from '../types/websiteDesign';
-import { DEFAULT_WEBSITE_DESIGN_SETTINGS, sanitizeWebsiteDesignSettings, applyWebsiteDesignTokens } from '../data/defaultWebsiteDesign';
+import { DEFAULT_WEBSITE_DESIGN_SETTINGS, sanitizeWebsiteDesignSettings, applyWebsiteDesignTokens } from '../data/defaultWebsiteDesign.ts';
 import { db } from '../lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 

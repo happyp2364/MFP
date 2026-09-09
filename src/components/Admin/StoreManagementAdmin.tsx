@@ -33,6 +33,7 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { PhysicalStore, MobileCategoryIcon, StoreGalleryPhoto, StoreGalleryPhotoCategory } from '../../types';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { CANONICAL_STORE_LOCATION, getGoogleMapsOpenUrl } from '../../data/storeLocation';
 
 export const StoreManagementAdmin: React.FC = () => {
   const {
@@ -62,11 +63,11 @@ export const StoreManagementAdmin: React.FC = () => {
     reviewsCount: 150,
     address: '',
     area: '',
-    city: 'Jodhpur',
+    city: 'Pipar City',
     state: 'Rajasthan',
-    pincode: '',
-    latitude: 26.2918,
-    longitude: 73.0168,
+    pincode: '342601',
+    latitude: CANONICAL_STORE_LOCATION.latitude,
+    longitude: CANONICAL_STORE_LOCATION.longitude,
     phone: '',
     whatsapp: '',
     openingHoursToday: '10:00 AM - 9:30 PM',
@@ -220,7 +221,7 @@ export const StoreManagementAdmin: React.FC = () => {
       managerName: '',
       holidayTiming: 'Open 365 Days',
       specialOffers: '🔥 Flat 10% OFF on all sports shoes at store!',
-      googleMapsUrl: 'https://maps.google.com/?q=26.2918,73.0168',
+      googleMapsUrl: CANONICAL_STORE_LOCATION.googleMapsUrl,
       isFeatured: false,
       isEnabled: true,
     });
@@ -248,11 +249,11 @@ export const StoreManagementAdmin: React.FC = () => {
       reviewsCount: Number(formData.reviewsCount) || 100,
       address: formData.address || '',
       area: formData.area || '',
-      city: formData.city || 'Jodhpur',
-      state: formData.state || 'Rajasthan',
-      pincode: formData.pincode || '',
-      latitude: Number(formData.latitude) || 26.2918,
-      longitude: Number(formData.longitude) || 73.0168,
+      city: formData.city || CANONICAL_STORE_LOCATION.city,
+      state: formData.state || CANONICAL_STORE_LOCATION.state,
+      pincode: formData.pincode || CANONICAL_STORE_LOCATION.pincode,
+      latitude: Number(formData.latitude) || CANONICAL_STORE_LOCATION.latitude,
+      longitude: Number(formData.longitude) || CANONICAL_STORE_LOCATION.longitude,
       phone: formData.phone || '',
       whatsapp: formData.whatsapp || '',
       openingHoursToday: formData.openingHoursToday || '10:00 AM - 9:30 PM',
@@ -265,7 +266,7 @@ export const StoreManagementAdmin: React.FC = () => {
       managerName: formData.managerName || '',
       holidayTiming: formData.holidayTiming || 'Open Daily',
       specialOffers: formData.specialOffers || '',
-      googleMapsUrl: formData.googleMapsUrl || `https://maps.google.com/?q=${formData.latitude || 26.2918},${formData.longitude || 73.0168}`,
+      googleMapsUrl: formData.googleMapsUrl || getGoogleMapsOpenUrl(Number(formData.latitude) || CANONICAL_STORE_LOCATION.latitude, Number(formData.longitude) || CANONICAL_STORE_LOCATION.longitude),
       isFeatured: Boolean(formData.isFeatured),
       isEnabled: formData.isEnabled !== false,
       updatedAt: new Date().toISOString(),

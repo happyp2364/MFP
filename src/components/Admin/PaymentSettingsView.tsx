@@ -828,13 +828,26 @@ export const PaymentSettingsView: React.FC = () => {
                   </div>
 
                 </div>
+              </div>
+            )}
 
-                {/* Live Interactive Pricing Calculation Preview */}
+            {/* Live Interactive Pricing Calculation Preview */}
+            {(() => {
+              const effectiveOnlineFeePercent = enableConvenienceFee ? convenienceFeePercent : 0;
+              const effectiveQrFeePercent = enableConvenienceFee && !applyFeeToOnlineOnly ? convenienceFeePercent : 0;
+
+              const qrConvenienceFee = Math.round((previewSubtotal * effectiveQrFeePercent) / 100);
+              const qrTotalPays = previewSubtotal + qrConvenienceFee;
+
+              const onlineConvenienceFee = Math.round((previewSubtotal * effectiveOnlineFeePercent) / 100);
+              const onlineTotalPays = previewSubtotal + onlineConvenienceFee;
+
+              return (
                 <div className="p-4 bg-gradient-to-br from-amber-50/60 to-orange-50/40 rounded-2xl border border-amber-200 space-y-3">
                   <div className="flex items-center justify-between border-b border-amber-200/80 pb-2">
                     <h4 className="font-bold text-xs text-amber-950 flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-amber-700" />
-                      <span>Live Payment Calculation Preview</span>
+                      <span>Live Payment Pricing Preview</span>
                     </h4>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-bold text-amber-800">Test Subtotal:</span>
@@ -851,12 +864,12 @@ export const PaymentSettingsView: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    {/* QR Payment Box */}
+                    {/* Manual QR / UPI Payment Box */}
                     <div className="p-3 bg-white rounded-xl border border-emerald-200 shadow-sm space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-emerald-950">Scan QR Code (Manual UPI)</span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">
-                          ₹0 FEE
+                        <span className="font-bold text-emerald-950">Manual QR / UPI</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${effectiveQrFeePercent > 0 ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'}`}>
+                          {effectiveQrFeePercent > 0 ? `${effectiveQrFeePercent}% FEE` : '₹0 FEE'}
                         </span>
                       </div>
                       <div className="space-y-1 text-neutral-600 text-[11px] border-t border-neutral-100 pt-1.5">
@@ -864,23 +877,23 @@ export const PaymentSettingsView: React.FC = () => {
                           <span>Product Subtotal:</span>
                           <span className="font-mono font-bold text-neutral-900">₹{previewSubtotal.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between text-emerald-700 font-bold">
-                          <span>Convenience Fee (Excluded):</span>
-                          <span className="font-mono">₹0</span>
+                        <div className="flex justify-between font-bold text-emerald-700">
+                          <span>Convenience Fee{effectiveQrFeePercent > 0 ? ` (${effectiveQrFeePercent}%)` : ''}:</span>
+                          <span className="font-mono">{qrConvenienceFee > 0 ? `+₹${qrConvenienceFee.toLocaleString()}` : '₹0'}</span>
                         </div>
                         <div className="flex justify-between text-xs font-extrabold text-neutral-900 pt-1 border-t border-neutral-200">
                           <span>Total Customer Pays:</span>
-                          <span className="font-mono text-emerald-700">₹{previewSubtotal.toLocaleString()}</span>
+                          <span className="font-mono text-emerald-800">₹{qrTotalPays.toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Online Payment (Cashfree) Box */}
+                    {/* Razorpay Online Box */}
                     <div className="p-3 bg-white rounded-xl border border-amber-300 shadow-sm space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-amber-950">Pay Online (Cashfree)</span>
-                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-extrabold">
-                          {convenienceFeePercent}% FEE
+                        <span className="font-bold text-amber-950">Razorpay Online</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${effectiveOnlineFeePercent > 0 ? 'bg-amber-100 text-amber-900' : 'bg-neutral-100 text-neutral-700'}`}>
+                          {effectiveOnlineFeePercent > 0 ? `${effectiveOnlineFeePercent}% FEE` : '₹0 FEE'}
                         </span>
                       </div>
                       <div className="space-y-1 text-neutral-600 text-[11px] border-t border-neutral-100 pt-1.5">
@@ -888,22 +901,22 @@ export const PaymentSettingsView: React.FC = () => {
                           <span>Product Subtotal:</span>
                           <span className="font-mono font-bold text-neutral-900">₹{previewSubtotal.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between text-amber-900 font-bold">
-                          <span>Convenience Fee ({convenienceFeePercent}%):</span>
-                          <span className="font-mono">+₹{Math.round((previewSubtotal * convenienceFeePercent) / 100).toLocaleString()}</span>
+                        <div className="flex justify-between font-bold text-amber-900">
+                          <span>Convenience Fee{effectiveOnlineFeePercent > 0 ? ` (${effectiveOnlineFeePercent}%)` : ''}:</span>
+                          <span className="font-mono">{onlineConvenienceFee > 0 ? `+₹${onlineConvenienceFee.toLocaleString()}` : '₹0'}</span>
                         </div>
                         <div className="flex justify-between text-xs font-extrabold text-neutral-900 pt-1 border-t border-neutral-200">
                           <span>Total Customer Pays:</span>
                           <span className="font-mono text-amber-900">
-                            ₹{(previewSubtotal + Math.round((previewSubtotal * convenienceFeePercent) / 100)).toLocaleString()}
+                            ₹{onlineTotalPays.toLocaleString()}
                           </span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Section 2C: Shipping & Return Policy Settings */}

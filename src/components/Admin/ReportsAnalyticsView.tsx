@@ -23,6 +23,25 @@ import {
 } from 'recharts';
 import { useStore } from '../../context/StoreContext';
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-neutral-900/90 text-white backdrop-blur-xl p-3 rounded-2xl border border-amber-500/30 shadow-2xl text-xs space-y-1">
+        <p className="font-bold text-amber-400">{label}</p>
+        <p className="font-mono text-emerald-400">
+          Revenue: ₹{Number(payload[0].value).toLocaleString('en-IN')}
+        </p>
+        {payload[1] && (
+          <p className="text-neutral-300">
+            Orders Count: {payload[1].value}
+          </p>
+        )}
+      </div>
+    );
+  }
+  return null;
+};
+
 export const ReportsAnalyticsView: React.FC = () => {
   const { orders, products } = useStore();
   const [chartType, setChartType] = useState<'area' | 'bar'>('area');
@@ -68,25 +87,6 @@ export const ReportsAnalyticsView: React.FC = () => {
     { name: "Women's Wear", value: products.filter((p) => p.category === 'women').length, color: '#D97706' },
     { name: "Kids' Collection", value: products.filter((p) => p.category === 'kids').length, color: '#2563EB' },
   ];
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-neutral-900/90 text-white backdrop-blur-xl p-3 rounded-2xl border border-amber-500/30 shadow-2xl text-xs space-y-1">
-          <p className="font-bold text-amber-400">{label}</p>
-          <p className="font-mono text-emerald-400">
-            Revenue: ₹{Number(payload[0].value).toLocaleString('en-IN')}
-          </p>
-          {payload[1] && (
-            <p className="text-neutral-300">
-              Orders Count: {payload[1].value}
-            </p>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="space-y-6 text-xs">

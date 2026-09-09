@@ -37,7 +37,10 @@ export const TrendingCollections: React.FC<TrendingCollectionsProps> = ({
             <div
               key={col.id}
               onClick={() => onSelectCollection(col.id)}
-              className="group relative rounded-3xl overflow-hidden aspect-[16/10] bg-neutral-900 cursor-pointer shadow-md hover:shadow-2xl transition-all duration-500 border border-neutral-200/80"
+              className="group relative overflow-hidden aspect-[16/10] bg-neutral-900 cursor-pointer shadow-md hover:shadow-2xl transition-all duration-500 border border-neutral-200/80"
+              style={{
+                borderRadius: 'var(--mfp-category-radius)',
+              }}
             >
               <img
                 src={col.image}

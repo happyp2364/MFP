@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { Activity, X, AlertTriangle, CheckCircle, Search } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
 
 export const SEOLiveScoreWidget: React.FC = () => {
   const { isAdmin } = useStore();

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { CustomerLanguage, WebsiteConfig, CustomerCommunicationConfig } from '../../types';
+import { PUBLIC_SITE_URL } from '../../utils/siteUrl';
 import {
   CUSTOMER_COMMUNICATION_DICTIONARY,
   DEFAULT_CUSTOMER_WHATSAPP_TEMPLATES,
@@ -566,7 +567,7 @@ export const CustomerCommunicationSettingsView: React.FC = () => {
                   .replaceAll('{city}', 'Pipar City, Jodhpur')
                   .replaceAll('{state}', 'Rajasthan')
                   .replaceAll('{pincode}', '342601')
-                  .replaceAll('{productURL}', 'https://marudharfashionpoint.com')}
+                  .replaceAll('{productURL}', PUBLIC_SITE_URL)}
               </pre>
             </div>
           </div>

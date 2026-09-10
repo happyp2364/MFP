@@ -92,6 +92,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   const logoTapCount = React.useRef(0);
   const logoTapTimeout = React.useRef<NodeJS.Timeout | null>(null);
 
+  const activeLogoUrl = storeInfo?.logoUrl || websiteConfig?.businessIdentity?.logoUrl || '';
+  const activeLogoType = storeInfo?.logoType || websiteConfig?.businessIdentity?.logoType || (activeLogoUrl ? 'both' : 'icon');
+  const activeLogoText = storeInfo?.headerLogoText || websiteConfig?.businessIdentity?.businessName || storeInfo?.name || 'Marudhar Fashion Point';
+  const activeTagline = websiteConfig?.businessIdentity?.tagline || storeInfo?.tagline || 'Fashion & Footwear';
+
   const handleLogoClick = () => {
     handleNavClick('hero');
     logoTapCount.current += 1;
@@ -164,27 +169,39 @@ export const Navbar: React.FC<NavbarProps> = ({
               {storeInfo?.showHeaderLogo !== false && (
                 <button
                   onClick={handleLogoClick}
-                  className="flex items-center gap-2 text-left group"
+                  className="flex items-center gap-2.5 text-left group cursor-pointer"
+                  title="Click to go home (Admin: 5-tap shortcut)"
                 >
-                  <div
-                    className="rounded-xl bg-[#0B8F63] flex items-center justify-center text-white shadow-md shadow-[#0B8F63]/20 group-hover:scale-105 transition-transform duration-300 shrink-0"
-                    style={{
-                      width: 'var(--mfp-logo-width)',
-                      height: 'var(--mfp-logo-height)',
-                    }}
-                  >
-                    <Footprints className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-serif-heading font-extrabold text-base sm:text-lg text-neutral-900 tracking-tight">
-                        {websiteConfig?.businessIdentity?.businessName || storeInfo?.name || 'Shop'}
-                      </span>
+                  {activeLogoUrl && (activeLogoType === 'image' || activeLogoType === 'both') ? (
+                    <img
+                      src={activeLogoUrl}
+                      alt={activeLogoText}
+                      className="h-9 sm:h-10 w-auto max-w-[140px] sm:max-w-[180px] object-contain rounded-lg group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div
+                      className="rounded-xl bg-[#0B8F63] flex items-center justify-center text-white shadow-md shadow-[#0B8F63]/20 group-hover:scale-105 transition-transform duration-300 shrink-0"
+                      style={{
+                        width: 'var(--mfp-logo-width)',
+                        height: 'var(--mfp-logo-height)',
+                      }}
+                    >
+                      <Footprints className="w-5 h-5" />
                     </div>
-                    <p className="text-[9px] sm:text-[10px] text-neutral-500 font-medium tracking-wide hidden xs:block">
-                      {websiteConfig?.businessIdentity?.tagline || storeInfo?.tagline || 'Fashion & Footwear'}
-                    </p>
-                  </div>
+                  )}
+
+                  {(activeLogoType !== 'image' || !activeLogoUrl) && (
+                    <div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-serif-heading font-extrabold text-base sm:text-lg text-neutral-900 tracking-tight leading-snug">
+                          {activeLogoText}
+                        </span>
+                      </div>
+                      <p className="text-[9px] sm:text-[10px] text-neutral-500 font-medium tracking-wide hidden xs:block leading-none">
+                        {activeTagline}
+                      </p>
+                    </div>
+                  )}
                 </button>
               )}
             </div>

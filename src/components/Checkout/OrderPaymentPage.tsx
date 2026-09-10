@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CustomerOrder } from '../../types';
 import { useOrders } from '../../context/OrderContext';
+import { useStore } from '../../context/StoreContext';
 import {
   createRazorpayServerOrder,
   openRazorpayCheckoutModal,
@@ -8,6 +9,9 @@ import {
 } from '../../services/razorpayService';
 import { getActiveStorePhone, sanitizeWhatsAppText } from '../../utils/whatsapp';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
+import { generateUPILink, getQRCodeImageUrl, cleanAndSanitizeUPIId } from '../../utils/qrCode';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -22,6 +26,9 @@ import {
   QrCode,
   RefreshCw,
   Info,
+  Copy,
+  Check,
+  Smartphone,
 } from 'lucide-react';
 
 interface OrderPaymentPageProps {
@@ -45,6 +52,7 @@ function formatOrderDate(dateVal: any): string {
 export const OrderPaymentPage: React.FC<OrderPaymentPageProps> = ({ orderId, onBackHome }) => {
   console.log('[PAYMENT_DEBUG_3_ORDER_PAGE] Component mounted with orderId:', orderId);
   const { getOrderById, markOrderAsPaid } = useOrders();
+  const { paymentSettings } = useStore();
 
   const [order, setOrder] = useState<CustomerOrder | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -56,6 +64,69 @@ export const OrderPaymentPage: React.FC<OrderPaymentPageProps> = ({ orderId, onB
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [verifiedPaymentId, setVerifiedPaymentId] = useState<string>('');
   const isProcessingRef = useRef<boolean>(false);
+
+  // Direct Bank UPI / QR Code Payment State
+  const [paymentMethodTab, setPaymentMethodTab] = useState<'RAZORPAY' | 'DIRECT_UPI'>('RAZORPAY');
+  const [utrNumber, setUtrNumber] = useState<string>('');
+  const [isSubmittingUtr, setIsSubmittingUtr] = useState<boolean>(false);
+  const [copiedUpi, setCopiedUpi] = useState<boolean>(false);
+  const [isUtrSubmitted, setIsUtrSubmitted] = useState<boolean>(false);
+
+  const rawUpiId = paymentSettings?.upiId || '9782482250@upi';
+  const sanitizedUpiId = cleanAndSanitizeUPIId(rawUpiId);
+  const merchantName = paymentSettings?.merchantName || 'Marudhar Fashion Point';
+
+  const upiLink = order
+    ? generateUPILink(sanitizedUpiId, merchantName, order.totalAmount, `Order_${order.id}`)
+    : '';
+  const qrImageUrl = getQRCodeImageUrl(upiLink, 300);
+
+  const handleCopyUpiId = () => {
+    if (!sanitizedUpiId) return;
+    navigator.clipboard.writeText(sanitizedUpiId).then(() => {
+      setCopiedUpi(true);
+      setTimeout(() => setCopiedUpi(false), 2500);
+    }).catch(() => {});
+  };
+
+  const handleSubmitDirectUpi = async () => {
+    if (!order) return;
+    if (!utrNumber.trim()) {
+      setPaymentError('कृपया 12-अंकों का UTR या बैंकिंग रेफरेंस नंबर दर्ज करें।');
+      return;
+    }
+
+    setIsSubmittingUtr(true);
+    setPaymentError(null);
+
+    try {
+      const now = new Date().toISOString();
+      const updatedOrder: Partial<CustomerOrder> = {
+        paymentMethod: 'QR_SCAN',
+        paymentReference: utrNumber.trim(),
+        transactionId: utrNumber.trim(),
+        paymentStatus: 'PENDING',
+        paymentVerificationStatus: 'pending',
+        updatedAt: now,
+      };
+
+      await setDoc(doc(db, 'orders', order.id), updatedOrder, { merge: true });
+
+      setIsUtrSubmitted(true);
+      setOrder((prev) => (prev ? { ...prev, ...updatedOrder } : null));
+
+      // Notify WhatsApp with UTR details
+      const storePhone = getActiveStorePhone().replace(/\D/g, '');
+      const waText = `🛍️ डायरेक्ट UPI भुगतान विवरण सबमिट किया गया\n\nOrder ID: ${order.id}\nकुल राशि: ₹${order.totalAmount}\nUTR / Ref No: ${utrNumber.trim()}\n\nकृपया मेरा भुगतान वेरीफाई करके ऑर्डर कन्फर्म करें। धन्यवाद!`;
+      const cleanWaText = sanitizeWhatsAppText(waText);
+      window.open(`https://wa.me/${storePhone}?text=${encodeURIComponent(cleanWaText)}`, '_blank');
+    } catch (err: any) {
+      console.error('Failed to submit UPI payment UTR:', err);
+      setPaymentError('UTR सबमिट करने में समस्या आई। कृपया पुनः प्रयास करें।');
+    } finally {
+      setIsSubmittingUtr(false);
+    }
+  };
 
   // 1. Authoritatively Fetch Order Data on Mount or ID change
   useEffect(() => {
@@ -638,45 +709,183 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
           </div>
         </div>
 
-        {/* Trust Badges */}
-        <div className="bg-neutral-50 rounded-2xl p-3.5 border border-neutral-200/80 space-y-2">
-          <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-neutral-700">
-            <Lock className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Razorpay Standard Checkout द्वारा 100% सुरक्षित भुगतान</span>
-          </div>
-          <div className="flex items-center justify-center gap-4 text-[10px] text-neutral-500 font-medium">
-            <span className="flex items-center gap-1">
-              <QrCode className="w-3 h-3" /> UPI (GPay/PhonePe/Paytm)
-            </span>
-            <span className="flex items-center gap-1">
-              <CreditCard className="w-3 h-3" /> कार्ड्स व नेट बैंकिंग
-            </span>
-          </div>
-        </div>
+        {/* Payment Method Selector Tabs */}
+        {paymentSettings?.enableQR !== false && (
+          <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-neutral-200 grid grid-cols-2 gap-1 text-xs font-bold">
+            <button
+              onClick={() => setPaymentMethodTab('RAZORPAY')}
+              className={`py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                paymentMethodTab === 'RAZORPAY'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-neutral-600 hover:bg-neutral-50'
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Razorpay ऑनलाइन</span>
+            </button>
 
-        {/* Primary CTA: Pay Now Button */}
-        <div className="space-y-2 pt-1">
-          <button
-            onClick={handleInitiatePayment}
-            disabled={isPaying}
-            className={`w-full py-4 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-black rounded-2xl text-sm flex items-center justify-center gap-2 shadow-md transition-all ${
-              isPaying ? 'opacity-75 cursor-not-allowed' : ''
-            }`}
-          >
-            {isPaying ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>सुरक्षित पेमेंट गेटवे खुल रहा है...</span>
-              </>
-            ) : (
-              <>
-                <Lock className="w-4 h-4" />
-                <span>Razorpay से सुरक्षित भुगतान करें • ₹{(order.totalAmount ?? 0).toLocaleString('en-IN')}</span>
-              </>
+            <button
+              onClick={() => setPaymentMethodTab('DIRECT_UPI')}
+              className={`py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                paymentMethodTab === 'DIRECT_UPI'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'text-neutral-600 hover:bg-neutral-50'
+              }`}
+            >
+              <QrCode className="w-4 h-4" />
+              <span>डायरेक्ट UPI / QR कोड</span>
+            </button>
+          </div>
+        )}
+
+        {/* TAB 1: RAZORPAY STANDARD ONLINE PAYMENT */}
+        {paymentMethodTab === 'RAZORPAY' && (
+          <div className="space-y-3">
+            <div className="bg-neutral-50 rounded-2xl p-3.5 border border-neutral-200/80 space-y-2">
+              <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-neutral-700">
+                <Lock className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Razorpay Standard Checkout द्वारा 100% सुरक्षित भुगतान</span>
+              </div>
+              <div className="flex items-center justify-center gap-4 text-[10px] text-neutral-500 font-medium">
+                <span className="flex items-center gap-1">
+                  <QrCode className="w-3 h-3" /> UPI (GPay/PhonePe/Paytm)
+                </span>
+                <span className="flex items-center gap-1">
+                  <CreditCard className="w-3 h-3" /> कार्ड्स व नेट बैंकिंग
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleInitiatePayment}
+              disabled={isPaying}
+              className={`w-full py-4 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-black rounded-2xl text-sm flex items-center justify-center gap-2 shadow-md transition-all ${
+                isPaying ? 'opacity-75 cursor-not-allowed' : ''
+              }`}
+            >
+              {isPaying ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>सुरक्षित पेमेंट गेटवे खुल रहा है...</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4" />
+                  <span>Razorpay से भुगतान करें • ₹{(order.totalAmount ?? 0).toLocaleString('en-IN')}</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* TAB 2: DIRECT BANK UPI / QR CODE TRANSFER */}
+        {paymentMethodTab === 'DIRECT_UPI' && (
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-amber-200 space-y-4">
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950 flex items-start gap-2">
+              <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+              <p className="leading-relaxed">
+                <strong>डायरेक्ट UPI ट्रांसफर:</strong> QR कोड स्कैन करें या UPI ऐप खोलकर मरुधर फैशन पॉइंट को भुगतान करें। भुगतान के बाद 12-अंकों का UTR नंबर नीचे दर्ज करें।
+              </p>
+            </div>
+
+            {/* QR CODE CARD */}
+            <div className="bg-gradient-to-b from-white to-amber-50/40 p-4 rounded-2xl border-2 border-amber-300 text-center shadow-sm space-y-3">
+              <div className="inline-block bg-white p-2.5 rounded-xl border border-amber-200 shadow-sm">
+                <img
+                  src={paymentSettings?.qrCodeCustomImage || qrImageUrl}
+                  alt="Store UPI QR Code"
+                  className="w-52 h-52 mx-auto object-contain rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xs font-black text-amber-950 flex items-center justify-center gap-1">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  {merchantName}
+                </p>
+                <p className="text-[11px] text-neutral-500">
+                  GPay, PhonePe, Paytm, BHIM या किसी भी UPI ऐप से स्कैन करें
+                </p>
+              </div>
+            </div>
+
+            {/* MOBILE DIRECT DEEP LINK BUTTON */}
+            {upiLink && (
+              <a
+                href={upiLink}
+                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span>⚡ किसी भी UPI ऐप (GPay/PhonePe/Paytm) से तुरंत भुगतान करें</span>
+              </a>
             )}
-          </button>
 
-          {/* Help & Support Button */}
+            {/* MERCHANT UPI ID WITH COPY */}
+            <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-200 gap-2">
+              <div className="min-w-0">
+                <span className="text-[10px] text-neutral-500 uppercase font-bold block">
+                  मरुधर फैशन पॉइंट UPI ID
+                </span>
+                <span className="font-mono font-bold text-xs text-neutral-900 truncate block">
+                  {sanitizedUpiId || '9782482250@upi'}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCopyUpiId}
+                className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 transition-colors"
+              >
+                {copiedUpi ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>कॉपी हो गया!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>UPI ID कॉपी करें</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* UTR / TRANSACTION REF INPUT */}
+            <div className="space-y-2 pt-1 border-t border-neutral-100">
+              <label className="block text-xs font-bold text-neutral-900">
+                12-अंकों का UTR / Transaction Ref No दर्ज करें *
+              </label>
+              <input
+                type="text"
+                value={utrNumber}
+                onChange={(e) => setUtrNumber(e.target.value)}
+                placeholder="उदा. 420918239012"
+                className="w-full px-3.5 py-2.5 border border-neutral-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              />
+
+              <button
+                onClick={handleSubmitDirectUpi}
+                disabled={isSubmittingUtr || !utrNumber.trim()}
+                className="w-full py-3 px-4 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+              >
+                {isSubmittingUtr ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>सबमिट हो रहा है...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>डायरेक्ट UPI भुगतान विवरण सबमिट करें</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Help & Support Button */}
+        <div className="space-y-2 pt-1">
           <button
             onClick={() => handleContactWhatsApp()}
             className="w-full py-2.5 px-4 bg-white hover:bg-neutral-50 text-neutral-700 font-semibold rounded-xl text-xs border border-neutral-200 flex items-center justify-center gap-2 transition-colors"

@@ -258,6 +258,24 @@ export const WebsiteConfigurationView: React.FC = () => {
     reader.readAsText(file);
   };
 
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WEBP, SVG)', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        handleFieldChange('businessIdentity', 'logoUrl', result);
+        showToast('📷 Logo image uploaded! Click Save to apply.', 'success');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Filter sections by search query
   const filteredSections = SECTIONS.filter(
     (s) =>
@@ -581,28 +599,57 @@ export const WebsiteConfigurationView: React.FC = () => {
 
               {/* Logo Settings */}
               <div className="pt-4 border-t border-slate-800 space-y-4">
-                <h3 className="text-sm font-bold text-amber-300">Logos & Visual Asset URLs</h3>
+                <h3 className="text-sm font-bold text-amber-300">Logos & Visual Asset Customization</h3>
+                
+                {formData.businessIdentity.logoUrl && (
+                  <div className="flex items-center gap-3 p-3 bg-slate-900 border border-slate-700 rounded-xl">
+                    <img
+                      src={formData.businessIdentity.logoUrl}
+                      alt="Logo Preview"
+                      className="h-10 w-auto max-w-[160px] object-contain rounded bg-white p-1"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-white block">Active Header Logo Image</span>
+                      <span className="text-[10px] text-slate-400 block">Preview of current logo graphic</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-100 mb-1.5">Upload Logo Photo / Image File</label>
+                    <label className="flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-900 border border-dashed border-amber-400/60 rounded-xl text-xs font-bold text-amber-300 hover:bg-slate-850 cursor-pointer transition-colors">
+                      <span>📁 Choose Image File</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-bold text-slate-100 mb-1.5">Primary Header Logo URL</label>
                     <input
                       type="text"
                       value={formData.businessIdentity.logoUrl}
                       onChange={(e) => handleFieldChange('businessIdentity', 'logoUrl', e.target.value)}
-                      placeholder="/logo.png"
+                      placeholder="https://example.com/logo.png"
                       className="w-full px-3.5 py-2.5 text-sm bg-slate-950 border border-slate-600 rounded-xl text-white placeholder:text-slate-400 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 focus:outline-none"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-100 mb-1.5">Favicon URL</label>
-                    <input
-                      type="text"
-                      value={formData.businessIdentity.faviconUrl}
-                      onChange={(e) => handleFieldChange('businessIdentity', 'faviconUrl', e.target.value)}
-                      placeholder="/favicon.ico"
-                      className="w-full px-3.5 py-2.5 text-sm bg-slate-950 border border-slate-600 rounded-xl text-white placeholder:text-slate-400 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 focus:outline-none"
-                    />
-                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-100 mb-1.5">Favicon URL</label>
+                  <input
+                    type="text"
+                    value={formData.businessIdentity.faviconUrl}
+                    onChange={(e) => handleFieldChange('businessIdentity', 'faviconUrl', e.target.value)}
+                    placeholder="/favicon.ico"
+                    className="w-full px-3.5 py-2.5 text-sm bg-slate-950 border border-slate-600 rounded-xl text-white placeholder:text-slate-400 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 focus:outline-none"
+                  />
                 </div>
               </div>
             </div>

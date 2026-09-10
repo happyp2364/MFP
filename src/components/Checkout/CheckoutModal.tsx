@@ -1702,6 +1702,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <p className="text-[11px] text-neutral-500 font-medium">
                         Scan with GPay, PhonePe, Paytm, BHIM or any Banking UPI App
                       </p>
+
+                      {/* Mobile One-Tap UPI Deep Link Button */}
+                      {upiLink && (
+                        <a
+                          href={upiLink}
+                          className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                        >
+                          <Smartphone className="w-4 h-4" />
+                          <span>⚡ Pay via Any UPI App (GPay / PhonePe / Paytm / BHIM)</span>
+                        </a>
+                      )}
                     </div>
 
                     {/* 2. UPI ID below QR Code with Copy Button */}

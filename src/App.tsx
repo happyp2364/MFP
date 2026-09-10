@@ -57,6 +57,8 @@ import { deduplicateProducts, sortProductsWithSmartMix } from './utils/productFe
 import { getCartItemPrice } from './utils/variantUtils';
 import { SEOHead } from './components/SEO/SEOHead';
 import { generateOrganizationSchema, generateLocalBusinessSchema, generateBreadcrumbSchema, generateFAQSchema } from './utils/seo';
+import { db } from './lib/firebase';
+import { doc, setDoc, deleteDoc, collection, onSnapshot } from 'firebase/firestore';
 
 // =============================================================
 // ISOLATED DIRECT ORDER PAYMENT VIEW
@@ -92,7 +94,7 @@ function PaymentRouteView({ orderId, onBackHome }: PaymentRouteViewProps) {
 // STOREFRONT APPLICATION VIEW
 // =============================================================
 function StorefrontView() {
-  const { products, isAdmin, toastMessage, productFeedConfig, seoConfig, customerUser, showToast } = useStore();
+  const { products, isAdmin, toastMessage, productFeedConfig, seoConfig, customerUser, showToast, playSiteSound } = useStore();
   const { backgroundGradientClass } = useTheme();
   const { draftDesignSettings } = useWebsiteDesign();
 
@@ -111,7 +113,42 @@ function StorefrontView() {
     sortBy: 'featured',
   });
 
-  const [wishlistIds, setWishlistIds] = useState<string[]>(['mfp-m01', 'mfp-w01']);
+  const [wishlistIds, setWishlistIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('mfp_wishlist');
+      return saved ? JSON.parse(saved) : ['mfp-m01', 'mfp-w01'];
+    } catch {
+      return ['mfp-m01', 'mfp-w01'];
+    }
+  });
+
+  // Realtime Firestore sync for customer wishlist under users/{uid}/wishlist
+  useEffect(() => {
+    if (!customerUser) {
+      try {
+        const saved = localStorage.getItem('mfp_wishlist');
+        if (saved) setWishlistIds(JSON.parse(saved));
+      } catch {}
+      return;
+    }
+
+    const wishlistColRef = collection(db, 'users', customerUser.uid, 'wishlist');
+    const unsub = onSnapshot(
+      wishlistColRef,
+      (snapshot) => {
+        const ids = snapshot.docs.map((d) => d.id);
+        setWishlistIds(ids);
+        try {
+          localStorage.setItem('mfp_wishlist', JSON.stringify(ids));
+        } catch {}
+      },
+      (err) => {
+        console.warn('Wishlist Firestore onSnapshot error:', err);
+      }
+    );
+
+    return () => unsub();
+  }, [customerUser]);
   const [cartItems, setCartItems] = useState<CartItem[]>(() => 
     products.length > 0 ? [
       {
@@ -300,12 +337,54 @@ function StorefrontView() {
     handleNavigateToSection('products');
   };
 
-  const handleToggleWishlist = (product: Product) => {
-    setWishlistIds((prev) =>
-      prev.includes(product.id)
-        ? prev.filter((id) => id !== product.id)
-        : [...prev, product.id]
-    );
+  const handleToggleWishlist = async (product: Product) => {
+    if (!product || !product.id) return;
+
+    const rawId = product.id;
+    const strId = String(rawId);
+    const isCurrentlyWishlisted = wishlistIds.some((id) => id === rawId || String(id) === strId);
+
+    // Optimistic UI update supporting string/number IDs
+    const updatedWishlistIds = isCurrentlyWishlisted
+      ? wishlistIds.filter((id) => id !== rawId && String(id) !== strId)
+      : [...wishlistIds, strId];
+
+    setWishlistIds(updatedWishlistIds);
+    try {
+      localStorage.setItem('mfp_wishlist', JSON.stringify(updatedWishlistIds));
+    } catch {}
+
+    if (playSiteSound) playSiteSound('wishlist');
+
+    // Guest user handling
+    if (!customerUser) {
+      if (isCurrentlyWishlisted) {
+        if (showToast) showToast(`Removed "${product.name}" from wishlist`, 'info');
+      } else {
+        if (showToast) showToast(`Saved "${product.name}" to wishlist! Sign in to sync across devices.`, 'success');
+      }
+      return;
+    }
+
+    // Logged in customer handling
+    try {
+      const docRef = doc(db, 'users', customerUser.uid, 'wishlist', strId);
+      if (isCurrentlyWishlisted) {
+        await deleteDoc(docRef);
+        if (showToast) showToast(`Removed "${product.name}" from wishlist`, 'info');
+      } else {
+        await setDoc(docRef, {
+          productId: strId,
+          productName: product.name,
+          price: product.price,
+          image: (product as any).primaryImage || product.images?.[0] || '',
+          addedAt: new Date().toISOString(),
+        });
+        if (showToast) showToast(`Saved "${product.name}" to wishlist!`, 'success');
+      }
+    } catch (err) {
+      console.warn('Failed to update wishlist in Firestore:', err);
+    }
   };
 
   const handleAddToCart = (product: Product, size: string, color: string, selectedVariant?: ProductVariant) => {
@@ -612,7 +691,7 @@ function StorefrontView() {
     return unique.slice(0, 8);
   }, [products, productFeedConfig]);
   const wishlistedProducts = useMemo(
-    () => products.filter((p) => wishlistIds.includes(p.id)),
+    () => products.filter((p) => wishlistIds.some((id) => id === p.id || String(id) === String(p.id))),
     [wishlistIds, products]
   );
 
@@ -781,6 +860,8 @@ function StorefrontView() {
             }}
             onAddToCart={handleAddToCart}
             onBuyNow={handleBuyNow}
+            wishlistIds={wishlistIds}
+            onToggleWishlist={handleToggleWishlist}
           />
 
           {(() => {

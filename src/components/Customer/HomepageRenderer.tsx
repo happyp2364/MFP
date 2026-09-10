@@ -33,6 +33,8 @@ interface HomepageRendererProps {
   onNavigateCategory?: (category: string) => void;
   onAddToCart?: (product: Product, size: string, color: string) => void;
   onBuyNow?: (product: Product, size: string, color: string, quantity: number) => void;
+  wishlistIds?: string[];
+  onToggleWishlist?: (product: Product) => void;
 }
 
 export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
@@ -41,6 +43,8 @@ export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
   onNavigateCategory,
   onAddToCart,
   onBuyNow,
+  wishlistIds = [],
+  onToggleWishlist,
 }) => {
   const { homepageConfig, products, reviews, categoryHighlights } = useStore();
   const config = previewConfig || homepageConfig;
@@ -65,6 +69,8 @@ export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
           onNavigateCategory={onNavigateCategory}
           onAddToCart={onAddToCart}
           onBuyNow={onBuyNow}
+          wishlistIds={wishlistIds}
+          onToggleWishlist={onToggleWishlist}
         />
       ))}
     </div>
@@ -80,6 +86,8 @@ interface SectionItemProps {
   onNavigateCategory?: (cat: string) => void;
   onAddToCart?: (product: Product, size: string, color: string) => void;
   onBuyNow?: (product: Product, size: string, color: string, quantity: number) => void;
+  wishlistIds?: string[];
+  onToggleWishlist?: (product: Product) => void;
 }
 
 function getCategoryCoverImage(catItem: any, products: Product[]): string {
@@ -176,6 +184,8 @@ const SectionItem: React.FC<SectionItemProps> = ({
   onNavigateCategory,
   onAddToCart,
   onBuyNow,
+  wishlistIds = [],
+  onToggleWishlist,
 }) => {
   const styling = section.styling || {};
   const data = section.contentData || {};
@@ -197,16 +207,36 @@ const SectionItem: React.FC<SectionItemProps> = ({
           products={products}
           onSelectProduct={onSelectProduct}
           onNavigateCategory={onNavigateCategory}
+          wishlistIds={wishlistIds}
+          onToggleWishlist={onToggleWishlist}
+          onAddToCart={onAddToCart}
+          onBuyNow={onBuyNow}
         />
       );
 
     case 'trending_shoes':
     case 'trending_shoes_collection':
-      return <TrendingShoesSection onQuickView={onSelectProduct} onAddToCart={onAddToCart} onBuyNow={onBuyNow} />;
+      return (
+        <TrendingShoesSection
+          onQuickView={onSelectProduct}
+          onAddToCart={onAddToCart}
+          onBuyNow={onBuyNow}
+          wishlistIds={wishlistIds}
+          onToggleWishlist={onToggleWishlist}
+        />
+      );
 
     case 'price_point_699':
     case 'price_699_collection':
-      return <PricePointCollectionSection onQuickView={onSelectProduct} onAddToCart={onAddToCart} onBuyNow={onBuyNow} />;
+      return (
+        <PricePointCollectionSection
+          onQuickView={onSelectProduct}
+          onAddToCart={onAddToCart}
+          onBuyNow={onBuyNow}
+          wishlistIds={wishlistIds}
+          onToggleWishlist={onToggleWishlist}
+        />
+      );
 
     case 'floating_sneaker':
       return <FloatingSneakerHeroSection section={section} onNavigateCategory={onNavigateCategory} />;
@@ -272,8 +302,8 @@ const SectionItem: React.FC<SectionItemProps> = ({
                   key={prod.id}
                   product={prod}
                   onQuickView={(p) => onSelectProduct && onSelectProduct(p)}
-                  onToggleWishlist={() => {}}
-                  isWishlisted={false}
+                  onToggleWishlist={onToggleWishlist ? onToggleWishlist : () => {}}
+                  isWishlisted={wishlistIds.includes(prod.id)}
                   onAddToCart={onAddToCart}
                   onBuyNow={onBuyNow}
                 />
@@ -311,8 +341,8 @@ const SectionItem: React.FC<SectionItemProps> = ({
                   key={prod.id}
                   product={prod}
                   onQuickView={(p) => onSelectProduct && onSelectProduct(p)}
-                  onToggleWishlist={() => {}}
-                  isWishlisted={false}
+                  onToggleWishlist={onToggleWishlist ? onToggleWishlist : () => {}}
+                  isWishlisted={wishlistIds.includes(prod.id)}
                   onAddToCart={onAddToCart}
                   onBuyNow={onBuyNow}
                 />
@@ -764,29 +794,29 @@ const FloatingSneakerHeroSection: React.FC<{
         </div>
       </div>
 
-      {/* Main Grid Section */}
-      <div className="relative z-10 px-6 sm:px-12 py-8 lg:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      {/* Main Grid Section - Compact Height */}
+      <div className="relative z-10 px-4 sm:px-8 py-4 lg:py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
         {/* LEFT COLUMN: Headings & CTA */}
-        <div className="lg:col-span-5 space-y-6 text-neutral-900">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-neutral-900 text-white text-[11px] font-extrabold rounded-full uppercase tracking-widest shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+        <div className="lg:col-span-5 space-y-4 text-neutral-900">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-neutral-900 text-white text-[10px] font-extrabold rounded-full uppercase tracking-widest shadow-sm">
+            <Sparkles className="w-3 h-3 text-amber-400" />
             {smallHeading}
           </div>
 
-          <div className="space-y-2">
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-none text-neutral-900 uppercase">
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-none text-neutral-900 uppercase">
               {mainHeading}
             </h1>
-            <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed font-medium max-w-md">
+            <p className="text-xs text-neutral-700 leading-relaxed font-medium max-w-md line-clamp-2">
               {description}
             </p>
           </div>
 
           {/* CTA Button */}
-          <div className="pt-2 flex flex-wrap items-center gap-4">
+          <div className="pt-1 flex flex-wrap items-center gap-2">
             <button
               onClick={() => onNavigateCategory && onNavigateCategory('ALL')}
-              className={`px-8 py-4 text-xs sm:text-sm font-black uppercase tracking-wider rounded-2xl shadow-xl transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-2.5 ${
+              className={`px-6 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 ${
                 ctaStyle === 'glass'
                   ? 'bg-white/60 text-neutral-900 border border-white/80 backdrop-blur-md hover:bg-white'
                   : ctaStyle === 'outline'
@@ -795,21 +825,18 @@ const FloatingSneakerHeroSection: React.FC<{
               }`}
             >
               <span>{ctaText}</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* Secondary Thumbnail Gallery */}
-          <div className="pt-4 border-t border-black/5 space-y-2">
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
-              Colorways & Angle Showcase
-            </span>
-            <div className="flex gap-2.5 overflow-x-auto pb-2">
+          <div className="pt-2 border-t border-black/5 space-y-1">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               {secondaryImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImage(img)}
-                  className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white shadow-xs ${
+                  className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 bg-white shadow-xs ${
                     activeImage === img
                       ? 'border-neutral-900 ring-2 ring-amber-400/50 scale-105'
                       : 'border-transparent opacity-70 hover:opacity-100'
@@ -822,59 +849,57 @@ const FloatingSneakerHeroSection: React.FC<{
           </div>
         </div>
 
-        {/* CENTER COLUMN: Floating Sneaker Showcase */}
+        {/* CENTER COLUMN: Floating Sneaker Showcase with Video 3D Laser Scan */}
         <div
-          className="lg:col-span-7 relative flex flex-col items-center justify-center min-h-[380px] sm:min-h-[460px]"
+          className="lg:col-span-7 relative flex flex-col items-center justify-center min-h-[260px] sm:min-h-[320px] rounded-2xl bg-black/10 border border-white/20 p-4 overflow-hidden"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
+          {/* Laser Motion Graphics Scan Beam */}
+          <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_#f59e0b] z-20 animate-mg-scanbeam pointer-events-none" />
+
+          {/* Frame HUD Brackets */}
+          <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-amber-500/60 pointer-events-none" />
+          <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-amber-500/60 pointer-events-none" />
+          <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-amber-500/60 pointer-events-none" />
+          <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-amber-500/60 pointer-events-none" />
+
           {/* Radial Soft Glow Ring */}
           {enableSoftGlow && (
-            <div className="absolute w-[280px] sm:w-[380px] h-[280px] sm:h-[380px] bg-amber-400/20 rounded-full blur-3xl -z-10 animate-pulse pointer-events-none" />
+            <div className="absolute w-[220px] sm:w-[300px] h-[220px] sm:h-[300px] bg-amber-400/20 rounded-full blur-2xl -z-10 animate-pulse pointer-events-none" />
           )}
 
           {/* Floating Shoe Image */}
           <div
             className={`relative transition-all duration-700 ease-out cursor-pointer ${
-              enableFloating ? 'animate-bounce' : ''
+              enableFloating ? 'animate-mg-float3d' : ''
             }`}
             style={{
-              transform: `rotate(${rot}deg) scale(${
-                isHovered && enableHoverZoom ? scale * 1.08 : scale
-              }) translateY(${posY}px)`,
+              transform: `scale(${
+                isHovered && enableHoverZoom ? scale * 1.06 : scale
+              })`,
             }}
           >
             <img
               src={activeImage}
               alt={mainHeading}
-              className="max-h-[300px] sm:max-h-[420px] w-auto object-contain filter drop-shadow-2xl transition-all duration-500"
+              className="max-h-[200px] sm:max-h-[280px] w-auto object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] transition-all duration-500"
             />
           </div>
 
           {/* Soft Floor Shadow */}
           <div
-            className="w-48 sm:w-64 h-5 bg-black/25 rounded-[100%] blur-md mt-4 transition-all duration-500"
+            className="w-40 sm:w-56 h-4 bg-black/25 rounded-[100%] blur-md mt-2 transition-all duration-500"
             style={{
               transform: isHovered ? 'scale(0.85)' : 'scale(1)',
               opacity: isHovered ? 0.4 : 0.6,
             }}
           />
 
-          {/* Floor Reflection */}
-          {enableReflection && (
-            <div className="w-64 sm:w-80 h-12 overflow-hidden opacity-15 pointer-events-none -mt-3 blur-[1px]">
-              <img
-                src={activeImage}
-                alt="Reflection"
-                className="w-full object-contain transform scale-y-[-1] rotate-180"
-              />
-            </div>
-          )}
-
           {/* Floating Glass Badges */}
           {floatingBadges[0] && (
-            <div className="absolute top-4 left-2 sm:left-6 bg-white/60 backdrop-blur-md border border-white/80 p-3 rounded-2xl shadow-xl space-y-0.5 animate-pulse">
-              <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+            <div className="absolute top-2 left-2 sm:left-4 bg-white/80 backdrop-blur-xl border border-white p-2 px-3 rounded-xl shadow-lg space-y-0.5 animate-mg-hud">
+              <span className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
                 {floatingBadges[0].title}
               </span>
               <span className="block text-xs font-black text-neutral-900">
@@ -884,22 +909,13 @@ const FloatingSneakerHeroSection: React.FC<{
           )}
 
           {floatingBadges[1] && (
-            <div className="absolute bottom-12 right-2 sm:right-6 bg-white/60 backdrop-blur-md border border-white/80 p-3 rounded-2xl shadow-xl space-y-0.5">
-              <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+            <div className="absolute bottom-2 right-2 sm:right-4 bg-white/80 backdrop-blur-xl border border-white p-2 px-3 rounded-xl shadow-lg space-y-0.5">
+              <span className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
                 {floatingBadges[1].title}
               </span>
               <span className="block text-xs font-black text-amber-600">
                 {floatingBadges[1].value}
               </span>
-            </div>
-          )}
-
-          {floatingBadges[2] && (
-            <div className="hidden sm:block absolute top-8 right-8 bg-neutral-900/80 backdrop-blur-md border border-white/20 p-2.5 px-3.5 rounded-2xl shadow-xl text-white">
-              <span className="block text-[9px] font-bold text-amber-400 uppercase tracking-wider">
-                {floatingBadges[2].title}
-              </span>
-              <span className="block text-xs font-bold">{floatingBadges[2].value}</span>
             </div>
           )}
         </div>
@@ -913,7 +929,20 @@ const MBHShoeCarouselHeroSection: React.FC<{
   products?: Product[];
   onSelectProduct?: (p: Product) => void;
   onNavigateCategory?: (cat: string) => void;
-}> = ({ section, products = [], onSelectProduct, onNavigateCategory }) => {
+  wishlistIds?: string[];
+  onToggleWishlist?: (product: Product) => void;
+  onAddToCart?: (product: Product, size?: string, color?: string, quantity?: number) => void;
+  onBuyNow?: (product: Product, size?: string, color?: string, quantity?: number) => void;
+}> = ({
+  section,
+  products = [],
+  onSelectProduct,
+  onNavigateCategory,
+  wishlistIds = [],
+  onToggleWishlist,
+  onAddToCart,
+  onBuyNow,
+}) => {
   const data = section.contentData || {};
   const styling = section.styling || {};
   const { showToast } = useStore();
@@ -944,13 +973,44 @@ const MBHShoeCarouselHeroSection: React.FC<{
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState<Record<number, boolean>>({});
 
   // Touch Gesture State
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
 
   const activeSlide = slides[currentIndex] || slides[0];
+
+  const matchedProduct: Product = products.find(
+    (p) =>
+      p.id === activeSlide.productId ||
+      p.name.toLowerCase() === activeSlide.productName?.toLowerCase()
+  ) || ({
+    id: activeSlide.productId || `slide-${currentIndex}`,
+    name: activeSlide.productName || 'Featured Shoe',
+    brand: 'Marudhar Fashion Point',
+    category: 'men',
+    subcategory: 'shoes',
+    price: activeSlide.price || 0,
+    originalPrice: activeSlide.originalPrice || activeSlide.price || 0,
+    discountPercent: 50,
+    rating: 4.9,
+    reviewsCount: 128,
+    images: [activeSlide.image || ''],
+    description: activeSlide.description || '',
+    sizes: ['7', '8', '9', '10'],
+    colors: [{ name: 'Default', hex: '#000000' }],
+  } as Product);
+
+  const isSlideWishlisted = Boolean(
+    wishlistIds.includes(matchedProduct.id) || wishlistIds.includes(String(matchedProduct.id))
+  );
+
+  const handleToggleSlideWishlist = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onToggleWishlist) {
+      onToggleWishlist(matchedProduct);
+    }
+  };
 
   // AutoPlay Effect
   const autoPlay = data.autoPlay ?? true;
@@ -993,39 +1053,21 @@ const MBHShoeCarouselHeroSection: React.FC<{
     setTouchEndX(null);
   };
 
-  const handleToggleWishlist = (idx: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsWishlisted((prev) => {
-      const next = !prev[idx];
-      showToast(
-        next ? `Added "${activeSlide.productName}" to Wishlist` : `Removed from Wishlist`,
-        'success'
-      );
-      return { ...prev, [idx]: next };
-    });
-  };
-
   const handleBuyNow = () => {
-    const linked = products.find(
-      (p) =>
-        p.id === activeSlide.productId ||
-        p.name.toLowerCase() === activeSlide.productName.toLowerCase()
-    );
-    if (linked && onSelectProduct) {
-      onSelectProduct(linked);
+    if (onBuyNow) {
+      onBuyNow(matchedProduct);
+    } else if (onAddToCart) {
+      onAddToCart(matchedProduct);
+    } else if (onSelectProduct) {
+      onSelectProduct(matchedProduct);
     } else if (onNavigateCategory) {
       onNavigateCategory('ALL');
     }
   };
 
   const handleViewDetails = () => {
-    const linked = products.find(
-      (p) =>
-        p.id === activeSlide.productId ||
-        p.name.toLowerCase() === activeSlide.productName.toLowerCase()
-    );
-    if (linked && onSelectProduct) {
-      onSelectProduct(linked);
+    if (onSelectProduct) {
+      onSelectProduct(matchedProduct);
     } else if (onNavigateCategory) {
       onNavigateCategory('ALL');
     }
@@ -1063,7 +1105,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
 
   return (
     <div
-      className={`relative w-full rounded-3xl overflow-hidden my-4 shadow-2xl transition-all border border-black/10 select-none ${containerBg}`}
+      className={`relative w-full rounded-2xl overflow-hidden my-2 shadow-2xl transition-all border border-amber-500/20 select-none bg-mg-grid ${containerBg}`}
       style={{
         backgroundColor: styling.bgColor || undefined,
       }}
@@ -1076,104 +1118,103 @@ const MBHShoeCarouselHeroSection: React.FC<{
       {/* Big Display Background Typography Word */}
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none z-0">
         <span
-          className={`font-black text-[22vw] lg:text-[240px] tracking-widest uppercase leading-none select-none transition-transform duration-700 ${
-            isDark || isGold ? 'opacity-[0.06] text-amber-300' : 'opacity-[0.07] text-neutral-900'
+          className={`font-black text-[14vw] lg:text-[160px] tracking-widest uppercase leading-none select-none transition-transform duration-700 ${
+            isDark || isGold ? 'opacity-[0.05] text-amber-300' : 'opacity-[0.06] text-neutral-900'
           }`}
-          style={{ transform: isHovered ? 'scale(1.06)' : 'scale(1)' }}
+          style={{ transform: isHovered ? 'scale(1.04)' : 'scale(1)' }}
         >
           {bgWord}
         </span>
       </div>
 
-      {/* Top Glassmorphic Navigation Bar */}
+      {/* Top Video HUD Motion Graphics Bar */}
       <div
-        className={`relative z-20 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 border-b ${
-          isDark || isGold ? 'border-white/10 bg-black/40' : 'border-black/5 bg-white/40'
-        } backdrop-blur-md`}
+        className={`relative z-20 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 border-b ${
+          isDark || isGold ? 'border-amber-500/20 bg-black/60' : 'border-black/10 bg-white/60'
+        } backdrop-blur-md text-[11px] font-mono tracking-wider`}
       >
-        <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-xl bg-amber-500 text-black font-black text-xs flex items-center justify-center shadow-md">
-            MBH
-          </span>
-          <span className="text-xs font-black tracking-widest uppercase">
-            MARUDHAR FASHION POINT
-          </span>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+          <span className="w-2 h-2 rounded-full bg-rose-600 -ml-4" />
+          <span className="font-extrabold text-rose-500 uppercase">REC 60FPS</span>
+          <span className="text-neutral-400">|</span>
+          <span className="text-amber-500 font-bold uppercase hidden sm:inline">3D MOTION GRAPHICS</span>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-500">
-          <Sparkles className="w-4 h-4" />
-          <span>{data.headerBadge || '3D LUXURY SHOE SHOWCASE'}</span>
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-500">
+          <Sparkles className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '6s' }} />
+          <span>{data.headerBadge || '3D LUXURY SHOWCASE'}</span>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 bg-amber-400 text-neutral-950 font-black text-[10px] rounded-full uppercase tracking-wider shadow-sm">
+          <span className="px-2.5 py-0.5 bg-amber-400 text-neutral-950 font-black text-[10px] rounded-full uppercase tracking-wider shadow-sm border border-amber-300">
             {activeSlide.discountText || '50% OFF'}
           </span>
         </div>
       </div>
 
-      {/* Main Showcase Grid */}
-      <div className="relative z-10 px-6 sm:px-12 py-8 lg:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-[520px]">
+      {/* Main Showcase Grid - Compact Height */}
+      <div className="relative z-10 px-4 sm:px-8 py-4 lg:py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center min-h-[340px] sm:min-h-[380px]">
         {/* LEFT COLUMN: Product Details & Controls */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[11px] font-extrabold rounded-full uppercase tracking-widest">
-            <Sparkles className="w-3.5 h-3.5" />
+        <div className="lg:col-span-5 space-y-4">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[10px] font-extrabold rounded-full uppercase tracking-widest">
+            <Zap className="w-3 h-3 text-amber-500 animate-bounce" />
             {activeSlide.collection || '2026 MBH FOOTWEAR'}
           </div>
 
-          <div className="space-y-2">
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-none uppercase">
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-none uppercase">
               {activeSlide.productName}
             </h1>
-            <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed font-medium max-w-md">
+            <p className="text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed font-medium max-w-md line-clamp-2">
               {activeSlide.description}
             </p>
           </div>
 
           {/* Pricing Block */}
-          <div className="flex items-baseline gap-3 pt-1">
-            <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+          <div className="flex items-baseline gap-2 pt-0.5">
+            <span className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400">
               ₹{activeSlide.price?.toLocaleString('en-IN')}
             </span>
             {activeSlide.originalPrice && (
-              <span className="text-sm font-bold text-neutral-400 line-through">
+              <span className="text-xs font-bold text-neutral-400 line-through">
                 ₹{activeSlide.originalPrice?.toLocaleString('en-IN')}
               </span>
             )}
             {activeSlide.originalPrice && activeSlide.price && (
-              <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-extrabold rounded-md border border-emerald-500/20">
+              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-extrabold rounded border border-emerald-500/20">
                 SAVE {Math.round(((activeSlide.originalPrice - activeSlide.price) / activeSlide.originalPrice) * 100)}%
               </span>
             )}
           </div>
 
           {/* CTA & Actions Bar */}
-          <div className="pt-2 flex flex-wrap items-center gap-3">
+          <div className="pt-1 flex flex-wrap items-center gap-2">
             <button
               onClick={handleBuyNow}
-              className="px-7 py-3.5 bg-amber-500 text-neutral-950 hover:bg-amber-400 text-xs sm:text-sm font-black uppercase tracking-wider rounded-2xl shadow-xl transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
+              className="px-5 py-2.5 bg-amber-500 text-neutral-950 hover:bg-amber-400 text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-1.5"
             >
-              <ShoppingBag className="w-4 h-4" />
+              <ShoppingBag className="w-3.5 h-3.5" />
               <span>{activeSlide.buyNowText || '⚡ BUY NOW'}</span>
             </button>
 
             <button
               onClick={handleViewDetails}
-              className={`px-5 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-wider rounded-2xl border transition-all flex items-center gap-2 ${
+              className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl border transition-all flex items-center gap-1.5 ${
                 isDark || isGold
                   ? 'border-white/20 text-white hover:bg-white/10'
                   : 'border-neutral-900/20 text-neutral-900 hover:bg-neutral-900/5'
               }`}
             >
-              <Eye className="w-4 h-4" />
-              <span>{activeSlide.viewDetailsText || 'VIEW DETAILS'}</span>
+              <Eye className="w-3.5 h-3.5" />
+              <span>{activeSlide.viewDetailsText || 'DETAILS'}</span>
             </button>
 
             {activeSlide.showWishlist !== false && (
               <button
-                onClick={(e) => handleToggleWishlist(currentIndex, e)}
-                className={`p-3.5 rounded-2xl border transition-all ${
-                  isWishlisted[currentIndex]
+                onClick={handleToggleSlideWishlist}
+                className={`p-2.5 rounded-xl border transition-all ${
+                  isSlideWishlisted
                     ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-105'
                     : isDark || isGold
                     ? 'border-white/20 text-white hover:bg-white/10'
@@ -1181,23 +1222,20 @@ const MBHShoeCarouselHeroSection: React.FC<{
                 }`}
                 title="Save to Wishlist"
               >
-                <Heart className={`w-4 h-4 ${isWishlisted[currentIndex] ? 'fill-current' : ''}`} />
+                <Heart className={`w-3.5 h-3.5 ${isSlideWishlisted ? 'fill-current' : ''}`} />
               </button>
             )}
           </div>
 
           {/* Carousel Slide Thumbnails */}
           {slides.length > 1 && (
-            <div className="pt-4 border-t border-black/5 dark:border-white/10 space-y-2">
-              <span className="text-[10px] font-extrabold text-neutral-500 uppercase tracking-widest block">
-                CAROUSEL SHOE SLIDES ({currentIndex + 1} / {slides.length})
-              </span>
-              <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
+            <div className="pt-2 border-t border-black/5 dark:border-white/10 space-y-1">
+              <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
                 {slides.map((slide: any, idx: number) => (
                   <button
                     key={slide.id || idx}
                     onClick={() => setCurrentIndex(idx)}
-                    className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 bg-white shadow-xs ${
+                    className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 bg-white shadow-xs ${
                       currentIndex === idx
                         ? 'border-amber-500 ring-2 ring-amber-400/50 scale-105'
                         : 'border-transparent opacity-60 hover:opacity-100'
@@ -1206,7 +1244,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
                     <img
                       src={slide.image}
                       alt={slide.productName}
-                      className="w-full h-full object-contain p-1"
+                      className="w-full h-full object-contain p-0.5"
                       loading="lazy"
                     />
                   </button>
@@ -1216,11 +1254,20 @@ const MBHShoeCarouselHeroSection: React.FC<{
           )}
         </div>
 
-        {/* CENTER COLUMN: 3D Floating Shoe Visual */}
-        <div className="lg:col-span-7 relative flex flex-col items-center justify-center min-h-[380px] sm:min-h-[440px]">
+        {/* CENTER COLUMN: 3D Floating Shoe Visual with Video HUD Laser Scan */}
+        <div className="lg:col-span-7 relative flex flex-col items-center justify-center min-h-[260px] sm:min-h-[320px] rounded-2xl bg-black/10 border border-white/10 p-4 overflow-hidden">
+          {/* Laser Motion Graphics Scan Beam */}
+          <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_#f59e0b] z-20 animate-mg-scanbeam pointer-events-none" />
+
+          {/* Frame HUD Brackets */}
+          <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-amber-500/60 pointer-events-none" />
+          <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-amber-500/60 pointer-events-none" />
+          <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-amber-500/60 pointer-events-none" />
+          <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-amber-500/60 pointer-events-none" />
+
           {/* Soft Radial Ambient Glow */}
           {enableSoftGlow && (
-            <div className="absolute w-[280px] sm:w-[380px] h-[280px] sm:h-[380px] bg-amber-500/20 rounded-full blur-3xl -z-10 animate-pulse pointer-events-none" />
+            <div className="absolute w-[220px] sm:w-[300px] h-[220px] sm:h-[300px] bg-amber-500/25 rounded-full blur-2xl -z-10 animate-pulse pointer-events-none" />
           )}
 
           {/* Carousel Navigation Arrows */}
@@ -1228,30 +1275,28 @@ const MBHShoeCarouselHeroSection: React.FC<{
             <>
               <button
                 onClick={handlePrev}
-                className="absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/70 dark:bg-black/70 backdrop-blur-md border border-white/40 shadow-xl hover:scale-110 active:scale-95 transition-all text-neutral-900 dark:text-white"
+                className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md border border-white/20 shadow-xl hover:scale-110 active:scale-95 transition-all text-white"
                 aria-label="Previous Slide"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={handleNext}
-                className="absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/70 dark:bg-black/70 backdrop-blur-md border border-white/40 shadow-xl hover:scale-110 active:scale-95 transition-all text-neutral-900 dark:text-white"
+                className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md border border-white/20 shadow-xl hover:scale-110 active:scale-95 transition-all text-white"
                 aria-label="Next Slide"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </>
           )}
 
-          {/* Floating Shoe Image Container */}
+          {/* 3D Motion Shoe Container */}
           <div
             className={`relative transition-all duration-700 ease-out cursor-pointer ${
-              enableFloating ? 'animate-bounce' : ''
+              enableFloating ? 'animate-mg-float3d' : ''
             }`}
             style={{
-              transform: `rotate(${enableSoftRotation ? -10 : 0}deg) scale(${
-                isHovered && enableHoverZoom ? 1.08 : 1.0
-              })`,
+              transform: `scale(${isHovered && enableHoverZoom ? 1.06 : 1.0})`,
             }}
             onClick={handleViewDetails}
           >
@@ -1259,60 +1304,40 @@ const MBHShoeCarouselHeroSection: React.FC<{
               key={activeSlide.image}
               src={activeSlide.image}
               alt={activeSlide.productName}
-              className="max-h-[290px] sm:max-h-[400px] w-auto object-contain filter drop-shadow-2xl transition-all duration-500"
+              className="max-h-[220px] sm:max-h-[280px] lg:max-h-[310px] w-auto object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.6)] transition-all duration-500"
               loading="lazy"
             />
           </div>
 
-          {/* Floor Soft Shadow */}
+          {/* Floor 3D Shadow */}
           <div
-            className="w-48 sm:w-64 h-5 bg-black/30 rounded-[100%] blur-md mt-4 transition-all duration-500 pointer-events-none"
+            className="w-40 sm:w-56 h-4 bg-black/40 rounded-[100%] blur-md mt-2 transition-all duration-500 pointer-events-none"
             style={{
               transform: isHovered ? 'scale(0.85)' : 'scale(1)',
               opacity: isHovered ? 0.3 : 0.6,
             }}
           />
 
-          {/* Floor Glass Reflection */}
-          {enableGlassReflection && (
-            <div className="w-64 sm:w-80 h-12 overflow-hidden opacity-15 pointer-events-none -mt-3 blur-[1px]">
-              <img
-                src={activeSlide.image}
-                alt="Reflection"
-                className="w-full object-contain transform scale-y-[-1] rotate-180"
-              />
-            </div>
-          )}
-
-          {/* Glassmorphic Floating Badges */}
+          {/* Motion Graphics Floating HUD Badges */}
           {floatingBadges[0] && (
-            <div className={`absolute top-2 left-2 sm:left-6 ${glassCardBg} p-3 rounded-2xl shadow-xl space-y-0.5 border`}>
-              <span className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+            <div className="absolute top-2 left-2 sm:left-4 bg-black/70 backdrop-blur-xl border border-amber-500/40 p-2 px-3 rounded-xl shadow-[0_0_15px_rgba(217,119,6,0.2)] space-y-0.5 animate-mg-hud">
+              <span className="block text-[9px] font-mono text-amber-400/80 uppercase tracking-wider">
                 {floatingBadges[0].title}
               </span>
-              <span className="block text-xs font-black text-amber-500">
+              <span className="block text-xs font-black text-amber-400">
                 {floatingBadges[0].value}
               </span>
             </div>
           )}
 
           {floatingBadges[1] && (
-            <div className={`absolute bottom-12 right-2 sm:right-6 ${glassCardBg} p-3 rounded-2xl shadow-xl space-y-0.5 border`}>
-              <span className="block text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+            <div className="absolute bottom-2 right-2 sm:right-4 bg-black/70 backdrop-blur-xl border border-amber-500/40 p-2 px-3 rounded-xl shadow-[0_0_15px_rgba(217,119,6,0.2)] space-y-0.5">
+              <span className="block text-[9px] font-mono text-amber-400/80 uppercase tracking-wider">
                 {floatingBadges[1].title}
               </span>
-              <span className="block text-xs font-black text-amber-500">
+              <span className="block text-xs font-black text-amber-400">
                 {floatingBadges[1].value}
               </span>
-            </div>
-          )}
-
-          {floatingBadges[2] && (
-            <div className="hidden sm:block absolute top-6 right-8 bg-neutral-900/80 backdrop-blur-md border border-white/20 p-2.5 px-3.5 rounded-2xl shadow-xl text-white">
-              <span className="block text-[9px] font-bold text-amber-400 uppercase tracking-wider">
-                {floatingBadges[2].title}
-              </span>
-              <span className="block text-xs font-bold">{floatingBadges[2].value}</span>
             </div>
           )}
         </div>

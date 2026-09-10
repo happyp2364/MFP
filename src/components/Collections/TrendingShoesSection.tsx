@@ -193,7 +193,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
   return (
     <section
       id="trending-shoes-section"
-      className={`relative py-12 sm:py-16 md:py-20 overflow-hidden transition-colors duration-700 ${bgThemeClasses}`}
+      className={`relative py-6 sm:py-8 md:py-10 overflow-hidden transition-colors duration-700 ${bgThemeClasses}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -204,18 +204,15 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-12">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4 sm:mb-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0B8F63]/10 border border-[#0B8F63]/20 text-[#0B8F63] text-xs font-extrabold tracking-widest uppercase mb-3">
-              <Flame className="w-4 h-4 fill-[#0B8F63] animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0B8F63]/10 border border-[#0B8F63]/20 text-[#0B8F63] text-xs font-extrabold tracking-widest uppercase mb-2">
+              <Flame className="w-3.5 h-3.5 fill-[#0B8F63] animate-pulse" />
               <span>{config.badgeLabel || 'ट्रेंडिंग शूज • TRENDING SHOES'}</span>
             </div>
-            <h2 className="font-serif-heading text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+            <h2 className="font-serif-heading text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight">
               {config.sectionTitle || '🔥 ट्रेंडिंग शूज कलेक्शन • Trending Shoes'}
             </h2>
-            <p className={`mt-2 text-sm sm:text-base max-w-xl ${isDarkBg ? 'text-neutral-300' : 'text-neutral-600'}`}>
-              {config.subtitle || 'कॉलेज व स्पोर्ट्स के सबसे पसंदीदा शूज। Discover our most popular sports shoes.'}
-            </p>
           </div>
 
           {/* Slider Controls */}
@@ -225,13 +222,13 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
                 setActiveIndex((prev) => (prev === 0 ? collectionProducts.length - 1 : prev - 1))
               }
               aria-label="Previous Shoe"
-              className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
                 isDarkBg
                   ? 'border-white/20 hover:bg-white/20 text-white'
                   : 'border-neutral-300 hover:bg-neutral-100 text-neutral-800'
               }`}
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <span className={`text-xs font-bold px-2 ${isDarkBg ? 'text-neutral-400' : 'text-neutral-500'}`}>
               {activeIndex + 1} / {collectionProducts.length}
@@ -239,26 +236,30 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
             <button
               onClick={() => setActiveIndex((prev) => (prev + 1) % collectionProducts.length)}
               aria-label="Next Shoe"
-              className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
                 isDarkBg
                   ? 'border-white/20 hover:bg-white/20 text-white'
                   : 'border-neutral-300 hover:bg-neutral-100 text-neutral-800'
               }`}
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Main Showcase Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
 
           {/* HERO STAGE: Active Shoe Presentation (7 cols on lg) */}
-          <div className={`lg:col-span-7 p-6 sm:p-8 lg:p-10 relative overflow-hidden transition-all duration-700 ${cardStyleClasses}`}>
+          <div className={`lg:col-span-7 p-4 sm:p-6 lg:p-8 relative overflow-hidden transition-all duration-700 rounded-2xl bg-mg-grid ${cardStyleClasses}`}>
             
-            {/* Top Badges */}
-            <div className="flex items-center justify-between gap-2 mb-6">
+            {/* Top Video HUD Badges */}
+            <div className="flex items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-rose-500 bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-500/20 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                  REC 60FPS
+                </span>
                 <span className="text-xs font-bold uppercase tracking-wider text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
                   {currentShoe.subcategory || currentShoe.brand || 'College Sports'}
                 </span>
@@ -272,7 +273,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
               {/* Wishlist Button */}
               <button
                 onClick={() => onToggleWishlist?.(currentShoe)}
-                className={`p-2.5 rounded-full transition-all cursor-pointer ${
+                className={`p-2 rounded-full transition-all cursor-pointer ${
                   isWishlisted
                     ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
                     : isDarkBg
@@ -281,13 +282,21 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
                 }`}
                 title="Add to Wishlist"
               >
-                <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-white' : ''}`} />
+                <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-white' : ''}`} />
               </button>
             </div>
 
-            {/* SHOE FLOATING SHOWCASE DISPLAY */}
-            <div className="relative my-4 py-8 sm:py-12 flex flex-col items-center justify-center min-h-[280px] sm:min-h-[360px] group">
-              
+            {/* SHOE FLOATING SHOWCASE DISPLAY WITH 3D LASER SCAN */}
+            <div className="relative my-2 py-4 sm:py-6 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[280px] rounded-xl bg-black/20 border border-amber-500/20 overflow-hidden group">
+              {/* Laser Motion Graphics Scan Beam */}
+              <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_#f59e0b] z-20 animate-mg-scanbeam pointer-events-none" />
+
+              {/* HUD Frame Brackets */}
+              <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-amber-500/60 pointer-events-none" />
+              <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-amber-500/60 pointer-events-none" />
+              <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-amber-500/60 pointer-events-none" />
+              <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-amber-500/60 pointer-events-none" />
+
               {/* Radial Backdrop Spotlight behind active shoe */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#0B8F63]/30 via-transparent to-transparent rounded-full blur-2xl transform scale-90 group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
 
@@ -298,7 +307,7 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
                 alt={currentShoe.name}
                 loading="lazy"
                 referrerPolicy="no-referrer"
-                className={`w-full max-w-sm sm:max-w-md lg:max-w-lg h-56 sm:h-72 lg:h-80 object-contain filter drop-shadow-[0_25px_35px_rgba(0,0,0,0.45)] transform group-hover:scale-105 group-hover:-translate-y-3 transition-all duration-700 ${
+                className={`w-auto max-h-[220px] sm:max-h-[280px] lg:max-h-[320px] object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] transform group-hover:scale-105 group-hover:-translate-y-2 transition-all duration-700 ${
                   config.enableAnimation ? 'animate-[float_5s_ease-in-out_infinite]' : ''
                 }`}
               />

@@ -468,6 +468,8 @@ export interface StoreInfo {
   showHeaderAccount?: boolean;
   showHeaderOffers?: boolean;
   headerLogoText?: string;
+  logoUrl?: string;
+  logoType?: 'icon' | 'image' | 'both';
 }
 
 export interface FloatingShoeItem {

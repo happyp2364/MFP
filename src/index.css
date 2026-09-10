@@ -739,6 +739,40 @@ button.bg-black * {
 .badge-teal, .bg-teal-100 { background-color: #ccfbf1 !important; color: #115e59 !important; }
 .badge-sky, .bg-sky-100 { background-color: #e0f2fe !important; color: #075985 !important; }
 
+/* 3D Motion Graphics & Video HUD Effects */
+@keyframes mg-scanbeam {
+  0% { transform: translateY(-10%); opacity: 0; }
+  50% { opacity: 0.8; }
+  100% { transform: translateY(110%); opacity: 0; }
+}
+
+@keyframes mg-float3d {
+  0%, 100% { transform: translateY(0px) rotate(-6deg) scale(1); }
+  50% { transform: translateY(-10px) rotate(-2deg) scale(1.04); }
+}
+
+@keyframes mg-hudPulse {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+.animate-mg-scanbeam {
+  animation: mg-scanbeam 4s ease-in-out infinite;
+}
+
+.animate-mg-float3d {
+  animation: mg-float3d 6s ease-in-out infinite;
+}
+
+.animate-mg-hud {
+  animation: mg-hudPulse 2.5s ease-in-out infinite;
+}
+
+.bg-mg-grid {
+  background-image: radial-gradient(rgba(217, 119, 6, 0.25) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
 /* High-Contrast Robust Product Price Tokens */
 .product-card-sale-price {
   color: #09090b !important;

@@ -126,8 +126,9 @@ export interface FirestoreErrorInfo {
 export function handleFirestoreError(
   error: unknown,
   operationType: OperationType | string,
-  path: string | null = null
-) {
+  path: string | null = null,
+  options?: { throwOnError?: boolean }
+): FirestoreErrorInfo {
   const parts = path ? path.split('/') : [];
   const collectionName = parts[0] || 'unknown';
   const documentId = parts.length > 1 ? parts.slice(1).join('/') : 'collection-level';
@@ -149,11 +150,16 @@ export function handleFirestoreError(
     operationType: opType,
     path,
   };
-  console.error(
-    `[PERMISSION/DB ERROR] Path: "${path || 'N/A'}", Collection: "${collectionName}", DocID: "${documentId}", User UID: "${currentUserUid}"`,
+  console.warn(
+    `[PERMISSION/DB NOTICE] Path: "${path || 'N/A'}", Collection: "${collectionName}", DocID: "${documentId}", User UID: "${currentUserUid}"`,
     JSON.stringify(errInfo)
   );
-  throw new Error(JSON.stringify(errInfo));
+
+  if (options?.throwOnError) {
+    throw new Error(JSON.stringify(errInfo));
+  }
+
+  return errInfo;
 }
 
 // Google OAuth Provider Setup - Standard Customer Authentication
@@ -770,7 +776,7 @@ export async function changeAdminPasswordFirebase(
 // Default Payment Gateway & UPI Settings
 export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
   merchantName: 'Marudhar Fashion Point',
-  upiId: 'marudharfashion@upi',
+  upiId: '9782482250@upi',
   upiName: 'Marudhar Fashion Point',
   qrCodeCustomImage: '',
   qrCodeUrl: '',

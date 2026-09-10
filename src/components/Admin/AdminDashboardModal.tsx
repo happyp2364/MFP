@@ -477,6 +477,27 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     reader.readAsText(file);
   };
 
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (PNG, JPG, WEBP, SVG).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        setStoreInfoForm((prev) => ({
+          ...prev,
+          logoUrl: result,
+          logoType: prev.logoType === 'icon' ? 'both' : (prev.logoType || 'both'),
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -1421,6 +1442,114 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Brand Logo Customization (Photo / Image & Style) */}
+                    <div className="md:col-span-2 p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 space-y-3.5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-extrabold text-xs text-neutral-900 flex items-center gap-1.5">
+                            <ImageIcon className="w-4 h-4 text-emerald-700" />
+                            <span>Custom Logo Photo & Header Branding</span>
+                          </span>
+                          <span className="text-[10px] text-neutral-600 block">
+                            Upload your logo photo/graphic file or paste an image URL to customize header branding.
+                          </span>
+                        </div>
+                        {storeInfoForm.logoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setStoreInfoForm({ ...storeInfoForm, logoUrl: '' })}
+                            className="text-[10px] font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                          >
+                            Remove Logo Image
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Live Logo Preview Box */}
+                      {storeInfoForm.logoUrl && (
+                        <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-emerald-200 shadow-xs">
+                          <img
+                            src={storeInfoForm.logoUrl}
+                            alt="Brand Logo Preview"
+                            className="h-10 w-auto max-w-[180px] object-contain rounded-lg border border-neutral-100"
+                          />
+                          <div>
+                            <span className="text-xs font-bold text-neutral-800 block">Current Logo Image Preview</span>
+                            <span className="text-[10px] text-neutral-500 block">Appears in header and mobile drawer</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* File Upload Button */}
+                        <div>
+                          <label className="font-bold text-neutral-700 text-xs block mb-1">Upload Logo Photo / Image</label>
+                          <label className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-emerald-400 rounded-xl text-xs font-extrabold text-emerald-800 hover:bg-emerald-100/50 cursor-pointer transition-colors shadow-xs">
+                            <Upload className="w-4 h-4 text-emerald-600" />
+                            <span>Select Image File</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleLogoFileUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+
+                        {/* Direct URL Input */}
+                        <div>
+                          <label className="font-bold text-neutral-700 text-xs block mb-1">Or Paste Image URL</label>
+                          <input
+                            type="text"
+                            value={storeInfoForm.logoUrl || ''}
+                            onChange={(e) => setStoreInfoForm({ ...storeInfoForm, logoUrl: e.target.value })}
+                            placeholder="https://example.com/logo.png"
+                            className="w-full bg-white border border-neutral-200 rounded-xl p-2 outline-none text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Display Mode Selection */}
+                      <div>
+                        <label className="font-bold text-neutral-700 text-xs block mb-1.5">Logo Style Mode</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setStoreInfoForm({ ...storeInfoForm, logoType: 'both' })}
+                            className={`px-3 py-2 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
+                              (storeInfoForm.logoType === 'both' || !storeInfoForm.logoType)
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
+                            }`}
+                          >
+                            Photo + Text
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setStoreInfoForm({ ...storeInfoForm, logoType: 'image' })}
+                            className={`px-3 py-2 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
+                              storeInfoForm.logoType === 'image'
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
+                            }`}
+                          >
+                            Photo Only
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setStoreInfoForm({ ...storeInfoForm, logoType: 'icon' })}
+                            className={`px-3 py-2 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
+                              storeInfoForm.logoType === 'icon'
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
+                            }`}
+                          >
+                            Icon + Text
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Header Logo Text */}
                     <div className="md:col-span-2">
                       <label className="font-bold text-neutral-700 block mb-1">Header Custom Logo Text</label>
@@ -1428,7 +1557,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         type="text"
                         value={storeInfoForm.headerLogoText || ''}
                         onChange={(e) => setStoreInfoForm({ ...storeInfoForm, headerLogoText: e.target.value })}
-                        placeholder="Leave blank to use 'Marudhar Point'"
+                        placeholder="Leave blank to use 'Marudhar Fashion Point'"
                         className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl p-2.5 outline-none text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
                       />
                     </div>

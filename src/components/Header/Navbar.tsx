@@ -82,20 +82,26 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigateToSection,
   onSelectSubcategory,
 }) => {
-  const { storeInfo, websiteConfig, isAdmin, customerSoundSettings, megaMenuCategories } = useStore();
+  const { storeInfo, websiteConfig, logoConfig, isAdmin, customerSoundSettings, megaMenuCategories } = useStore();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [adminExpanded, setAdminExpanded] = useState(false);
+  const [logoImageFailed, setLogoImageFailed] = useState(false);
 
   const logoTapCount = React.useRef(0);
   const logoTapTimeout = React.useRef<NodeJS.Timeout | null>(null);
 
-  const activeLogoUrl = storeInfo?.logoUrl || websiteConfig?.businessIdentity?.logoUrl || '';
-  const activeLogoType = storeInfo?.logoType || websiteConfig?.businessIdentity?.logoType || (activeLogoUrl ? 'both' : 'icon');
-  const activeLogoText = storeInfo?.headerLogoText || websiteConfig?.businessIdentity?.businessName || storeInfo?.name || 'Marudhar Fashion Point';
-  const activeTagline = websiteConfig?.businessIdentity?.tagline || storeInfo?.tagline || 'Fashion & Footwear';
+  const defaultLogoSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80"><defs><linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23092e22"/><stop offset="50%" stop-color="%230B8F63"/><stop offset="100%" stop-color="%23054d35"/></linearGradient><linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%23F6E05E"/><stop offset="50%" stop-color="%23D4AF37"/><stop offset="100%" stop-color="%23B7791F"/></linearGradient></defs><rect x="4" y="8" width="64" height="64" rx="16" fill="url(%23bgGrad)" stroke="url(%23goldGrad)" stroke-width="2.5"/><path d="M24 48 C24 38, 28 30, 36 24 C44 30, 48 38, 48 48 Z" fill="none" stroke="url(%23goldGrad)" stroke-width="3" stroke-linecap="round"/><circle cx="36" cy="38" r="5" fill="url(%23goldGrad)"/><polygon points="36,18 39,23 44,22 41,26 43,31 36,28 29,31 31,26 28,22 33,23" fill="url(%23goldGrad)"/><text x="82" y="38" font-family="'Playfair Display', Georgia, serif" font-weight="900" font-size="20" fill="%230B8F63" letter-spacing="0.5">MARUDHAR</text><text x="82" y="56" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800" font-size="11" fill="%232D3748" letter-spacing="2">FASHION POINT</text></svg>`;
+
+  const rawLogoUrl = logoConfig?.logoUrl || storeInfo?.logoUrl || websiteConfig?.businessIdentity?.logoUrl || '';
+  const activeLogoUrl = logoImageFailed || !rawLogoUrl ? defaultLogoSvg : rawLogoUrl;
+  const activeLogoType = logoConfig?.logoType || storeInfo?.logoType || websiteConfig?.businessIdentity?.logoType || 'both';
+  const activeLogoText = logoConfig?.brandNameText || storeInfo?.headerLogoText || websiteConfig?.businessIdentity?.businessName || storeInfo?.name || 'Marudhar Fashion Point';
+  const activeTagline = logoConfig?.taglineText || websiteConfig?.businessIdentity?.tagline || storeInfo?.tagline || 'Style for Every Step.';
+  const showLogoVisibility = logoConfig?.logoVisibility !== false && storeInfo?.showHeaderLogo !== false;
+  const showBrandName = logoConfig?.showBrandNameBesideLogo !== false || activeLogoType === 'both' || activeLogoType === 'text';
 
   const handleLogoClick = () => {
     handleNavClick('hero');
@@ -166,31 +172,27 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
 
               {/* Brand Logo */}
-              {storeInfo?.showHeaderLogo !== false && (
+              {showLogoVisibility && (
                 <button
                   onClick={handleLogoClick}
                   className="flex items-center gap-2.5 text-left group cursor-pointer"
                   title="Click to go home (Admin: 5-tap shortcut)"
                 >
-                  {activeLogoUrl && (activeLogoType === 'image' || activeLogoType === 'both') ? (
+                  {(activeLogoType === 'image' || activeLogoType === 'both' || activeLogoType === 'icon') && (
                     <img
                       src={activeLogoUrl}
                       alt={activeLogoText}
-                      className="h-9 sm:h-10 w-auto max-w-[140px] sm:max-w-[180px] object-contain rounded-lg group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div
-                      className="rounded-xl bg-[#0B8F63] flex items-center justify-center text-white shadow-md shadow-[#0B8F63]/20 group-hover:scale-105 transition-transform duration-300 shrink-0"
+                      onError={() => setLogoImageFailed(true)}
                       style={{
-                        width: 'var(--mfp-logo-width)',
-                        height: 'var(--mfp-logo-height)',
+                        width: logoConfig?.logoWidthDesktop ? `${logoConfig.logoWidthDesktop}px` : undefined,
+                        maxHeight: '44px',
+                        objectFit: logoConfig?.objectFit || 'contain',
                       }}
-                    >
-                      <Footprints className="w-5 h-5" />
-                    </div>
+                      className="h-9 sm:h-10 w-auto max-w-[150px] sm:max-w-[220px] object-contain rounded-lg group-hover:scale-105 transition-transform duration-300"
+                    />
                   )}
 
-                  {(activeLogoType !== 'image' || !activeLogoUrl) && (
+                  {(showBrandName || activeLogoType === 'text') && (
                     <div>
                       <div className="flex items-center gap-1">
                         <span className="font-serif-heading font-extrabold text-base sm:text-lg text-neutral-900 tracking-tight leading-snug">

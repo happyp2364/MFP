@@ -10,6 +10,7 @@ import { MediaProvider, useMedia } from './MediaContext';
 import { AuditProvider, useAudit } from './AuditContext';
 import { PermissionProvider, usePermission } from './PermissionContext';
 import { WebsiteIdentityProvider, useWebsiteIdentity } from './WebsiteIdentityContext';
+import { LogoCustomizationProvider, useLogoCustomization } from './LogoCustomizationContext';
 import { AppearanceProvider, useAppearance } from './AppearanceContext';
 import { WebsiteDesignProvider, useWebsiteDesign } from './WebsiteDesignContext';
 import { SEOProvider, useSEO } from './SEOContext';
@@ -45,7 +46,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             <AuditProvider>
               <PermissionProvider>
                 <WebsiteIdentityProvider>
-                  <AppearanceProvider>
+                  <LogoCustomizationProvider>
+                    <AppearanceProvider>
                     <WebsiteDesignProvider>
                       <SEOProvider>
                         <StoreLocatorProvider>
@@ -80,7 +82,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                       </SEOProvider>
                     </WebsiteDesignProvider>
                   </AppearanceProvider>
-                </WebsiteIdentityProvider>
+                </LogoCustomizationProvider>
+              </WebsiteIdentityProvider>
               </PermissionProvider>
             </AuditProvider>
           </MediaProvider>
@@ -98,6 +101,7 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
   const audit = useAudit();
   const permission = usePermission();
   const websiteIdentity = useWebsiteIdentity();
+  const logoCustomization = useLogoCustomization();
   const appearance = useAppearance();
   const websiteDesign = useWebsiteDesign();
   const seo = useSEO();
@@ -134,6 +138,12 @@ const StoreContextFacadeBridge: React.FC<{ children: ReactNode }> = ({ children 
     storeInfo: platform.publishedStoreInfo,
     publishedStoreInfo: platform.publishedStoreInfo,
     updateStoreInfo: platform.updateStoreInfo,
+    logoConfig: logoCustomization.logoConfig,
+    draftLogoConfig: logoCustomization.draftLogoConfig,
+    updateDraftLogoConfig: logoCustomization.updateDraftLogoConfig,
+    saveLogoConfig: logoCustomization.saveLogoConfig,
+    resetToDefaultLogo: logoCustomization.resetToDefaultLogo,
+    removeLogo: logoCustomization.removeLogo,
     createStoreBackup: platform.createStoreBackup,
     restoreStoreBackup: platform.restoreStoreBackup,
     publishedVersions: platform.publishedVersions,

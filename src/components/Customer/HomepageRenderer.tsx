@@ -20,6 +20,8 @@ import {
   Zap,
   Instagram,
   Heart,
+  Layers,
+  Ruler,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { HomepageConfig, HomepageSection, Product } from '../../types';
@@ -239,7 +241,18 @@ const SectionItem: React.FC<SectionItemProps> = ({
       );
 
     case 'floating_sneaker':
-      return <FloatingSneakerHeroSection section={section} onNavigateCategory={onNavigateCategory} />;
+      return (
+        <FloatingSneakerHeroSection
+          section={section}
+          products={products}
+          onNavigateCategory={onNavigateCategory}
+          onSelectProduct={onSelectProduct}
+          onAddToCart={onAddToCart}
+          onBuyNow={onBuyNow}
+          wishlistIds={wishlistIds}
+          onToggleWishlist={onToggleWishlist}
+        />
+      );
 
     case 'hero_banner':
     case 'slider':
@@ -689,8 +702,23 @@ const FaqAccordion: React.FC<{ faqs: any[]; title?: string; subtitle?: string }>
 
 const FloatingSneakerHeroSection: React.FC<{
   section: HomepageSection;
+  products?: Product[];
   onNavigateCategory?: (cat: string) => void;
-}> = ({ section, onNavigateCategory }) => {
+  onSelectProduct?: (p: Product) => void;
+  onAddToCart?: (product: Product, size?: string, color?: string, quantity?: number) => void;
+  onBuyNow?: (product: Product, size?: string, color?: string, quantity?: number) => void;
+  wishlistIds?: string[];
+  onToggleWishlist?: (product: Product) => void;
+}> = ({
+  section,
+  products = [],
+  onNavigateCategory,
+  onSelectProduct,
+  onAddToCart,
+  onBuyNow,
+  wishlistIds = [],
+  onToggleWishlist,
+}) => {
   const data = section.contentData || {};
   const styling = section.styling || {};
 
@@ -710,6 +738,9 @@ const FloatingSneakerHeroSection: React.FC<{
   useEffect(() => {
     setActiveImage(mainImage);
   }, [mainImage]);
+
+  const { products: storeProducts, reviews: storeReviews = [] } = useStore();
+  const allProducts = products && products.length > 0 ? products : storeProducts;
 
   const bgWord = (data.backgroundWord || 'SPORT').toUpperCase();
   const smallHeading = data.smallHeading || '2026 EDITION • MARUDHAR LUXURY';
@@ -735,8 +766,30 @@ const FloatingSneakerHeroSection: React.FC<{
     { title: 'Open Box Guarantee', value: 'Inspect & Pay', position: 'top-right' },
   ];
 
-  const navLabels = data.navLabels || ['Overview', 'Tech Specs', 'Size Guide', 'Reviews'];
+  const navLabels = data.navLabels || ['Overview', 'Materials', 'Fit Guide', 'Reviews'];
   const productTags = data.productTags || ['🔥 HOT DROP', 'LIMITED EDITION', 'FREE SHIPPING'];
+
+  // Match real product if available
+  const matchedProduct: Product | undefined = allProducts.find(
+    (p) =>
+      (data.productId && (p.id === data.productId || String(p.id) === String(data.productId))) ||
+      p.name.toLowerCase().includes((mainHeading || '').toLowerCase()) ||
+      (mainHeading || '').toLowerCase().includes(p.name.toLowerCase())
+  ) || allProducts[0];
+
+  const productReviews = matchedProduct
+    ? storeReviews.filter((r) => r.productId === matchedProduct.id || r.productName === matchedProduct.name)
+    : storeReviews;
+
+  const normTab = (activeTab || '').toLowerCase();
+  const isOverview = normTab.includes('overview') || normTab === 'overview';
+  const isMaterials = normTab.includes('material') || normTab.includes('tech') || normTab.includes('spec');
+  const isFitGuide = normTab.includes('fit') || normTab.includes('size') || normTab.includes('guide');
+  const isReviews = normTab.includes('review') || normTab.includes('rating') || normTab.includes('feedback');
+
+  const isWishlisted = matchedProduct
+    ? wishlistIds.includes(matchedProduct.id) || wishlistIds.includes(String(matchedProduct.id))
+    : false;
 
   return (
     <div
@@ -756,7 +809,7 @@ const FloatingSneakerHeroSection: React.FC<{
       </div>
 
       {/* Top Glassmorphic Navigation Bar */}
-      <div className="relative z-20 px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-black/5 bg-white/30 backdrop-blur-md">
+      <div className="relative z-20 px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-black/5 bg-white/40 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <span className="w-8 h-8 rounded-full bg-neutral-900 text-white font-black text-xs flex items-center justify-center shadow-md">
             M
@@ -766,23 +819,30 @@ const FloatingSneakerHeroSection: React.FC<{
           </span>
         </div>
 
-        <div className="hidden sm:flex items-center gap-1.5 bg-black/5 p-1 rounded-full border border-black/5">
-          {navLabels.map((lbl: string) => (
-            <button
-              key={lbl}
-              onClick={() => setActiveTab(lbl)}
-              className={`px-3.5 py-1 text-[11px] font-bold rounded-full transition-all ${
-                activeTab === lbl
-                  ? 'bg-neutral-900 text-white shadow-xs'
-                  : 'text-neutral-700 hover:text-black hover:bg-white/40'
-              }`}
-            >
-              {lbl}
-            </button>
-          ))}
+        {/* Interactive Tab Controls - Visible and Horizontally Scrollable on Mobile & Desktop */}
+        <div className="flex items-center gap-1 bg-black/5 p-1 rounded-full border border-black/5 overflow-x-auto max-w-full no-scrollbar">
+          {navLabels.map((lbl: string) => {
+            const isActive = activeTab === lbl;
+            return (
+              <button
+                key={lbl}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActiveTab(lbl)}
+                className={`px-3 sm:px-3.5 py-1 text-[11px] font-bold rounded-full transition-all shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-neutral-900 ${
+                  isActive
+                    ? 'bg-neutral-900 text-white shadow-xs'
+                    : 'text-neutral-700 hover:text-black hover:bg-white/50'
+                }`}
+              >
+                {lbl}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="hidden md:flex items-center gap-2">
           {productTags.slice(0, 2).map((tag: string, i: number) => (
             <span
               key={i}
@@ -794,29 +854,195 @@ const FloatingSneakerHeroSection: React.FC<{
         </div>
       </div>
 
-      {/* Main Grid Section - Compact Height */}
+      {/* Main Grid Section */}
       <div className="relative z-10 px-4 sm:px-8 py-4 lg:py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-        {/* LEFT COLUMN: Headings & CTA */}
-        <div className="lg:col-span-5 space-y-4 text-neutral-900">
+        {/* LEFT COLUMN: Headings & Dynamic Interactive Tab Content */}
+        <div className="lg:col-span-5 space-y-3.5 text-neutral-900">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-neutral-900 text-white text-[10px] font-extrabold rounded-full uppercase tracking-widest shadow-sm">
             <Sparkles className="w-3 h-3 text-amber-400" />
             {smallHeading}
           </div>
 
           <div className="space-y-1">
-            <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-none text-neutral-900 uppercase">
-              {mainHeading}
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-none text-neutral-900 uppercase">
+              {matchedProduct?.name || mainHeading}
             </h1>
-            <p className="text-xs text-neutral-700 leading-relaxed font-medium max-w-md line-clamp-2">
-              {description}
-            </p>
+            {matchedProduct && (
+              <div className="flex items-center gap-2 pt-0.5">
+                <span className="text-lg font-black text-amber-700">
+                  ₹{matchedProduct.price?.toLocaleString('en-IN')}
+                </span>
+                {matchedProduct.originalPrice && (
+                  <span className="text-xs font-bold text-neutral-500 line-through">
+                    ₹{matchedProduct.originalPrice?.toLocaleString('en-IN')}
+                  </span>
+                )}
+                {matchedProduct.originalPrice && matchedProduct.price && (
+                  <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-700 text-[10px] font-extrabold rounded border border-emerald-500/20">
+                    SAVE {Math.round(((matchedProduct.originalPrice - matchedProduct.price) / matchedProduct.originalPrice) * 100)}%
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* CTA Button */}
+          {/* DYNAMIC TAB CONTENT AREA */}
+          <div className="space-y-2 min-h-[110px]">
+            {isOverview && (
+              <div className="space-y-2.5 animate-fadeIn">
+                <p className="text-xs text-neutral-700 leading-relaxed font-medium max-w-md line-clamp-3">
+                  {matchedProduct?.description || description}
+                </p>
+
+                {/* Highlight Badges */}
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {floatingBadges.map((b: any, idx: number) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-white/80 border border-black/10 rounded-lg text-[10px] font-bold text-neutral-800 shadow-2xs"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+                      <span>{b.title}:</span>
+                      <span className="font-extrabold text-neutral-950">{b.value}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {isMaterials && (
+              <div className="space-y-2 text-xs text-neutral-800 animate-fadeIn">
+                <div className="p-3 bg-white/80 rounded-2xl border border-black/10 shadow-2xs space-y-2">
+                  <div className="flex items-center gap-2 text-amber-600 font-extrabold text-[11px] uppercase tracking-wider">
+                    <Layers className="w-3.5 h-3.5 shrink-0" />
+                    <span>Materials & Technical Build</span>
+                  </div>
+                  <ul className="space-y-1.5 text-[11px] font-medium text-neutral-700">
+                    <li className="flex items-start gap-1.5">
+                      <span className="font-bold text-neutral-900 shrink-0">Upper:</span>
+                      <span>{matchedProduct?.material || 'Hand-crafted Flyknit weave with ivory suede & burnished leather overlays'}</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="font-bold text-neutral-900 shrink-0">Cushioning:</span>
+                      <span>Responsive cloud-foam ergosphere midsole with high-rebound heel unit</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="font-bold text-neutral-900 shrink-0">Outsole:</span>
+                      <span>High-traction non-marking rubber sole with dual-zone airflow vents</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="font-bold text-neutral-900 shrink-0">Craftsmanship:</span>
+                      <span>Reinforced double-stitching & rust-proof brass eyelet accents</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {isFitGuide && (
+              <div className="space-y-2 text-xs text-neutral-800 animate-fadeIn">
+                <div className="p-3 bg-white/80 rounded-2xl border border-black/10 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-neutral-900 font-extrabold text-[11px] uppercase tracking-wider">
+                      <Ruler className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>Sizing & Ergonomic Fit Guide</span>
+                    </div>
+                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-700 text-[10px] font-extrabold rounded-full border border-emerald-500/20">
+                      True to Size
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-neutral-600 font-medium">
+                    Standard Indian Footwear Sizing. Order your usual UK/INDIA shoe size.
+                  </p>
+                  <div className="pt-0.5">
+                    <span className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">
+                      Available Sizes (UK/INDIA):
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {(matchedProduct?.sizes && matchedProduct.sizes.length > 0
+                        ? matchedProduct.sizes
+                        : ['6', '7', '8', '9', '10', '11']
+                      ).map((sz) => (
+                        <span
+                          key={sz}
+                          className="px-2.5 py-1 bg-neutral-900 text-white font-bold text-[10px] rounded-md shadow-2xs"
+                        >
+                          UK {sz}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-800 pt-0.5">
+                    <PackageCheck className="w-3.5 h-3.5 shrink-0" />
+                    <span>Open Box Delivery: Inspect & try your size at delivery before payment!</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isReviews && (
+              <div className="space-y-2 text-xs text-neutral-800 animate-fadeIn">
+                <div className="p-3 bg-white/80 rounded-2xl border border-black/10 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between border-b border-black/5 pb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                      <span className="font-extrabold text-neutral-900 text-xs">
+                        {matchedProduct?.rating || 4.9} / 5.0
+                      </span>
+                      <span className="text-[10px] font-medium text-neutral-500">
+                        ({productReviews.length || matchedProduct?.reviewsCount || 128} verified reviews)
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 bg-amber-400/20 text-amber-800 font-black text-[9px] rounded-full uppercase">
+                      Verified Buyers
+                    </span>
+                  </div>
+
+                  {productReviews.length > 0 ? (
+                    <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
+                      {productReviews.slice(0, 2).map((rev) => (
+                        <div key={rev.id} className="text-[11px] bg-black/5 p-2 rounded-xl space-y-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-neutral-900">{rev.userName}</span>
+                            <div className="flex text-amber-500">
+                              {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                                <Star key={i} className="w-2.5 h-2.5 fill-current" />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-neutral-600 line-clamp-2 text-[10px] font-medium">{rev.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-1 text-center py-2">
+                      <p className="text-[11px] font-bold text-neutral-800">
+                        100% Top Rated Customer Satisfaction
+                      </p>
+                      <p className="text-[10px] text-neutral-500 font-medium">
+                        Crafted with premium materials and backed by open-box delivery inspection.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* CTA & Actions Bar */}
           <div className="pt-1 flex flex-wrap items-center gap-2">
             <button
-              onClick={() => onNavigateCategory && onNavigateCategory('ALL')}
-              className={`px-6 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 ${
+              type="button"
+              onClick={() => {
+                if (matchedProduct && onBuyNow) {
+                  onBuyNow(matchedProduct, matchedProduct.sizes?.[0] || '8', 'Standard', 1);
+                } else if (matchedProduct && onAddToCart) {
+                  onAddToCart(matchedProduct, matchedProduct.sizes?.[0] || '8', 'Standard', 1);
+                } else if (onNavigateCategory) {
+                  onNavigateCategory('ALL');
+                }
+              }}
+              className={`px-5 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 ${
                 ctaStyle === 'glass'
                   ? 'bg-white/60 text-neutral-900 border border-white/80 backdrop-blur-md hover:bg-white'
                   : ctaStyle === 'outline'
@@ -824,9 +1050,35 @@ const FloatingSneakerHeroSection: React.FC<{
                   : 'bg-neutral-900 text-white hover:bg-neutral-800'
               }`}
             >
+              <ShoppingBag className="w-3.5 h-3.5" />
               <span>{ctaText}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
             </button>
+
+            {matchedProduct && onSelectProduct && (
+              <button
+                type="button"
+                onClick={() => onSelectProduct(matchedProduct)}
+                className="px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl border border-black/10 bg-white/50 hover:bg-white text-neutral-900 transition-all flex items-center gap-1.5"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Details</span>
+              </button>
+            )}
+
+            {matchedProduct && onToggleWishlist && (
+              <button
+                type="button"
+                onClick={() => onToggleWishlist(matchedProduct)}
+                className={`p-2.5 rounded-xl border transition-all ${
+                  isWishlisted
+                    ? 'bg-rose-500 text-white border-rose-500 shadow-sm scale-105'
+                    : 'border-black/10 bg-white/50 text-neutral-800 hover:bg-white'
+                }`}
+                title="Save to Wishlist"
+              >
+                <Heart className={`w-3.5 h-3.5 ${isWishlisted ? 'fill-current' : ''}`} />
+              </button>
+            )}
           </div>
 
           {/* Secondary Thumbnail Gallery */}
@@ -835,8 +1087,9 @@ const FloatingSneakerHeroSection: React.FC<{
               {secondaryImages.map((img: string, idx: number) => (
                 <button
                   key={idx}
+                  type="button"
                   onClick={() => setActiveImage(img)}
-                  className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 bg-white shadow-xs ${
+                  className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 bg-white shadow-xs cursor-pointer ${
                     activeImage === img
                       ? 'border-neutral-900 ring-2 ring-amber-400/50 scale-105'
                       : 'border-transparent opacity-70 hover:opacity-100'
@@ -882,7 +1135,7 @@ const FloatingSneakerHeroSection: React.FC<{
           >
             <img
               src={activeImage}
-              alt={mainHeading}
+              alt={matchedProduct?.name || mainHeading}
               className="max-h-[200px] sm:max-h-[280px] w-auto object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] transition-all duration-500"
             />
           </div>

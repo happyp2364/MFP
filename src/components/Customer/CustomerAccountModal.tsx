@@ -32,6 +32,7 @@ interface CustomerAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
   onQuickViewProduct?: (p: Product) => void;
+  wishlistedProducts?: Product[];
 }
 
 const ORDER_STEPS: { status: OrderStatus; label: string }[] = [
@@ -48,6 +49,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
   isOpen,
   onClose,
   onQuickViewProduct,
+  wishlistedProducts: passedWishlistedProducts,
 }) => {
   const {
     customerUser,
@@ -103,7 +105,7 @@ export const CustomerAccountModal: React.FC<CustomerAccountModalProps> = ({
     return false;
   });
 
-  const wishlistProducts = (customerProfile?.wishlist || [])
+  const wishlistProducts = passedWishlistedProducts || (customerProfile?.wishlist || [])
     .map((id) => products.find((p) => p.id === id))
     .filter(Boolean) as Product[];
 

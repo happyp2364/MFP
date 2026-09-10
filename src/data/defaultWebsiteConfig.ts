@@ -1,6 +1,7 @@
 import { WebsiteConfig, SocialLinkItem } from '../types';
 import { PUBLIC_SITE_URL } from '../utils/siteUrl';
 import { CANONICAL_STORE_LOCATION } from './storeLocation';
+import { DEFAULT_MARUDHAR_LOGO_SVG } from '../constants/defaultLogo';
 
 export const DEFAULT_SOCIAL_LINKS: SocialLinkItem[] = [
   {
@@ -65,13 +66,13 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
     ownerName: 'Vijay Parihar',
     coOwnerNames: 'Vishal Parihar',
     founderDetails: 'Viju Bhai (Vijay Parihar) — Founder & Master Craftsman',
-    logoUrl: '/logo.png',
-    lightLogoUrl: '/logo.png',
-    darkLogoUrl: '/logo.png',
+    logoUrl: DEFAULT_MARUDHAR_LOGO_SVG,
+    lightLogoUrl: DEFAULT_MARUDHAR_LOGO_SVG,
+    darkLogoUrl: DEFAULT_MARUDHAR_LOGO_SVG,
     faviconUrl: '/favicon.ico',
-    loadingLogoUrl: '/logo.png',
-    splashLogoUrl: '/logo.png',
-    emailSignatureLogoUrl: '/logo.png',
+    loadingLogoUrl: DEFAULT_MARUDHAR_LOGO_SVG,
+    splashLogoUrl: DEFAULT_MARUDHAR_LOGO_SVG,
+    emailSignatureLogoUrl: DEFAULT_MARUDHAR_LOGO_SVG,
   },
 
   // Section 2: Contact Details

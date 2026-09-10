@@ -284,7 +284,7 @@ export const WebsiteConfigurationView: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 text-slate-100 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+    <div className="flex flex-col h-full bg-slate-900 text-slate-100 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl min-h-0">
       {/* Top Header Bar */}
       <div className="flex flex-col md:flex-row items-center justify-between px-6 py-5 bg-slate-950 border-b border-slate-800 gap-4">
         <div className="flex items-center space-x-3">
@@ -433,9 +433,9 @@ export const WebsiteConfigurationView: React.FC = () => {
       </div>
 
       {/* Main Content split into Navigation Sidebar and Active Section Form */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0 min-w-0">
         {/* Left Section Nav Tabs */}
-        <div className="w-64 md:w-72 bg-slate-950 border-r border-slate-800 overflow-y-auto p-3 space-y-1.5">
+        <div className="w-full md:w-72 bg-slate-950 border-b md:border-b-0 md:border-r border-slate-800 overflow-y-auto p-3 space-y-1.5 shrink-0 min-h-0">
           <div className="px-3 py-2 text-[11px] font-black tracking-wider text-slate-300 uppercase">
             Configuration Modules ({filteredSections.length})
           </div>
@@ -470,7 +470,7 @@ export const WebsiteConfigurationView: React.FC = () => {
         </div>
 
         {/* Right Form Body */}
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
+        <div className="flex-1 overflow-y-auto p-6 bg-slate-900 min-h-0 min-w-0">
           {/* Render Active Section */}
 
           {/* SECTION 1: BUSINESS IDENTITY */}

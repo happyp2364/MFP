@@ -1,7 +1,10 @@
 import { Product, Review, StoreInfo, HeroContent, CategoryHighlight, TrendingCollectionItem, TopAnnouncementBarConfig, MegaMenuCategory } from '../types';
+import { DEFAULT_MARUDHAR_LOGO_SVG } from '../constants/defaultLogo';
 
 export const STORE_INFO: StoreInfo = {
   name: 'Marudhar Fashion Point',
+  logoUrl: DEFAULT_MARUDHAR_LOGO_SVG,
+  logoType: 'both',
   tagline: 'Style for Every Step.',
   altTagline: 'Premium Fashion & Footwear for Every Family.',
   phone: '+91 9782482250',

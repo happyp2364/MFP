@@ -81,30 +81,30 @@ export const OrderManagementView: React.FC = () => {
     <div className="space-y-5 text-xs">
       
       {/* Top Controls */}
-      <div className="p-4 bg-white rounded-2xl border border-neutral-200 shadow-sm space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-md">
+      <div className="p-3 sm:p-4 bg-white rounded-2xl border border-neutral-200 shadow-sm space-y-3 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
+          <div className="relative flex-1 min-w-0">
             <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by Order ID (#MFP1025), Name, Phone, Email..."
+              placeholder="Search orders, name, phone, email..."
               className="w-full pl-9 pr-3 py-2 border border-neutral-300 rounded-xl text-xs bg-white text-neutral-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
             />
           </div>
 
-          <div className="flex items-center space-x-2 text-xs font-semibold text-neutral-700">
+          <div className="flex items-center space-x-2 text-xs font-semibold text-neutral-700 shrink-0">
             <Package className="w-4 h-4 text-amber-700" />
             <span>Total Orders: <strong className="text-amber-900 font-bold">{orders.length}</strong></span>
           </div>
         </div>
 
         {/* Status Filter Pills */}
-        <div className="flex flex-wrap gap-1.5 pt-1">
+        <div className="flex items-center gap-1.5 pt-1 overflow-x-auto pb-1 scrollbar-none min-w-0 w-full">
           <button
             onClick={() => setSelectedStatusFilter('ALL')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap text-xs shrink-0 ${
               selectedStatusFilter === 'ALL'
                 ? 'bg-amber-800 text-white shadow-sm'
                 : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
@@ -119,7 +119,7 @@ export const OrderManagementView: React.FC = () => {
               <button
                 key={opt.value}
                 onClick={() => setSelectedStatusFilter(opt.value)}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                className={`px-3 py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap text-xs shrink-0 ${
                   selectedStatusFilter === opt.value
                     ? 'bg-amber-800 text-white shadow-sm'
                     : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
@@ -153,17 +153,17 @@ export const OrderManagementView: React.FC = () => {
                 {/* Main Header Row */}
                 <div
                   onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
-                  className="p-4 cursor-pointer flex flex-wrap items-center justify-between gap-3 bg-neutral-50/50 hover:bg-amber-50/30 transition-colors"
+                  className="p-3 sm:p-4 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-neutral-50/50 hover:bg-amber-50/30 transition-colors min-w-0"
                 >
-                  <div className="flex items-center space-x-3">
-                    <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-900 font-bold font-mono flex items-center justify-center text-xs">
+                  <div className="flex items-start sm:items-center space-x-3 min-w-0 flex-1">
+                    <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-900 font-bold font-mono flex items-center justify-center text-xs shrink-0 mt-0.5 sm:mt-0">
                       #{order.orderNumber || '1025'}
                     </span>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-mono font-bold text-sm text-neutral-900">{order.id}</span>
+                        <span className="font-mono font-bold text-xs sm:text-sm text-neutral-900 break-all">{order.id}</span>
                         <span
-                          className={`px-2 py-0.5 font-bold rounded text-[10px] ${
+                          className={`px-2 py-0.5 font-bold rounded text-[10px] shrink-0 ${
                             order.paymentStatus === 'PAID'
                               ? 'bg-emerald-100 text-emerald-800'
                               : order.paymentStatus === 'FAILED'
@@ -174,20 +174,20 @@ export const OrderManagementView: React.FC = () => {
                           {order.paymentStatus}
                         </span>
                         {order.source === 'WHATSAPP' && (
-                          <span className="px-2 py-0.5 bg-green-100 text-green-800 font-bold rounded text-[10px] flex items-center gap-1">
+                          <span className="px-2 py-0.5 bg-green-100 text-green-800 font-bold rounded text-[10px] flex items-center gap-1 shrink-0">
                             <MessageCircle className="w-3 h-3 text-green-600" />
                             WhatsApp
                           </span>
                         )}
                       </div>
-                      <p className="text-neutral-500 text-[11px] mt-0.5">
+                      <p className="text-neutral-500 text-[11px] mt-1 sm:mt-0.5 break-words">
                         Customer: <strong className="text-neutral-800">{order.customerName}</strong> • {order.customerPhone}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-3">
-                    <div className="text-right">
+                  <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-neutral-200/60 min-w-0">
+                    <div className="text-left sm:text-right min-w-[70px]">
                       <p className="font-bold text-sm text-amber-900">
                         ₹{order.totalAmount.toLocaleString()}
                       </p>
@@ -201,35 +201,37 @@ export const OrderManagementView: React.FC = () => {
                       </p>
                     </div>
 
-                    {/* Status Select Box */}
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <select
-                        value={order.orderStatus}
-                        onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
-                        className={`px-3 py-1.5 rounded-lg font-bold text-xs border focus:ring-2 focus:ring-amber-500 focus:outline-none cursor-pointer ${currentStatusOpt?.color}`}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Status Select Box */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <select
+                          value={order.orderStatus}
+                          onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                          className={`px-2.5 py-1.5 rounded-lg font-bold text-xs border focus:ring-2 focus:ring-amber-500 focus:outline-none cursor-pointer ${currentStatusOpt?.color}`}
+                        >
+                          {STATUS_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value} className="bg-white text-neutral-900 font-medium">
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedInvoiceOrder(order);
+                        }}
+                        className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg font-semibold flex items-center space-x-1 text-xs"
                       >
-                        {STATUS_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value} className="bg-white text-neutral-900 font-medium">
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
+                        <FileText className="w-3.5 h-3.5 text-amber-700" />
+                        <span>Invoice</span>
+                      </button>
+
+                      <button className="text-neutral-600 hover:text-neutral-900 p-1">
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
                     </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedInvoiceOrder(order);
-                      }}
-                      className="px-2.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg font-semibold flex items-center space-x-1"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-amber-700" />
-                      <span>Invoice</span>
-                    </button>
-
-                    <button className="text-neutral-600 hover:text-neutral-900 p-1">
-                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
                   </div>
                 </div>
 

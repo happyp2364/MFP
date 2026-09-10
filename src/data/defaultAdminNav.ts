@@ -56,6 +56,7 @@ export const DEFAULT_ADMIN_NAV_CONFIG: AdminNavConfig = {
       collapsed: false,
       visible: true,
       items: [
+        { id: 'logo_customization', label: 'Logo Customization', iconName: 'Image', visible: true },
         { id: 'website_configuration', label: 'Store Identity & Config', iconName: 'Sliders', visible: true },
         { id: 'website_design', label: 'Design & UI Customizer', iconName: 'Paintbrush', visible: true },
         { id: 'visual_builder', label: 'Visual Website Builder', iconName: 'Layout', visible: true },

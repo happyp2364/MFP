@@ -113,22 +113,49 @@ function StorefrontView() {
     sortBy: 'featured',
   });
 
-  const [wishlistIds, setWishlistIds] = useState<string[]>(() => {
+  const getInitialWishlistIds = (): string[] => {
     try {
       const saved = localStorage.getItem('mfp_wishlist');
-      return saved ? JSON.parse(saved) : ['mfp-m01', 'mfp-w01'];
+      if (!saved) return [];
+      if (saved === '["mfp-m01","mfp-w01"]' || saved === '["mfp-m01", "mfp-w01"]') {
+        try { localStorage.setItem('mfp_wishlist', JSON.stringify([])); } catch {}
+        return [];
+      }
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return Array.from(new Set(parsed.map((id: any) => String(id)).filter(Boolean)));
+      }
+      return [];
     } catch {
-      return ['mfp-m01', 'mfp-w01'];
+      return [];
     }
-  });
+  };
+
+  const [wishlistIds, setWishlistIds] = useState<string[]>(getInitialWishlistIds);
 
   // Realtime Firestore sync for customer wishlist under users/{uid}/wishlist
   useEffect(() => {
     if (!customerUser) {
       try {
         const saved = localStorage.getItem('mfp_wishlist');
-        if (saved) setWishlistIds(JSON.parse(saved));
-      } catch {}
+        if (saved) {
+          if (saved === '["mfp-m01","mfp-w01"]' || saved === '["mfp-m01", "mfp-w01"]') {
+            try { localStorage.setItem('mfp_wishlist', JSON.stringify([])); } catch {}
+            setWishlistIds([]);
+          } else {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) {
+              setWishlistIds(Array.from(new Set(parsed.map((id: any) => String(id)).filter(Boolean))));
+            } else {
+              setWishlistIds([]);
+            }
+          }
+        } else {
+          setWishlistIds([]);
+        }
+      } catch {
+        setWishlistIds([]);
+      }
       return;
     }
 
@@ -137,9 +164,10 @@ function StorefrontView() {
       wishlistColRef,
       (snapshot) => {
         const ids = snapshot.docs.map((d) => d.id);
-        setWishlistIds(ids);
+        const cleanIds = Array.from(new Set(ids.map((id) => String(id)).filter(Boolean)));
+        setWishlistIds(cleanIds);
         try {
-          localStorage.setItem('mfp_wishlist', JSON.stringify(ids));
+          localStorage.setItem('mfp_wishlist', JSON.stringify(cleanIds));
         } catch {}
       },
       (err) => {
@@ -690,9 +718,21 @@ function StorefrontView() {
     }
     return unique.slice(0, 8);
   }, [products, productFeedConfig]);
+  const validWishlistIds = useMemo(() => {
+    if (!products || products.length === 0) return [];
+    const productSet = new Set(products.map((p) => String(p.id)));
+    return Array.from(
+      new Set(
+        wishlistIds
+          .map((id) => String(id))
+          .filter((id) => Boolean(id) && productSet.has(id))
+      )
+    );
+  }, [wishlistIds, products]);
+
   const wishlistedProducts = useMemo(
-    () => products.filter((p) => wishlistIds.some((id) => id === p.id || String(id) === String(p.id))),
-    [wishlistIds, products]
+    () => products.filter((p) => validWishlistIds.includes(String(p.id))),
+    [validWishlistIds, products]
   );
 
   return (
@@ -733,7 +773,7 @@ function StorefrontView() {
         onOpenCalendarModal={() => setCalendarModalOpen(true)}
         onOpenGmailModal={() => setGmailModalOpen(true)}
         onOpenWorkspaceHub={() => setWorkspaceHubOpen(true)}
-        wishlistCount={wishlistIds.length}
+        wishlistCount={validWishlistIds.length}
         cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
         activeCategory={activeCategory}
         onSelectCategory={handleSelectCategory}
@@ -791,11 +831,11 @@ function StorefrontView() {
             }
           }}
           onToggleWishlist={handleToggleWishlist}
-          isWishlisted={activeRouteProduct ? wishlistIds.includes(activeRouteProduct.id) : false}
+          isWishlisted={activeRouteProduct ? validWishlistIds.includes(String(activeRouteProduct.id)) : false}
           onAddToCart={handleAddToCart}
           onBuyNow={handleBuyNow}
           onQuickView={(p) => setQuickViewProduct(p)}
-          wishlistIds={wishlistIds}
+          wishlistIds={validWishlistIds}
         />
       ) : showShopView ? (
         <>
@@ -839,7 +879,7 @@ function StorefrontView() {
               onUpdateFilter={handleUpdateFilter}
               onResetFilters={handleResetFilters}
               availableSubcategories={availableSubcategories}
-              wishlistIds={wishlistIds}
+              wishlistIds={validWishlistIds}
               onToggleWishlist={handleToggleWishlist}
               onQuickView={(p) => setQuickViewProduct(p)}
               onAddToCart={handleAddToCart}
@@ -860,7 +900,7 @@ function StorefrontView() {
             }}
             onAddToCart={handleAddToCart}
             onBuyNow={handleBuyNow}
-            wishlistIds={wishlistIds}
+            wishlistIds={validWishlistIds}
             onToggleWishlist={handleToggleWishlist}
           />
 
@@ -909,7 +949,7 @@ function StorefrontView() {
                   return (
                     <div id="trending_shoes" key="trending_shoes" style={sectionStyle} className={widthClass}>
                       <TrendingShoesSection
-                        wishlistIds={wishlistIds}
+                        wishlistIds={validWishlistIds}
                         onToggleWishlist={handleToggleWishlist}
                         onQuickView={(p) => setQuickViewProduct(p)}
                         onAddToCart={handleAddToCart}
@@ -921,7 +961,7 @@ function StorefrontView() {
                   return (
                     <div id="price_point_699" key="price_point_699" style={sectionStyle} className={widthClass}>
                       <PricePointCollectionSection
-                        wishlistIds={wishlistIds}
+                        wishlistIds={validWishlistIds}
                         onToggleWishlist={handleToggleWishlist}
                         onQuickView={(p) => setQuickViewProduct(p)}
                         onAddToCart={handleAddToCart}
@@ -951,7 +991,7 @@ function StorefrontView() {
                         title="Featured Collection"
                         subtitle="Handpicked Styles"
                         products={featuredProducts}
-                        wishlistIds={wishlistIds}
+                        wishlistIds={validWishlistIds}
                         onToggleWishlist={handleToggleWishlist}
                         onQuickView={(p) => setQuickViewProduct(p)}
                         onAddToCart={handleAddToCart}
@@ -966,7 +1006,7 @@ function StorefrontView() {
                         title="Best Sellers in Store"
                         subtitle="Customer Favorites"
                         products={bestSellers}
-                        wishlistIds={wishlistIds}
+                        wishlistIds={validWishlistIds}
                         onToggleWishlist={handleToggleWishlist}
                         onQuickView={(p) => setQuickViewProduct(p)}
                         onAddToCart={handleAddToCart}
@@ -981,7 +1021,7 @@ function StorefrontView() {
                         title="Trending Products"
                         subtitle="Hot Right Now"
                         products={trendingProducts}
-                        wishlistIds={wishlistIds}
+                        wishlistIds={validWishlistIds}
                         onToggleWishlist={handleToggleWishlist}
                         onQuickView={(p) => setQuickViewProduct(p)}
                         onAddToCart={handleAddToCart}
@@ -1002,7 +1042,7 @@ function StorefrontView() {
                         title="New Season Arrivals"
                         subtitle="Fresh Drops"
                         products={newArrivals}
-                        wishlistIds={wishlistIds}
+                        wishlistIds={validWishlistIds}
                         onToggleWishlist={handleToggleWishlist}
                         onQuickView={(p) => setQuickViewProduct(p)}
                         onAddToCart={handleAddToCart}
@@ -1092,7 +1132,7 @@ function StorefrontView() {
         product={quickViewProduct}
         onClose={() => setQuickViewProduct(null)}
         onToggleWishlist={handleToggleWishlist}
-        isWishlisted={quickViewProduct ? wishlistIds.includes(quickViewProduct.id) : false}
+        isWishlisted={quickViewProduct ? validWishlistIds.includes(String(quickViewProduct.id)) : false}
         onAddToCart={handleAddToCart}
         onBuyNow={handleBuyNow}
       />
@@ -1148,6 +1188,7 @@ function StorefrontView() {
         isOpen={customerAccountOpen}
         onClose={() => setCustomerAccountOpen(false)}
         onQuickViewProduct={(p) => setQuickViewProduct(p)}
+        wishlistedProducts={wishlistedProducts}
       />
 
       {/* Customer Sound & Audio Preferences Modal */}

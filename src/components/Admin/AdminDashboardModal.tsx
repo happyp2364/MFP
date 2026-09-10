@@ -94,6 +94,7 @@ const AIMarketingGrowthView = lazy(() => import('./AIMarketingGrowthView').then(
 const CustomerIntelligenceCRMView = lazy(() => import('./CustomerIntelligenceCRMView').then(m => ({ default: m.CustomerIntelligenceCRMView })));
 const SoundSettingsView = lazy(() => import('./SoundSettingsView').then(m => ({ default: m.SoundSettingsView })));
 const WebsiteConfigurationView = lazy(() => import('./WebsiteConfigurationView').then(m => ({ default: m.WebsiteConfigurationView })));
+const LogoCustomizationView = lazy(() => import('./LogoCustomizationView').then(m => ({ default: m.LogoCustomizationView })));
 const DesignCustomizerPanel = lazy(() => import('./DesignCustomizerPanel').then(m => ({ default: m.DesignCustomizerPanel })));
 const VisualWebsiteBuilder = lazy(() => import('./VisualWebsiteBuilder').then(m => ({ default: m.VisualWebsiteBuilder })));
 const AdminNavCustomizer = lazy(() => import('./AdminNavCustomizer').then(m => ({ default: m.AdminNavCustomizer })));
@@ -108,7 +109,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'website_design' | 'visual_builder' | 'nav_customizer';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'logo_customization' | 'website_design' | 'visual_builder' | 'nav_customizer';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -498,6 +499,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     reader.readAsDataURL(file);
   };
 
+  useEffect(() => {
+    if (isOpen) {
+      const originalStyle = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -509,44 +520,44 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       />
 
       {/* Main Admin Panel Container */}
-      <div className="relative w-full max-w-6xl bg-[#F8FAFC]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-6xl bg-[#F8FAFC]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-200 h-[92vh] max-h-[92dvh] flex flex-col min-h-0">
         
         {/* Top Admin Header Bar */}
-        <div className="bg-[#121816] text-white p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/10 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#0B8F63] flex items-center justify-center font-bold text-white shadow-md shrink-0">
-              <ShieldCheck className="w-5 h-5" />
+        <div className="bg-[#121816] text-white px-3 py-2.5 sm:p-4 flex items-center justify-between gap-2 border-b border-white/10 shrink-0 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#0B8F63] flex items-center justify-center font-bold text-white shadow-md shrink-0">
+              <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-serif-heading font-extrabold text-base sm:text-lg">
-                  Enterprise CMS & Security Console
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h2 className="font-serif-heading font-extrabold text-xs sm:text-base truncate">
+                  Enterprise CMS
                 </h2>
-                <span className="bg-[#0B8F63] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                  🟢 Live Real-Time
+                <span className="bg-[#0B8F63] text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                  🟢 Live
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-400">
+              <p className="text-[10px] text-neutral-400 truncate hidden sm:block">
                 Marudhar Fashion Point • Single Admin Direct Synchronization
               </p>
             </div>
           </div>
 
           {/* CMS Global Action Bar */}
-          <div className="flex items-center flex-wrap gap-2">
-            <div className="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold shadow-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>Real-Time Sync Active</span>
             </div>
 
             <button
               onClick={() => setNotifDrawerOpen(true)}
-              className="p-2 rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 transition-colors relative"
+              className="p-1.5 sm:p-2 rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 transition-colors relative"
               title="Real-Time Order Notifications"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
               {unreadNotifCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-amber-500 text-neutral-950 font-bold text-[9px] rounded-full flex items-center justify-center animate-pulse">
+                <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-amber-500 text-neutral-950 font-bold text-[8px] sm:text-[9px] rounded-full flex items-center justify-center animate-pulse">
                   {unreadNotifCount}
                 </span>
               )}
@@ -557,16 +568,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 logoutAdmin();
                 onClose();
               }}
-              className="bg-white/10 hover:bg-rose-600 text-white text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+              className="bg-white/10 hover:bg-rose-600 text-white text-xs font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+              title="Logout"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Logout</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="p-1.5 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
@@ -580,10 +592,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         )}
 
         {/* Sidebar + Content Layout */}
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col md:flex-row overflow-hidden">
           
           {/* Sidebar Navigation */}
-          <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-2 sm:p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto md:overflow-y-auto scrollbar-none">
+          <div className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-2 sm:p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto md:overflow-y-auto scrollbar-none min-h-0">
             
             {/* Sidebar Quick Search */}
             <div className="relative mb-1 hidden md:block">
@@ -676,7 +688,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           </div>
 
           {/* Main Content Body */}
-          <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-[#F7F7F7]">
+          <div className="flex-1 min-h-0 min-w-0 p-4 sm:p-6 overflow-y-auto bg-[#F7F7F7]">
             <AdminErrorBoundary key={activeTab} fallbackTitle="Admin Tab View Display Notice">
               <Suspense
                 fallback={
@@ -701,6 +713,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: SEO & LOCAL BUSINESS ----------------- */}
             {activeTab === 'seo_local_business' && <SEOAuthorityCenterView />}
+
+            {/* ----------------- TAB: LOGO CUSTOMIZATION ----------------- */}
+            {activeTab === 'logo_customization' && (
+              <AdminErrorBoundary fallbackTitle="Logo Customization Notice">
+                <LogoCustomizationView />
+              </AdminErrorBoundary>
+            )}
 
             {/* ----------------- TAB: STORE IDENTITY & CONFIGURATION ----------------- */}
             {activeTab === 'website_configuration' && (

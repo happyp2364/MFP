@@ -631,7 +631,7 @@ export type OrderStatus =
 
 export type PaymentStatus = 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED';
 
-export type PaymentMethodType = 'UPI' | 'QR_SCAN' | 'ONLINE_UPI' | 'CARD' | 'NET_BANKING' | 'WALLET' | 'COD' | 'WHATSAPP';
+export type PaymentMethodType = 'UPI' | 'QR_SCAN' | 'MANUAL_QR' | 'MANUAL_UPI' | 'BANK_TRANSFER' | 'ONLINE_UPI' | 'CARD' | 'NET_BANKING' | 'WALLET' | 'COD' | 'WHATSAPP';
 
 export interface RefundRecord {
   id: string;

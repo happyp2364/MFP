@@ -128,8 +128,9 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const orderNumber = Date.now();
       const orderId = `ord_${orderNumber}`;
 
-      const paymentStatus = paymentMethod === 'COD' ? 'PENDING' : 'PAID';
-      const paymentVerificationStatus = paymentMethod === 'COD' ? 'not_required' : (paymentMethod === 'UPI' ? 'pending' : 'verified');
+      const isManualPayment = paymentMethod === 'COD' || paymentMethod === 'QR_SCAN' || paymentMethod === 'UPI' || paymentMethod === 'MANUAL_QR' || paymentMethod === 'MANUAL_UPI' || paymentMethod === 'BANK_TRANSFER';
+      const paymentStatus = isManualPayment ? 'PENDING' : 'PAID';
+      const paymentVerificationStatus = paymentMethod === 'COD' ? 'not_required' : (isManualPayment ? 'pending' : 'verified');
 
       const newOrder: CustomerOrder = {
         id: orderId,

@@ -64,6 +64,7 @@ export function calculateConvenienceFee(
     paymentMethod === 'QR_SCAN' ||
     paymentMethod === 'UPI' ||
     paymentMethod === 'MANUAL_QR' ||
+    paymentMethod === 'MANUAL_UPI' ||
     paymentMethod === 'BANK_TRANSFER';
   if (isManualPayment && applyFeeToOnlineOnly) {
     return { fee: 0, rate, isEnabled, applied: false };

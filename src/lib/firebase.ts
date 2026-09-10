@@ -79,9 +79,17 @@ setPersistence(auth, browserLocalPersistence).catch((err) => {
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
+  } catch (error: any) {
+    if (
+      error?.code === 'unavailable' ||
+      (error instanceof Error &&
+        (error.message.includes('the client is offline') ||
+          error.message.includes('Could not reach Cloud Firestore backend') ||
+          error.message.includes('The operation could not be completed')))
+    ) {
+      console.warn('Firestore initial connection handshake in progress / operating in offline cache mode.');
+    } else {
+      console.warn('Firebase test connection notice:', error);
     }
   }
 }
@@ -773,7 +781,7 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
   gatewayProvider: 'RAZORPAY',
   apiKey: '',
   enableUPI: true,
-  enableQR: false,
+  enableQR: true,
   enableCards: true,
   enableNetBanking: true,
   enableWallets: true,

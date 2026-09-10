@@ -779,6 +779,8 @@ function StorefrontView() {
                 handleNavigateToSection('products');
               }, 100);
             }}
+            onAddToCart={handleAddToCart}
+            onBuyNow={handleBuyNow}
           />
 
           {(() => {

@@ -31,12 +31,16 @@ interface HomepageRendererProps {
   previewConfig?: HomepageConfig;
   onSelectProduct?: (product: Product) => void;
   onNavigateCategory?: (category: string) => void;
+  onAddToCart?: (product: Product, size: string, color: string) => void;
+  onBuyNow?: (product: Product, size: string, color: string, quantity: number) => void;
 }
 
 export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
   previewConfig,
   onSelectProduct,
   onNavigateCategory,
+  onAddToCart,
+  onBuyNow,
 }) => {
   const { homepageConfig, products, reviews, categoryHighlights } = useStore();
   const config = previewConfig || homepageConfig;
@@ -59,6 +63,8 @@ export const HomepageRenderer: React.FC<HomepageRendererProps> = ({
           categoryHighlights={categoryHighlights}
           onSelectProduct={onSelectProduct}
           onNavigateCategory={onNavigateCategory}
+          onAddToCart={onAddToCart}
+          onBuyNow={onBuyNow}
         />
       ))}
     </div>
@@ -72,6 +78,8 @@ interface SectionItemProps {
   categoryHighlights?: any[];
   onSelectProduct?: (p: Product) => void;
   onNavigateCategory?: (cat: string) => void;
+  onAddToCart?: (product: Product, size: string, color: string) => void;
+  onBuyNow?: (product: Product, size: string, color: string, quantity: number) => void;
 }
 
 function getCategoryCoverImage(catItem: any, products: Product[]): string {
@@ -166,6 +174,8 @@ const SectionItem: React.FC<SectionItemProps> = ({
   categoryHighlights = [],
   onSelectProduct,
   onNavigateCategory,
+  onAddToCart,
+  onBuyNow,
 }) => {
   const styling = section.styling || {};
   const data = section.contentData || {};
@@ -192,11 +202,11 @@ const SectionItem: React.FC<SectionItemProps> = ({
 
     case 'trending_shoes':
     case 'trending_shoes_collection':
-      return <TrendingShoesSection onQuickView={onSelectProduct} />;
+      return <TrendingShoesSection onQuickView={onSelectProduct} onAddToCart={onAddToCart} onBuyNow={onBuyNow} />;
 
     case 'price_point_699':
     case 'price_699_collection':
-      return <PricePointCollectionSection onQuickView={onSelectProduct} />;
+      return <PricePointCollectionSection onQuickView={onSelectProduct} onAddToCart={onAddToCart} onBuyNow={onBuyNow} />;
 
     case 'floating_sneaker':
       return <FloatingSneakerHeroSection section={section} onNavigateCategory={onNavigateCategory} />;
@@ -264,6 +274,8 @@ const SectionItem: React.FC<SectionItemProps> = ({
                   onQuickView={(p) => onSelectProduct && onSelectProduct(p)}
                   onToggleWishlist={() => {}}
                   isWishlisted={false}
+                  onAddToCart={onAddToCart}
+                  onBuyNow={onBuyNow}
                 />
               ))}
             </div>
@@ -301,6 +313,8 @@ const SectionItem: React.FC<SectionItemProps> = ({
                   onQuickView={(p) => onSelectProduct && onSelectProduct(p)}
                   onToggleWishlist={() => {}}
                   isWishlisted={false}
+                  onAddToCart={onAddToCart}
+                  onBuyNow={onBuyNow}
                 />
               ))}
             </div>

@@ -60,7 +60,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   onBuyNow,
   customConfig,
 }) => {
-  const { playSiteSound, paymentSettings, showToast, productCardConfig } = useStore();
+  const { playSiteSound, paymentSettings, showToast, productCardConfig, addToCart: storeAddToCart } = useStore();
 
   // Merge designer settings (global store config or override for admin preview)
   const cfg: ProductCardDesignerConfig = useMemo(() => {
@@ -255,9 +255,19 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       return;
     }
     playSiteSound('addToCart');
+    const sizeToUse = selectedSize || (product.sizes && product.sizes[0]) || 'Free Size';
+    const colorToUse = selectedColor || (product.colors && product.colors[0] ? product.colors[0].name : 'Standard');
     if (onAddToCart) {
-      onAddToCart(product, selectedSize || 'Free Size', selectedColor || 'Standard');
-      showToast?.(`Added ${product.name} (${selectedSize}) to Bag!`, 'success');
+      onAddToCart(product, sizeToUse, colorToUse);
+      showToast?.(`Added ${product.name} (${sizeToUse}) to Bag!`, 'success');
+    } else if (storeAddToCart) {
+      const activeVariant = product.variants?.find(
+        (v) =>
+          v.color.toLowerCase() === colorToUse.toLowerCase() &&
+          v.size.toString() === sizeToUse.toString()
+      );
+      storeAddToCart(product, activeVariant, 1);
+      showToast?.(`Added ${product.name} (${sizeToUse}) to Bag!`, 'success');
     }
   };
 

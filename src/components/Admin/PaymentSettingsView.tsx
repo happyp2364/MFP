@@ -55,6 +55,7 @@ export const PaymentSettingsView: React.FC = () => {
 
   // Payment Method Toggles
   const [enableUPI, setEnableUPI] = useState<boolean>(paymentSettings.enableUPI !== false);
+  const [enableQR, setEnableQR] = useState<boolean>(paymentSettings.enableQR !== false);
   const [enableCards, setEnableCards] = useState<boolean>(paymentSettings.enableCards !== false);
   const [enableNetBanking, setEnableNetBanking] = useState<boolean>(paymentSettings.enableNetBanking !== false);
   const [enableWallets, setEnableWallets] = useState<boolean>(paymentSettings.enableWallets !== false);
@@ -175,6 +176,7 @@ export const PaymentSettingsView: React.FC = () => {
     setMerchantId(paymentSettings.merchantId || '');
     setIsTestMode(paymentSettings.isTestMode !== false);
     setEnableUPI(paymentSettings.enableUPI !== false);
+    setEnableQR(paymentSettings.enableQR !== false);
     setEnableCards(paymentSettings.enableCards !== false);
     setEnableNetBanking(paymentSettings.enableNetBanking !== false);
     setEnableWallets(paymentSettings.enableWallets !== false);
@@ -361,7 +363,7 @@ export const PaymentSettingsView: React.FC = () => {
       taxMode,
       allowCustomerGstDetails,
       allowProductLevelGst,
-      enableQR: gatewayProvider === 'RAZORPAY' ? false : Boolean(paymentSettings.enableQR),
+      enableQR,
     };
 
     try {
@@ -690,7 +692,7 @@ export const PaymentSettingsView: React.FC = () => {
               <span className="text-[10px] text-neutral-400 font-normal">Customer checkout options</span>
             </h3>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-xs">
               <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">
                 <input
                   type="checkbox"
@@ -699,6 +701,16 @@ export const PaymentSettingsView: React.FC = () => {
                   className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
                 />
                 <span>UPI Apps (PhonePe, GPay, Paytm)</span>
+              </label>
+
+              <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">
+                <input
+                  type="checkbox"
+                  checked={enableQR}
+                  onChange={(e) => setEnableQR(e.target.checked)}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                />
+                <span>Direct QR / Manual UPI</span>
               </label>
 
               <label className="flex items-center gap-2.5 p-3 rounded-xl border border-neutral-200 bg-neutral-50 cursor-pointer font-bold">

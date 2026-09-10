@@ -715,7 +715,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
 
     // 2. Cash on delivery or Manual Offline QR verification
-    if (selectedMethod === 'COD' || selectedMethod === 'QR_SCAN') {
+    if (selectedMethod === 'COD' || selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI') {
       await handleStartPaymentVerification();
       return;
     }
@@ -1513,7 +1513,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                           UPI / ऑनलाइन भुगतान
                         </h4>
                         <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-1.5 py-0.2 rounded">
-                          Fast &amp; Safe
+                          Razorpay सुरक्षित भुगतान
                         </span>
                       </div>
                       <p className="text-[11px] sm:text-xs text-neutral-500 font-medium truncate">
@@ -1529,6 +1529,53 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     }`}
                   >
                     {(selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD') && (
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {paymentSettings.enableQR !== false && (
+                <div
+                  onClick={() => setSelectedMethod('QR_SCAN')}
+                  className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
+                      ? 'border-neutral-900 bg-neutral-50/90 shadow-xs ring-1 ring-neutral-900/10'
+                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
+                          ? 'bg-neutral-900 text-white'
+                          : 'bg-neutral-100 text-neutral-700'
+                      }`}
+                    >
+                      <QrCode className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xs sm:text-sm font-bold text-neutral-900 tracking-tight">
+                          📱 Direct QR / Manual UPI
+                        </h4>
+                        <span className="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 px-1.5 py-0.2 rounded">
+                          No Razorpay checkout
+                        </span>
+                      </div>
+                      <p className="text-[11px] sm:text-xs text-neutral-500 font-medium truncate">
+                        QR Code scan करके सीधे भुगतान करें
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                      selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
+                        ? 'border-neutral-900 bg-neutral-900 text-white'
+                        : 'border-neutral-300 bg-white'
+                    }`}
+                  >
+                    {(selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI') && (
                       <Check className="w-3 h-3 stroke-[3]" />
                     )}
                   </div>
@@ -1556,7 +1603,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-xs sm:text-sm font-bold text-neutral-900 tracking-tight">
-                        कैश ऑन डिलीवरी
+                        🚚 कैश ऑन डिलीवरी
                       </h4>
                       <p className="text-[11px] sm:text-xs text-neutral-500 font-medium truncate">
                         डिलीवरी के समय भुगतान करें
@@ -1571,48 +1618,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     }`}
                   >
                     {selectedMethod === 'COD' && <Check className="w-3 h-3 stroke-[3]" />}
-                  </div>
-                </div>
-              )}
-
-              {paymentSettings.enableQR === true && paymentSettings.gatewayProvider !== 'RAZORPAY' && (
-                <div
-                  onClick={() => setSelectedMethod('QR_SCAN')}
-                  className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                    selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
-                      ? 'border-neutral-900 bg-neutral-50/90 shadow-xs ring-1 ring-neutral-900/10'
-                      : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                        selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
-                          ? 'bg-neutral-900 text-white'
-                          : 'bg-neutral-100 text-neutral-700'
-                      }`}
-                    >
-                      <QrCode className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-xs sm:text-sm font-bold text-neutral-900 tracking-tight">
-                        बैंक ट्रांसफर / QR
-                      </h4>
-                      <p className="text-[11px] sm:text-xs text-neutral-500 font-medium truncate">
-                        मैनुअल भुगतान • UTR सत्यापन
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                      selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
-                        ? 'border-neutral-900 bg-neutral-900 text-white'
-                        : 'border-neutral-300 bg-white'
-                    }`}
-                  >
-                    {(selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI') && (
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    )}
                   </div>
                 </div>
               )}
@@ -1945,10 +1950,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <Truck className="w-4 h-4 text-amber-300" />
                     <span>ऑर्डर कन्फर्म करें (COD) • ₹{(totalAmount ?? 0).toLocaleString()}</span>
                   </>
-                ) : selectedMethod === 'QR_SCAN' ? (
+                ) : selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI' ? (
                   <>
                     <QrCode className="w-4 h-4 text-emerald-300" />
-                    <span>UTR सत्यापन के लिए भेजें • ₹{(totalAmount ?? 0).toLocaleString()}</span>
+                    <span>Payment Done / Order Place • ₹{(totalAmount ?? 0).toLocaleString()}</span>
                   </>
                 ) : (
                   <>

@@ -441,3 +441,5 @@ export const WorkspaceHubDrawer: React.FC<WorkspaceHubDrawerProps> = ({
     </div>
   );
 };
+
+export default WorkspaceHubDrawer;

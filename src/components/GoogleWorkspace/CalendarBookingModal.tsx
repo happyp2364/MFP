@@ -382,3 +382,5 @@ export const CalendarBookingModal: React.FC<CalendarBookingModalProps> = ({
     </div>
   );
 };
+
+export default CalendarBookingModal;

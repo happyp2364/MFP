@@ -323,7 +323,7 @@ export const AboutUsSettingsView: React.FC = () => {
             <select
               value={aiType}
               onChange={(e: any) => setAiType(e.target.value)}
-              className="bg-neutral-800 border border-neutral-700 text-xs text-neutral-200 rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="bg-white border border-slate-300 text-xs text-slate-900 font-medium rounded-xl px-2.5 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-xs transition-colors"
             >
               <option value="story">Business Story</option>
               <option value="mission">Mission Statement</option>
@@ -337,7 +337,7 @@ export const AboutUsSettingsView: React.FC = () => {
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
               placeholder="e.g. 'Make it regal & customer focused celebrating 16 years in Pipar City'..."
-              className="flex-1 md:w-80 bg-neutral-800/90 border border-neutral-700 text-xs text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-neutral-500"
+              className="flex-1 md:w-80 bg-white border border-slate-300 text-xs text-slate-900 font-medium rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs transition-colors"
             />
 
             <button
@@ -396,97 +396,97 @@ export const AboutUsSettingsView: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">Business Name</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1.5">Business Name</label>
               <input
                 type="text"
                 value={formData.businessName}
                 onChange={(e) => setFormData((prev) => ({ ...prev, businessName: e.target.value }))}
-                className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">Establishment Year</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1.5">Establishment Year</label>
               <input
                 type="text"
                 value={formData.establishmentYear}
                 onChange={(e) => setFormData((prev) => ({ ...prev, establishmentYear: e.target.value }))}
                 placeholder="2010"
-                className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">Years of Experience Display</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1.5">Years of Experience Display</label>
               <input
                 type="text"
                 value={formData.experienceYears}
                 onChange={(e) => setFormData((prev) => ({ ...prev, experienceYears: e.target.value }))}
                 placeholder="16+"
-                className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">Main Tagline</label>
+            <label className="block text-xs font-semibold text-neutral-200 mb-1.5">Main Tagline</label>
             <input
               type="text"
               value={formData.tagline}
               onChange={(e) => setFormData((prev) => ({ ...prev, tagline: e.target.value }))}
               placeholder="Pioneering Quality Footwear & Family Fashion Heritage Since 2010"
-              className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">Short Shop Overview / Description</label>
+            <label className="block text-xs font-semibold text-neutral-200 mb-1.5">Short Shop Overview / Description</label>
             <textarea
               rows={2}
               value={formData.shopDescription}
               onChange={(e) => setFormData((prev) => ({ ...prev, shopDescription: e.target.value }))}
-              className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl p-3.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl p-3.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none placeholder:text-slate-500 leading-relaxed shadow-xs transition-colors resize-y"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">Detailed Business Story</label>
+            <label className="block text-xs font-semibold text-neutral-200 mb-1.5">Detailed Business Story</label>
             <textarea
               rows={5}
               value={formData.businessStory}
               onChange={(e) => setFormData((prev) => ({ ...prev, businessStory: e.target.value }))}
-              className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl p-3.5 focus:ring-2 focus:ring-amber-500 focus:outline-none leading-relaxed"
+              className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl p-3.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none placeholder:text-slate-500 leading-relaxed shadow-xs transition-colors resize-y"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1.5">Family Business Heritage & Personal Care Info</label>
+            <label className="block text-xs font-semibold text-neutral-200 mb-1.5">Family Business Heritage & Personal Care Info</label>
             <textarea
               rows={3}
               value={formData.familyBusinessInfo}
               onChange={(e) => setFormData((prev) => ({ ...prev, familyBusinessInfo: e.target.value }))}
-              className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl p-3.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl p-3.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none placeholder:text-slate-500 leading-relaxed shadow-xs transition-colors resize-y"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">Our Mission</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1.5">Our Mission</label>
               <textarea
                 rows={3}
                 value={formData.mission}
                 onChange={(e) => setFormData((prev) => ({ ...prev, mission: e.target.value }))}
-                className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl p-3 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl p-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none placeholder:text-slate-500 leading-relaxed shadow-xs transition-colors resize-y"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">Our Vision</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1.5">Our Vision</label>
               <textarea
                 rows={3}
                 value={formData.vision}
                 onChange={(e) => setFormData((prev) => ({ ...prev, vision: e.target.value }))}
-                className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl p-3 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl p-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none placeholder:text-slate-500 leading-relaxed shadow-xs transition-colors resize-y"
               />
             </div>
           </div>
@@ -503,11 +503,11 @@ export const AboutUsSettingsView: React.FC = () => {
 
           {/* Store Highlights Bullet Points */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-2">Store Highlights & Value Pillars</label>
+            <label className="block text-xs font-semibold text-neutral-200 mb-2">Store Highlights & Value Pillars</label>
             <div className="space-y-2 mb-3">
               {formData.storeHighlights.map((hl, idx) => (
-                <div key={idx} className="flex items-center gap-2 bg-neutral-800 border border-neutral-700/80 rounded-xl px-3 py-2">
-                  <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 text-xs flex items-center justify-center font-bold">
+                <div key={idx} className="flex items-center gap-2 bg-neutral-800 border border-neutral-700/80 rounded-xl p-1.5">
+                  <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-300 text-xs flex items-center justify-center font-bold shrink-0 ml-1">
                     {idx + 1}
                   </span>
                   <input
@@ -518,7 +518,7 @@ export const AboutUsSettingsView: React.FC = () => {
                       updated[idx] = e.target.value;
                       setFormData((prev) => ({ ...prev, storeHighlights: updated }));
                     }}
-                    className="flex-1 bg-transparent text-white text-xs focus:outline-none"
+                    className="flex-1 bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
                   />
                   <button
                     onClick={() => {
@@ -527,7 +527,7 @@ export const AboutUsSettingsView: React.FC = () => {
                         storeHighlights: prev.storeHighlights.filter((_, i) => i !== idx)
                       }));
                     }}
-                    className="text-neutral-500 hover:text-red-400 transition-colors"
+                    className="p-1.5 text-neutral-400 hover:text-red-400 transition-colors mr-1"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -541,7 +541,7 @@ export const AboutUsSettingsView: React.FC = () => {
                 value={highlightInput}
                 onChange={(e) => setHighlightInput(e.target.value)}
                 placeholder="Add a new store highlight (e.g. '100% Fit & Cushion Guarantee')"
-                className="flex-1 bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="flex-1 bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
               />
               <button
                 onClick={() => {
@@ -941,46 +941,46 @@ export const AboutUsSettingsView: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">Instagram Profile Link</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1.5">Instagram Profile Link</label>
               <input
                 type="text"
                 value={formData.socialLinks?.instagram || ''}
                 onChange={(e) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, instagram: e.target.value } }))}
                 placeholder="https://instagram.com/marudhar_fashion_point"
-                className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">WhatsApp Direct Number (With Country Code)</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1.5">WhatsApp Direct Number (With Country Code)</label>
               <input
                 type="text"
                 value={formData.socialLinks?.whatsapp || ''}
                 onChange={(e) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, whatsapp: e.target.value } }))}
                 placeholder="919829012345"
-                className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">Facebook Page Link</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1.5">Facebook Page Link</label>
               <input
                 type="text"
                 value={formData.socialLinks?.facebook || ''}
                 onChange={(e) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, facebook: e.target.value } }))}
                 placeholder="https://facebook.com/marudharfashionpoint"
-                className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1.5">YouTube Channel Link</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1.5">YouTube Channel Link</label>
               <input
                 type="text"
                 value={formData.socialLinks?.youtube || ''}
                 onChange={(e) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, youtube: e.target.value } }))}
                 placeholder="https://youtube.com/@marudharfashionpoint"
-                className="w-full bg-neutral-800 border border-neutral-700 text-white text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs transition-colors"
               />
             </div>
           </div>
@@ -997,33 +997,33 @@ export const AboutUsSettingsView: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Full Name</label>
+                <label className="block text-xs font-semibold text-neutral-200 mb-1">Full Name</label>
                 <input
                   type="text"
                   value={editingOwner.fullName}
                   onChange={(e) => setEditingOwner({ ...editingOwner, fullName: e.target.value })}
                   placeholder="Viju Bhai Choudhary"
-                  className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-500 shadow-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Position / Designation</label>
+                <label className="block text-xs font-semibold text-neutral-200 mb-1">Position / Designation</label>
                 <input
                   type="text"
                   value={editingOwner.position}
                   onChange={(e) => setEditingOwner({ ...editingOwner, position: e.target.value })}
                   placeholder="Founder & Managing Director"
-                  className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-500 shadow-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Role Type</label>
+                <label className="block text-xs font-semibold text-neutral-200 mb-1">Role Type</label>
                 <select
                   value={editingOwner.roleType}
                   onChange={(e: any) => setEditingOwner({ ...editingOwner, roleType: e.target.value })}
-                  className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs"
                 >
                   <option value="owner">Owner / Co-Founder</option>
                   <option value="team">Team Member / Staff</option>
@@ -1031,36 +1031,36 @@ export const AboutUsSettingsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Experience Years</label>
+                <label className="block text-xs font-semibold text-neutral-200 mb-1">Experience Years</label>
                 <input
                   type="text"
                   value={editingOwner.experience}
                   onChange={(e) => setEditingOwner({ ...editingOwner, experience: e.target.value })}
                   placeholder="18+ Years"
-                  className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-500 shadow-xs"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Specialization / Expertise</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1">Specialization / Expertise</label>
               <input
                 type="text"
                 value={editingOwner.specialization}
                 onChange={(e) => setEditingOwner({ ...editingOwner, specialization: e.target.value })}
                 placeholder="Royal Wedding Mojaris & Customer Relationships"
-                className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-500 shadow-xs"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Short Biography / Introduction</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1">Short Biography / Introduction</label>
               <textarea
                 rows={3}
                 value={editingOwner.shortIntro}
                 onChange={(e) => setEditingOwner({ ...editingOwner, shortIntro: e.target.value })}
                 placeholder="Brief introduction..."
-                className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg p-2.5 text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-500 leading-relaxed shadow-xs"
               />
             </div>
 
@@ -1083,28 +1083,28 @@ export const AboutUsSettingsView: React.FC = () => {
                   value={editingOwner.contactNumber || ''}
                   onChange={(e) => setEditingOwner({ ...editingOwner, contactNumber: e.target.value })}
                   placeholder="Phone: +91 98290 12345"
-                  className="bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-1.5 text-white"
+                  className="bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
                 />
                 <input
                   type="text"
                   value={editingOwner.socialLinks?.whatsapp || ''}
                   onChange={(e) => setEditingOwner({ ...editingOwner, socialLinks: { ...editingOwner.socialLinks, whatsapp: e.target.value } })}
                   placeholder="WhatsApp Number (e.g. 919829012345)"
-                  className="bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-1.5 text-white"
+                  className="bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
                 />
                 <input
                   type="text"
                   value={editingOwner.socialLinks?.instagram || ''}
                   onChange={(e) => setEditingOwner({ ...editingOwner, socialLinks: { ...editingOwner.socialLinks, instagram: e.target.value } })}
                   placeholder="Instagram Link"
-                  className="bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-1.5 text-white"
+                  className="bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
                 />
                 <input
                   type="text"
                   value={editingOwner.signature || ''}
                   onChange={(e) => setEditingOwner({ ...editingOwner, signature: e.target.value })}
                   placeholder="Signature / Quote (e.g. 'Viju Bhai')"
-                  className="bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-1.5 text-white"
+                  className="bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
                 />
               </div>
             </div>
@@ -1149,33 +1149,33 @@ export const AboutUsSettingsView: React.FC = () => {
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Year</label>
+                <label className="block text-xs font-semibold text-neutral-200 mb-1">Year</label>
                 <input
                   type="text"
                   value={editingTimeline.year}
                   onChange={(e) => setEditingTimeline({ ...editingTimeline, year: e.target.value })}
-                  className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                  className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
                 />
               </div>
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Milestone Title</label>
+                <label className="block text-xs font-semibold text-neutral-200 mb-1">Milestone Title</label>
                 <input
                   type="text"
                   value={editingTimeline.title}
                   onChange={(e) => setEditingTimeline({ ...editingTimeline, title: e.target.value })}
                   placeholder="Store Launch / Expansion"
-                  className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                  className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Description</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1">Description</label>
               <textarea
                 rows={3}
                 value={editingTimeline.description}
                 onChange={(e) => setEditingTimeline({ ...editingTimeline, description: e.target.value })}
-                className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg p-2.5 text-white"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl p-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 leading-relaxed shadow-xs"
               />
             </div>
 
@@ -1207,11 +1207,11 @@ export const AboutUsSettingsView: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Type</label>
+                <label className="block text-xs font-semibold text-neutral-200 mb-1">Type</label>
                 <select
                   value={editingAchievement.type}
                   onChange={(e: any) => setEditingAchievement({ ...editingAchievement, type: e.target.value })}
-                  className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                  className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-xs"
                 >
                   <option value="award">Award</option>
                   <option value="certificate">Certificate</option>
@@ -1221,45 +1221,45 @@ export const AboutUsSettingsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Year</label>
+                <label className="block text-xs font-semibold text-neutral-200 mb-1">Year</label>
                 <input
                   type="text"
                   value={editingAchievement.year}
                   onChange={(e) => setEditingAchievement({ ...editingAchievement, year: e.target.value })}
-                  className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                  className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Title</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1">Title</label>
               <input
                 type="text"
                 value={editingAchievement.title}
                 onChange={(e) => setEditingAchievement({ ...editingAchievement, title: e.target.value })}
                 placeholder="Best Retail Footwear Store"
-                className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Issuer / Committee</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1">Issuer / Committee</label>
               <input
                 type="text"
                 value={editingAchievement.issuerOrPublisher}
                 onChange={(e) => setEditingAchievement({ ...editingAchievement, issuerOrPublisher: e.target.value })}
                 placeholder="Rajasthan Retail Association"
-                className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Description</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1">Description</label>
               <textarea
                 rows={2}
                 value={editingAchievement.description}
                 onChange={(e) => setEditingAchievement({ ...editingAchievement, description: e.target.value })}
-                className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg p-2 text-white"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl p-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 leading-relaxed shadow-xs"
               />
             </div>
 
@@ -1284,11 +1284,11 @@ export const AboutUsSettingsView: React.FC = () => {
             </h3>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Category</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1">Category</label>
               <select
                 value={editingGallery.category}
                 onChange={(e: any) => setEditingGallery({ ...editingGallery, category: e.target.value })}
-                className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-xs"
               >
                 <option value="shop_inside">Inside Showroom</option>
                 <option value="shop_outside">Store Exterior</option>
@@ -1300,22 +1300,22 @@ export const AboutUsSettingsView: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Photo Title</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1">Photo Title</label>
               <input
                 type="text"
                 value={editingGallery.title}
                 onChange={(e) => setEditingGallery({ ...editingGallery, title: e.target.value })}
-                className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Caption</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1">Caption</label>
               <input
                 type="text"
                 value={editingGallery.caption || ''}
                 onChange={(e) => setEditingGallery({ ...editingGallery, caption: e.target.value })}
-                className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
               />
             </div>
 
@@ -1349,45 +1349,45 @@ export const AboutUsSettingsView: React.FC = () => {
             </h3>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">Metric Label</label>
+              <label className="block text-xs font-semibold text-neutral-200 mb-1">Metric Label</label>
               <input
                 type="text"
                 value={editingCounter.label}
                 onChange={(e) => setEditingCounter({ ...editingCounter, label: e.target.value })}
                 placeholder="Happy Customers"
-                className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
               />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Prefix</label>
+                <label className="block text-xs font-semibold text-neutral-200 mb-1">Prefix</label>
                 <input
                   type="text"
                   value={editingCounter.prefix || ''}
                   onChange={(e) => setEditingCounter({ ...editingCounter, prefix: e.target.value })}
                   placeholder=""
-                  className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                  className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Value</label>
+                <label className="block text-xs font-semibold text-neutral-200 mb-1">Value</label>
                 <input
                   type="text"
                   value={editingCounter.value}
                   onChange={(e) => setEditingCounter({ ...editingCounter, value: e.target.value })}
                   placeholder="50000"
-                  className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                  className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Suffix</label>
+                <label className="block text-xs font-semibold text-neutral-200 mb-1">Suffix</label>
                 <input
                   type="text"
                   value={editingCounter.suffix || ''}
                   onChange={(e) => setEditingCounter({ ...editingCounter, suffix: e.target.value })}
                   placeholder="+"
-                  className="w-full bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white"
+                  className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs"
                 />
               </div>
             </div>

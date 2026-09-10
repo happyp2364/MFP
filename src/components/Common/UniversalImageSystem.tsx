@@ -4,6 +4,7 @@ import {
   Loader2, AlertCircle, CheckCircle2, FileImage, ShieldCheck, RefreshCw
 } from 'lucide-react';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { REAL_MARUDHAR_SHOP_IMAGES } from '../../data/shopImages';
 
 // Default Coming Soon SVG (Fallback)
 export const CLEAN_IMAGE_COMING_SOON_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" fill="none"><rect width="600" height="600" fill="%23F3F4F6"/><rect x="2" y="2" width="596" height="596" rx="24" stroke="%23E5E7EB" stroke-width="4" stroke-dasharray="8 8"/><circle cx="300" cy="240" r="56" fill="%230B8F63" fill-opacity="0.1"/><path d="M280 220H320M300 200V240M270 255L285 240L300 255L315 240L330 255" stroke="%230B8F63" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="180" y="320" width="240" height="32" rx="16" fill="%230B8F63"/><text x="300" y="341" fill="white" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle" letter-spacing="1">REAL PRODUCT IMAGE COMING SOON</text><text x="300" y="390" fill="%236B7280" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle">Marudhar Fashion Point</text><text x="300" y="415" fill="%239CA3AF" font-family="sans-serif" font-size="11" text-anchor="middle">Authentic In-Store Inventory</text></svg>`;
@@ -173,6 +174,10 @@ export const UniversalImage: React.FC<UniversalImageProps> = ({
  * Presets of gorgeous fashion/footwear images from Unsplash to offer quick selection.
  */
 const FASHION_PRESETS = [
+  ...REAL_MARUDHAR_SHOP_IMAGES.map((img) => ({
+    name: `📸 ${img.title}`,
+    url: img.url,
+  })),
   { name: 'Red Running Shoe', url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80' },
   { name: 'Casual White Sneaker', url: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80' },
   { name: 'Yellow Athletic Trainer', url: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80' },

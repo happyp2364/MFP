@@ -136,3 +136,5 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     </div>
   );
 };
+
+export default AdminLoginModal;

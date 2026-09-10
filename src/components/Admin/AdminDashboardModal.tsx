@@ -1877,3 +1877,5 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     </div>
   );
 };
+
+export default AdminDashboardModal;

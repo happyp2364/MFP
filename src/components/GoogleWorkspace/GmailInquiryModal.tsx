@@ -329,3 +329,5 @@ export const GmailInquiryModal: React.FC<GmailInquiryModalProps> = ({
     </div>
   );
 };
+
+export default GmailInquiryModal;

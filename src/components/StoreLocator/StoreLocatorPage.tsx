@@ -621,3 +621,5 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
     </div>
   );
 };
+
+export default StoreLocatorPage;

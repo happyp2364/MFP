@@ -338,8 +338,12 @@ input[class*="bg-slate-50"],
 textarea[class*="bg-white"],
 textarea[class*="bg-neutral-50"],
 textarea[class*="bg-neutral-100"],
-textarea[class*="bg-[#F7F7F7]"] {
+textarea[class*="bg-slate-50"],
+textarea[class*="bg-[#F7F7F7]"],
+select[class*="bg-white"],
+select[class*="bg-slate-50"] {
   color: #111827 !important;
+  background-color: #ffffff !important;
 }
 
 input[class*="bg-white"]::placeholder,
@@ -347,8 +351,9 @@ input[class*="bg-neutral-50"]::placeholder,
 input[class*="bg-neutral-100"]::placeholder,
 input[class*="bg-[#F7F7F7]"]::placeholder,
 textarea[class*="bg-white"]::placeholder,
-textarea[class*="bg-neutral-50"]::placeholder {
-  color: #6b7280 !important;
+textarea[class*="bg-neutral-50"]::placeholder,
+textarea[class*="bg-slate-50"]::placeholder {
+  color: #64748b !important;
 }
 
 input[class*="bg-neutral-800"],

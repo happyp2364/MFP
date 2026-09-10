@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useStore } from '../../context/StoreContext';
 
@@ -43,6 +43,48 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
 
   const finalSchemas = [defaultSchema, ...schemas];
 
+  // Safely inject Google Analytics without triggering React script rendering warning
+  useEffect(() => {
+    if (!seoConfig?.googleAnalyticsId) return;
+    const gaId = seoConfig.googleAnalyticsId;
+
+    let script1 = document.getElementById('ga-gtag-js') as HTMLScriptElement;
+    if (!script1) {
+      script1 = document.createElement('script');
+      script1.id = 'ga-gtag-js';
+      script1.async = true;
+      script1.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+      document.head.appendChild(script1);
+    }
+
+    let script2 = document.getElementById('ga-gtag-inline') as HTMLScriptElement;
+    if (!script2) {
+      script2 = document.createElement('script');
+      script2.id = 'ga-gtag-inline';
+      script2.text = `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${gaId}');
+      `;
+      document.head.appendChild(script2);
+    }
+  }, [seoConfig?.googleAnalyticsId]);
+
+  // Safely inject JSON-LD schemas into document.head
+  useEffect(() => {
+    if (!finalSchemas.length) return;
+    const scriptId = 'json-ld-schemas';
+    let scriptEl = document.getElementById(scriptId) as HTMLScriptElement;
+    if (!scriptEl) {
+      scriptEl = document.createElement('script');
+      scriptEl.id = scriptId;
+      scriptEl.type = 'application/ld+json';
+      document.head.appendChild(scriptEl);
+    }
+    scriptEl.text = JSON.stringify(finalSchemas.length === 1 ? finalSchemas[0] : finalSchemas);
+  }, [JSON.stringify(finalSchemas)]);
+
   return (
     <Helmet>
       {/* Standard Metadata */}
@@ -69,28 +111,6 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={finalDescription} />
       {finalImage && <meta name="twitter:image" content={finalImage} />}
-
-      {/* Structured Data / JSON-LD */}
-      {finalSchemas.map((schema, index) => (
-        <script key={index} type="application/ld+json">
-          {JSON.stringify(schema)}
-        </script>
-      ))}
-
-      {/* Google Analytics - In a real app we'd load gtag.js here via script tags, but since Helmet executes in <head>, we can inject the script string. */}
-      {seoConfig?.googleAnalyticsId && (
-        <script async src={`https://www.googletagmanager.com/gtag/js?id=${seoConfig.googleAnalyticsId}`}></script>
-      )}
-      {seoConfig?.googleAnalyticsId && (
-        <script>
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${seoConfig.googleAnalyticsId}');
-          `}
-        </script>
-      )}
     </Helmet>
   );
 };

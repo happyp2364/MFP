@@ -36,14 +36,33 @@ import { CustomerAccountModal } from './components/Customer/CustomerAccountModal
 import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
 import { ProductDetailPage } from './components/Products/ProductDetailPage';
 import { HomepageRenderer } from './components/Customer/HomepageRenderer';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 
-// Lazy loaded modals to keep initial bundle ultra-light
-const AdminLoginModal = lazy(() => import('./components/Admin/AdminLoginModal').then(m => ({ default: m.AdminLoginModal })));
-const AdminDashboardModal = lazy(() => import('./components/Admin/AdminDashboardModal').then(m => ({ default: m.AdminDashboardModal })));
-const CalendarBookingModal = lazy(() => import('./components/GoogleWorkspace/CalendarBookingModal').then(m => ({ default: m.CalendarBookingModal })));
-const GmailInquiryModal = lazy(() => import('./components/GoogleWorkspace/GmailInquiryModal').then(m => ({ default: m.GmailInquiryModal })));
-const WorkspaceHubDrawer = lazy(() => import('./components/GoogleWorkspace/WorkspaceHubDrawer').then(m => ({ default: m.WorkspaceHubDrawer })));
-const StoreLocatorPage = lazy(() => import('./components/StoreLocator/StoreLocatorPage').then(m => ({ default: m.StoreLocatorPage })));
+// Lazy loaded modals with retry protection to prevent dynamic import fetch errors
+const AdminLoginModal = lazyWithRetry<typeof import('./components/Admin/AdminLoginModal').AdminLoginModal>(
+  () => import('./components/Admin/AdminLoginModal'),
+  'AdminLoginModal'
+);
+const AdminDashboardModal = lazyWithRetry<typeof import('./components/Admin/AdminDashboardModal').AdminDashboardModal>(
+  () => import('./components/Admin/AdminDashboardModal'),
+  'AdminDashboardModal'
+);
+const CalendarBookingModal = lazyWithRetry<typeof import('./components/GoogleWorkspace/CalendarBookingModal').CalendarBookingModal>(
+  () => import('./components/GoogleWorkspace/CalendarBookingModal'),
+  'CalendarBookingModal'
+);
+const GmailInquiryModal = lazyWithRetry<typeof import('./components/GoogleWorkspace/GmailInquiryModal').GmailInquiryModal>(
+  () => import('./components/GoogleWorkspace/GmailInquiryModal'),
+  'GmailInquiryModal'
+);
+const WorkspaceHubDrawer = lazyWithRetry<typeof import('./components/GoogleWorkspace/WorkspaceHubDrawer').WorkspaceHubDrawer>(
+  () => import('./components/GoogleWorkspace/WorkspaceHubDrawer'),
+  'WorkspaceHubDrawer'
+);
+const StoreLocatorPage = lazyWithRetry<typeof import('./components/StoreLocator/StoreLocatorPage').StoreLocatorPage>(
+  () => import('./components/StoreLocator/StoreLocatorPage'),
+  'StoreLocatorPage'
+);
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { useWebsiteDesign } from './context/WebsiteDesignContext';
 import { SectionResponsiveConfig } from './types/websiteDesign';

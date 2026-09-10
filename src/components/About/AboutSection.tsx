@@ -139,7 +139,7 @@ export const AboutSection: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="text-xs font-extrabold text-white">Fit & Quality Guarantee</h4>
-                  <p className="text-[10px] text-neutral-300">Direct personal inspection before dispatch</p>
+                  <p className="text-[10px] text-neutral-300">Dispatch se pehle direct personal inspection</p>
                 </div>
               </div>
             </div>
@@ -213,7 +213,7 @@ export const AboutSection: React.FC = () => {
                 {/* Highlights List */}
                 <div className="pt-2">
                   <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3">
-                    Why Families Choose Us
+                    Pipar City ki families humein kyun chunti hain
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {config.storeHighlights.map((hl, idx) => (
@@ -390,8 +390,8 @@ export const AboutSection: React.FC = () => {
             {/* Direct WhatsApp Call to Action Footer */}
             <div className="pt-6 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
-                <h4 className="text-xs font-bold text-white">Have a size or fitting question?</h4>
-                <p className="text-[11px] text-neutral-400">Connect directly with Viju Bhai for personalized footwear guidance.</p>
+                <h4 className="text-xs font-bold text-white">Size ya fitting ko lekar koi sawaal hai?</h4>
+                <p className="text-[11px] text-neutral-400">Viju Bhai se WhatsApp par connect karein aur right size select karne me guidance lein.</p>
               </div>
 
               <a

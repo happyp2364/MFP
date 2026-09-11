@@ -582,7 +582,7 @@ export const AboutUsSettingsView: React.FC = () => {
                   shortIntro: '',
                   experience: '10+ Years',
                   specialization: 'Royal Footwear',
-                  profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80',
+                  profilePhoto: '/images/shop/owners_vijay_parihar_viju_bhai_team.jpg',
                   socialLinks: {},
                   enabled: true,
                   featured: true,
@@ -605,7 +605,7 @@ export const AboutUsSettingsView: React.FC = () => {
               >
                 <div className="flex gap-3.5">
                   <img
-                    src={member.profilePhoto || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80'}
+                    src={member.profilePhoto || '/images/shop/owners_vijay_parihar_viju_bhai_team.jpg'}
                     alt={member.fullName}
                     className="w-16 h-16 rounded-full object-cover border-2 border-amber-500/40 shadow-md shrink-0"
                   />
@@ -830,7 +830,7 @@ export const AboutUsSettingsView: React.FC = () => {
                   category: 'shop_inside',
                   title: '',
                   caption: '',
-                  imageUrl: 'https://images.unsplash.com/photo-1533867617858-e7b97e060509?auto=format&fit=crop&w=800&q=80',
+                  imageUrl: '/images/shop/shop_interior_illuminated_walkthrough.jpg',
                   enabled: true,
                   displayOrder: formData.gallery.length + 1
                 });

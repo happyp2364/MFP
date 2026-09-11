@@ -60,9 +60,13 @@ export const StoreLocatorProvider: React.FC<{ children: ReactNode }> = ({ childr
       (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.data().stores as PhysicalStore[];
-          if (Array.isArray(data)) {
+          if (Array.isArray(data) && data.length > 0) {
             setPhysicalStores(data.map(normalizeStore));
+          } else {
+            setPhysicalStores(DEFAULT_PHYSICAL_STORES.map(normalizeStore));
           }
+        } else {
+          setPhysicalStores(DEFAULT_PHYSICAL_STORES.map(normalizeStore));
         }
       },
       () => {}

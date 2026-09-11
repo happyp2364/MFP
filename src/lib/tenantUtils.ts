@@ -3,6 +3,9 @@ import { AdminUser } from '../types';
 export const SUPER_ADMIN_EMAILS = [
   'vpcreation2002@gmail.com',
   'vishalpparihar2002@gmail.com',
+  'marudharfashion2019@gmail.com',
+  'marudharfashion@gmail.com',
+  'admin@marudharfashionpoint.com',
 ];
 
 export interface TenantInfo {

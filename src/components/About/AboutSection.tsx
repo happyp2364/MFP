@@ -28,6 +28,37 @@ import { useStore } from '../../context/StoreContext';
 import { DEFAULT_ABOUT_US_CONFIG } from '../../data/defaultAboutUs';
 import { generateGeneralInquiryWhatsAppLink } from '../../utils/whatsapp';
 
+const HERO_PERSPECTIVES = [
+  {
+    id: 'exterior',
+    title: 'Main Storefront & Signboard',
+    subtitle: 'Pipar City Market Entrance',
+    url: '/images/shop/shop_exterior_pipar_front.jpg',
+    badge: '🏪 Exterior',
+  },
+  {
+    id: 'interior',
+    title: 'Illuminated Shoe Showroom',
+    subtitle: 'Footwear Racks & Air-Conditioned Lounge',
+    url: '/images/shop/shop_interior_illuminated_walkthrough.jpg',
+    badge: '✨ Interior',
+  },
+  {
+    id: 'founder',
+    title: 'Viju Bhai (Vijay Parihar) & Team',
+    subtitle: '18+ Years Retail Trust & Consultation',
+    url: '/images/shop/owners_vijay_parihar_viju_bhai_team.jpg',
+    badge: '👥 Leadership',
+  },
+  {
+    id: 'banner',
+    title: 'Official Footwear Destination Banner',
+    subtitle: 'Jojri Nadi Road Mistri Market',
+    url: '/images/shop/banner_vijay_parihar_branded_shoes.jpg',
+    badge: '🏆 Banner',
+  },
+];
+
 export const AboutSection: React.FC = () => {
   const { aboutUsConfig: rawAboutConfig, storeInfo, products, reviews } = useStore();
   const config = rawAboutConfig || DEFAULT_ABOUT_US_CONFIG;
@@ -35,6 +66,7 @@ export const AboutSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'story' | 'owners' | 'timeline' | 'achievements' | 'gallery'>('story');
   const [selectedGalleryCategory, setSelectedGalleryCategory] = useState<string>('all');
   const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string; caption?: string } | null>(null);
+  const [heroViewIndex, setHeroViewIndex] = useState(0);
 
   // Dynamic counter calculation fallbacks
   const getCalculatedCounterValue = (counter: typeof config.counters[0]) => {
@@ -62,6 +94,8 @@ export const AboutSection: React.FC = () => {
     if (selectedGalleryCategory === 'all') return true;
     return item.category === selectedGalleryCategory;
   });
+
+  const activeHero = HERO_PERSPECTIVES[heroViewIndex] || HERO_PERSPECTIVES[0];
 
   return (
     <section id="about" className="py-20 sm:py-28 bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950 text-white relative overflow-hidden">
@@ -105,41 +139,87 @@ export const AboutSection: React.FC = () => {
 
         {/* Main Grid: Showcase Image & Interactive Story Hub */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
-          {/* Left Column: Glassmorphism Showcase Card */}
-          <div className="lg:col-span-5 relative flex flex-col justify-between">
-            <div className="relative rounded-3xl overflow-hidden border border-amber-500/20 shadow-2xl bg-neutral-900 aspect-[4/5] group">
+          {/* Left Column: Glassmorphism Showcase Card with Interactive Viewpoints */}
+          <div className="lg:col-span-5 relative flex flex-col justify-between space-y-4">
+            <div 
+              onClick={() => setLightboxImage({ url: activeHero.url, title: activeHero.title, caption: activeHero.subtitle })}
+              className="relative rounded-3xl overflow-hidden border border-amber-500/20 shadow-2xl bg-neutral-900 aspect-[4/5] group cursor-pointer"
+            >
               <img
-                src={config.mainHeaderImage || 'https://images.unsplash.com/photo-1533867617858-e7b97e060509?auto=format&fit=crop&w=1000&q=80'}
-                alt={`${config.businessName} Showroom`}
+                src={activeHero.url}
+                alt={activeHero.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 loading="lazy"
-                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent" />
 
+              {/* Top View Badge & Enlarge Button */}
+              <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
+                <span className="text-[11px] font-black uppercase tracking-wider bg-black/70 backdrop-blur-md text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full shadow-md">
+                  {activeHero.badge}
+                </span>
+                <span className="p-2 rounded-xl bg-black/60 backdrop-blur-md text-white/80 hover:text-white border border-white/10">
+                  <Maximize2 className="w-4 h-4" />
+                </span>
+              </div>
+
               {/* Bottom Showcase Info overlay */}
-              <div className="absolute bottom-6 left-6 right-6 space-y-2">
-                <span className="inline-block text-[10px] font-black uppercase tracking-widest bg-amber-500 text-neutral-950 px-3 py-1 rounded-full shadow-md">
+              <div className="absolute bottom-4 left-4 right-4 space-y-1.5">
+                <span className="inline-block text-[10px] font-black uppercase tracking-widest bg-amber-500 text-neutral-950 px-2.5 py-0.5 rounded-full shadow-md">
                   👑 {config.experienceYears} Footwear Heritage
                 </span>
-                <h3 className="text-xl font-bold text-white font-serif-heading">
-                  {storeInfo.ownerContact || 'Viju Bhai Choudhary'}
+                <h3 className="text-lg font-bold text-white font-serif-heading">
+                  {activeHero.title}
                 </h3>
                 <p className="text-xs text-neutral-300 line-clamp-2">
-                  {config.shopDescription}
+                  {activeHero.subtitle}
                 </p>
               </div>
             </div>
 
+            {/* Quick Perspective Thumbnails Switcher */}
+            <div className="grid grid-cols-4 gap-2">
+              {HERO_PERSPECTIVES.map((persp, idx) => (
+                <button
+                  key={persp.id}
+                  type="button"
+                  onClick={() => setHeroViewIndex(idx)}
+                  className={`relative rounded-xl overflow-hidden aspect-square border-2 transition-all cursor-pointer ${
+                    heroViewIndex === idx
+                      ? 'border-amber-400 ring-2 ring-amber-400/40 scale-102'
+                      : 'border-neutral-800 opacity-60 hover:opacity-100 hover:border-neutral-600'
+                  }`}
+                  title={persp.title}
+                >
+                  <img
+                    src={persp.url}
+                    alt={persp.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/20" />
+                  <span className="absolute bottom-1 left-1 right-1 text-[9px] font-extrabold text-white text-center truncate bg-black/80 rounded px-1">
+                    {persp.badge.split(' ')[1] || persp.badge}
+                  </span>
+                </button>
+              ))}
+            </div>
+
             {/* Floating Glassmorphism Trust Badge */}
-            <div className="mt-4 sm:mt-0 lg:absolute lg:-bottom-6 lg:-right-6 bg-neutral-900/95 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-4 shadow-2xl max-w-xs">
+            <div className="bg-neutral-900/95 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-3.5 shadow-xl">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-amber-500 text-neutral-950 flex items-center justify-center font-extrabold shrink-0 shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-neutral-950 flex items-center justify-center font-extrabold shrink-0 shadow-md text-xs">
                   100%
                 </div>
                 <div>
-                  <h4 className="text-xs font-extrabold text-white">Fit & Quality Guarantee</h4>
-                  <p className="text-[10px] text-neutral-300">Dispatch se pehle direct personal inspection</p>
+                  <h4 className="text-xs font-extrabold text-white">Genuine In-Store Stock</h4>
+                  <p className="text-[10px] text-neutral-300">Pipar City showroom se direct open-box verification</p>
                 </div>
               </div>
             </div>
@@ -198,6 +278,67 @@ export const AboutSection: React.FC = () => {
                   </div>
                 )}
 
+                {/* Authentic Shop Photos inside Story */}
+                <div className="space-y-2 pt-2">
+                  <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Real Storefront & Inside Glimpse</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div 
+                      onClick={() => setLightboxImage({
+                        url: '/images/shop/shop_exterior_pipar_front.jpg',
+                        title: 'मरुधर बूट हाऊस — Main Storefront Signboard',
+                        caption: 'Pipar City Main Market near Jojri Nadi Road. The premier footwear showroom of Pipar City with distinctive Hindi signboard.'
+                      })}
+                      className="group relative rounded-2xl overflow-hidden border border-neutral-700/80 bg-neutral-950 aspect-[16/10] cursor-pointer hover:border-amber-400/50 transition-all shadow-md"
+                    >
+                      <img
+                        src="/images/shop/shop_exterior_pipar_front.jpg"
+                        alt="Marudhar Boot House Main Exterior Signboard"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = '/images/shop/banner_vijay_parihar_branded_shoes.jpg';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent pointer-events-none" />
+                      <div className="absolute bottom-2.5 left-3 right-3 text-white">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur-sm">
+                          📍 Pipar City Storefront
+                        </span>
+                        <p className="text-xs font-bold truncate mt-0.5">मरुधर बूट हाऊस Entrance</p>
+                      </div>
+                    </div>
+
+                    <div 
+                      onClick={() => setLightboxImage({
+                        url: '/images/shop/shop_interior_illuminated_walkthrough.jpg',
+                        title: 'Marudhar Boot House Showroom Interior Walkthrough',
+                        caption: 'Illuminated shoe aisles, LED display rows, and carpeted trial floor.'
+                      })}
+                      className="group relative rounded-2xl overflow-hidden border border-neutral-700/80 bg-neutral-950 aspect-[16/10] cursor-pointer hover:border-amber-400/50 transition-all shadow-md"
+                    >
+                      <img
+                        src="/images/shop/shop_interior_illuminated_walkthrough.jpg"
+                        alt="Marudhar Boot House Showroom Interior"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent pointer-events-none" />
+                      <div className="absolute bottom-2.5 left-3 right-3 text-white">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur-sm">
+                          ✨ In-Store Showroom
+                        </span>
+                        <p className="text-xs font-bold truncate mt-0.5">Shoe Trial Racks & Walkway</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   <div className="bg-neutral-800/60 border border-neutral-700/60 rounded-2xl p-4 space-y-1">
                     <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Our Mission</span>
@@ -229,9 +370,73 @@ export const AboutSection: React.FC = () => {
 
             {/* TAB CONTENT: OWNERS & TEAM */}
             {activeTab === 'owners' && (
-              <div className="py-6 space-y-4">
-                <h3 className="text-lg font-bold text-amber-300 mb-2 font-serif-heading">
-                  Leadership & Service Team
+              <div className="py-6 space-y-5">
+                {/* Founder Spotlight Card with Real Photograph */}
+                <div 
+                  onClick={() => setLightboxImage({
+                    url: '/images/shop/owners_vijay_parihar_viju_bhai_team.jpg',
+                    title: 'Founder Vijay Parihar (Viju Bhai) & Leadership Team',
+                    caption: 'Proprietor of Marudhar Boot House, serving Pipar City and surrounding districts with authentic footwear since 2010.'
+                  })}
+                  className="bg-gradient-to-r from-amber-950/40 via-neutral-900 to-neutral-800/90 border border-amber-500/40 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden group cursor-pointer hover:border-amber-400 transition-all"
+                >
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+                    <div className="relative shrink-0 w-28 h-36 sm:w-32 sm:h-40 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-xl bg-neutral-950">
+                      <img
+                        src="/images/shop/owners_vijay_parihar_viju_bhai_team.jpg"
+                        alt="Vijay Parihar (Viju Bhai) Marudhar Boot House Founder"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
+                        }}
+                      />
+                      <span className="absolute bottom-1 left-1 right-1 text-[8px] font-black uppercase tracking-wider bg-black/85 text-amber-300 text-center py-0.5 rounded">
+                        Founder & Team
+                      </span>
+                    </div>
+
+                    <div className="flex-1 space-y-2 text-center sm:text-left">
+                      <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[10px] font-black uppercase tracking-wider">
+                        ⭐ Founder Spotlight
+                      </div>
+                      <h4 className="text-lg sm:text-xl font-black text-white font-serif-heading">
+                        Vijay Parihar (Viju Bhai)
+                      </h4>
+                      <p className="text-xs font-semibold text-amber-400">
+                        Proprietor & Managing Director • 18+ Years Trusted Retail Leadership
+                      </p>
+                      <p className="text-xs text-neutral-300 leading-relaxed">
+                        "Hamara lakshya Pipar City aur pure Rajasthan ki families ko original, comfortable aur durable shoes provide karna hai. Har customer hamare pariwar jaisa hai — hum dispatch se pehle har single jodi ko personally inspect karte hain."
+                      </p>
+
+                      <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3">
+                        <a
+                          href="https://wa.me/919782482250?text=Namaste%20Viju%20Bhai,%20I%20am%20reaching%20out%20from%20the%20Marudhar%20Fashion%20Point%20website."
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md flex items-center gap-1.5 transition-all"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          <span>Direct WhatsApp Consultation</span>
+                        </a>
+
+                        <a
+                          href="tel:9782482250"
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold rounded-xl border border-neutral-700 flex items-center gap-1.5 transition-all"
+                        >
+                          <Phone className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Call: 9782482250</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 className="text-base font-bold text-amber-300 mb-1 font-serif-heading pt-2">
+                  Store Management & Fitting Specialists
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -338,24 +543,25 @@ export const AboutSection: React.FC = () => {
               <div className="py-6 space-y-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <h3 className="text-lg font-bold text-amber-300 font-serif-heading">
-                    Showroom Photos
+                    Showroom Photos ({filteredGallery.length})
                   </h3>
 
                   {/* Gallery Filters */}
-                  <div className="flex gap-1 overflow-x-auto text-[11px] font-bold">
+                  <div className="flex gap-1 overflow-x-auto text-[11px] font-bold scrollbar-none pb-1">
                     {[
-                      { id: 'all', label: 'All' },
-                      { id: 'shop_inside', label: 'Inside' },
-                      { id: 'shop_outside', label: 'Exterior' },
-                      { id: 'team', label: 'Team' },
-                      { id: 'festival', label: 'Festivals' }
+                      { id: 'all', label: 'All Photos' },
+                      { id: 'shop_outside', label: 'Storefront' },
+                      { id: 'shop_inside', label: 'Showroom' },
+                      { id: 'team', label: 'Owners & Team' },
+                      { id: 'promotional_banner', label: 'Banners' },
+                      { id: 'brand_emblem', label: 'Logo & Seals' }
                     ].map((cat) => (
                       <button
                         key={cat.id}
                         onClick={() => setSelectedGalleryCategory(cat.id)}
-                        className={`px-2.5 py-1 rounded-lg transition-colors ${
+                        className={`px-3 py-1 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
                           selectedGalleryCategory === cat.id
-                            ? 'bg-amber-500 text-neutral-950 font-extrabold'
+                            ? 'bg-amber-500 text-neutral-950 font-extrabold shadow-sm'
                             : 'bg-neutral-800 text-neutral-400 hover:text-white'
                         }`}
                       >
@@ -370,16 +576,25 @@ export const AboutSection: React.FC = () => {
                     <div
                       key={photo.id}
                       onClick={() => setLightboxImage({ url: photo.imageUrl, title: photo.title, caption: photo.caption })}
-                      className="group relative h-32 rounded-xl overflow-hidden cursor-pointer border border-neutral-700/80 bg-neutral-950"
+                      className="group relative h-36 rounded-xl overflow-hidden cursor-pointer border border-neutral-700/80 bg-neutral-950 shadow-md hover:border-amber-400/60 transition-all"
                     >
                       <img
                         src={photo.imageUrl}
                         alt={photo.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        className={`w-full h-full transition-transform duration-500 group-hover:scale-105 ${
+                          photo.category === 'promotional_banner' || photo.category === 'brand_emblem'
+                            ? 'object-contain p-2'
+                            : 'object-cover'
+                        }`}
                         loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
+                        }}
                       />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Maximize2 className="w-5 h-5 text-amber-300" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                      <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-[10px] text-white">
+                        <span className="font-bold truncate max-w-[80%]">{photo.title}</span>
+                        <Maximize2 className="w-3 h-3 text-amber-400 shrink-0" />
                       </div>
                     </div>
                   ))}

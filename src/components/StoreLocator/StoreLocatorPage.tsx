@@ -15,6 +15,7 @@ import {
   X,
   ExternalLink,
   Layers,
+  Camera,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { PhysicalStore } from '../../types';
@@ -271,9 +272,16 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
               filteredStores.map((store) => {
                 const isSelected = selectedStore?.id === store.id;
                 const activeImgIdx = activePhotoIndex[store.id] || 0;
-                const images = store.images && store.images.length > 0
-                  ? store.images
-                  : ['https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=800&q=80'];
+                const rawImages = store.images && store.images.length > 0
+                  ? store.images.filter((img) => !img.includes('unsplash'))
+                  : [];
+                const images = rawImages.length > 0
+                  ? rawImages
+                  : [
+                      '/images/shop/shop_exterior_pipar_front.jpg',
+                      '/images/shop/shop_interior_illuminated_walkthrough.jpg',
+                      '/images/shop/banner_vijay_parihar_branded_shoes.jpg',
+                    ];
 
                 const distanceKm = userLocation
                   ? calculateDistanceKm(userLocation.lat, userLocation.lng, store.latitude, store.longitude)
@@ -342,6 +350,36 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                         <span>Details</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
+                    </div>
+
+                    {/* Store Real Photo Banner with Visual Recognition */}
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDetailModalStore(store);
+                      }}
+                      className="relative mt-3 h-36 w-full rounded-xl overflow-hidden bg-neutral-900 border border-neutral-200/80 group/photo cursor-pointer"
+                    >
+                      <img
+                        src={images[activeImgIdx % images.length]}
+                        alt={`${store.name} storefront`}
+                        className="w-full h-full object-cover group-hover/photo:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+
+                      <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-white text-[10px] font-bold pointer-events-none">
+                        <span className="bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/20 flex items-center gap-1">
+                          <Camera className="w-3 h-3 text-emerald-400" />
+                          <span>Real Store Photo ({images.length})</span>
+                        </span>
+                        <span className="bg-emerald-600/90 backdrop-blur-md px-2 py-0.5 rounded-md text-white">
+                          View Showroom
+                        </span>
+                      </div>
                     </div>
 
                     {/* Address & Hours */}

@@ -53,6 +53,32 @@ export function validateImageUrl(url: string): Promise<{ isValid: boolean; meta?
     });
   }
 
+  // Support local relative paths (e.g., /images/shop/...)
+  if (trimmed.startsWith('/')) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const timeout = setTimeout(() => {
+        img.src = '';
+        resolve({ isValid: false, error: 'Connection timeout' });
+      }, 10000);
+      img.onload = () => {
+        clearTimeout(timeout);
+        resolve({
+          isValid: true,
+          meta: {
+            width: img.naturalWidth,
+            height: img.naturalHeight,
+          }
+        });
+      };
+      img.onerror = () => {
+        clearTimeout(timeout);
+        resolve({ isValid: false, error: 'Unable to load local image asset' });
+      };
+      img.src = trimmed;
+    });
+  }
+
   // Check URL prefix and structure
   try {
     const parsed = new URL(trimmed);

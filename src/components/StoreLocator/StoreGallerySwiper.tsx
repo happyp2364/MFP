@@ -75,7 +75,7 @@ export const StoreGallerySwiper: React.FC<StoreGallerySwiperProps> = ({ store })
     const fallbackImages =
       store.images && store.images.length > 0
         ? store.images
-        : ['https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1200&q=80'];
+        : ['/images/shop/shop_exterior_pipar_front.jpg'];
 
     return fallbackImages.map((url, idx) => {
       let cat: StoreGalleryPhotoCategory = 'exterior';

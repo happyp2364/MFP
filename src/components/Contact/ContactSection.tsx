@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Phone, Mail, Clock, MessageCircle, CheckCircle2, Calendar, Sparkles, ExternalLink, Navigation, Layers } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, MessageCircle, CheckCircle2, Calendar, Sparkles, ExternalLink, Navigation, Layers, Camera } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { ContactFormInput } from '../../types';
 import { LeafletStoreMap } from '../Map/LeafletStoreMap';
@@ -16,6 +16,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
 }) => {
   const { storeInfo } = useStore();
   const [mapViewMode, setMapViewMode] = useState<'roadmap' | 'satellite'>('roadmap');
+  const [contactPhotoView, setContactPhotoView] = useState<'exterior' | 'interior'>('exterior');
 
   const [formData, setFormData] = useState<ContactFormInput>({
     name: '',
@@ -189,6 +190,68 @@ Message: ${formData.message || 'I want to check latest availability.'}`;
                 </button>
               </div>
             )}
+
+            {/* Real Storefront & Showroom Visual Guide */}
+            <div className="bg-white rounded-2xl overflow-hidden border border-neutral-200/90 shadow-sm">
+              <div className="p-3 bg-neutral-900 text-white flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 font-bold text-amber-400">
+                  <Camera className="w-4 h-4 text-amber-400" />
+                  <span>Real Shop Landmark Guide</span>
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setContactPhotoView('exterior')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors cursor-pointer ${
+                      contactPhotoView === 'exterior'
+                        ? 'bg-amber-400 text-neutral-950 font-black shadow-sm'
+                        : 'bg-white/10 text-neutral-300 hover:text-white'
+                    }`}
+                  >
+                    🏪 Exterior Front
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setContactPhotoView('interior')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors cursor-pointer ${
+                      contactPhotoView === 'interior'
+                        ? 'bg-amber-400 text-neutral-950 font-black shadow-sm'
+                        : 'bg-white/10 text-neutral-300 hover:text-white'
+                    }`}
+                  >
+                    ✨ Inside Showroom
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative aspect-[16/9] w-full bg-neutral-950 group">
+                <img
+                  src={
+                    contactPhotoView === 'exterior'
+                      ? '/images/shop/shop_exterior_pipar_front.jpg'
+                      : '/images/shop/shop_interior_illuminated_walkthrough.jpg'
+                  }
+                  alt="Marudhar Boot House Real Store View"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/images/shop/banner_vijay_parihar_branded_shoes.jpg';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute bottom-2 left-3 right-3 text-white flex items-end justify-between">
+                  <div>
+                    <span className="text-[9px] font-bold text-amber-300 bg-black/70 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                      {contactPhotoView === 'exterior' ? 'मरुधर बूट हाऊस Overhead Signboard' : 'Illuminated Shoe Aisles & Trial Floor'}
+                    </span>
+                    <p className="text-xs font-bold mt-0.5">
+                      {contactPhotoView === 'exterior'
+                        ? 'Look for this overhead Hindi signboard in Mistri Market near Jojri Nadi Road'
+                        : 'Over 1,000+ real in-store footwear pairs on active display'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Interactive Google Maps Location Section */}
             <div className="bg-white rounded-2xl overflow-hidden border border-neutral-200/90 shadow-md space-y-0">

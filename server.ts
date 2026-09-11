@@ -2244,6 +2244,10 @@ ${customerMessage || 'Please confirm availability.'}`;
     res.send(xml);
   });
 
+  // Explicitly serve static assets from public folder (shop images, logos, media)
+  const publicPath = path.join(process.cwd(), "public");
+  app.use(express.static(publicPath));
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

@@ -3,10 +3,11 @@ import { Product, Review } from '../types';
 import { PRODUCTS_DATA, REVIEWS_DATA } from '../data/mockData';
 import { db } from '../lib/firebase';
 import { collection, limit, onSnapshot, query, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { sanitizeForFirestore } from '../lib/tenantUtils';
 
 interface ProductContextType {
   products: Product[];
-  addProduct: (p: Omit<Product, 'id'>) => Promise<void>;
+  addProduct: (p: Omit<Product, 'id'>) => Promise<Product>;
   updateProduct: (id: string, p: Partial<Product>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   toggleInStock: (id: string) => Promise<void>;
@@ -43,33 +44,6 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   });
 
-  useEffect(() => {
-    const unsubProducts = onSnapshot(query(collection(db, 'products'), limit(500)), (snapshot) => {
-      if (!snapshot.empty) {
-        const loaded: Product[] = [];
-        snapshot.forEach((docSnap) => {
-          loaded.push({ id: docSnap.id, ...docSnap.data() } as Product);
-        });
-        setProducts(loaded);
-      }
-    }, () => {});
-
-    const unsubReviews = onSnapshot(query(collection(db, 'reviews'), limit(100)), (snapshot) => {
-      if (!snapshot.empty) {
-        const loaded: Review[] = [];
-        snapshot.forEach((docSnap) => {
-          loaded.push({ id: docSnap.id, ...docSnap.data() } as Review);
-        });
-        setReviews(loaded);
-      }
-    }, () => {});
-
-    return () => {
-      unsubProducts();
-      unsubReviews();
-    };
-  }, []);
-
   const safeSetLocalStorage = (key: string, val: string) => {
     try {
       localStorage.setItem(key, val);
@@ -78,38 +52,155 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const addProduct = async (p: Omit<Product, 'id'>) => {
-    const newProduct: Product = { ...p, id: `prod_${Date.now()}` };
-    const updated = [newProduct, ...products];
-    setProducts(updated);
-    safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
-    try {
-      await setDoc(doc(db, 'products', newProduct.id), newProduct);
-    } catch (e) {
-      console.warn('Firestore add product failed', e);
+  useEffect(() => {
+    const unsubProducts = onSnapshot(
+      query(collection(db, 'products'), limit(500)),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const loaded: Product[] = [];
+          snapshot.forEach((docSnap) => {
+            loaded.push({ id: docSnap.id, ...docSnap.data() } as Product);
+          });
+          // Stable sort: Products with newer createdAt timestamps appear first
+          loaded.sort((a, b) => {
+            const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            if (timeA && timeB && timeA !== timeB) return timeB - timeA;
+            if (timeA && !timeB) return -1;
+            if (!timeA && timeB) return 1;
+            return 0;
+          });
+          setProducts(loaded);
+          safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(loaded));
+        }
+      },
+      (error) => {
+        console.warn('Firestore products listener error:', error);
+      }
+    );
+
+    const unsubReviews = onSnapshot(
+      query(collection(db, 'reviews'), limit(100)),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const loaded: Review[] = [];
+          snapshot.forEach((docSnap) => {
+            loaded.push({ id: docSnap.id, ...docSnap.data() } as Review);
+          });
+          setReviews(loaded);
+          safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(loaded));
+        }
+      },
+      (error) => {
+        console.warn('Firestore reviews listener error:', error);
+      }
+    );
+
+    return () => {
+      unsubProducts();
+      unsubReviews();
+    };
+  }, []);
+
+  const addProduct = async (p: Omit<Product, 'id'>): Promise<Product> => {
+    if (!p.name || !p.name.trim()) {
+      throw new Error('Product name is required.');
     }
+    if (typeof p.price !== 'number' || isNaN(p.price) || p.price <= 0) {
+      throw new Error('Valid product price is required.');
+    }
+
+    const newId = (p as any).id || `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    const cleanProduct: Product = {
+      ...p,
+      id: newId,
+      name: p.name.trim(),
+      brand: p.brand ? p.brand.trim() : 'Marudhar Fashion',
+      category: p.category || 'men',
+      subcategory: p.subcategory || 'Sports Shoes',
+      price: Number(p.price),
+      inStock: p.inStock !== false,
+      status: p.status || 'active',
+      description: p.description ? p.description.trim() : '',
+      images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1000&q=80'],
+      sizes: Array.isArray(p.sizes) && p.sizes.length > 0 ? p.sizes : ['6', '7', '8', '9', '10'],
+      colors: Array.isArray(p.colors) && p.colors.length > 0 ? p.colors : [{ name: 'Black', hex: '#000000' }],
+      createdAt: (p as any).createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Sanitize to eliminate all undefined fields
+    const sanitized = sanitizeForFirestore(cleanProduct);
+
+    // CRITICAL: Await Firestore write first. Do NOT add permanently if Firestore rejects.
+    try {
+      await setDoc(doc(db, 'products', cleanProduct.id), sanitized);
+    } catch (err: any) {
+      console.error('[ProductContext] Firestore setDoc failed:', err);
+      const message = err?.code === 'permission-denied'
+        ? 'Permission Denied: Please check administrator authentication in Firestore.'
+        : (err?.message || 'Failed to save product to cloud Firestore database.');
+      throw new Error(message);
+    }
+
+    // Update local state and localStorage once write succeeded
+    setProducts((prev) => {
+      if (prev.some((item) => item.id === cleanProduct.id)) {
+        return prev.map((item) => (item.id === cleanProduct.id ? cleanProduct : item));
+      }
+      const next = [cleanProduct, ...prev];
+      safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
+      return next;
+    });
+
+    return cleanProduct;
   };
 
-  const updateProduct = async (id: string, p: Partial<Product>) => {
-    const updated = products.map((item) => (item.id === id ? { ...item, ...p } : item));
-    setProducts(updated);
-    safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
+  const updateProduct = async (id: string, p: Partial<Product>): Promise<void> => {
+    const target = products.find((item) => item.id === id);
+    const updatedProduct: Product = {
+      ...(target || {}),
+      ...p,
+      id,
+      updatedAt: new Date().toISOString(),
+    } as Product;
+
+    const sanitized = sanitizeForFirestore(updatedProduct);
+
     try {
-      await setDoc(doc(db, 'products', id), p, { merge: true });
-    } catch (e) {
-      console.warn('Firestore update product failed', e);
+      await setDoc(doc(db, 'products', id), sanitized, { merge: true });
+    } catch (err: any) {
+      console.error('[ProductContext] Firestore update failed:', err);
+      const message = err?.code === 'permission-denied'
+        ? 'Permission Denied: Please check administrator authentication in Firestore.'
+        : (err?.message || 'Failed to update product in cloud database.');
+      throw new Error(message);
     }
+
+    setProducts((prev) => {
+      const next = prev.map((item) => (item.id === id ? { ...item, ...sanitized } : item));
+      safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
+      return next;
+    });
   };
 
-  const deleteProduct = async (id: string) => {
-    const updated = products.filter((item) => item.id !== id);
-    setProducts(updated);
-    safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
+  const deleteProduct = async (id: string): Promise<void> => {
     try {
       await deleteDoc(doc(db, 'products', id));
-    } catch (e) {
-      console.warn('Firestore delete product failed', e);
+    } catch (err: any) {
+      console.error('[ProductContext] Firestore delete failed:', err);
+      const message = err?.code === 'permission-denied'
+        ? 'Permission Denied: Please check administrator authentication in Firestore.'
+        : (err?.message || 'Failed to delete product from cloud database.');
+      throw new Error(message);
     }
+
+    setProducts((prev) => {
+      const next = prev.filter((item) => item.id !== id);
+      safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
+      return next;
+    });
   };
 
   const toggleInStock = async (id: string) => {
@@ -126,30 +217,46 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       date: new Date().toISOString(),
       helpfulCount: 0,
     };
-    const updated = [newReview, ...reviews];
-    setReviews(updated);
-    safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
+    const sanitized = sanitizeForFirestore(newReview);
     try {
-      await setDoc(doc(db, 'reviews', newReview.id), newReview);
+      await setDoc(doc(db, 'reviews', newReview.id), sanitized);
+      setReviews((prev) => {
+        const updated = [newReview, ...prev];
+        safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
+        return updated;
+      });
     } catch (e) {
       console.warn('Firestore add review failed', e);
+      throw e;
     }
   };
 
   const updateReview = async (id: string, r: Partial<Review>) => {
-    const updated = reviews.map((item) => (item.id === id ? { ...item, ...r } : item));
-    setReviews(updated);
-    safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
+    const sanitized = sanitizeForFirestore(r);
+    try {
+      await setDoc(doc(db, 'reviews', id), sanitized, { merge: true });
+      setReviews((prev) => {
+        const updated = prev.map((item) => (item.id === id ? { ...item, ...sanitized } : item));
+        safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
+        return updated;
+      });
+    } catch (e) {
+      console.warn('Firestore update review failed', e);
+      throw e;
+    }
   };
 
   const deleteReview = async (id: string) => {
-    const updated = reviews.filter((item) => item.id !== id);
-    setReviews(updated);
-    safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
     try {
       await deleteDoc(doc(db, 'reviews', id));
+      setReviews((prev) => {
+        const updated = prev.filter((item) => item.id !== id);
+        safeSetLocalStorage(STORAGE_KEYS.REVIEWS, JSON.stringify(updated));
+        return updated;
+      });
     } catch (e) {
       console.warn('Firestore delete review failed', e);
+      throw e;
     }
   };
 
@@ -186,3 +293,4 @@ export const useProducts = () => {
   if (!context) throw new Error('useProducts must be used within ProductProvider');
   return context;
 };
+

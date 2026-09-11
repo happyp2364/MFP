@@ -42,7 +42,7 @@ import { useStore } from '../../context/StoreContext';
 interface SmartProductFormModalProps {
   product: Product;
   isCreating: boolean;
-  onSave: (product: Product) => void;
+  onSave: (product: Product) => void | Promise<void>;
   onClose: () => void;
   onDuplicate?: (product: Product) => void;
 }
@@ -76,6 +76,8 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const [imageInputUrl, setImageInputUrl] = useState('');
   const [isOptimizingImage, setIsOptimizingImage] = useState(false);
   const [showLivePreview, setShowLivePreview] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Custom Color Addition State
   const [customColorName, setCustomColorName] = useState('');
@@ -454,9 +456,12 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const isFormValid = isImagesValid && isNameValid && isProductForValid && isSubcategoryValid && isPriceValid;
 
   // SUBMIT HANDLER WITH AUTOMATIC BACKGROUND METADATA GENERATION
-  const handleSubmitForm = (e?: React.FormEvent) => {
+  const handleSubmitForm = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!isFormValid) return;
+    if (!isFormValid || isSaving) return;
+
+    setSubmitError(null);
+    setIsSaving(true);
 
     const cleanName = productState.name.trim();
     const catCode = productState.category.charAt(0).toUpperCase();
@@ -489,13 +494,13 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     const finalProduct: Product = {
       ...productState,
       name: cleanName,
-      brand: productState.brand ? productState.brand.trim() : '',
+      brand: productState.brand ? productState.brand.trim() : 'Marudhar Fashion',
       description: productState.description ? productState.description.trim() : '',
-      rating: productState.rating && productState.rating > 0 ? productState.rating : undefined,
-      reviewsCount: productState.reviewsCount && productState.reviewsCount > 0 ? productState.reviewsCount : undefined,
+      rating: productState.rating && productState.rating > 0 ? Number(productState.rating) : 5,
+      reviewsCount: productState.reviewsCount && productState.reviewsCount > 0 ? Number(productState.reviewsCount) : 0,
       originalPrice: (productState.originalPrice && productState.originalPrice > productState.price)
-        ? productState.originalPrice
-        : undefined,
+        ? Number(productState.originalPrice)
+        : Number(productState.price),
       discountPercent: (productState.originalPrice && productState.originalPrice > productState.price)
         ? Math.round(((productState.originalPrice - productState.price) / productState.originalPrice) * 100)
         : 0,
@@ -515,11 +520,17 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
       id: productState.id || `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     };
 
-    if (isCreating) {
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    try {
+      await onSave(finalProduct);
+      if (isCreating) {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+      }
+    } catch (err: any) {
+      console.error('[SmartProductFormModal] Save error:', err);
+      setSubmitError(err?.message || 'Failed to save product to database.');
+    } finally {
+      setIsSaving(false);
     }
-
-    onSave(finalProduct);
   };
 
   const availableSubcategories = getSubcategoriesForProductFor(productState.category);
@@ -1972,48 +1983,76 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
         </form>
 
         {/* FOOTER ACTION BAR */}
-        <div className="bg-neutral-50 border-t border-neutral-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="font-bold text-neutral-500">Required:</span>
-            <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isImagesValid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-              {isImagesValid ? '✓ Image' : '✗ Image Needed'}
-            </span>
-            <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isNameValid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-              {isNameValid ? '✓ Name' : '✗ Name Needed'}
-            </span>
-            <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isProductForValid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-              {isProductForValid ? '✓ Segment' : '✗ Segment Needed'}
-            </span>
-            <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isSubcategoryValid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-              {isSubcategoryValid ? '✓ Type' : '✗ Type Needed'}
-            </span>
-            <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isPriceValid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-              {isPriceValid ? '✓ Price' : '✗ Price Needed'}
-            </span>
-          </div>
+        <div className="bg-neutral-50 border-t border-neutral-200 p-4 flex flex-col gap-3 shrink-0">
+          {submitError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between gap-2 text-rose-700 text-xs">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span className="font-semibold">{submitError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSubmitError(null)}
+                className="text-rose-500 hover:text-rose-800 p-1"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-neutral-300 font-bold text-neutral-700 hover:bg-neutral-100 transition-colors text-xs"
-            >
-              Cancel
-            </button>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="font-bold text-neutral-500">Required:</span>
+              <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isImagesValid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                {isImagesValid ? '✓ Image' : '✗ Image Needed'}
+              </span>
+              <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isNameValid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                {isNameValid ? '✓ Name' : '✗ Name Needed'}
+              </span>
+              <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isProductForValid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                {isProductForValid ? '✓ Segment' : '✗ Segment Needed'}
+              </span>
+              <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isSubcategoryValid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                {isSubcategoryValid ? '✓ Type' : '✗ Type Needed'}
+              </span>
+              <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isPriceValid ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                {isPriceValid ? '✓ Price' : '✗ Price Needed'}
+              </span>
+            </div>
 
-            <button
-              type="button"
-              onClick={handleSubmitForm}
-              disabled={!isFormValid}
-              className={`px-6 py-2.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center gap-2 ${
-                isFormValid
-                  ? 'bg-[#0B8F63] hover:bg-[#086F4C] text-white cursor-pointer hover:scale-105'
-                  : 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
-              }`}
-            >
-              <Check className="w-4 h-4" />
-              <span>{isCreating ? 'Save Product' : 'Save Changes'}</span>
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSaving}
+                className="px-4 py-2.5 rounded-xl border border-neutral-300 font-bold text-neutral-700 hover:bg-neutral-100 transition-colors text-xs disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSubmitForm}
+                disabled={!isFormValid || isSaving}
+                className={`px-6 py-2.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center gap-2 ${
+                  isFormValid && !isSaving
+                    ? 'bg-[#0B8F63] hover:bg-[#086F4C] text-white cursor-pointer hover:scale-105'
+                    : 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+                }`}
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Saving to Database...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>{isCreating ? 'Save Product' : 'Save Changes'}</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

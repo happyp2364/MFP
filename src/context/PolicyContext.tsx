@@ -28,7 +28,34 @@ export const PolicyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'about_us'), (snapshot) => {
       if (snapshot.exists()) {
-        setAboutUsConfig(snapshot.data() as AboutUsConfig);
+        const firestoreData = snapshot.data() as Partial<AboutUsConfig>;
+        const mergedGallery = (firestoreData.gallery && firestoreData.gallery.length > 0 && !firestoreData.gallery[0].imageUrl?.includes('unsplash'))
+          ? firestoreData.gallery
+          : DEFAULT_ABOUT_US_CONFIG.gallery;
+        
+        const mergedOwners = (firestoreData.ownersAndTeam && firestoreData.ownersAndTeam.length > 0)
+          ? firestoreData.ownersAndTeam.map((m, idx) => {
+              const defaultMember = DEFAULT_ABOUT_US_CONFIG.ownersAndTeam[idx];
+              return {
+                ...m,
+                profilePhoto: (m.profilePhoto && !m.profilePhoto.includes('unsplash'))
+                  ? m.profilePhoto
+                  : (defaultMember?.profilePhoto || '/images/shop/owners_vijay_parihar_viju_bhai_team.jpg')
+              };
+            })
+          : DEFAULT_ABOUT_US_CONFIG.ownersAndTeam;
+
+        const mainHeaderImage = (firestoreData.mainHeaderImage && !firestoreData.mainHeaderImage.includes('unsplash'))
+          ? firestoreData.mainHeaderImage
+          : DEFAULT_ABOUT_US_CONFIG.mainHeaderImage;
+
+        setAboutUsConfig({
+          ...DEFAULT_ABOUT_US_CONFIG,
+          ...firestoreData,
+          mainHeaderImage,
+          ownersAndTeam: mergedOwners,
+          gallery: mergedGallery,
+        });
       }
     }, () => {});
 

@@ -34,6 +34,8 @@ import {
   PRESET_COLOR_PALETTE,
 } from '../../utils/productCategoryDefaults';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { uploadImageToStorage, processProductImagesForStorage } from '../../services/imageStorageService';
+import { assertSafeFirestoreProduct } from '../../utils/firestoreGuard';
 import { validateFileUpload } from '../../lib/security';
 import { QuickViewModal } from '../Products/QuickViewModal';
 import { AdminImageSelector } from '../Common/UniversalImageSystem';
@@ -214,28 +216,32 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
 
     setIsUploadingColorGallery(true);
     try {
-      const optimizedUrls: string[] = [];
+      const storageUrls: string[] = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (file.type.startsWith('image/')) {
-          const optUrl = await optimizeImageFile(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
-          if (optUrl) {
-            optimizedUrls.push(optUrl);
+          // Upload variant image directly to cloud storage, never store base64 in Firestore
+          const storageUrl = await uploadImageToStorage(file, {
+            folder: 'products/variants',
+            filename: `${selectedColorForGallery.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}_${i}`,
+          });
+          if (storageUrl) {
+            storageUrls.push(storageUrl);
           }
         }
       }
 
-      if (optimizedUrls.length > 0) {
+      if (storageUrls.length > 0) {
         const existingImages = (productState.variants || [])
           .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
           ?.images || [];
-        const merged = [...existingImages, ...optimizedUrls];
+        const merged = [...existingImages, ...storageUrls];
         updateColorGalleryImages(selectedColorForGallery, merged);
-        showToast(`Uploaded ${optimizedUrls.length} image(s) for ${selectedColorForGallery}!`, 'success');
+        showToast(`Uploaded ${storageUrls.length} image(s) to cloud storage for ${selectedColorForGallery}!`, 'success');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to process color variant photos', err);
-      showToast('Failed to process one or more images.', 'error');
+      showToast(err?.message || 'Failed to upload one or more variant images to cloud storage.', 'error');
     } finally {
       setIsUploadingColorGallery(false);
       if (colorGalleryFileInputRef.current) {
@@ -521,13 +527,28 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     };
 
     try {
-      await onSave(finalProduct);
+      // 1. Enforce cloud storage URLs for all images (prevent inline base64 in Firestore)
+      const storageReadyProduct = await processProductImagesForStorage(finalProduct);
+
+      // 2. Safety guard: Assert document contains no base64 and is well under 1 MiB limit
+      assertSafeFirestoreProduct(storageReadyProduct);
+
+      // 3. Save product to database
+      await onSave(storageReadyProduct);
       if (isCreating) {
         localStorage.removeItem(DRAFT_STORAGE_KEY);
       }
     } catch (err: any) {
       console.error('[SmartProductFormModal] Save error:', err);
-      setSubmitError(err?.message || 'Failed to save product to database.');
+      const isSizeError =
+        err?.message?.includes('too large') ||
+        err?.message?.includes('1,048,576') ||
+        err?.message?.includes('1048576') ||
+        err?.message?.includes('exceeds the maximum allowed size');
+      const friendlyMsg = isSizeError
+        ? 'Product could not be saved because the image data is too large. Please try again; images are uploaded separately from product information.'
+        : (err?.message || 'Failed to save product to database.');
+      setSubmitError(friendlyMsg);
     } finally {
       setIsSaving(false);
     }

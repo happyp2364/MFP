@@ -1,4 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getStorage } from 'firebase/storage';
 import {
   getAuth,
   GoogleAuthProvider,
@@ -43,6 +44,19 @@ import { sanitizeForFirestore } from './tenantUtils';
 // Initialize Firebase App
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+
+// Initialize Firebase Storage
+export const storage = (() => {
+  try {
+    return getStorage(
+      app,
+      firebaseConfig.storageBucket ? `gs://${firebaseConfig.storageBucket}` : undefined
+    );
+  } catch (err) {
+    console.warn('Firebase Storage initialization notice:', err);
+    return null;
+  }
+})();
 
 // Purge any stale IndexedDB client leases with clock-drifted future timestamps
 if (typeof window !== 'undefined' && 'indexedDB' in window) {

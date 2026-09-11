@@ -4,6 +4,7 @@ import {
   Loader2, AlertCircle, CheckCircle2, FileImage, ShieldCheck, RefreshCw
 } from 'lucide-react';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { uploadImageToStorage, isStorageUrl } from '../../services/imageStorageService';
 import { REAL_MARUDHAR_SHOP_IMAGES } from '../../data/shopImages';
 
 // Default Coming Soon SVG (Fallback)
@@ -289,10 +290,19 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
       setIsValidating(false);
 
       if (res.isValid) {
-        onChange(urlInput);
+        let finalUrl = urlInput;
+        if (!isStorageUrl(urlInput)) {
+          try {
+            finalUrl = await uploadImageToStorage(urlInput, { folder: 'products' });
+            setUrlInput(finalUrl);
+          } catch (uploadErr) {
+            console.warn('Auto-upload pasted image data failed:', uploadErr);
+          }
+        }
+        onChange(finalUrl);
         if (onSaveConfig) {
           onSaveConfig({
-            imageUrl: urlInput,
+            imageUrl: finalUrl,
             lastUpdated: new Date().toISOString(),
             updatedBy: 'Admin Portal',
             imageSource: 'Pasted URL',
@@ -323,51 +333,34 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
       return;
     }
 
-    if (file.size > 8 * 1024 * 1024) {
-      setUploadError(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Max size is 8MB.`);
+    if (file.size > 15 * 1024 * 1024) {
+      setUploadError(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Max size is 15MB.`);
       return;
     }
 
     setIsUploadingFile(true);
     try {
-      if (file.type === 'image/svg+xml') {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const dataUrl = ev.target?.result as string;
-          setUrlInput(dataUrl);
-          onChange(dataUrl);
-          if (onSaveConfig) {
-            onSaveConfig({
-              imageUrl: dataUrl,
-              lastUpdated: new Date().toISOString(),
-              updatedBy: 'Admin Portal',
-              imageSource: 'Uploaded SVG',
-            });
-          }
-          setIsUploadingFile(false);
-        };
-        reader.onerror = () => {
-          setUploadError('Failed to read SVG file.');
-          setIsUploadingFile(false);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        const optimized = await optimizeImageFile(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
-        setUrlInput(optimized);
-        onChange(optimized);
-        if (onSaveConfig) {
-          onSaveConfig({
-            imageUrl: optimized,
-            lastUpdated: new Date().toISOString(),
-            updatedBy: 'Admin Portal',
-            imageSource: 'Uploaded File (Optimized)',
-          });
-        }
-        setIsUploadingFile(false);
+      // PERMANENT FIX: Upload directly to cloud storage and store ONLY the lightweight URL
+      const storageUrl = await uploadImageToStorage(file, {
+        folder: 'products',
+        filename: file.name.replace(/\.[^/.]+$/, ''),
+      });
+
+      setUrlInput(storageUrl);
+      onChange(storageUrl);
+
+      if (onSaveConfig) {
+        onSaveConfig({
+          imageUrl: storageUrl,
+          lastUpdated: new Date().toISOString(),
+          updatedBy: 'Admin Portal',
+          imageSource: 'Uploaded File (Cloud Storage)',
+        });
       }
-    } catch (err) {
-      console.error('File optimization error:', err);
-      setUploadError('Failed to process image. Please try another file.');
+    } catch (err: any) {
+      console.error('[UniversalImageSystem] Storage upload error:', err);
+      setUploadError(err?.message || 'Failed to upload image to cloud storage. Please try again.');
+    } finally {
       setIsUploadingFile(false);
     }
   };
@@ -428,7 +421,7 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
     setCameraActive(false);
   };
 
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -438,18 +431,33 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        setUrlInput(dataUrl);
-        onChange(dataUrl);
-        
-        if (onSaveConfig) {
-          onSaveConfig({
-            imageUrl: dataUrl,
-            lastUpdated: new Date().toISOString(),
-            updatedBy: 'Admin Portal',
-            imageSource: 'Camera Capture',
-          });
-        }
         stopCamera();
+
+        setIsUploadingFile(true);
+        try {
+          // Upload camera capture directly to cloud storage
+          const storageUrl = await uploadImageToStorage(dataUrl, {
+            folder: 'products',
+            filename: 'camera_capture',
+          });
+
+          setUrlInput(storageUrl);
+          onChange(storageUrl);
+          
+          if (onSaveConfig) {
+            onSaveConfig({
+              imageUrl: storageUrl,
+              lastUpdated: new Date().toISOString(),
+              updatedBy: 'Admin Portal',
+              imageSource: 'Camera Capture (Cloud Storage)',
+            });
+          }
+        } catch (err: any) {
+          console.error('[UniversalImageSystem] Camera capture upload error:', err);
+          setCameraError(err?.message || 'Failed to upload captured photo to cloud storage.');
+        } finally {
+          setIsUploadingFile(false);
+        }
       }
     }
   };

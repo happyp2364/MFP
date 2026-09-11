@@ -28,6 +28,7 @@ import { HomepageConfig, HomepageSection, Product } from '../../types';
 import { ProductCard } from '../Products/ProductCard';
 import { TrendingShoesSection } from '../Collections/TrendingShoesSection';
 import { PricePointCollectionSection } from '../Collections/PricePointCollectionSection';
+import { RealShopShowcaseSection } from './RealShopShowcaseSection';
 
 interface HomepageRendererProps {
   previewConfig?: HomepageConfig;
@@ -570,6 +571,17 @@ const SectionItem: React.FC<SectionItemProps> = ({
     case 'faqs': {
       const faqs = data.faqs || [];
       return <FaqAccordion faqs={faqs} title={section.title} subtitle={section.subtitle} />;
+    }
+
+    case 'about_store':
+    case 'real_shop_showcase':
+    case 'store_experience': {
+      return (
+        <RealShopShowcaseSection
+          title={section.title || "Visit Our Real Showroom in Pipar City"}
+          subtitle={section.subtitle || "Marudhar Boot House • The Brand of Pipar • मनपसंद जूतों का एकमात्र शोरूम"}
+        />
+      );
     }
 
     default:

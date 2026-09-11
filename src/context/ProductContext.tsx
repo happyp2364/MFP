@@ -4,6 +4,8 @@ import { PRODUCTS_DATA, REVIEWS_DATA } from '../data/mockData';
 import { db } from '../lib/firebase';
 import { collection, limit, onSnapshot, query, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { sanitizeForFirestore } from '../lib/tenantUtils';
+import { assertSafeFirestoreProduct, sanitizeProductImageUrls } from '../utils/firestoreGuard';
+import { processProductImagesForStorage } from '../services/imageStorageService';
 
 interface ProductContextType {
   products: Product[];
@@ -59,7 +61,8 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
         if (!snapshot.empty) {
           const loaded: Product[] = [];
           snapshot.forEach((docSnap) => {
-            loaded.push({ id: docSnap.id, ...docSnap.data() } as Product);
+            const raw = { id: docSnap.id, ...docSnap.data() } as Product;
+            loaded.push(sanitizeProductImageUrls(raw));
           });
           // Stable sort: Products with newer createdAt timestamps appear first
           loaded.sort((a, b) => {
@@ -130,15 +133,28 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       updatedAt: new Date().toISOString(),
     };
 
-    // Sanitize to eliminate all undefined fields
-    const sanitized = sanitizeForFirestore(cleanProduct);
+    // 1. Process all images into Cloud Storage URLs (NEVER store inline base64 in Firestore)
+    const storageReadyProduct = await processProductImagesForStorage(cleanProduct);
+
+    // 2. Enforce strict Firestore document size safety and no inline base64 images
+    assertSafeFirestoreProduct(storageReadyProduct);
+
+    // 3. Sanitize to eliminate all undefined fields
+    const sanitized = sanitizeForFirestore(storageReadyProduct);
 
     // CRITICAL: Await Firestore write first. Do NOT add permanently if Firestore rejects.
     try {
-      await setDoc(doc(db, 'products', cleanProduct.id), sanitized);
+      await setDoc(doc(db, 'products', storageReadyProduct.id), sanitized);
     } catch (err: any) {
       console.error('[ProductContext] Firestore setDoc failed:', err);
-      const message = err?.code === 'permission-denied'
+      const isSizeError =
+        err?.message?.includes('too large') ||
+        err?.message?.includes('1,048,576') ||
+        err?.message?.includes('1048576') ||
+        err?.message?.includes('exceeds the maximum allowed size');
+      const message = isSizeError
+        ? 'Product could not be saved because the image data is too large. Please try again; images are uploaded separately from product information.'
+        : err?.code === 'permission-denied'
         ? 'Permission Denied: Please check administrator authentication in Firestore.'
         : (err?.message || 'Failed to save product to cloud Firestore database.');
       throw new Error(message);
@@ -146,15 +162,15 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     // Update local state and localStorage once write succeeded
     setProducts((prev) => {
-      if (prev.some((item) => item.id === cleanProduct.id)) {
-        return prev.map((item) => (item.id === cleanProduct.id ? cleanProduct : item));
+      if (prev.some((item) => item.id === storageReadyProduct.id)) {
+        return prev.map((item) => (item.id === storageReadyProduct.id ? storageReadyProduct : item));
       }
-      const next = [cleanProduct, ...prev];
+      const next = [storageReadyProduct, ...prev];
       safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
       return next;
     });
 
-    return cleanProduct;
+    return storageReadyProduct;
   };
 
   const updateProduct = async (id: string, p: Partial<Product>): Promise<void> => {
@@ -166,13 +182,27 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       updatedAt: new Date().toISOString(),
     } as Product;
 
-    const sanitized = sanitizeForFirestore(updatedProduct);
+    // 1. Process all images into Cloud Storage URLs
+    const storageReadyProduct = await processProductImagesForStorage(updatedProduct);
+
+    // 2. Enforce strict Firestore document size safety
+    assertSafeFirestoreProduct(storageReadyProduct);
+
+    // 3. Sanitize fields
+    const sanitized = sanitizeForFirestore(storageReadyProduct);
 
     try {
       await setDoc(doc(db, 'products', id), sanitized, { merge: true });
     } catch (err: any) {
       console.error('[ProductContext] Firestore update failed:', err);
-      const message = err?.code === 'permission-denied'
+      const isSizeError =
+        err?.message?.includes('too large') ||
+        err?.message?.includes('1,048,576') ||
+        err?.message?.includes('1048576') ||
+        err?.message?.includes('exceeds the maximum allowed size');
+      const message = isSizeError
+        ? 'Product could not be saved because the image data is too large. Please try again; images are uploaded separately from product information.'
+        : err?.code === 'permission-denied'
         ? 'Permission Denied: Please check administrator authentication in Firestore.'
         : (err?.message || 'Failed to update product in cloud database.');
       throw new Error(message);

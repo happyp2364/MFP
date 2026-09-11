@@ -1,9 +1,12 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import sharp from "sharp";
+import cloudinaryUploadHandler from "./api/cloudinary-upload";
 
 // Server in-memory transaction log
 interface ServerTransactionRecord {
@@ -94,6 +97,26 @@ async function startServer() {
   // Health check
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Ensure public uploads directories exist
+  const uploadsBaseDir = path.join(process.cwd(), "public", "uploads");
+  const uploadsProductsDir = path.join(uploadsBaseDir, "products");
+  if (!fs.existsSync(uploadsProductsDir)) {
+    fs.mkdirSync(uploadsProductsDir, { recursive: true });
+  }
+
+  // Explicitly serve uploads folder
+  app.use("/uploads", express.static(uploadsBaseDir));
+
+  // Enterprise Cloudinary Image Storage Upload API
+  app.post("/api/cloudinary-upload", async (req, res) => {
+    return cloudinaryUploadHandler(req, res);
+  });
+
+  // Legacy /api/storage/upload route - seamlessly routes through Cloudinary handler
+  app.post("/api/storage/upload", async (req, res) => {
+    return cloudinaryUploadHandler(req, res);
   });
 
   // AI Shoe Extraction API route

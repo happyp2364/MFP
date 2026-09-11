@@ -1705,6 +1705,8 @@ export type HomepageSectionType =
   | 'newsletter'
   | 'faqs'
   | 'about_store'
+  | 'real_shop_showcase'
+  | 'store_experience'
   | 'custom_html'
   | 'rich_text'
   | 'gallery'

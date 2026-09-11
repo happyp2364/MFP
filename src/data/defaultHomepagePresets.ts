@@ -555,8 +555,8 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
   {
     id: 'sec_about_store',
     type: 'about_store',
-    title: 'Our Story & Pipar City Legacy',
-    subtitle: 'Generations of trusted footwear craftsmanship',
+    title: 'Visit Our Real Showroom in Pipar City',
+    subtitle: 'Marudhar Boot House • The Brand of Pipar • मनपसंद जूतों का एकमात्र शोरूम',
     enabled: true,
     visibleDevices: ['desktop', 'tablet', 'mobile'],
     styling: {
@@ -832,8 +832,9 @@ export const SECTION_CATALOG_ITEMS: {
       styling: { bgColor: '#FFFFFF', paddingTop: 24, paddingBottom: 24 },
       contentData: {
         slides: [
-          { title: 'AirGlide Knit Running Series', subtitle: 'Ultra-lightweight mesh', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80', cta: 'Shop Now' },
-          { title: 'Handcrafted Royal Leather Loafers', subtitle: 'Memory foam insoles', image: 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&w=1200&q=80', cta: 'Explore Loafers' },
+          { title: 'Marudhar Boot House • Pipar City', subtitle: 'ब्रांडेड जूतों का एकमात्र स्थान • प्रो. विजय परिहार', image: '/images/shop/banner_vijay_parihar_branded_shoes.jpg', cta: 'Visit Pipar Showroom' },
+          { title: 'Authorized Partner Brands', subtitle: 'Nike • Campus • Action • Lakhani • Hitway • JQR', image: '/images/shop/banner_nike_campus_action_brands.jpg', cta: 'Explore Brands' },
+          { title: 'Authentic In-Store Inventory', subtitle: 'Pipar City Market • Jojri Nadi Road', image: '/images/shop/shop_exterior_pipar_front.jpg', cta: 'Store Locator' },
         ],
       },
     },

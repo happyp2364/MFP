@@ -181,7 +181,7 @@ export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
   legal: {
     privacyPolicy: 'Marudhar Fashion Point values your privacy. We store customer information securely and never sell your personal data.',
     termsAndConditions: 'All orders placed on Marudhar Fashion Point are subject to availability and verification. Prices include applicable taxes.',
-    refundPolicy: 'Easy 7-day returns and exchanges available for size and manufacturing defects. Open Box Delivery is supported.',
+    refundPolicy: 'Online Orders: No Return • No Exchange • No Change. Open Box Delivery is supported.',
     shippingPolicy: 'Free shipping on orders above ₹999. Local deliveries in Rajasthan delivered within 24-48 hours.',
     cancellationPolicy: 'Orders can be cancelled prior to dispatch directly from your account or by calling customer care.',
     cookiePolicy: 'We use essential browser cookies to remember your cart, wishlist, and preference settings.',

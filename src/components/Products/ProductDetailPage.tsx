@@ -717,7 +717,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-5 h-5 text-amber-400" />
                 <span className="text-xs font-serif font-extrabold text-amber-100 uppercase tracking-wider">
-                  {paymentSettings.policyText || 'No Return & No Exchange Policy'}
+                  {paymentSettings.onlineOrderPolicy || paymentSettings.policyText || 'Online Orders: No Return • No Exchange • No Change'}
                 </span>
               </div>
               <span className="text-[10px] font-bold text-amber-300 bg-amber-900/60 px-2.5 py-0.5 rounded-full border border-amber-700/50">
@@ -749,8 +749,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <span>❌</span>
                 </div>
                 <div>
-                  <span className="font-extrabold text-rose-300 block">NO RETURN • NO EXCHANGE</span>
-                  <span className="text-[10px] text-neutral-300">Quality Checked Prior to Dispatch</span>
+                  <span className="font-extrabold text-rose-300 block">NO RETURN • NO EXCHANGE • NO CHANGE</span>
+                  <span className="text-[10px] text-neutral-300">Online Purchase Policy • Quality Checked</span>
                 </div>
               </div>
             </div>
@@ -761,10 +761,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 🚚 FREE DELIVERY ABOVE ₹{paymentSettings.freeShippingMinAmount || 999}
               </span>
               <span className="bg-rose-500/20 text-rose-300 px-2.5 py-1 rounded-lg border border-rose-500/30">
-                ❌ NO RETURN
+                🚫 NO RETURN
               </span>
               <span className="bg-rose-500/20 text-rose-300 px-2.5 py-1 rounded-lg border border-rose-500/30">
-                ❌ NO EXCHANGE
+                🚫 NO EXCHANGE
+              </span>
+              <span className="bg-rose-500/20 text-rose-300 px-2.5 py-1 rounded-lg border border-rose-500/30">
+                🚫 NO CHANGE
               </span>
             </div>
           </div>
@@ -844,8 +847,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <span>Express Local Delivery</span>
               </div>
               <div className="flex flex-col items-center gap-1 p-2 bg-neutral-50 rounded-xl">
-                <RotateCcw className="w-4 h-4 text-[#0B8F63]" />
-                <span>Easy Size Exchange</span>
+                <ShieldCheck className="w-4 h-4 text-rose-600" />
+                <span className="text-rose-700 font-bold">No Return / Exchange</span>
               </div>
               <div className="flex flex-col items-center gap-1 p-2 bg-neutral-50 rounded-xl">
                 <ShieldCheck className="w-4 h-4 text-[#0B8F63]" />

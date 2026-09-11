@@ -19,9 +19,45 @@ interface HeroSlide {
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
-  const { storeInfo } = useStore();
+  const { storeInfo, heroContent, products } = useStore();
 
   const shopName = storeInfo?.name || 'Marudhar Fashion Point';
+
+  // Resolve admin-configured hero product or custom image
+  const selectedProduct = React.useMemo(() => {
+    if (heroContent?.heroImageMode === 'product' && heroContent?.heroProductId && Array.isArray(products)) {
+      return products.find((p: any) => p.id === heroContent.heroProductId) || null;
+    }
+    return null;
+  }, [heroContent?.heroImageMode, heroContent?.heroProductId, products]);
+
+  const resolvedHeroImage = React.useMemo(() => {
+    // Mode 1: Selected Product from Catalog
+    if (heroContent?.heroImageMode === 'product' && selectedProduct) {
+      const idx = heroContent.heroProductImageIndex ?? 0;
+      if (Array.isArray(selectedProduct.images) && selectedProduct.images[idx]) {
+        return selectedProduct.images[idx];
+      }
+      if (Array.isArray(selectedProduct.images) && selectedProduct.images.length > 0) {
+        return selectedProduct.images[0];
+      }
+      if (selectedProduct.imageUrl) return selectedProduct.imageUrl;
+      if ((selectedProduct as any).image) return (selectedProduct as any).image;
+    }
+
+    // Mode 2: Custom Image (Upload or URL)
+    if (heroContent?.heroImageMode === 'custom' && heroContent?.customHeroImageUrl) {
+      return heroContent.customHeroImageUrl;
+    }
+
+    // Fallback 1: Configured heroImage field
+    if (heroContent?.heroImage) {
+      return heroContent.heroImage;
+    }
+
+    // Fallback 2: Default
+    return null;
+  }, [heroContent, selectedProduct]);
 
   const slides: HeroSlide[] = [
     {
@@ -106,6 +142,38 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
     }
   };
 
+  // Hero visual display configuration
+  const isHeroVisualEnabled = heroContent?.heroImageEnabled !== false;
+  const isDesktopVisible = heroContent?.heroImageDesktopVisible !== false;
+  const isMobileVisible = heroContent?.heroImageMobileVisible !== false;
+
+  const visibilityClass = !isHeroVisualEnabled
+    ? 'hidden'
+    : !isDesktopVisible && !isMobileVisible
+    ? 'hidden'
+    : !isDesktopVisible
+    ? 'lg:hidden'
+    : !isMobileVisible
+    ? 'hidden lg:flex'
+    : 'flex';
+
+  const imageFitClass = heroContent?.heroImageFit === 'contain' ? 'object-contain' : 'object-cover';
+  const imagePositionClass =
+    heroContent?.heroImagePosition === 'top'
+      ? 'object-top'
+      : heroContent?.heroImagePosition === 'bottom'
+      ? 'object-bottom'
+      : heroContent?.heroImagePosition === 'left'
+      ? 'object-left'
+      : heroContent?.heroImagePosition === 'right'
+      ? 'object-right'
+      : 'object-center';
+
+  const imageScale = (heroContent?.heroImageScale || 100) / 100;
+
+  // Active image to display
+  const activeImage = (currentSlideIndex === 0 && resolvedHeroImage) ? resolvedHeroImage : currentSlide.image;
+
   return (
     <div className="relative bg-[#051C13] text-white overflow-hidden">
       {/* Dynamic Background Glow */}
@@ -121,7 +189,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Left Text Content */}
-          <div className="lg:col-span-7 space-y-5 text-center lg:text-left relative z-20">
+          <div className={`${isHeroVisualEnabled ? 'lg:col-span-7' : 'lg:col-span-12 max-w-3xl mx-auto text-center'} space-y-5 text-center lg:text-left relative z-20`}>
             
             {/* Top Store Badge */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-amber-300 text-xs font-bold uppercase tracking-wider shadow-lg backdrop-blur-md">
@@ -187,88 +255,97 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
           </div>
 
           {/* Right Hero Showcase Card & Controls */}
-          <div className="lg:col-span-5 flex flex-col items-center relative z-20">
-            <div className="relative w-full max-w-md lg:max-w-none aspect-[4/3] sm:aspect-[1/1] rounded-3xl overflow-hidden shadow-2xl border border-white/15 bg-neutral-950/90 flex items-center justify-center group">
-              
-              {imgLoading && (
-                <div className="absolute inset-0 bg-neutral-950 flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+          {isHeroVisualEnabled && (
+            <div className={`lg:col-span-5 ${visibilityClass} flex-col items-center relative z-20`}>
+              <div className="relative w-full max-w-md lg:max-w-none aspect-[4/3] sm:aspect-[1/1] rounded-3xl overflow-hidden shadow-2xl border border-white/15 bg-neutral-950/90 flex items-center justify-center group">
+                
+                {imgLoading && (
+                  <div className="absolute inset-0 bg-neutral-950 flex items-center justify-center z-10">
+                    <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+                  </div>
+                )}
+
+                <div className="w-full h-full overflow-hidden flex items-center justify-center">
+                  <img
+                    src={activeImage}
+                    alt={selectedProduct?.name || currentSlide.title}
+                    loading="eager"
+                    fetchPriority="high"
+                    style={{ transform: `scale(${imageScale})` }}
+                    onLoad={() => setImgLoading(false)}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80';
+                      setImgLoading(false);
+                    }}
+                    className={`w-full h-full ${imageFitClass} ${imagePositionClass} transition-all duration-500 group-hover:scale-105 ${
+                      imgLoading ? 'scale-105 blur-md opacity-30' : 'scale-100 blur-0 opacity-100'
+                    }`}
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
-              )}
 
-              <img
-                src={currentSlide.image}
-                alt={currentSlide.title}
-                loading="eager"
-                fetchPriority="high"
-                onLoad={() => setImgLoading(false)}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80';
-                  setImgLoading(false);
-                }}
-                className={`w-full h-full object-cover object-center transition-all duration-500 group-hover:scale-105 ${
-                  imgLoading ? 'scale-105 blur-md opacity-30' : 'scale-100 blur-0 opacity-100'
-                }`}
-                referrerPolicy="no-referrer"
-              />
+                {/* Gradient Overlay & Badge on image */}
+                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent pointer-events-none" />
 
-              {/* Gradient Overlay & Badge on image */}
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute top-4 left-4 z-20">
+                  <span className="bg-black/60 backdrop-blur-md text-amber-300 border border-white/20 text-[11px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span>{selectedProduct ? 'Selected Hero Product' : 'Marudhar Verified Quality'}</span>
+                  </span>
+                </div>
 
-              <div className="absolute top-4 left-4 z-20">
-                <span className="bg-black/60 backdrop-blur-md text-amber-300 border border-white/20 text-[11px] font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>Marudhar Verified Quality</span>
-                </span>
-              </div>
-
-              {/* Slide controls overlay */}
-              <button
-                onClick={handlePrev}
-                className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 transition-all opacity-80 group-hover:opacity-100 active:scale-95 z-30"
-                aria-label="Previous slide"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-
-              <button
-                onClick={handleNext}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 transition-all opacity-80 group-hover:opacity-100 active:scale-95 z-30"
-                aria-label="Next slide"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-
-              {/* Bottom Caption on image */}
-              <div className="absolute bottom-4 left-4 right-4 z-20 flex items-center justify-between text-white text-xs font-semibold">
-                <span className="truncate pr-2">{currentSlide.badge}</span>
-                <span className="bg-emerald-500/90 text-neutral-950 font-black px-2.5 py-0.5 rounded-full text-[11px] shrink-0">
-                  {currentSlide.priceTag || 'Original'}
-                </span>
-              </div>
-
-            </div>
-
-            {/* Slide Dots Indicator */}
-            <div className="flex items-center gap-2 mt-4">
-              {slides.map((_, idx) => (
+                {/* Slide controls overlay */}
                 <button
-                  key={idx}
-                  onClick={() => {
-                    setCurrentSlideIndex(idx);
-                    setImgLoading(true);
-                  }}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    idx === currentSlideIndex
-                      ? 'w-8 bg-amber-400'
-                      : 'w-2 bg-emerald-800 hover:bg-emerald-600'
-                  }`}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
-            </div>
+                  onClick={handlePrev}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 transition-all opacity-80 group-hover:opacity-100 active:scale-95 z-30"
+                  aria-label="Previous slide"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
 
-          </div>
+                <button
+                  onClick={handleNext}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 transition-all opacity-80 group-hover:opacity-100 active:scale-95 z-30"
+                  aria-label="Next slide"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+
+                {/* Bottom Caption on image */}
+                <div className="absolute bottom-4 left-4 right-4 z-20 flex items-center justify-between text-white text-xs font-semibold">
+                  <span className="truncate pr-2">
+                    {selectedProduct && currentSlideIndex === 0 ? selectedProduct.name : currentSlide.badge}
+                  </span>
+                  <span className="bg-emerald-500/90 text-neutral-950 font-black px-2.5 py-0.5 rounded-full text-[11px] shrink-0">
+                    {selectedProduct && currentSlideIndex === 0
+                      ? `₹${selectedProduct.price}`
+                      : currentSlide.priceTag || 'Original'}
+                  </span>
+                </div>
+
+              </div>
+
+              {/* Slide Dots Indicator */}
+              <div className="flex items-center gap-2 mt-4">
+                {slides.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setCurrentSlideIndex(idx);
+                      setImgLoading(true);
+                    }}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      idx === currentSlideIndex
+                        ? 'w-8 bg-amber-400'
+                        : 'w-2 bg-emerald-800 hover:bg-emerald-600'
+                    }`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+            </div>
+          )}
 
         </div>
       </section>
@@ -299,11 +376,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
 
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-emerald-950/40 border border-emerald-900/30">
             <div className="w-8 h-8 rounded-lg bg-emerald-900/60 text-emerald-400 flex items-center justify-center shrink-0">
-              <RefreshCw className="w-4 h-4" />
+              <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-bold text-white">7 दिन आसान एक्सचेंज • 7-Day Swap</div>
-              <div className="text-[10px] text-emerald-300/70">साइज बदलना आसान • Easy Exchange</div>
+              <div className="text-xs font-bold text-white">ऑनलाइन ऑर्डर पॉलिसी • Policy</div>
+              <div className="text-[10px] text-rose-300/80 font-medium">No Return • No Exchange • No Change</div>
             </div>
           </div>
 

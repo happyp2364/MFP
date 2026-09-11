@@ -25,6 +25,7 @@ import {
   AlertCircle,
   X,
   Package,
+  Instagram,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { PUBLIC_SITE_URL } from '../../utils/siteUrl';
@@ -38,6 +39,7 @@ import {
   Product,
 } from '../../types';
 import { sendBrowserWebPushNotification } from '../../utils/pushNotifications';
+import { InstagramReelsAdminManager } from './InstagramReelsAdminManager';
 
 const EMAIL_CATEGORIES: { id: CampaignCategory; label: string }[] = [
   { id: 'DAILY_OFFERS', label: 'Daily Offers' },
@@ -102,7 +104,7 @@ export const MarketingCenterView: React.FC = () => {
     showToast,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'campaigns' | 'subscribers' | 'whatsapp'>('campaigns');
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'subscribers' | 'whatsapp' | 'instagram_reels'>('campaigns');
   const [searchTerm, setSearchTerm] = useState('');
   const [channelFilter, setChannelFilter] = useState<'ALL' | 'EMAIL' | 'PUSH' | 'WHATSAPP'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT' | 'SCHEDULED' | 'SENT'>('ALL');
@@ -428,6 +430,18 @@ export const MarketingCenterView: React.FC = () => {
             <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
             <span>WhatsApp Business Platform</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('instagram_reels')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 whitespace-nowrap ${
+              activeTab === 'instagram_reels'
+                ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md'
+                : 'text-neutral-600 hover:bg-neutral-100'
+            }`}
+          >
+            <Instagram className="w-3.5 h-3.5 text-pink-500 group-hover:text-pink-600" />
+            <span>Instagram Reels Showcase</span>
+          </button>
         </div>
 
         {/* Filter Controls */}
@@ -745,6 +759,11 @@ export const MarketingCenterView: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB 4: INSTAGRAM REELS SMARTPHONE SHOWCASE */}
+      {activeTab === 'instagram_reels' && (
+        <InstagramReelsAdminManager />
       )}
 
       {/* CAMPAIGN BUILDER MODAL */}

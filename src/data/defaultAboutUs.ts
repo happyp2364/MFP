@@ -18,7 +18,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
     "High-performance Air-Cushion Sports Shoes",
     "WhatsApp par personalized size guidance",
     "Direct factory sourcing ki wajah se honest pricing",
-    "Easy size exchange & fast doorstep delivery"
+    "Fast doorstep delivery & Open Box Trial"
   ],
   mainHeaderImage: "/images/shop/shop_interior_illuminated_walkthrough.jpg",
   ownersAndTeam: [
@@ -177,7 +177,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       title: "100% Size & Comfort Guarantee Seal",
       issuerOrPublisher: "Footwear Standards Trust",
       year: "2025",
-      description: "Zero-defect check protocol aur 100% customer-friendly exchange policy ke liye verified seal.",
+      description: "Zero-defect check protocol aur 100% authentic quality assurance verified seal.",
       imageUrl: "/images/shop/shop_interior_illuminated_walkthrough.jpg",
       enabled: true,
       displayOrder: 3

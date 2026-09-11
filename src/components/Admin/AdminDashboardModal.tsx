@@ -98,6 +98,8 @@ const LogoCustomizationView = lazy(() => import('./LogoCustomizationView').then(
 const DesignCustomizerPanel = lazy(() => import('./DesignCustomizerPanel').then(m => ({ default: m.DesignCustomizerPanel })));
 const VisualWebsiteBuilder = lazy(() => import('./VisualWebsiteBuilder').then(m => ({ default: m.VisualWebsiteBuilder })));
 const AdminNavCustomizer = lazy(() => import('./AdminNavCustomizer').then(m => ({ default: m.AdminNavCustomizer })));
+const HeroImageSettingsCard = lazy(() => import('./HeroImageSettingsCard').then(m => ({ default: m.HeroImageSettingsCard })));
+const InstagramReelsAdminManager = lazy(() => import('./InstagramReelsAdminManager').then(m => ({ default: m.InstagramReelsAdminManager })));
 import { useAdminNav } from '../../context/AdminNavContext';
 import { MapPin, Users, Volume2, Crown, Paintbrush, Layout, SlidersHorizontal, ChevronDown, ChevronRight, Boxes, PackageCheck } from 'lucide-react';
 import { validateFileUpload } from '../../lib/security';
@@ -109,7 +111,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'logo_customization' | 'website_design' | 'visual_builder' | 'nav_customizer';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'instagram_reels' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'logo_customization' | 'website_design' | 'visual_builder' | 'nav_customizer';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -203,6 +205,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       case 'order_celebration': return <PartyPopper className="w-4 h-4 text-indigo-500 shrink-0" />;
       case 'engagement_analytics': return <TrendingUp className="w-4 h-4 text-blue-500 shrink-0" />;
       case 'instagram': return <Share2 className="w-4 h-4 text-emerald-500 shrink-0" />;
+      case 'instagram_reels': return <Instagram className="w-4 h-4 text-pink-500 shrink-0" />;
       case 'ai_pet_shoe': return <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />;
       case 'trending_shoes': return <Flame className="w-4 h-4 text-[#0B8F63] shrink-0" />;
       case 'price_point_699': return <Zap className="w-4 h-4 text-emerald-500 shrink-0" />;
@@ -784,6 +787,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: LIVE INSTAGRAM INTEGRATION ----------------- */}
             {activeTab === 'instagram' && <SocialMediaSettingsView />}
+            {activeTab === 'instagram_reels' && (
+              <AdminErrorBoundary fallbackTitle="Instagram Reels Manager Error">
+                <InstagramReelsAdminManager />
+              </AdminErrorBoundary>
+            )}
 
             {/* ----------------- TAB: CATEGORIES & HIGHLIGHTS ----------------- */}
             {activeTab === 'categories' && <CategoriesSettingsView />}
@@ -1307,6 +1315,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {/* TAB: AI HOMEPAGE BUILDER & STORE INFO */}
             {activeTab === 'homepage' && (
               <div className="space-y-8">
+                <AdminErrorBoundary fallbackTitle="Hero Shoe Visual Control Error">
+                  <HeroImageSettingsCard />
+                </AdminErrorBoundary>
+
                 <AdminErrorBoundary fallbackTitle="Homepage Builder Error">
                   <HomepageBuilderTab />
                 </AdminErrorBoundary>

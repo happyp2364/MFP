@@ -44,9 +44,11 @@ import { useStore } from '../../context/StoreContext';
 import { WebsiteConfig, SocialLinkItem, PhysicalStore } from '../../types';
 import { DEFAULT_WEBSITE_CONFIG } from '../../data/defaultWebsiteConfig';
 import { CustomerCommunicationSettingsView } from './CustomerCommunicationSettingsView';
+import { HeroImageSettingsCard } from './HeroImageSettingsCard';
 
 type ConfigSection =
   | 'identity'
+  | 'hero'
   | 'contact'
   | 'address'
   | 'social'
@@ -73,6 +75,7 @@ interface SectionDefinition {
 
 const SECTIONS: SectionDefinition[] = [
   { id: 'identity', title: 'Business Identity', badge: '1', icon: Building2, description: 'Brand name, legal entity, logos, taglines, and company story' },
+  { id: 'hero', title: 'Hero / Homepage Settings', badge: 'Shoe', icon: Sparkles, description: 'Hero product/shoe image visual, catalog product picker, custom uploads, fit & zoom controls' },
   { id: 'contact', title: 'Contact Details', badge: '2', icon: Phone, description: 'Phone numbers, emails, toll-free, and website URL' },
   { id: 'address', title: 'Shop Address', badge: '3', icon: MapPin, description: 'Showroom address, PIN code, maps link, and coordinates' },
   { id: 'social', title: 'Social Media', badge: '4', icon: Share2, description: 'Unlimited dynamic social links with platform badges' },
@@ -652,6 +655,13 @@ export const WebsiteConfigurationView: React.FC = () => {
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* SECTION: HERO / HOMEPAGE SETTINGS */}
+          {activeSection === 'hero' && (
+            <div className="space-y-6 max-w-5xl">
+              <HeroImageSettingsCard />
             </div>
           )}
 

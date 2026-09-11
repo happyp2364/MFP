@@ -7,6 +7,7 @@ import {
 import { DEFAULT_INSTAGRAM_CONFIG, DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG, DEFAULT_SOCIAL_ANALYTICS } from '../data/mockData';
 import { db } from '../lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { sanitizeForFirestore } from '../lib/tenantUtils';
 
 interface MediaContextType {
   instagramConfig: InstagramConfig;
@@ -48,6 +49,16 @@ const normalizeSocialConfig = (raw: any): SocialMediaCenterConfig => {
     youtubePlaylists: Array.isArray(raw.youtubePlaylists) 
       ? raw.youtubePlaylists 
       : (DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.youtubePlaylists || []),
+    instagramReelsPhoneEnabled: raw.instagramReelsPhoneEnabled !== undefined
+      ? Boolean(raw.instagramReelsPhoneEnabled)
+      : (DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.instagramReelsPhoneEnabled !== false),
+    instagramReelsPhoneTitle: raw.instagramReelsPhoneTitle || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.instagramReelsPhoneTitle,
+    instagramReelsPhoneSubtitle: raw.instagramReelsPhoneSubtitle || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.instagramReelsPhoneSubtitle,
+    instagramReelsPhoneAccountHandle: raw.instagramReelsPhoneAccountHandle || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.instagramReelsPhoneAccountHandle,
+    instagramReelsPhoneAccountUrl: raw.instagramReelsPhoneAccountUrl || DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.instagramReelsPhoneAccountUrl,
+    instagramReelsList: Array.isArray(raw.instagramReelsList)
+      ? raw.instagramReelsList
+      : (DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.instagramReelsList || []),
   };
 };
 
@@ -144,7 +155,8 @@ export const MediaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return mergedConfig;
     });
     try {
-      await setDoc(doc(db, 'settings', 'instagram_config'), config, { merge: true });
+      const sanitized = sanitizeForFirestore(config);
+      await setDoc(doc(db, 'settings', 'instagram_config'), sanitized, { merge: true });
     } catch (e) {
       console.warn('Firestore instagram config sync failed', e);
     }
@@ -175,6 +187,9 @@ export const MediaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         youtubePlaylists: Array.isArray(config.youtubePlaylists) 
           ? config.youtubePlaylists 
           : (Array.isArray(base.youtubePlaylists) ? base.youtubePlaylists : (DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.youtubePlaylists || [])),
+        instagramReelsList: Array.isArray(config.instagramReelsList)
+          ? config.instagramReelsList
+          : (Array.isArray(base.instagramReelsList) ? base.instagramReelsList : (DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG.instagramReelsList || [])),
       };
       try {
         localStorage.setItem(STORAGE_KEYS.SOCIAL_MEDIA_CONFIG, JSON.stringify(merged));
@@ -185,7 +200,8 @@ export const MediaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
 
     try {
-      await setDoc(doc(db, 'settings', 'social_media'), config, { merge: true });
+      const sanitized = sanitizeForFirestore(config);
+      await setDoc(doc(db, 'settings', 'social_media'), sanitized, { merge: true });
     } catch (e) {
       console.warn('Firestore social media config sync failed', e);
     }

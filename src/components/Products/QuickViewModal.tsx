@@ -370,7 +370,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               <div className="flex items-center space-x-1.5">
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
                 <span className="text-[11px] font-serif font-extrabold text-amber-100 uppercase tracking-wider">
-                  {paymentSettings.policyText || 'No Return & No Exchange Policy'}
+                  {paymentSettings.onlineOrderPolicy || paymentSettings.policyText || 'Online Orders: No Return • No Exchange • No Change'}
                 </span>
               </div>
               <span className="text-[9px] font-bold text-amber-300 bg-amber-900/60 px-2 py-0.5 rounded-full border border-amber-700/50">
@@ -393,8 +393,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               </div>
 
               <div className="bg-black/40 p-2 rounded-xl border border-white/10">
-                <span className="font-extrabold text-rose-300 block">❌ NO RETURN / EXCHANGE</span>
-                <span className="text-[9px] text-neutral-300">Quality Checked</span>
+                <span className="font-extrabold text-rose-300 block">❌ NO RETURN / EXCHANGE / CHANGE</span>
+                <span className="text-[9px] text-neutral-300">Online Purchase Policy</span>
               </div>
             </div>
           </div>

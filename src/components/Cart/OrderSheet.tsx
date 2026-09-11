@@ -257,12 +257,11 @@ export const OrderSheet: React.FC<OrderSheetProps> = ({
                   {subtotal < freeMin ? `₹${freeMin - subtotal} और जोड़ें मुफ्त डिलीवरी के लिए` : 'मुफ्त डिलीवरी उपलब्ध! • Free Shipping'}
                 </span>
               </div>
-              <div className="flex items-center justify-between font-extrabold text-rose-300 pt-0.5">
+              <div className="flex items-center justify-between font-extrabold text-rose-300 pt-0.5 text-[10px]">
                 <span className="flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
-                  <span>❌ नो रिटर्न • NO RETURN</span>
+                  <span>Online Orders: No Return • No Exchange • No Change</span>
                 </span>
-                <span>❌ नो एक्सचेंज • NO EXCHANGE</span>
               </div>
             </div>
 

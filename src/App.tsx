@@ -15,6 +15,7 @@ import { ReviewsSection } from './components/Reviews/ReviewsSection';
 import { AboutSection } from './components/About/AboutSection';
 import { ContactSection } from './components/Contact/ContactSection';
 import { InstagramFeed } from './components/Social/InstagramFeed';
+import { InstagramPhoneReelSection } from './components/Social/InstagramPhoneReelSection';
 import { SocialFollowCTA } from './components/Social/SocialFollowCTA';
 import { Footer } from './components/Footer/Footer';
 import { FloatingActionHub } from './components/FloatingActions/FloatingActionHub';
@@ -1093,7 +1094,14 @@ function StorefrontView() {
                 case 'instagram':
                   return (
                     <div id="instagram" key="instagram" style={sectionStyle} className={widthClass}>
+                      <InstagramPhoneReelSection />
                       <InstagramFeed />
+                    </div>
+                  );
+                case 'instagram_reels':
+                  return (
+                    <div id="instagram_reels" key="instagram_reels" style={sectionStyle} className={widthClass}>
+                      <InstagramPhoneReelSection />
                     </div>
                   );
                 case 'social':

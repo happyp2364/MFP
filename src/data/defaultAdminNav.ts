@@ -32,6 +32,7 @@ export const DEFAULT_ADMIN_NAV_CONFIG: AdminNavConfig = {
         { id: 'order_celebration', label: 'Order Success Celebration', iconName: 'PartyPopper', visible: true },
         { id: 'engagement_analytics', label: 'Reward Analytics', iconName: 'TrendingUp', visible: true },
         { id: 'instagram', label: 'Social Media Center', iconName: 'Share2', visible: true },
+        { id: 'instagram_reels', label: 'Instagram Reels', iconName: 'Instagram', visible: true },
         { id: 'ai_pet_shoe', label: 'AI Pet Shoe Mascot', iconName: 'Sparkles', visible: true },
         { id: 'trending_shoes', label: '🔥 Trending Shoes Manager', iconName: 'Flame', visible: true },
         { id: 'price_point_699', label: '🔥 ₹699 Collection Manager', iconName: 'Zap', visible: true },

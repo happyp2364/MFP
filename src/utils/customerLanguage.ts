@@ -169,8 +169,8 @@ export const CUSTOMER_COMMUNICATION_DICTIONARY = {
       en: 'Cash on Delivery Available • Pay After Inspection',
     },
     fitGuarantee: {
-      hi: '100% सही साइज व आसान 7-दिन एक्सचेंज',
-      en: '100% Fit Guarantee & Easy 7-Day Exchange',
+      hi: 'ऑनलाइन ऑर्डर: नो रिटर्न • नो एक्सचेंज • नो चेंज',
+      en: 'Online Orders: No Return • No Exchange • No Change',
     },
   },
   toasts: {

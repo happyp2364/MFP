@@ -512,6 +512,18 @@ export interface HeroContent {
   glowStrength?: 'subtle' | 'medium' | 'intense';
   parallaxStrength?: 'disabled' | 'subtle' | 'medium' | 'strong';
   animationSpeed?: 'slow' | 'normal' | 'fast';
+
+  // Admin-Controlled Hero Product / Shoe Image
+  heroImageMode?: 'product' | 'custom';
+  heroProductId?: string;
+  heroProductImageIndex?: number;
+  customHeroImageUrl?: string;
+  heroImageFit?: 'cover' | 'contain';
+  heroImagePosition?: 'center' | 'top' | 'bottom' | 'left' | 'right';
+  heroImageScale?: number;
+  heroImageEnabled?: boolean;
+  heroImageDesktopVisible?: boolean;
+  heroImageMobileVisible?: boolean;
 }
 
 export interface MegaMenuSubcategory {
@@ -678,6 +690,8 @@ export interface PaymentSettings {
   noReturnPolicyEnabled?: boolean;
   noExchangePolicyEnabled?: boolean;
   policyText?: string;
+  onlineOrderPolicy?: string;
+  offlineStorePolicy?: string;
   deliveryMessage?: string;
   estimatedDeliveryTime?: string;
   // Payment Method Based Pricing / Convenience Fee
@@ -1194,6 +1208,21 @@ export interface SocialInstagramMediaItem {
   createdAt: string;
 }
 
+export interface InstagramReelItem {
+  id: string;
+  reelUrl: string;
+  title?: string;
+  caption?: string;
+  thumbnailUrl?: string;
+  viewsCount?: string;
+  likesCount?: string;
+  soundTitle?: string;
+  taggedProductId?: string;
+  featured?: boolean;
+  enabled: boolean;
+  displayOrder: number;
+}
+
 export interface YouTubeVideoItem {
   id: string;
   title: string;
@@ -1208,6 +1237,13 @@ export interface SocialMediaCenterConfig {
   platforms?: SocialPlatformConfig[];
   instagramHighlights?: InstagramStoryHighlight[];
   instagramMedia?: SocialInstagramMediaItem[];
+  // Instagram Reels Phone Mockup Configuration
+  instagramReelsPhoneEnabled?: boolean;
+  instagramReelsPhoneTitle?: string;
+  instagramReelsPhoneSubtitle?: string;
+  instagramReelsPhoneAccountHandle?: string;
+  instagramReelsPhoneAccountUrl?: string;
+  instagramReelsList?: InstagramReelItem[];
   youtubeVideos?: YouTubeVideoItem[];
   youtubeShorts?: YouTubeVideoItem[];
   youtubeFeaturedVideo?: YouTubeVideoItem;

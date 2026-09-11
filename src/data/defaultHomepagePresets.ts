@@ -548,7 +548,7 @@ export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
         { q: 'How do I choose the correct shoe size?', a: 'We follow standard Indian/UK sizing (Size 6 to 11). You can also click our Size Guide on product pages or message us on WhatsApp for exact foot length measurements.' },
         { q: 'What is Open Box Delivery?', a: 'When the delivery partner arrives, you can open the box, check the shoes for finish and fitting, and then make payment or accept delivery.' },
         { q: 'How long does shipping take from Pipar City?', a: 'Orders inside Rajasthan deliver in 1-2 days. Metro cities take 2-4 days. Track live updates via SMS & WhatsApp.' },
-        { q: 'Can I exchange my shoes if size does not fit?', a: 'Yes! We provide easy 7-day hassle-free size replacements with doorstep pickup.' },
+        { q: 'What is the return/exchange policy for online orders?', a: 'For online orders, our policy is: Online Orders: No Return • No Exchange • No Change. Please check our size guides before ordering or visit our Pipar City store for physical trials.' },
       ],
     },
   },

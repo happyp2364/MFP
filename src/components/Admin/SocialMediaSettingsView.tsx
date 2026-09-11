@@ -16,6 +16,7 @@ import { SocialPlatformConfig, InstagramStoryHighlight, SocialInstagramMediaItem
 import { AdminImageSelector } from '../Common/UniversalImageSystem';
 import { DEFAULT_SOCIAL_PLATFORMS, DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG, DEFAULT_SOCIAL_ANALYTICS } from '../../data/mockData';
 import { SocialIconRenderer } from '../Social/SocialIconRenderer';
+import { InstagramReelsAdminManager } from './InstagramReelsAdminManager';
 
 export const SocialMediaSettingsView: React.FC = () => {
   const { 
@@ -1504,6 +1505,9 @@ export const SocialMediaSettingsView: React.FC = () => {
       {/* TAB CONTENT: INSTAGRAM ADDITIONS */}
       {activeTab === 'instagram' && (
         <div className="space-y-6 animate-in fade-in duration-300">
+          {/* INSTAGRAM REELS SMARTPHONE SHOWCASE ADMIN */}
+          <InstagramReelsAdminManager />
+
           {/* Custom Settings Card */}
           <div className="bg-white p-5 rounded-3xl border border-neutral-200/80 shadow-sm space-y-4">
             <h3 className="font-serif-heading font-black text-neutral-800 text-base flex items-center gap-1">

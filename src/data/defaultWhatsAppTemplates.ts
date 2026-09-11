@@ -91,7 +91,7 @@ const DEFAULT_ADVANCED_OPTIONS = {
   showDeliveryNotes: true,
   customThankYouMessage: '✨ Thank you for choosing Marudhar Fashion Point! We appreciate your trust.',
   storePoliciesNote: '📋 Store Policy: 100% Authentic Quality Assured. Verified Before Dispatch.',
-  returnExchangeNote: '🔄 Size Exchange available within 7 days of delivery.',
+  returnExchangeNote: '🚫 Online Orders: No Return • No Exchange • No Change.',
 };
 
 export const DEFAULT_WHATSAPP_TEMPLATES: WhatsAppTemplate[] = [

@@ -98,7 +98,13 @@ export const PaymentSettingsView: React.FC = () => {
     paymentSettings.noExchangePolicyEnabled !== false
   );
   const [policyText, setPolicyText] = useState<string>(
-    paymentSettings.policyText || 'No Return & No Exchange Policy'
+    paymentSettings.policyText || 'Online Orders: No Return • No Exchange • No Change'
+  );
+  const [onlineOrderPolicy, setOnlineOrderPolicy] = useState<string>(
+    paymentSettings.onlineOrderPolicy || 'Online Orders: No Return • No Exchange • No Change'
+  );
+  const [offlineStorePolicy, setOfflineStorePolicy] = useState<string>(
+    paymentSettings.offlineStorePolicy || 'Physical Store Purchases Only: Size exchange available in-store within 7 days with valid store invoice.'
   );
   const [deliveryMessage, setDeliveryMessage] = useState<string>(
     paymentSettings.deliveryMessage || '🚚 Fast & Express Delivery Across India'
@@ -354,6 +360,8 @@ export const PaymentSettingsView: React.FC = () => {
       noReturnPolicyEnabled,
       noExchangePolicyEnabled,
       policyText: policyText.trim(),
+      onlineOrderPolicy: onlineOrderPolicy.trim(),
+      offlineStorePolicy: offlineStorePolicy.trim(),
       deliveryMessage: deliveryMessage.trim(),
       estimatedDeliveryTime: estimatedDeliveryTime.trim(),
       gstEnabled,
@@ -1040,6 +1048,36 @@ export const PaymentSettingsView: React.FC = () => {
                   placeholder="No Return & No Exchange Policy"
                   className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
                 />
+              </div>
+
+              {/* Online Order Policy Notice */}
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Online Order Policy Text
+                </label>
+                <input
+                  type="text"
+                  value={onlineOrderPolicy}
+                  onChange={(e) => setOnlineOrderPolicy(e.target.value)}
+                  placeholder="Online Orders: No Return • No Exchange • No Change"
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
+                />
+                <p className="text-[10px] text-neutral-500">Displayed across product pages, cart drawer, and online order invoices.</p>
+              </div>
+
+              {/* Physical Store Policy Notice */}
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Physical Store Policy Note (Invoices)
+                </label>
+                <input
+                  type="text"
+                  value={offlineStorePolicy}
+                  onChange={(e) => setOfflineStorePolicy(e.target.value)}
+                  placeholder="Physical Store Purchases Only: Size exchange available in-store within 7 days with valid store invoice."
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
+                />
+                <p className="text-[10px] text-neutral-500">Note included on customer invoices clarifying physical store vs online policies.</p>
               </div>
 
               {/* Delivery Message */}

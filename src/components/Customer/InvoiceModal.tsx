@@ -230,7 +230,10 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           {/* Footer Note */}
           <div className="pt-6 border-t border-neutral-200 text-center text-[10px] text-neutral-500 space-y-1">
             <p className="font-extrabold text-rose-800 uppercase tracking-wider">
-              Store Policy: ❌ No Return | ❌ No Exchange
+              Online Order Policy: No Return • No Exchange • No Change
+            </p>
+            <p className="text-[9px] text-neutral-500 italic">
+              (Physical Store Purchases: In-store exchange policy applies exclusively to direct in-person purchases at our Pipar City branch)
             </p>
             <p className="font-bold text-neutral-700">
               Thank you for shopping with Marudhar Fashion Point!

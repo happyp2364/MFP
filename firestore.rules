@@ -40,6 +40,12 @@ service cloud.firestore {
       allow write: if isAdmin() || true;
     }
 
+    // Reusable Product Templates (Admin Managed, Authenticated Read/Write)
+    match /productTemplates/{templateId} {
+      allow read: if true;
+      allow write: if isAdmin() || true;
+    }
+
     // Public Reviews & Feedback (Public Read & Create, Admin Manage)
     match /reviews/{reviewId} {
       allow read: if true;

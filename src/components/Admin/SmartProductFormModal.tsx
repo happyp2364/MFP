@@ -23,8 +23,9 @@ import {
   DollarSign,
   FileText,
   Image as ImageIcon,
+  BookmarkPlus,
 } from 'lucide-react';
-import { Product, SizeStock, ProductColor, ProductVariant } from '../../types';
+import { Product, SizeStock, ProductColor, ProductVariant, ProductTemplate } from '../../types';
 import {
   PRODUCT_FOR_OPTIONS,
   getSubcategoriesForProductFor,
@@ -40,6 +41,10 @@ import { validateFileUpload } from '../../lib/security';
 import { QuickViewModal } from '../Products/QuickViewModal';
 import { AdminImageSelector } from '../Common/UniversalImageSystem';
 import { useStore } from '../../context/StoreContext';
+import { getProductTypes, getPrimaryProductType } from '../../utils/productTypeUtils';
+import { listenToProductTemplates } from '../../services/productTemplateService';
+import { ApplyTemplateModal } from './ApplyTemplateModal';
+import { SaveAsTemplateModal } from './SaveAsTemplateModal';
 
 interface SmartProductFormModalProps {
   product: Product;
@@ -71,8 +76,27 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
 }) => {
   const { showToast } = useStore();
   const [productState, setProductState] = useState<Product>(() => {
-    return { ...initialProduct };
+    const types = getProductTypes(initialProduct);
+    const primary = types[0] || '';
+    return {
+      ...initialProduct,
+      productTypes: types,
+      productType: initialProduct.productType || primary,
+      subcategory: initialProduct.subcategory || primary,
+    };
   });
+
+  // Template Management State
+  const [templates, setTemplates] = useState<ProductTemplate[]>([]);
+  const [isApplyTemplateOpen, setIsApplyTemplateOpen] = useState(false);
+  const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
+
+  useEffect(() => {
+    const unsub = listenToProductTemplates((loaded) => {
+      setTemplates(loaded);
+    });
+    return () => unsub();
+  }, []);
 
   const [hasDraft, setHasDraft] = useState(false);
   const [imageInputUrl, setImageInputUrl] = useState('');
@@ -302,30 +326,158 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // --- HANDLER: PRODUCT FOR (Category: men | women | kids) ---
   const handleSelectProductFor = (category: 'men' | 'women' | 'kids') => {
     const subs = getSubcategoriesForProductFor(category);
-    const defaultSub = subs.all[0] || 'Sports Shoes';
-    const newSizeStocks = buildDefaultSizeStocks(category, defaultSub);
+    const existingTypes = getProductTypes(productState);
+    const validInNewCat = existingTypes.filter((t) => subs.all.includes(t));
+    const newTypes = validInNewCat.length > 0 ? validInNewCat : (subs.all[0] ? [subs.all[0]] : []);
+    const primaryType = newTypes[0] || '';
+
+    const newSizeStocks = buildDefaultSizeStocks(category, primaryType);
     const newSizes = newSizeStocks.map((s) => s.size);
 
     setProductState((prev) => ({
       ...prev,
       category,
-      subcategory: defaultSub,
+      productTypes: newTypes,
+      productType: primaryType,
+      subcategory: primaryType,
       sizes: newSizes,
       sizeStocks: newSizeStocks,
     }));
   };
 
-  // --- HANDLER: PRODUCT TYPE (Subcategory) ---
-  const handleSelectSubcategory = (subcategory: string) => {
-    const newSizeStocks = buildDefaultSizeStocks(productState.category, subcategory);
-    const newSizes = newSizeStocks.map((s) => s.size);
+  const availableSubcategories = getSubcategoriesForProductFor(productState.category);
 
+  // --- MULTIPLE PRODUCT TYPES (Multi-Select) HANDLERS ---
+  const selectedProductTypes: string[] =
+    Array.isArray(productState.productTypes) && productState.productTypes.length > 0
+      ? productState.productTypes
+      : productState.subcategory
+      ? [productState.subcategory]
+      : [];
+
+  const handleToggleProductType = (sub: string) => {
+    let updated: string[];
+    if (selectedProductTypes.includes(sub)) {
+      if (selectedProductTypes.length <= 1) {
+        showToast('At least one product type must remain selected.', 'info');
+        return;
+      }
+      updated = selectedProductTypes.filter((t) => t !== sub);
+    } else {
+      updated = [...selectedProductTypes, sub];
+    }
+    const primary = updated[0] || '';
     setProductState((prev) => ({
       ...prev,
-      subcategory,
-      sizes: newSizes,
-      sizeStocks: newSizeStocks,
+      productTypes: updated,
+      productType: primary,
+      subcategory: primary,
     }));
+  };
+
+  const handleRemoveProductType = (sub: string) => {
+    if (selectedProductTypes.length <= 1) {
+      showToast('At least one product type must remain selected.', 'info');
+      return;
+    }
+    const updated = selectedProductTypes.filter((t) => t !== sub);
+    const primary = updated[0] || '';
+    setProductState((prev) => ({
+      ...prev,
+      productTypes: updated,
+      productType: primary,
+      subcategory: primary,
+    }));
+  };
+
+  const handleSelectAllProductTypes = () => {
+    const allSubs = [...availableSubcategories.all];
+    if (allSubs.length > 0) {
+      setProductState((prev) => ({
+        ...prev,
+        productTypes: allSubs,
+        productType: allSubs[0],
+        subcategory: allSubs[0],
+      }));
+    }
+  };
+
+  const handleResetToOneProductType = () => {
+    const defaultOne = availableSubcategories.all[0] || '';
+    setProductState((prev) => ({
+      ...prev,
+      productTypes: defaultOne ? [defaultOne] : [],
+      productType: defaultOne,
+      subcategory: defaultOne,
+    }));
+  };
+
+  // Legacy single subcategory select support
+  const handleSelectSubcategory = (subcategory: string) => {
+    handleToggleProductType(subcategory);
+  };
+
+  // --- TEMPLATE APPLICATION HANDLER ---
+  const handleApplyTemplate = (
+    template: ProductTemplate,
+    overwriteMode: 'fillEmpty' | 'overwriteAll'
+  ) => {
+    const templateTypes = getProductTypes(template);
+    const primaryType = templateTypes[0] || '';
+
+    setProductState((prev) => {
+      if (overwriteMode === 'fillEmpty') {
+        return {
+          ...prev,
+          category: prev.category || template.category,
+          productTypes:
+            prev.productTypes && prev.productTypes.length > 0 ? prev.productTypes : templateTypes,
+          subcategory: prev.subcategory || primaryType,
+          productType: prev.productType || primaryType,
+          brand: prev.brand?.trim() ? prev.brand : template.brand,
+          description: prev.description?.trim() ? prev.description : template.description,
+          shortDescription: prev.shortDescription?.trim()
+            ? prev.shortDescription
+            : template.shortDescription,
+          material: prev.material?.trim() ? prev.material : template.material,
+          fitGuide: prev.fitGuide?.trim() ? prev.fitGuide : template.fitGuide,
+          careInstructions: prev.careInstructions?.trim()
+            ? prev.careInstructions
+            : template.careInstructions,
+          features:
+            prev.features && prev.features.length > 0 ? prev.features : template.features,
+          collectionTags:
+            prev.collectionTags && prev.collectionTags.length > 0
+              ? prev.collectionTags
+              : template.collectionTags,
+          metaTitle: prev.metaTitle?.trim() ? prev.metaTitle : template.metaTitle,
+          metaDescription: prev.metaDescription?.trim()
+            ? prev.metaDescription
+            : template.metaDescription,
+        };
+      } else {
+        // overwriteAll (replaces reusable specs only, NEVER touches name, sku, price, images, sizes, stock!)
+        return {
+          ...prev,
+          category: template.category,
+          productTypes: templateTypes,
+          subcategory: primaryType,
+          productType: primaryType,
+          brand: template.brand || prev.brand,
+          description: template.description || prev.description,
+          shortDescription: template.shortDescription || prev.shortDescription,
+          material: template.material || prev.material,
+          fitGuide: template.fitGuide || prev.fitGuide,
+          careInstructions: template.careInstructions || prev.careInstructions,
+          features: template.features || prev.features,
+          collectionTags: template.collectionTags || prev.collectionTags,
+          metaTitle: template.metaTitle || prev.metaTitle,
+          metaDescription: template.metaDescription || prev.metaDescription,
+        };
+      }
+    });
+
+    showToast(`Template "${template.name}" applied successfully!`, 'success');
   };
 
   // Current Size System Type
@@ -497,8 +649,19 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     // Process sizes: if no sizes selected, leave as empty array or keep current
     const activeSizes = productState.sizes || [];
 
+    const cleanTypes = getProductTypes(productState);
+    if (cleanTypes.length === 0) {
+      showToast('Please select at least one product type.', 'error');
+      setIsSaving(false);
+      return;
+    }
+    const primaryType = cleanTypes[0] || '';
+
     const finalProduct: Product = {
       ...productState,
+      productTypes: cleanTypes,
+      productType: primaryType,
+      subcategory: primaryType,
       name: cleanName,
       brand: productState.brand ? productState.brand.trim() : 'Marudhar Fashion',
       description: productState.description ? productState.description.trim() : '',
@@ -553,8 +716,6 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
       setIsSaving(false);
     }
   };
-
-  const availableSubcategories = getSubcategoriesForProductFor(productState.category);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
@@ -628,6 +789,43 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
             </div>
           </div>
         )}
+
+        {/* TEMPLATE QUICK ACTIONS TOOLBAR */}
+        <div className="bg-gradient-to-r from-emerald-50 via-teal-50/70 to-neutral-50 border-b border-emerald-200/70 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="p-1 rounded-lg bg-[#0B8F63] text-white shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5" />
+            </span>
+            <span className="font-extrabold text-neutral-900 text-xs">
+              Product Specifications & Templates
+            </span>
+            <span className="text-[11px] text-neutral-500 hidden sm:inline">
+              • Fast-track listing creation by pre-filling reusable specs
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsApplyTemplateOpen(true)}
+              className="px-3 py-1.5 bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Select a saved template to pre-fill specifications"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Use Template</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsSaveAsTemplateOpen(true)}
+              className="px-3 py-1.5 bg-white hover:bg-neutral-100 text-neutral-700 font-bold text-xs rounded-xl border border-neutral-300 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Save current form values as a new reusable template"
+            >
+              <BookmarkPlus className="w-3.5 h-3.5 text-neutral-500" />
+              <span>Save as Template</span>
+            </button>
+          </div>
+        </div>
 
         {/* SINGLE CLEAN SCROLLABLE FORM BODY */}
         <form onSubmit={handleSubmitForm} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 text-xs">
@@ -796,30 +994,84 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                 </div>
               </div>
 
-              {/* Product Type / Subcategory */}
+              {/* Product Types (Multi-Select) */}
               <div>
-                <label className="font-extrabold text-neutral-900 block mb-2">
-                  Product Type ({productState.category.toUpperCase()}) <span className="text-rose-500">*</span>
-                </label>
-                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-neutral-50 rounded-xl border border-neutral-200">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="font-extrabold text-neutral-900 flex items-center gap-1.5">
+                    <span>Product Types ({productState.category.toUpperCase()})</span>
+                    <span className="text-rose-500">*</span>
+                    <span className="text-[10px] font-extrabold text-[#0B8F63] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      {selectedProductTypes.length} selected
+                    </span>
+                  </label>
+                  <div className="flex items-center gap-1.5 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={handleSelectAllProductTypes}
+                      className="text-neutral-500 hover:text-[#0B8F63] font-bold underline transition-colors"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-neutral-300">|</span>
+                    <button
+                      type="button"
+                      onClick={handleResetToOneProductType}
+                      className="text-neutral-500 hover:text-rose-600 font-bold underline transition-colors"
+                    >
+                      Reset to 1
+                    </button>
+                  </div>
+                </div>
+
+                {/* Selected Types Active Chips */}
+                <div className="p-2 bg-emerald-50/60 rounded-xl border border-emerald-200/80 mb-2 flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] uppercase font-black tracking-wider text-[#0B8F63] mr-0.5">
+                    Active:
+                  </span>
+                  {selectedProductTypes.map((type) => (
+                    <span
+                      key={type}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#0B8F63] text-white shadow-2xs animate-fade-in"
+                    >
+                      <span>{type}</span>
+                      {selectedProductTypes.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveProductType(type)}
+                          className="w-3.5 h-3.5 rounded-full hover:bg-black/20 flex items-center justify-center transition-colors ml-0.5"
+                          title={`Remove ${type}`}
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Options Selector Grid */}
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 bg-neutral-50 rounded-xl border border-neutral-200">
                   {availableSubcategories.all.map((sub) => {
-                    const isSel = productState.subcategory === sub;
+                    const isSel = selectedProductTypes.includes(sub);
                     return (
                       <button
                         key={sub}
                         type="button"
-                        onClick={() => handleSelectSubcategory(sub)}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                        onClick={() => handleToggleProductType(sub)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
                           isSel
-                            ? 'bg-[#0B8F63] text-white border-[#0B8F63] shadow-xs'
-                            : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-300'
+                            ? 'bg-[#0B8F63] text-white border-[#0B8F63] shadow-2xs font-extrabold'
+                            : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-300 hover:bg-neutral-100'
                         }`}
                       >
-                        {sub}
+                        {isSel && <Check className="w-3 h-3 stroke-[3]" />}
+                        <span>{sub}</span>
                       </button>
                     );
                   })}
                 </div>
+                <p className="text-[10px] text-neutral-400 mt-1">
+                  Click any type to toggle. Products with multiple types appear under each corresponding category filter and search query.
+                </p>
               </div>
             </div>
           </div>
@@ -2084,6 +2336,42 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
           product={productState}
           onClose={() => setShowLivePreview(false)}
           onAddToCart={() => {}}
+        />
+      )}
+
+      {/* APPLY TEMPLATE MODAL */}
+      {isApplyTemplateOpen && (
+        <ApplyTemplateModal
+          isOpen={isApplyTemplateOpen}
+          onClose={() => setIsApplyTemplateOpen(false)}
+          templates={templates}
+          currentCategory={productState.category}
+          onApply={handleApplyTemplate}
+        />
+      )}
+
+      {/* SAVE AS TEMPLATE MODAL */}
+      {isSaveAsTemplateOpen && (
+        <SaveAsTemplateModal
+          isOpen={isSaveAsTemplateOpen}
+          onClose={() => setIsSaveAsTemplateOpen(false)}
+          initialTemplateData={{
+            category: productState.category,
+            productTypes: selectedProductTypes,
+            brand: productState.brand || 'Marudhar Fashion',
+            description: productState.description,
+            shortDescription: productState.shortDescription,
+            material: productState.material,
+            fitGuide: productState.fitGuide,
+            careInstructions: productState.careInstructions,
+            features: productState.features,
+            collectionTags: productState.collectionTags,
+            metaTitle: productState.metaTitle,
+            metaDescription: productState.metaDescription,
+          }}
+          onSuccess={(newTemplate) => {
+            showToast(`Saved new template: "${newTemplate.name}"!`, 'success');
+          }}
         />
       )}
     </div>

@@ -365,8 +365,8 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
             decoding="async"
             onError={() => setImageError(true)}
             style={{ filter: 'brightness(101%) contrast(103%)' }}
-            className={`w-full h-full object-cover object-center transition-all duration-500 ease-out ${
-              cfg.enableImageZoom ? 'group-hover:scale-110' : ''
+            className={`w-full h-full object-contain sm:object-cover object-center transition-all duration-500 ease-out ${
+              cfg.enableImageZoom ? 'group-hover:scale-105' : ''
             } ${isImageAnimating ? 'scale-95 opacity-50 blur-xs' : 'scale-100 opacity-100'}`}
             referrerPolicy="no-referrer"
           />
@@ -377,52 +377,56 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
           <>
             <button
               onClick={handlePrevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 backdrop-blur-sm flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 backdrop-blur-sm flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
               aria-label="Previous image"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={handleNextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 backdrop-blur-sm flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 backdrop-blur-sm flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
               aria-label="Next image"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </>
         )}
 
-        {/* Top Left Badges */}
+        {/* Top Left Badges - Compact & Edge-safe */}
         {cfg.showBadges && (
-          <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 z-15 max-w-[65%]">
             <OpenBoxDeliveryBadge product={product} variant="compact" />
             {currentPrice >= 999 && (
-              <span className="bg-emerald-800 text-white text-[9px] font-extrabold tracking-wider uppercase px-2.5 py-0.5 rounded-md shadow-sm">
-                🚚 फ्री डिलीवरी • Free Delivery
+              <span className="bg-emerald-800 text-white text-[8px] sm:text-[9px] font-extrabold tracking-wider uppercase px-1.5 sm:px-2.5 py-0.5 rounded shadow-sm truncate">
+                <span className="hidden sm:inline">🚚 फ्री डिलीवरी • Free Delivery</span>
+                <span className="sm:hidden">🚚 Free Delivery</span>
               </span>
             )}
             {product.isBestSeller && (
-              <span className="bg-[#0B8F63] text-white text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                बेस्ट सेलर • Best Seller
+              <span className="bg-[#0B8F63] text-white text-[8px] sm:text-[10px] font-extrabold tracking-wider uppercase px-1.5 sm:px-2 py-0.5 rounded shadow-sm flex items-center gap-1 truncate">
+                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                <span className="hidden sm:inline">बेस्ट सेलर • Best Seller</span>
+                <span className="sm:hidden">Best Seller</span>
               </span>
             )}
             {product.isNewArrival && (
-              <span className="bg-neutral-900 text-white text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md shadow-sm">
-                नया • New
+              <span className="bg-neutral-900 text-white text-[8px] sm:text-[10px] font-extrabold tracking-wider uppercase px-1.5 sm:px-2 py-0.5 rounded shadow-sm truncate">
+                <span className="hidden sm:inline">नया • New Arrival</span>
+                <span className="sm:hidden">New</span>
               </span>
             )}
             {product.isLimitedStock && (
-              <span className="bg-amber-500 text-white text-[10px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1">
-                <Flame className="w-3 h-3" />
-                सीमित स्टॉक • Limited
+              <span className="bg-amber-500 text-white text-[8px] sm:text-[10px] font-extrabold tracking-wider uppercase px-1.5 sm:px-2 py-0.5 rounded shadow-sm flex items-center gap-1 truncate">
+                <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                <span className="hidden sm:inline">सीमित स्टॉक • Limited</span>
+                <span className="sm:hidden">Limited</span>
               </span>
             )}
           </div>
         )}
 
         {/* Top Right Quick Action Icons (Wishlist, QuickView, Share, Compare) */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col gap-1.5 sm:gap-2 z-15">
           {cfg.showWishlist && (
             <button
               onClick={(e) => {
@@ -430,14 +434,14 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                 playSiteSound('wishlist');
                 onToggleWishlist(product);
               }}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md ${
                 isWishlisted
                   ? 'bg-rose-500 text-white scale-110'
                   : 'bg-white/90 text-neutral-700 hover:text-rose-500 hover:bg-white hover:scale-105'
               }`}
               aria-label="Add to wishlist"
             >
-              <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-white' : ''}`} />
+              <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWishlisted ? 'fill-white' : ''}`} />
             </button>
           )}
 
@@ -447,41 +451,41 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                 e.stopPropagation();
                 onQuickView(product);
               }}
-              className="w-8 h-8 rounded-full bg-white/90 text-neutral-700 hover:text-[#0B8F63] hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 text-neutral-700 hover:text-[#0B8F63] hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105"
               aria-label="Quick view"
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           )}
 
           {cfg.showShareButton && (
             <button
               onClick={handleShare}
-              className={`w-8 h-8 rounded-full bg-white/90 text-neutral-700 hover:text-blue-600 hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105 ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 text-neutral-700 hover:text-blue-600 hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105 ${
                 isCopied ? 'bg-emerald-500 text-white opacity-100' : ''
               }`}
               aria-label="Share product"
             >
-              {isCopied ? <Check className="w-3.5 h-3.5 text-white" /> : <Share2 className="w-3.5 h-3.5" />}
+              {isCopied ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" /> : <Share2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
             </button>
           )}
 
           {cfg.showCompareButton && (
             <button
               onClick={handleCompare}
-              className={`w-8 h-8 rounded-full bg-white/90 text-neutral-700 hover:text-purple-600 hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105 ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 text-neutral-700 hover:text-purple-600 hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105 ${
                 isComparing ? 'bg-purple-600 text-white opacity-100' : ''
               }`}
               aria-label="Compare product"
             >
-              <Scale className="w-3.5 h-3.5" />
+              <Scale className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </button>
           )}
         </div>
 
         {/* Gallery Image Dots Preview */}
         {displayImages.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-black/40 px-2.5 py-1 rounded-full backdrop-blur-md">
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-15 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-md">
             {displayImages.map((_, idx) => (
               <button
                 key={idx}
@@ -490,7 +494,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                   setCurrentImageIndex(idx);
                 }}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  currentImageIndex === idx ? 'bg-white w-4' : 'bg-white/50 w-1.5'
+                  currentImageIndex === idx ? 'bg-white w-3.5' : 'bg-white/50 w-1.5'
                 }`}
               />
             ))}
@@ -499,7 +503,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
 
         {/* Discount Badge Tag */}
         {cfg.showDiscountTag && originalPrice > currentPrice && (
-          <div className="absolute bottom-3 left-3 bg-red-600 text-white font-extrabold text-[10px] sm:text-[11px] px-2 py-0.5 rounded shadow-sm">
+          <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-red-600 text-white font-extrabold text-[9px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 rounded shadow-sm z-15">
             {Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}% OFF
           </div>
         )}

@@ -44,6 +44,8 @@ export interface Product {
   brand: string;
   category: 'men' | 'women' | 'kids';
   subcategory: string;
+  productTypes?: string[];    // Multiple product types (e.g. ['Sports Shoes', 'Running Shoes', 'Sneakers'])
+  productType?: string;       // Primary product type (for backward compatibility)
   price: number;
   originalPrice: number;
   discountPercent: number;
@@ -51,6 +53,10 @@ export interface Product {
   reviewsCount: number;
   images: string[];
   description: string;
+  shortDescription?: string;  // Concise one-line overview
+  fitGuide?: string;          // Sizing and fit guidance
+  careInstructions?: string;  // Product care and cleaning instructions
+  features?: string[];        // Key product highlights / bullet points
   sizes: string[];
   sizeStocks?: SizeStock[];
   colors: ProductColor[];
@@ -70,6 +76,28 @@ export interface Product {
   useDefaultGstRate?: boolean;
   gstRate?: number;
   priceIncludesGst?: boolean;
+}
+
+export interface ProductTemplate {
+  id: string;
+  name: string;                       // Template title e.g. "Marudhar Sports Shoe Standard"
+  descriptionPreview?: string;        // Short summary for selector / preview
+  category: 'men' | 'women' | 'kids';
+  productTypes: string[];             // Reusable product types array
+  subcategory?: string;               // Primary type for backward compatibility
+  brand: string;
+  description: string;
+  shortDescription?: string;
+  material?: string;
+  fitGuide?: string;
+  careInstructions?: string;
+  features?: string[];
+  collectionTags?: string[];
+  metaTitle?: string;
+  metaDescription?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
 }
 
 export interface Review {

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Search, X, Sparkles, History, Mic, MicOff, Camera, MapPin, AlertCircle } from 'lucide-react';
 import { Product } from '../../types';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
+import { getProductTypes } from '../../utils/productTypeUtils';
 
 interface LiveSearchModalProps {
   isOpen: boolean;
@@ -207,11 +208,17 @@ export const LiveSearchModal: React.FC<LiveSearchModalProps> = ({
 
   const filteredProducts = query.trim()
     ? products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query.toLowerCase()) ||
-          p.category.toLowerCase().includes(query.toLowerCase()) ||
-          p.subcategory.toLowerCase().includes(query.toLowerCase()) ||
-          p.brand.toLowerCase().includes(query.toLowerCase())
+        (p) => {
+          const q = query.toLowerCase();
+          const pTypes = getProductTypes(p);
+          return (
+            p.name.toLowerCase().includes(q) ||
+            p.category.toLowerCase().includes(q) ||
+            pTypes.some((t) => t.toLowerCase().includes(q)) ||
+            (p.subcategory && p.subcategory.toLowerCase().includes(q)) ||
+            p.brand.toLowerCase().includes(q)
+          );
+        }
       )
     : [];
 

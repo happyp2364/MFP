@@ -151,13 +151,14 @@ export const OpenBoxDeliveryBadge: React.FC<OpenBoxDeliveryBadgeProps> = ({
   if (variant === 'compact') {
     return (
       <div
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold shadow-xs transition-all ${containerBgClass} ${borderClass} ${className}`}
+        className={`inline-flex items-center gap-1 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-bold shadow-xs transition-all ${containerBgClass} ${borderClass} ${className}`}
       >
-        <span className={`p-1 rounded-full ${badgeColorClass}`}>
-          {renderIcon(activeConfig.icon, 'w-3 h-3')}
+        <span className={`p-0.5 sm:p-1 rounded-full ${badgeColorClass}`}>
+          {renderIcon(activeConfig.icon, 'w-2.5 h-2.5 sm:w-3 sm:h-3')}
         </span>
-        <span className={`truncate max-w-[200px] ${textColorClass}`}>
-          {activeConfig.heading || 'Open Box Delivery'}
+        <span className={`truncate max-w-[120px] sm:max-w-[200px] ${textColorClass}`}>
+          <span className="hidden sm:inline">{activeConfig.heading || 'Open Box Delivery'}</span>
+          <span className="sm:hidden">Open Box</span>
         </span>
       </div>
     );

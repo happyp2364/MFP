@@ -38,6 +38,7 @@ import { SoundSettingsModal } from './components/Customer/SoundSettingsModal';
 import { ProductDetailPage } from './components/Products/ProductDetailPage';
 import { HomepageRenderer } from './components/Customer/HomepageRenderer';
 import { lazyWithRetry } from './utils/lazyWithRetry';
+import { getProductTypes, matchesAnyProductType } from './utils/productTypeUtils';
 
 // Lazy loaded modals with retry protection to prevent dynamic import fetch errors
 const AdminLoginModal = lazyWithRetry<typeof import('./components/Admin/AdminLoginModal').AdminLoginModal>(
@@ -606,14 +607,17 @@ function StorefrontView() {
     handleNavigateToSection('products');
   };
 
-  // --- FILTERED SUBCATEGORIES ---
+  // --- FILTERED SUBCATEGORIES & PRODUCT TYPES ---
   const availableSubcategories = useMemo(() => {
     let relevantProducts = products;
     if (filterState.category !== 'all') {
       relevantProducts = products.filter((p) => p.category === filterState.category);
     }
     const subs = new Set<string>();
-    relevantProducts.forEach((p) => subs.add(p.subcategory));
+    relevantProducts.forEach((p) => {
+      const types = getProductTypes(p);
+      types.forEach((t) => subs.add(t));
+    });
     return Array.from(subs);
   }, [filterState.category, products]);
 
@@ -625,10 +629,10 @@ function StorefrontView() {
         return false;
       }
 
-      // Subcategories
+      // Subcategories & Multiple Product Types (matches if product has ANY of the selected types)
       if (
         filterState.subcategories.length > 0 &&
-        !filterState.subcategories.includes(p.subcategory)
+        !matchesAnyProductType(p, filterState.subcategories)
       ) {
         return false;
       }
@@ -666,10 +670,13 @@ function StorefrontView() {
       // Search Query
       if (filterState.searchQuery) {
         const q = filterState.searchQuery.toLowerCase();
+        const pTypes = getProductTypes(p);
+        const typesMatch = pTypes.some((t) => t.toLowerCase().includes(q));
         const match =
           p.name.toLowerCase().includes(q) ||
           p.brand.toLowerCase().includes(q) ||
-          p.subcategory.toLowerCase().includes(q) ||
+          typesMatch ||
+          (p.subcategory && p.subcategory.toLowerCase().includes(q)) ||
           p.description.toLowerCase().includes(q);
         if (!match) return false;
       }

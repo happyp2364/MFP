@@ -4,5 +4,6 @@ coverage/
 *.log
 .env*
 !.env.example
+dist/
 bun.lock
 bun.lockb

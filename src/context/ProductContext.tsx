@@ -6,6 +6,7 @@ import { collection, limit, onSnapshot, query, doc, setDoc, deleteDoc } from 'fi
 import { sanitizeForFirestore } from '../lib/tenantUtils';
 import { assertSafeFirestoreProduct, sanitizeProductImageUrls } from '../utils/firestoreGuard';
 import { processProductImagesForStorage } from '../services/imageStorageService';
+import { getProductTypes, getPrimaryProductType } from '../utils/productTypeUtils';
 
 interface ProductContextType {
   products: Product[];
@@ -62,7 +63,14 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
           const loaded: Product[] = [];
           snapshot.forEach((docSnap) => {
             const raw = { id: docSnap.id, ...docSnap.data() } as Product;
-            loaded.push(sanitizeProductImageUrls(raw));
+            const types = getProductTypes(raw);
+            const normalized: Product = {
+              ...raw,
+              productTypes: types,
+              productType: raw.productType || types[0],
+              subcategory: raw.subcategory || types[0],
+            };
+            loaded.push(sanitizeProductImageUrls(normalized));
           });
           // Stable sort: Products with newer createdAt timestamps appear first
           loaded.sort((a, b) => {
@@ -115,13 +123,18 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     const newId = (p as any).id || `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
+    const cleanTypes = getProductTypes(p);
+    const primaryType = cleanTypes[0] || '';
+
     const cleanProduct: Product = {
       ...p,
       id: newId,
       name: p.name.trim(),
       brand: p.brand ? p.brand.trim() : 'Marudhar Fashion',
       category: p.category || 'men',
-      subcategory: p.subcategory || 'Sports Shoes',
+      productTypes: cleanTypes,
+      productType: primaryType,
+      subcategory: primaryType,
       price: Number(p.price),
       inStock: p.inStock !== false,
       status: p.status || 'active',
@@ -175,9 +188,19 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const updateProduct = async (id: string, p: Partial<Product>): Promise<void> => {
     const target = products.find((item) => item.id === id);
+    const mergedTypes = (p.productTypes && p.productTypes.length > 0)
+      ? getProductTypes(p)
+      : (p.subcategory || p.productType)
+      ? getProductTypes({ productTypes: target?.productTypes, subcategory: p.subcategory, productType: p.productType })
+      : getProductTypes(target);
+    const primaryType = mergedTypes[0] || '';
+
     const updatedProduct: Product = {
       ...(target || {}),
       ...p,
+      productTypes: mergedTypes,
+      productType: primaryType,
+      subcategory: primaryType,
       id,
       updatedAt: new Date().toISOString(),
     } as Product;

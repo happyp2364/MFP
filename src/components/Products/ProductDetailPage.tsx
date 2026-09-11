@@ -27,6 +27,7 @@ import {
 import { Product, ProductVariant } from '../../types';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
 import { getProductSKU, getProductUrl } from '../../utils/productUtils';
+import { getProductTypes } from '../../utils/productTypeUtils';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 import {
   normalizeProductSizeStocks,
@@ -360,9 +361,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     setTimeout(() => setAddedNotice(false), 2000);
   };
 
-  // Related items in same category
+  // Related items in same category or matching product types
+  const thisProductTypes = getProductTypes(product);
   const relatedItems = allProducts
-    .filter((p) => p.id !== product.id && (p.category === product.category || p.subcategory === product.subcategory))
+    .filter((p) => {
+      if (p.id === product.id) return false;
+      if (p.category === product.category) return true;
+      const otherTypes = getProductTypes(p);
+      return otherTypes.some((t) => thisProductTypes.includes(t));
+    })
     .slice(0, 4);
 
   return (
@@ -574,6 +581,25 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 )}
               </button>
             </div>
+
+            {/* Product Types Display */}
+            {(() => {
+              const types = getProductTypes(product);
+              if (!types || types.length === 0) return null;
+              return (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Type:</span>
+                  {types.map((t, idx) => (
+                    <span
+                      key={idx}
+                      className="text-xs font-bold text-neutral-700 bg-neutral-100 px-2.5 py-0.5 rounded-lg border border-neutral-200"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Rating Summary */}

@@ -283,36 +283,12 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   const getStyleClasses = () => {
     let base = 'group cursor-pointer relative overflow-hidden transition-all duration-300 flex flex-col justify-between ';
 
-    // Corner Radius
-    base += `${cfg.cornerRadius} `;
-
-    // Shadow
-    if (cfg.shadowIntensity === 'shadow-sm') base += 'shadow-sm ';
-    else if (cfg.shadowIntensity === 'shadow-md') base += 'shadow-md ';
-    else if (cfg.shadowIntensity === 'shadow-lg') base += 'shadow-lg ';
-    else if (cfg.shadowIntensity === 'shadow-2xl') base += 'shadow-2xl ';
+    // iPhone-Inspired Outer Frame & Corner Radius
+    base += 'rounded-[28px] sm:rounded-[36px] bg-gradient-to-b from-neutral-800 via-neutral-900 to-black p-2 sm:p-2.5 border-2 border-neutral-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.45)] ';
 
     // Hover Lift & Scale
     if (cfg.enableLiftOnHover) base += 'hover:-translate-y-1.5 ';
     if (cfg.enableScaleOnHover) base += 'hover:scale-[1.015] ';
-
-    // Card Style Presets
-    switch (cfg.cardStyle) {
-      case 'mbh_3d_glass':
-        base += 'bg-white/95 dark:bg-neutral-900/90 backdrop-blur-xl border border-white/60 dark:border-neutral-800 hover:border-[#0B8F63]/40 hover:shadow-[0_20px_40px_-15px_rgba(11,143,99,0.25)] ';
-        break;
-      case 'luxury_elevated':
-        base += 'bg-[#FAF9F6] border border-amber-900/10 hover:border-amber-700/30 hover:shadow-2xl ';
-        break;
-      case 'minimal_clean':
-        base += 'bg-white border border-neutral-200 hover:border-neutral-900 ';
-        break;
-      case 'borderless_modern':
-        base += 'bg-neutral-100/80 border-none hover:bg-white hover:shadow-xl ';
-        break;
-      default:
-        base += 'bg-white border border-neutral-200 hover:border-[#0B8F63]/40 ';
-    }
 
     // Font Family
     if (cfg.fontFamily === 'serif') base += 'font-serif ';
@@ -327,8 +303,6 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       onClick={() => onQuickView(product)}
       className={getStyleClasses()}
       style={{
-        borderRadius: 'var(--mfp-product-card-radius)',
-        padding: 'var(--mfp-product-card-padding)',
         transitionDuration:
           cfg.animationSpeed === 'fast'
             ? '200ms'
@@ -337,406 +311,411 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
             : '350ms',
       }}
     >
+      {/* Smartphone Speaker & Camera Notch Pill at Top Center */}
+      <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-20 h-3 bg-neutral-950 rounded-full border border-neutral-800/80 flex items-center justify-center gap-1.5 z-30 pointer-events-none">
+        <div className="w-1.5 h-1.5 rounded-full bg-neutral-900 border border-neutral-800" />
+        <div className="w-6 h-1 rounded-full bg-neutral-900" />
+      </div>
+
       {/* Glow Effect Accent Background on Hover */}
       {cfg.enableGlowEffect && (
         <div className="absolute -inset-1 bg-gradient-to-r from-[#0B8F63]/20 via-emerald-400/20 to-teal-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none -z-10" />
       )}
 
-      {/* Top Image Box */}
-      <div
-        className={`relative ${cfg.aspectRatio} w-full bg-neutral-50 overflow-hidden flex items-center justify-center`}
-        style={{
-          borderRadius: 'var(--mfp-product-image-radius)',
-        }}
-      >
-        {(!rawImageSrc || imageError) ? (
-          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-50/90">
-            <div className="w-12 h-12 rounded-2xl bg-[#0B8F63]/10 text-[#0B8F63] flex items-center justify-center mb-2 shadow-inner">
-              <ImageOff className="w-6 h-6" />
+      {/* Inset Screen Content Container */}
+      <div className="relative w-full h-full bg-white dark:bg-neutral-900 rounded-[22px] sm:rounded-[28px] overflow-hidden flex flex-col justify-between shadow-inner pt-4">
+        
+        {/* Top Image Box - Completely Clean & Unobstructed */}
+        <div
+          className={`relative ${cfg.aspectRatio} w-full bg-neutral-50 dark:bg-neutral-950 overflow-hidden flex items-center justify-center`}
+          style={{
+            borderRadius: 'var(--mfp-product-image-radius)',
+          }}
+        >
+          {(!rawImageSrc || imageError) ? (
+            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-50/90 dark:bg-neutral-950">
+              <div className="w-12 h-12 rounded-2xl bg-[#0B8F63]/10 text-[#0B8F63] flex items-center justify-center mb-2 shadow-inner">
+                <ImageOff className="w-6 h-6" />
+              </div>
+              <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 tracking-wide uppercase">Real Image Coming Soon</span>
+              <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Marudhar Fashion Point</span>
             </div>
-            <span className="text-xs font-bold text-neutral-800 tracking-wide uppercase">Real Image Coming Soon</span>
-            <span className="text-[10px] font-medium text-neutral-400 mt-0.5">Marudhar Fashion Point</span>
+          ) : (
+            <img
+              src={displayImageSrc}
+              alt={product.name}
+              loading="lazy"
+              decoding="async"
+              onError={() => setImageError(true)}
+              style={{ filter: 'brightness(101%) contrast(103%)' }}
+              className={`w-full h-full object-contain sm:object-cover object-center transition-all duration-500 ease-out ${
+                cfg.enableImageZoom ? 'group-hover:scale-105' : ''
+              } ${isImageAnimating ? 'scale-95 opacity-50 blur-xs' : 'scale-100 opacity-100'}`}
+              referrerPolicy="no-referrer"
+            />
+          )}
+
+          {/* Multiple Image Gallery Navigation Arrows */}
+          {displayImages.length > 1 && (
+            <>
+              <button
+                onClick={handlePrevImage}
+                className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 backdrop-blur-sm flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+              <button
+                onClick={handleNextImage}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 backdrop-blur-sm flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+            </>
+          )}
+
+          {/* Top Right Quick Action Icons (Wishlist, QuickView, Share, Compare) - ONLY icons allowed over image */}
+          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col gap-1.5 sm:gap-2 z-15">
+            {cfg.showWishlist && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playSiteSound('wishlist');
+                  onToggleWishlist(product);
+                }}
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md ${
+                  isWishlisted
+                    ? 'bg-rose-500 text-white scale-110'
+                    : 'bg-white/90 text-neutral-700 hover:text-rose-500 hover:bg-white hover:scale-105'
+                }`}
+                aria-label="Add to wishlist"
+              >
+                <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWishlisted ? 'fill-white' : ''}`} />
+              </button>
+            )}
+
+            {cfg.showQuickView && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickView(product);
+                }}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 text-neutral-700 hover:text-[#0B8F63] hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105"
+                aria-label="Quick view"
+              >
+                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
+            )}
+
+            {cfg.showShareButton && (
+              <button
+                onClick={handleShare}
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 text-neutral-700 hover:text-blue-600 hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105 ${
+                  isCopied ? 'bg-emerald-500 text-white opacity-100' : ''
+                }`}
+                aria-label="Share product"
+              >
+                {isCopied ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" /> : <Share2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+              </button>
+            )}
+
+            {cfg.showCompareButton && (
+              <button
+                onClick={handleCompare}
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 text-neutral-700 hover:text-purple-600 hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105 ${
+                  isComparing ? 'bg-purple-600 text-white opacity-100' : ''
+                }`}
+                aria-label="Compare product"
+              >
+                <Scale className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              </button>
+            )}
           </div>
-        ) : (
-          <img
-            src={displayImageSrc}
-            alt={product.name}
-            loading="lazy"
-            decoding="async"
-            onError={() => setImageError(true)}
-            style={{ filter: 'brightness(101%) contrast(103%)' }}
-            className={`w-full h-full object-contain sm:object-cover object-center transition-all duration-500 ease-out ${
-              cfg.enableImageZoom ? 'group-hover:scale-105' : ''
-            } ${isImageAnimating ? 'scale-95 opacity-50 blur-xs' : 'scale-100 opacity-100'}`}
-            referrerPolicy="no-referrer"
-          />
-        )}
 
-        {/* Multiple Image Gallery Navigation Arrows */}
-        {displayImages.length > 1 && (
-          <>
-            <button
-              onClick={handlePrevImage}
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 backdrop-blur-sm flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
-              aria-label="Previous image"
-            >
-              <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-            <button
-              onClick={handleNextImage}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/80 hover:bg-white text-neutral-800 backdrop-blur-sm flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
-              aria-label="Next image"
-            >
-              <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-          </>
-        )}
-
-        {/* Top Left Badges - Compact & Edge-safe */}
-        {cfg.showBadges && (
-          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 z-15 max-w-[65%]">
-            <OpenBoxDeliveryBadge product={product} variant="compact" />
-            {currentPrice >= 999 && (
-              <span className="bg-emerald-800 text-white text-[8px] sm:text-[9px] font-extrabold tracking-wider uppercase px-1.5 sm:px-2.5 py-0.5 rounded shadow-sm truncate">
-                <span className="hidden sm:inline">🚚 फ्री डिलीवरी • Free Delivery</span>
-                <span className="sm:hidden">🚚 Free Delivery</span>
-              </span>
-            )}
-            {product.isBestSeller && (
-              <span className="bg-[#0B8F63] text-white text-[8px] sm:text-[10px] font-extrabold tracking-wider uppercase px-1.5 sm:px-2 py-0.5 rounded shadow-sm flex items-center gap-1 truncate">
-                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-                <span className="hidden sm:inline">बेस्ट सेलर • Best Seller</span>
-                <span className="sm:hidden">Best Seller</span>
-              </span>
-            )}
-            {product.isNewArrival && (
-              <span className="bg-neutral-900 text-white text-[8px] sm:text-[10px] font-extrabold tracking-wider uppercase px-1.5 sm:px-2 py-0.5 rounded shadow-sm truncate">
-                <span className="hidden sm:inline">नया • New Arrival</span>
-                <span className="sm:hidden">New</span>
-              </span>
-            )}
-            {product.isLimitedStock && (
-              <span className="bg-amber-500 text-white text-[8px] sm:text-[10px] font-extrabold tracking-wider uppercase px-1.5 sm:px-2 py-0.5 rounded shadow-sm flex items-center gap-1 truncate">
-                <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-                <span className="hidden sm:inline">सीमित स्टॉक • Limited</span>
-                <span className="sm:hidden">Limited</span>
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Top Right Quick Action Icons (Wishlist, QuickView, Share, Compare) */}
-        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col gap-1.5 sm:gap-2 z-15">
-          {cfg.showWishlist && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                playSiteSound('wishlist');
-                onToggleWishlist(product);
-              }}
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md ${
-                isWishlisted
-                  ? 'bg-rose-500 text-white scale-110'
-                  : 'bg-white/90 text-neutral-700 hover:text-rose-500 hover:bg-white hover:scale-105'
-              }`}
-              aria-label="Add to wishlist"
-            >
-              <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWishlisted ? 'fill-white' : ''}`} />
-            </button>
-          )}
-
-          {cfg.showQuickView && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onQuickView(product);
-              }}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 text-neutral-700 hover:text-[#0B8F63] hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105"
-              aria-label="Quick view"
-            >
-              <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-          )}
-
-          {cfg.showShareButton && (
-            <button
-              onClick={handleShare}
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 text-neutral-700 hover:text-blue-600 hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105 ${
-                isCopied ? 'bg-emerald-500 text-white opacity-100' : ''
-              }`}
-              aria-label="Share product"
-            >
-              {isCopied ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" /> : <Share2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
-            </button>
-          )}
-
-          {cfg.showCompareButton && (
-            <button
-              onClick={handleCompare}
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 text-neutral-700 hover:text-purple-600 hover:bg-white flex items-center justify-center shadow-md transition-all opacity-0 group-hover:opacity-100 duration-200 hover:scale-105 ${
-                isComparing ? 'bg-purple-600 text-white opacity-100' : ''
-              }`}
-              aria-label="Compare product"
-            >
-              <Scale className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            </button>
+          {/* Gallery Image Dots Preview */}
+          {displayImages.length > 1 && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-15 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-md">
+              {displayImages.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex(idx);
+                  }}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    currentImageIndex === idx ? 'bg-white w-3.5' : 'bg-white/50 w-1.5'
+                  }`}
+                />
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Gallery Image Dots Preview */}
-        {displayImages.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-15 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-md">
-            {displayImages.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentImageIndex(idx);
-                }}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  currentImageIndex === idx ? 'bg-white w-3.5' : 'bg-white/50 w-1.5'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Discount Badge Tag */}
-        {cfg.showDiscountTag && originalPrice > currentPrice && (
-          <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 bg-red-600 text-white font-extrabold text-[9px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 rounded shadow-sm z-15">
-            {Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}% OFF
-          </div>
-        )}
-      </div>
-
-      {/* Product Information Body */}
-      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-        <div className="space-y-1.5">
-          {/* Brand & Rating Header */}
-          <div className="flex items-center justify-between text-xs min-h-[18px]">
-            {cfg.showBrand && product.brand && product.brand.trim().length > 0 ? (
-              <span className="font-extrabold text-[#0B8F63] tracking-widest uppercase text-[10px] sm:text-[11px]">
-                {product.brand}
-              </span>
-            ) : (
-              <span />
-            )}
-
-            {cfg.showRating && product.rating && product.rating > 0 ? (
-              <div className="flex items-center gap-1 font-semibold text-neutral-800 text-[11px]">
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                <span>{product.rating}</span>
-                {product.reviewsCount && product.reviewsCount > 0 ? (
-                  <span className="text-neutral-600 font-medium">({product.reviewsCount})</span>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-
-          {/* Product Title */}
-          <h3 className="font-bold text-neutral-900 dark:text-white text-sm sm:text-base line-clamp-1 group-hover:text-[#0B8F63] dark:group-hover:text-emerald-400 transition-colors">
-            {product.name}
-          </h3>
-
-          {/* Subcategory & Material */}
-          <p className="text-xs text-neutral-600 dark:text-neutral-300 line-clamp-1 font-medium">
-            {product.subcategory} {product.material ? `• ${product.material}` : ''}
-          </p>
-
-          {/* Interactive Color Swatches */}
-          {cfg.showColorSwatches && product.colors && product.colors.length > 0 && (
-            <div className="flex items-center gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
-              <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Colors:</span>
-              <div className="flex items-center gap-1.5">
-                {product.colors.map((c, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleColorChange(c.name)}
-                    className={`w-4 h-4 rounded-full border transition-all duration-200 ${
-                      selectedColor === c.name
-                        ? 'ring-2 ring-offset-1 ring-[#0B8F63] scale-110 shadow-xs'
-                        : 'border-neutral-300 hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: c.hex }}
-                    title={c.name}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Interactive Size Availability Selector */}
-          {cfg.showSizeSelector && sizeStocks.length > 0 && (
-            <div className="pt-1.5" onClick={(e) => e.stopPropagation()}>
-              <div className="text-[10px] font-bold text-neutral-700 dark:text-neutral-300 mb-1 flex justify-between uppercase tracking-wider">
-                <span>Sizes:</span>
-                <span className="font-extrabold text-[#0B8F63] dark:text-emerald-400">{selectedSize}</span>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {sizeStocks
-                  .filter((s) => s.isAvailable)
-                  .slice(0, 6)
-                  .map((item) => {
-                    const isSelected = selectedSize === item.size;
-                    const isInStock = item.inStock && item.stockQuantity > 0;
-
-                    return (
-                      <button
-                        key={item.size}
-                        disabled={!isInStock}
-                        onClick={() => setSelectedSize(item.size)}
-                        title={isInStock ? `In Stock: ${item.stockQuantity}` : `${item.size} Out of Stock`}
-                        className={`text-[10px] font-extrabold px-2 py-0.5 rounded border transition-all ${
-                          isSelected
-                            ? 'bg-[#0B8F63] text-white border-[#0B8F63] shadow-xs scale-105'
-                            : isInStock
-                            ? 'bg-neutral-50 dark:bg-neutral-800/90 text-neutral-800 dark:text-neutral-100 border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-white dark:hover:bg-neutral-700'
-                            : 'bg-neutral-100 dark:bg-neutral-900/80 text-neutral-400 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 line-through cursor-not-allowed opacity-75'
-                        }`}
-                      >
-                        {item.size}
-                      </button>
-                    );
-                  })}
-                {sizeStocks.filter((s) => s.isAvailable).length > 6 && (
-                  <span className="text-[10px] text-neutral-600 dark:text-neutral-400 self-center font-bold">
-                    +{sizeStocks.filter((s) => s.isAvailable).length - 6}
+        {/* Product Information Body */}
+        <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
+          <div className="space-y-2">
+            
+            {/* Promotional Badges Bar (Placed Safely BELOW Image Area, NEVER covering shoe) */}
+            {cfg.showBadges && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <OpenBoxDeliveryBadge product={product} variant="compact" />
+                {currentPrice >= 999 && (
+                  <span className="bg-emerald-800 text-white text-[9px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded shadow-xs">
+                    🚚 Free Delivery
+                  </span>
+                )}
+                {product.isBestSeller && (
+                  <span className="bg-[#0B8F63] text-white text-[9px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded shadow-xs flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5 shrink-0" />
+                    Best Seller
+                  </span>
+                )}
+                {product.isNewArrival && (
+                  <span className="bg-neutral-900 text-white text-[9px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded shadow-xs">
+                    New Arrival
+                  </span>
+                )}
+                {product.isLimitedStock && (
+                  <span className="bg-amber-500 text-white text-[9px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded shadow-xs flex items-center gap-1">
+                    <Flame className="w-2.5 h-2.5 shrink-0" />
+                    Limited
+                  </span>
+                )}
+                {cfg.showDiscountTag && originalPrice > currentPrice && (
+                  <span className="bg-red-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded shadow-xs">
+                    {Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}% OFF
                   </span>
                 )}
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Pricing & Actions Footer */}
-        <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80 space-y-2">
-          {/* Price & Stock Badge Row */}
-          <div className="flex items-baseline justify-between gap-2">
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="font-black text-xl sm:text-2xl text-neutral-950 dark:text-white tracking-tight leading-none product-card-sale-price">
-                ₹{(currentPrice ?? 0).toLocaleString('en-IN')}
-              </span>
-              {originalPrice > currentPrice && (
-                <span className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 line-through font-bold product-card-mrp-price">
-                  ₹{(originalPrice ?? 0).toLocaleString('en-IN')}
-                </span>
-              )}
-              {originalPrice > currentPrice && (
-                <span className="text-[10px] font-black text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/70 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/60">
-                  {Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}% छूट
-                </span>
-              )}
-            </div>
-
-            {cfg.showStockStatus && (
-              isCompletelyOutOfStock ? (
-                <span className="text-[10px] font-extrabold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-900/60 px-2 py-0.5 rounded shrink-0">
-                  स्टॉक समाप्त • Out of Stock
+            {/* Brand & Rating Header */}
+            <div className="flex items-center justify-between text-xs min-h-[18px] pt-1">
+              {cfg.showBrand && product.brand && product.brand.trim().length > 0 ? (
+                <span className="font-extrabold text-[#0B8F63] tracking-widest uppercase text-[10px] sm:text-[11px]">
+                  {product.brand}
                 </span>
               ) : (
-                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-900/60 px-1.5 py-0.5 rounded shrink-0">
-                  उपलब्ध • In Stock
-                </span>
-              )
+                <span />
+              )}
+
+              {cfg.showRating && product.rating && product.rating > 0 ? (
+                <div className="flex items-center gap-1 font-semibold text-neutral-800 text-[11px]">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span>{product.rating}</span>
+                  {product.reviewsCount && product.reviewsCount > 0 ? (
+                    <span className="text-neutral-600 font-medium">({product.reviewsCount})</span>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
+            {/* Product Title */}
+            <h3 className="font-bold text-neutral-900 dark:text-white text-sm sm:text-base line-clamp-1 group-hover:text-[#0B8F63] dark:group-hover:text-emerald-400 transition-colors">
+              {product.name}
+            </h3>
+
+            {/* Subcategory & Material */}
+            <p className="text-xs text-neutral-600 dark:text-neutral-300 line-clamp-1 font-medium">
+              {product.subcategory} {product.material ? `• ${product.material}` : ''}
+            </p>
+
+            {/* Interactive Color Swatches */}
+            {cfg.showColorSwatches && product.colors && product.colors.length > 0 && (
+              <div className="flex items-center gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
+                <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Colors:</span>
+                <div className="flex items-center gap-1.5">
+                  {product.colors.map((c, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleColorChange(c.name)}
+                      className={`w-4 h-4 rounded-full border transition-all duration-200 ${
+                        selectedColor === c.name
+                          ? 'ring-2 ring-offset-1 ring-[#0B8F63] scale-110 shadow-xs'
+                          : 'border-neutral-300 hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: c.hex }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Interactive Size Availability Selector */}
+            {cfg.showSizeSelector && sizeStocks.length > 0 && (
+              <div className="pt-1.5" onClick={(e) => e.stopPropagation()}>
+                <div className="text-[10px] font-bold text-neutral-700 dark:text-neutral-300 mb-1 flex justify-between uppercase tracking-wider">
+                  <span>Sizes:</span>
+                  <span className="font-extrabold text-[#0B8F63] dark:text-emerald-400">{selectedSize}</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {sizeStocks
+                    .filter((s) => s.isAvailable)
+                    .slice(0, 6)
+                    .map((item) => {
+                      const isSelected = selectedSize === item.size;
+                      const isInStock = item.inStock && item.stockQuantity > 0;
+
+                      return (
+                        <button
+                          key={item.size}
+                          disabled={!isInStock}
+                          onClick={() => setSelectedSize(item.size)}
+                          title={isInStock ? `In Stock: ${item.stockQuantity}` : `${item.size} Out of Stock`}
+                          className={`text-[10px] font-extrabold px-2 py-0.5 rounded border transition-all ${
+                            isSelected
+                              ? 'bg-[#0B8F63] text-white border-[#0B8F63] shadow-xs scale-105'
+                              : isInStock
+                              ? 'bg-neutral-50 dark:bg-neutral-800/90 text-neutral-800 dark:text-neutral-100 border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-white dark:hover:bg-neutral-700'
+                              : 'bg-neutral-100 dark:bg-neutral-900/80 text-neutral-400 dark:text-neutral-500 border-neutral-200 dark:border-neutral-800 line-through cursor-not-allowed opacity-75'
+                          }`}
+                        >
+                          {item.size}
+                        </button>
+                      );
+                    })}
+                  {sizeStocks.filter((s) => s.isAvailable).length > 6 && (
+                    <span className="text-[10px] text-neutral-600 dark:text-neutral-400 self-center font-bold">
+                      +{sizeStocks.filter((s) => s.isAvailable).length - 6}
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Action Buttons */}
-          {isCompletelyOutOfStock ? (
-            <button
-              onClick={handleWhatsAppBuy}
-              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Bell className="w-4 h-4 fill-white text-amber-600" />
-              <span>व्हाट्सऐप पर सूचित करें • NOTIFY</span>
-            </button>
-          ) : (
-            <div className="space-y-1.5">
-              {/* Primary Buy Now Button */}
-              {cfg.showBuyNow && paymentSettings.enableBuyNow !== false && (
-                <button
-                  onClick={handleBuyNow}
-                  disabled={isBuyNowLoading}
-                  className="btn-liquid-base btn-liquid-emerald w-full text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all disabled:opacity-75 cursor-pointer"
-                  style={{
-                    backgroundColor: cfg.buyNowColor || paymentSettings.buyNowButtonColor || '#0B8F63',
-                  }}
-                >
-                  {isBuyNowLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Zap className="w-3.5 h-3.5 fill-current" />
-                  )}
-                  <span>{cfg.buyNowText || paymentSettings.buyNowButtonText || 'अभी खरीदें • BUY NOW'}</span>
-                </button>
-              )}
-
-              {/* Secondary Buttons Row */}
-              <div
-                ref={buttonRowRef}
-                className={`w-full ${
-                  cfg.showAddToCart && paymentSettings.enableAddToCart !== false
-                    ? 'grid grid-cols-2 gap-1.5'
-                    : 'flex'
-                }`}
-              >
-                {paymentSettings.enableBuyWhatsApp !== false && (
-                  <button
-                    type="button"
-                    onClick={handleWhatsAppBuy}
-                    aria-label="Order on WhatsApp"
-                    title="Order on WhatsApp"
-                    className="btn-liquid-base btn-liquid-emerald w-full text-white font-bold text-[10.5px] sm:text-[11px] py-2 px-1.5 sm:px-2 rounded-xl shadow-xs flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap min-w-0 select-none"
-                    style={{
-                      backgroundColor: cfg.whatsAppColor || paymentSettings.buyWhatsAppButtonColor || '#25D366',
-                    }}
-                  >
-                    <WhatsAppIcon className="w-3.5 h-3.5 shrink-0 fill-current" />
-                    <span className="whitespace-nowrap font-bold tracking-tight">
-                      {isCompactButton ? (
-                        <>
-                          <span className="hidden xl:inline">Order on WhatsApp</span>
-                          <span className="xl:hidden">Order from</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="hidden sm:inline">
-                            {cfg.whatsAppText || paymentSettings.buyWhatsAppButtonText || 'Order on WhatsApp'}
-                          </span>
-                          <span className="sm:hidden">Order from</span>
-                        </>
-                      )}
-                    </span>
-                  </button>
+          {/* Pricing & Actions Footer */}
+          <div className="pt-2 border-t border-neutral-200/60 dark:border-neutral-800/80 space-y-2">
+            {/* Price & Stock Badge Row */}
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="font-black text-xl sm:text-2xl text-neutral-950 dark:text-white tracking-tight leading-none product-card-sale-price">
+                  ₹{(currentPrice ?? 0).toLocaleString('en-IN')}
+                </span>
+                {originalPrice > currentPrice && (
+                  <span className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 line-through font-bold product-card-mrp-price">
+                    ₹{(originalPrice ?? 0).toLocaleString('en-IN')}
+                  </span>
                 )}
-
-                {cfg.showAddToCart && paymentSettings.enableAddToCart !== false && (
-                  <button
-                    type="button"
-                    onClick={handleAddToCartAction}
-                    aria-label="Add to Bag"
-                    title="Add to Bag"
-                    className="btn-liquid-base btn-liquid-dark w-full text-white font-bold text-[10.5px] sm:text-[11px] py-2 px-1.5 sm:px-2 rounded-xl shadow-xs flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap min-w-0 select-none"
-                    style={{
-                      backgroundColor: cfg.addToCartColor || paymentSettings.addToBagButtonColor || '#171717',
-                    }}
-                  >
-                    <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
-                    <span className="whitespace-nowrap font-bold tracking-tight">
-                      {isCompactButton ? (
-                        <>
-                          <span className="hidden sm:inline">Add to Bag</span>
-                          <span className="sm:hidden">Add</span>
-                        </>
-                      ) : (
-                        cfg.addToCartText || paymentSettings.addToBagButtonText || 'Add to Bag'
-                      )}
-                    </span>
-                  </button>
+                {originalPrice > currentPrice && (
+                  <span className="text-[10px] font-black text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/70 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/60">
+                    {Math.round(((originalPrice - currentPrice) / originalPrice) * 100)}% छूट
+                  </span>
                 )}
               </div>
+
+              {cfg.showStockStatus && (
+                isCompletelyOutOfStock ? (
+                  <span className="text-[10px] font-extrabold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-900/60 px-2 py-0.5 rounded shrink-0">
+                    स्टॉक समाप्त • Out of Stock
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-900/60 px-1.5 py-0.5 rounded shrink-0">
+                    उपलब्ध • In Stock
+                  </span>
+                )
+              )}
             </div>
-          )}
+
+            {/* Action Buttons */}
+            {isCompletelyOutOfStock ? (
+              <button
+                onClick={handleWhatsAppBuy}
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Bell className="w-4 h-4 fill-white text-amber-600" />
+                <span>व्हाट्सऐप पर सूचित करें • NOTIFY</span>
+              </button>
+            ) : (
+              <div className="space-y-1.5">
+                {/* Primary Buy Now Button */}
+                {cfg.showBuyNow && paymentSettings.enableBuyNow !== false && (
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={isBuyNowLoading}
+                    className="btn-liquid-base btn-liquid-emerald w-full text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all disabled:opacity-75 cursor-pointer"
+                    style={{
+                      backgroundColor: cfg.buyNowColor || paymentSettings.buyNowButtonColor || '#0B8F63',
+                    }}
+                  >
+                    {isBuyNowLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Zap className="w-3.5 h-3.5 fill-current" />
+                    )}
+                    <span>{cfg.buyNowText || paymentSettings.buyNowButtonText || 'अभी खरीदें • BUY NOW'}</span>
+                  </button>
+                )}
+
+                {/* Secondary Buttons Row */}
+                <div
+                  ref={buttonRowRef}
+                  className={`w-full ${
+                    cfg.showAddToCart && paymentSettings.enableAddToCart !== false
+                      ? 'grid grid-cols-2 gap-1.5'
+                      : 'flex'
+                  }`}
+                >
+                  {paymentSettings.enableBuyWhatsApp !== false && (
+                    <button
+                      type="button"
+                      onClick={handleWhatsAppBuy}
+                      aria-label="Order on WhatsApp"
+                      title="Order on WhatsApp"
+                      className="btn-liquid-base btn-liquid-emerald w-full text-white font-bold text-[10.5px] sm:text-[11px] py-2 px-1.5 sm:px-2 rounded-xl shadow-xs flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap min-w-0 select-none"
+                      style={{
+                        backgroundColor: cfg.whatsAppColor || paymentSettings.buyWhatsAppButtonColor || '#25D366',
+                      }}
+                    >
+                      <WhatsAppIcon className="w-3.5 h-3.5 shrink-0 fill-current" />
+                      <span className="whitespace-nowrap font-bold tracking-tight">
+                        {isCompactButton ? (
+                          <>
+                            <span className="hidden xl:inline">Order on WhatsApp</span>
+                            <span className="xl:hidden">Order from</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="hidden sm:inline">
+                              {cfg.whatsAppText || paymentSettings.buyWhatsAppButtonText || 'Order on WhatsApp'}
+                            </span>
+                            <span className="sm:hidden">Order from</span>
+                          </>
+                        )}
+                      </span>
+                    </button>
+                  )}
+
+                  {cfg.showAddToCart && paymentSettings.enableAddToCart !== false && (
+                    <button
+                      type="button"
+                      onClick={handleAddToCartAction}
+                      aria-label="Add to Bag"
+                      title="Add to Bag"
+                      className="btn-liquid-base btn-liquid-dark w-full text-white font-bold text-[10.5px] sm:text-[11px] py-2 px-1.5 sm:px-2 rounded-xl shadow-xs flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap min-w-0 select-none"
+                      style={{
+                        backgroundColor: cfg.addToCartColor || paymentSettings.addToBagButtonColor || '#171717',
+                      }}
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+                      <span className="whitespace-nowrap font-bold tracking-tight">
+                        {isCompactButton ? (
+                          <>
+                            <span className="hidden sm:inline">Add to Bag</span>
+                            <span className="sm:hidden">Add</span>
+                          </>
+                        ) : (
+                          cfg.addToCartText || paymentSettings.addToBagButtonText || 'Add to Bag'
+                        )}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

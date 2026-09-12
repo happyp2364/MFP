@@ -1114,75 +1114,60 @@ const FloatingSneakerHeroSection: React.FC<{
           </div>
         </div>
 
-        {/* CENTER COLUMN: Floating Sneaker Showcase with Video 3D Laser Scan */}
+        {/* CENTER COLUMN: iPhone-Inspired Portrait Frame Showcase */}
         <div
-          className="lg:col-span-7 relative flex flex-col items-center justify-center min-h-[260px] sm:min-h-[320px] rounded-2xl bg-black/10 border border-white/20 p-4 overflow-hidden"
+          className="lg:col-span-7 relative flex flex-col items-center justify-center min-h-[320px] sm:min-h-[420px] p-2 sm:p-4 overflow-hidden"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {/* Laser Motion Graphics Scan Beam */}
-          <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_#f59e0b] z-20 animate-mg-scanbeam pointer-events-none" />
+          {/* iPhone-Inspired Portrait Frame Container */}
+          <div className="relative w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[350px] aspect-[9/18] max-h-[460px] sm:max-h-[520px] bg-gradient-to-b from-neutral-800 via-neutral-900 to-black rounded-[44px] sm:rounded-[52px] p-2.5 sm:p-3.5 border-2 border-neutral-700/80 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] flex flex-col items-center justify-center overflow-hidden">
+            
+            {/* Hardware Speaker / Camera Pill at top center */}
+            <div className="absolute top-3 w-28 sm:w-32 h-4 bg-neutral-950 rounded-full border border-neutral-800 flex items-center justify-center gap-2 z-30 pointer-events-none">
+              <div className="w-2.5 h-2.5 rounded-full bg-neutral-900 border border-neutral-800" />
+              <div className="w-10 h-1.5 rounded-full bg-neutral-900" />
+            </div>
 
-          {/* Frame HUD Brackets */}
-          <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-amber-500/60 pointer-events-none" />
-          <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-amber-500/60 pointer-events-none" />
-          <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-amber-500/60 pointer-events-none" />
-          <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-amber-500/60 pointer-events-none" />
+            {/* Screen-like Inner Area */}
+            <div className="relative w-full h-full bg-neutral-950 rounded-[34px] sm:rounded-[42px] border border-neutral-800/80 flex items-center justify-center overflow-hidden p-4 shadow-inner">
+              
+              {/* Radial Soft Glow Ring */}
+              {enableSoftGlow && (
+                <div className="absolute w-[200px] h-[200px] bg-amber-500/15 rounded-full blur-3xl -z-10 animate-pulse pointer-events-none" />
+              )}
 
-          {/* Radial Soft Glow Ring */}
-          {enableSoftGlow && (
-            <div className="absolute w-[220px] sm:w-[300px] h-[220px] sm:h-[300px] bg-amber-400/20 rounded-full blur-2xl -z-10 animate-pulse pointer-events-none" />
-          )}
+              {/* Floating Shoe Image - Completely clean, unobstructed, object-fit contain */}
+              <div
+                className={`relative transition-all duration-700 ease-out cursor-pointer flex items-center justify-center w-full h-full ${
+                  enableFloating ? 'animate-mg-float3d' : ''
+                }`}
+                style={{
+                  transform: `scale(${
+                    isHovered && enableHoverZoom ? scale * 1.05 : scale
+                  }) rotate(${rot}deg)`,
+                }}
+              >
+                <img
+                  src={activeImage || undefined}
+                  alt={matchedProduct?.name || mainHeading}
+                  className={`max-h-[85%] max-w-[85%] w-auto h-auto filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.6)] transition-all duration-500 object-${data.imageFit || 'contain'} object-${data.imagePosition || 'center'}`}
+                />
+              </div>
 
-          {/* Floating Shoe Image */}
-          <div
-            className={`relative transition-all duration-700 ease-out cursor-pointer ${
-              enableFloating ? 'animate-mg-float3d' : ''
-            }`}
-            style={{
-              transform: `scale(${
-                isHovered && enableHoverZoom ? scale * 1.06 : scale
-              })`,
-            }}
-          >
-            <img
-              src={activeImage || undefined}
-              alt={matchedProduct?.name || mainHeading}
-              className={`max-h-[200px] sm:max-h-[280px] w-auto filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] transition-all duration-500 object-${data.imageFit || 'contain'} object-${data.imagePosition || 'center'}`}
-            />
+              {/* Subtle Screen Glass Reflection Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-transparent pointer-events-none rounded-[34px] sm:rounded-[42px]" />
+            </div>
           </div>
 
-          {/* Soft Floor Shadow */}
+          {/* Soft Floor Shadow beneath phone */}
           <div
-            className="w-40 sm:w-56 h-4 bg-black/25 rounded-[100%] blur-md mt-2 transition-all duration-500"
+            className="w-48 sm:w-64 h-3 bg-black/40 rounded-[100%] blur-lg mt-3 transition-all duration-500"
             style={{
               transform: isHovered ? 'scale(0.85)' : 'scale(1)',
-              opacity: isHovered ? 0.4 : 0.6,
+              opacity: isHovered ? 0.3 : 0.5,
             }}
           />
-
-          {/* Floating Glass Badges */}
-          {floatingBadges[0] && (
-            <div className="absolute top-2 left-2 sm:left-4 bg-white/80 backdrop-blur-xl border border-white p-2 px-3 rounded-xl shadow-lg space-y-0.5 animate-mg-hud">
-              <span className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
-                {floatingBadges[0].title}
-              </span>
-              <span className="block text-xs font-black text-neutral-900">
-                {floatingBadges[0].value}
-              </span>
-            </div>
-          )}
-
-          {floatingBadges[1] && (
-            <div className="absolute bottom-2 right-2 sm:right-4 bg-white/80 backdrop-blur-xl border border-white p-2 px-3 rounded-xl shadow-lg space-y-0.5">
-              <span className="block text-[9px] font-bold text-neutral-500 uppercase tracking-wider">
-                {floatingBadges[1].title}
-              </span>
-              <span className="block text-xs font-black text-amber-600">
-                {floatingBadges[1].value}
-              </span>
-            </div>
-          )}
         </div>
       </div>
     </div>

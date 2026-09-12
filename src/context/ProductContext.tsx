@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { Product, Review } from '../types';
-import { PRODUCTS_DATA, REVIEWS_DATA } from '../data/mockData';
+import { REVIEWS_DATA } from '../data/mockData';
 import { db } from '../lib/firebase';
 import { collection, limit, onSnapshot, query, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { sanitizeForFirestore } from '../lib/tenantUtils';
@@ -32,9 +32,17 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-      return saved ? JSON.parse(saved) : PRODUCTS_DATA;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.some((p: any) => p && typeof p.id === 'string' && (p.id.startsWith('p') || p.id.startsWith('mock') || p.id.startsWith('demo')))) {
+          localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
+          return [];
+        }
+        return Array.isArray(parsed) ? parsed : [];
+      }
+      return [];
     } catch {
-      return PRODUCTS_DATA;
+      return [];
     }
   });
 
@@ -59,31 +67,29 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     const unsubProducts = onSnapshot(
       query(collection(db, 'products'), limit(500)),
       (snapshot) => {
-        if (!snapshot.empty) {
-          const loaded: Product[] = [];
-          snapshot.forEach((docSnap) => {
-            const raw = { id: docSnap.id, ...docSnap.data() } as Product;
-            const types = getProductTypes(raw);
-            const normalized: Product = {
-              ...raw,
-              productTypes: types,
-              productType: raw.productType || types[0],
-              subcategory: raw.subcategory || types[0],
-            };
-            loaded.push(sanitizeProductImageUrls(normalized));
-          });
-          // Stable sort: Products with newer createdAt timestamps appear first
-          loaded.sort((a, b) => {
-            const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            if (timeA && timeB && timeA !== timeB) return timeB - timeA;
-            if (timeA && !timeB) return -1;
-            if (!timeA && timeB) return 1;
-            return 0;
-          });
-          setProducts(loaded);
-          safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(loaded));
-        }
+        const loaded: Product[] = [];
+        snapshot.forEach((docSnap) => {
+          const raw = { id: docSnap.id, ...docSnap.data() } as Product;
+          const types = getProductTypes(raw);
+          const normalized: Product = {
+            ...raw,
+            productTypes: types,
+            productType: raw.productType || types[0],
+            subcategory: raw.subcategory || types[0],
+          };
+          loaded.push(sanitizeProductImageUrls(normalized));
+        });
+        // Stable sort: Products with newer createdAt timestamps appear first
+        loaded.sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          if (timeA && timeB && timeA !== timeB) return timeB - timeA;
+          if (timeA && !timeB) return -1;
+          if (!timeA && timeB) return 1;
+          return 0;
+        });
+        setProducts(loaded);
+        safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(loaded));
       },
       (error) => {
         console.warn('Firestore products listener error:', error);

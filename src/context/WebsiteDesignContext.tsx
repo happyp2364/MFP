@@ -127,6 +127,7 @@ export const WebsiteDesignProvider: React.FC<{ children: ReactNode }> = ({ child
       await setDoc(doc(db, 'settings', 'website_design_config'), payload, { merge: true });
     } catch (e) {
       console.error('Failed to persist website_design_config to Firestore:', e);
+      throw e;
     }
   };
 

@@ -21,7 +21,7 @@ export const InstagramFeed: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const instagramUrl = `https://www.instagram.com/${instagramConfig?.username || 'marudhar_fashion_point'}/`;
+  const instagramUrl = `https://www.instagram.com/${instagramConfig?.username || 'marudharfashionpoint'}/`;
 
   const fetchFeedData = async (isManualRefresh = false) => {
     if (isManualRefresh) setIsRefreshing(true);
@@ -92,7 +92,7 @@ export const InstagramFeed: React.FC = () => {
             <div>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <h3 className="text-xl sm:text-2xl font-bold font-serif-heading text-white">
-                  @{profile?.username || instagramConfig?.username || 'marudhar_fashion_point'}
+                  @{profile?.username || instagramConfig?.username || 'marudharfashionpoint'}
                 </h3>
                 <CheckCircle2 className="w-5 h-5 text-sky-400 fill-sky-400/20" />
                 {profile?.isLiveApiConnected && (
@@ -153,7 +153,7 @@ export const InstagramFeed: React.FC = () => {
               className="w-full md:w-auto bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 hover:opacity-95 text-white text-sm font-extrabold px-8 py-3.5 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5"
             >
               <Instagram className="w-5 h-5" />
-              <span>Follow @{profile?.username || 'marudhar_fashion_point'}</span>
+              <span>Follow @{profile?.username || 'marudharfashionpoint'}</span>
               <ExternalLink className="w-4 h-4" />
             </a>
           </div>

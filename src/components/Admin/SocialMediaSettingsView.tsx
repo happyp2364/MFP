@@ -500,7 +500,7 @@ export const SocialMediaSettingsView: React.FC = () => {
         id: 'hl-' + Date.now(),
         title: 'New Highlight',
         coverUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=120&q=80',
-        linkUrl: 'https://instagram.com/marudhar_fashion_point'
+        linkUrl: 'https://www.instagram.com/marudharfashionpoint/'
       };
       const updated = [...(instagramHighlights || []), newHl];
       await updateSocialMediaConfig({ instagramHighlights: updated });
@@ -559,7 +559,7 @@ export const SocialMediaSettingsView: React.FC = () => {
         caption: 'Royal traditional leather Mojari handmade in Pipar City. 👑✨ #mojari #weddingseason',
         likes: 150,
         comments: 12,
-        postUrl: 'https://instagram.com/marudhar_fashion_point',
+        postUrl: 'https://www.instagram.com/marudharfashionpoint/',
         createdAt: 'Just now'
       };
       const updated = [...(instagramMedia || []), newItem];

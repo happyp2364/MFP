@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
   Heart,
@@ -39,6 +39,7 @@ import { ProductCard } from './ProductCard';
 import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 import { useStore } from '../../context/StoreContext';
 import { SEOHead } from '../SEO/SEOHead';
+import { getImagesForSelectedColor } from '../../utils/variantUtils';
 import { generateProductSchema, generateBreadcrumbSchema } from '../../utils/seo';
 
 interface ProductDetailPageProps {
@@ -139,25 +140,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const displayOriginalPrice = activeVariant ? activeVariant.originalPrice : (product?.originalPrice || 0);
   const displayDiscountPercent = activeVariant ? activeVariant.discount : (product?.discountPercent || 0);
 
-  // Gallery (Every color has its own gallery)
-  const colorSpecificImages = product?.variants
-    ? Array.from(
-        new Set(
-          product.variants
-            .filter((v) => v.color.toLowerCase() === selectedColor.toLowerCase())
-            .flatMap((v) => v.images || [])
-        )
-      ).filter(Boolean) as string[]
-    : [];
+  // Gallery resolved by selected color
+  const displayImages = useMemo(() => {
+    return getImagesForSelectedColor(product, selectedColor);
+  }, [product, selectedColor]);
 
-  const displayImages = colorSpecificImages.length > 0 ? colorSpecificImages : (product?.images || []);
-
-  // Sync index to avoid index out of bounds if selected color has fewer images
+  // Reset active image index to 0 when selectedColor changes
   useEffect(() => {
-    if (activeImageIndex >= displayImages.length) {
-      setActiveImageIndex(0);
-    }
-  }, [displayImages, activeImageIndex]);
+    setActiveImageIndex(0);
+  }, [selectedColor]);
 
   // Touch Swiping Handlers
   const touchStartX = React.useRef<number>(0);

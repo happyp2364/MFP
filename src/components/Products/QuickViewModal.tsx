@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Heart, MessageCircle, Star, Sparkles, ShieldCheck, Truck, RotateCcw, ShoppingBag, Bell, ImageOff, Share2, Copy, Check, Zap, Loader2 } from 'lucide-react';
 import { Product } from '../../types';
 import { useStore } from '../../context/StoreContext';
@@ -12,7 +12,7 @@ import {
   getFirstAvailableInStockSize,
   getSizeStockInfo,
 } from '../../utils/sizeStockUtils';
-import { getProductPrice } from '../../utils/variantUtils';
+import { getProductPrice, getImagesForSelectedColor } from '../../utils/variantUtils';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -104,11 +104,14 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     setTimeout(() => setAddedNotice(false), 2000);
   };
 
-  const activeVariantWithImages = product.variants?.find(
-    (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
-  );
-  
-  const displayImages = activeVariantWithImages?.images || product.images || [];
+  const displayImages = useMemo(() => {
+    return getImagesForSelectedColor(product, selectedColor);
+  }, [product, selectedColor]);
+
+  // Reset active image index to 0 when selectedColor changes
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [selectedColor]);
 
   const rawImageSrc = displayImages.length > 0
     ? (displayImages[activeImageIndex] || displayImages[0])

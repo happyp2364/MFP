@@ -118,6 +118,29 @@ export function groupVariantsByColor(variants: ProductVariant[]): Record<string,
 }
 
 /**
+ * Resolves the complete image gallery for a given product and selected color.
+ */
+export function getImagesForSelectedColor(product: Product, color?: string): string[] {
+  if (!product) return [];
+  const targetColor = (color || product.colors?.[0]?.name || '').trim().toLowerCase();
+
+  if (product.variants && product.variants.length > 0 && targetColor) {
+    const matchingVariant = product.variants.find(
+      (v) => v.color && v.color.trim().toLowerCase() === targetColor && v.images && v.images.length > 0
+    );
+    if (matchingVariant && matchingVariant.images && matchingVariant.images.length > 0) {
+      return matchingVariant.images;
+    }
+  }
+
+  if (product.images && product.images.length > 0) {
+    return product.images;
+  }
+
+  return [];
+}
+
+/**
  * Auto-generates a SKU following the convention (e.g., brand-color-size or CPM-BLK-08)
  */
 export function generateAutoSKU(productName: string, color: string, size: string): string {

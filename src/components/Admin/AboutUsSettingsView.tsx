@@ -946,7 +946,7 @@ export const AboutUsSettingsView: React.FC = () => {
                 type="text"
                 value={formData.socialLinks?.instagram || ''}
                 onChange={(e) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, instagram: e.target.value } }))}
-                placeholder="https://instagram.com/marudhar_fashion_point"
+                placeholder="https://www.instagram.com/marudharfashionpoint/"
                 className="w-full bg-white border border-slate-300 text-slate-900 font-medium text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder:text-slate-500 shadow-xs transition-colors"
               />
             </div>

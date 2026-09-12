@@ -27,7 +27,7 @@ import {
   isProductCompletelyOutOfStock,
   getFirstAvailableInStockSize,
 } from '../../utils/sizeStockUtils';
-import { getProductPrice } from '../../utils/variantUtils';
+import { getProductPrice, getImagesForSelectedColor } from '../../utils/variantUtils';
 
 // Authentic, recognizable WhatsApp icon (phone handset inside speech bubble)
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
@@ -129,22 +129,9 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     product.colors && product.colors.length > 0 ? product.colors[0].name : 'Standard'
   );
 
-  // Find images for the active selected color variant
-  const activeVariantWithImages = useMemo(() => {
-    return product.variants?.find(
-      (v) =>
-        v.color.toLowerCase() === selectedColor.toLowerCase() &&
-        v.images &&
-        v.images.length > 0
-    );
-  }, [product.variants, selectedColor]);
-
   const displayImages = useMemo(() => {
-    if (activeVariantWithImages?.images && activeVariantWithImages.images.length > 0) {
-      return activeVariantWithImages.images;
-    }
-    return product.images && product.images.length > 0 ? product.images : [];
-  }, [activeVariantWithImages, product.images]);
+    return getImagesForSelectedColor(product, selectedColor);
+  }, [product, selectedColor]);
 
   const rawImageSrc = displayImages.length > 0 ? displayImages[currentImageIndex] || displayImages[0] : '';
   const displayImageSrc = (!rawImageSrc || imageError) ? CLEAN_IMAGE_COMING_SOON_SVG : rawImageSrc;

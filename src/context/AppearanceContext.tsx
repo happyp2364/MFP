@@ -59,9 +59,32 @@ interface AppearanceContextType {
 const AppearanceContext = createContext<AppearanceContextType | undefined>(undefined);
 
 export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [homepageConfig, setHomepageConfig] = useState<HomepageConfig>(DEFAULT_HOMEPAGE_CONFIG);
+  const [homepageConfig, setHomepageConfig] = useState<HomepageConfig>(() => {
+    try {
+      const saved = localStorage.getItem('mfp_homepage_config');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.sections) && parsed.sections.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return DEFAULT_HOMEPAGE_CONFIG;
+  });
+
   const [homepageVersions, setHomepageVersions] = useState<HomepageVersion[]>([]);
-  const [heroContent, setHeroContent] = useState<HeroContent>(DEFAULT_HERO_CONTENT);
+
+  const [heroContent, setHeroContent] = useState<HeroContent>(() => {
+    try {
+      const saved = localStorage.getItem('mfp_hero_content');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_HERO_CONTENT;
+  });
+
   const defaultAnnouncements: AnnouncementItem[] = ANNOUNCEMENT_ITEMS.map((item: any, idx: number) => ({
     id: `ann_${idx}`,
     text: typeof item === 'string' ? item : item.text || '',
@@ -70,7 +93,17 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const [announcementsList, setAnnouncementsListState] = useState<AnnouncementItem[]>(defaultAnnouncements);
   const [categoryHighlights, setCategoryHighlightsState] = useState<CategoryHighlight[]>(CATEGORY_HIGHLIGHTS);
   const [trendingCollections, setTrendingCollectionsState] = useState<TrendingCollectionItem[]>(TRENDING_COLLECTIONS);
-  const [topAnnouncementBarConfig, setTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG);
+
+  const [topAnnouncementBarConfig, setTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(() => {
+    try {
+      const saved = localStorage.getItem('mfp_top_announcement_bar');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG;
+  });
   const [megaMenuCategories, setMegaMenuCategoriesState] = useState<MegaMenuCategory[]>(DEFAULT_MEGA_MENU_CATEGORIES);
   const [mobileCategories, setMobileCategoriesState] = useState<MobileCategoryIcon[]>(DEFAULT_MOBILE_CATEGORY_ICONS);
   const [productCardDesignerConfig, setProductCardDesignerConfig] = useState<ProductCardDesignerConfig>(DEFAULT_PRODUCT_CARD_CONFIG);
@@ -128,6 +161,7 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const updateHeroContent = async (content: HeroContent) => {
     setHeroContent(content);
+    localStorage.setItem('mfp_hero_content', JSON.stringify(content));
     try {
       await setDoc(doc(db, 'settings', 'hero_content'), content, { merge: true });
     } catch (e) {
@@ -155,6 +189,7 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const updateTopAnnouncementBarConfig = async (config: TopAnnouncementBarConfig) => {
     setTopAnnouncementBarConfig(config);
+    localStorage.setItem('mfp_top_announcement_bar', JSON.stringify(config));
     try {
       await setDoc(doc(db, 'settings', 'top_announcement_bar'), config, { merge: true });
     } catch (e) {

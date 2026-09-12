@@ -923,7 +923,7 @@ export interface CustomerProfile {
 
 export interface InstagramConfig {
   enabled: boolean;
-  username: string; // default "marudhar_fashion_point"
+  username: string; // default "marudharfashionpoint"
   displayName: string; // default "Marudhar Fashion Point"
   accessToken?: string;
   appId?: string;

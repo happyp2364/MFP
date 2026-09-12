@@ -14,7 +14,7 @@ export const STORE_INFO: StoreInfo = {
   googleMapsEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3578.123456789!2d73.0243!3d26.2389!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjLCsDE0JzIwLjAiTiA3M8KwMDEnMjcuNSJF!5e0!3m2!1sen!2sin!4v1600000000000!5m2!1sen!2sin',
   businessHours: 'Monday - Sunday: 9:00 AM - 9:30 PM',
   ownerContact: 'Vijay Parihar & Vishal Parihar',
-  instagram: 'https://www.instagram.com/marudhar_fashion_point/',
+  instagram: 'https://www.instagram.com/marudharfashionpoint/',
   facebook: 'https://www.facebook.com/share/1Antw1LgKS/',
   youtube: 'https://yt.openinapp.co/10n4u',
 
@@ -970,7 +970,7 @@ export const DEFAULT_PET_SHOE_CONFIG: import('../types').PetShoeConfig = {
 
 export const DEFAULT_INSTAGRAM_CONFIG: import('../types').InstagramConfig = {
   enabled: true,
-  username: 'marudhar_fashion_point',
+  username: 'marudharfashionpoint',
   displayName: 'Marudhar Fashion Point',
   postLimit: 8,
   layout: 'grid',
@@ -1060,8 +1060,8 @@ export const DEFAULT_SOCIAL_PLATFORMS: import('../types').SocialPlatformConfig[]
     id: 'instagram',
     name: 'Instagram',
     enabled: true,
-    username: 'marudhar_fashion_point',
-    profileUrl: 'https://instagram.com/marudhar_fashion_point',
+    username: 'marudharfashionpoint',
+    profileUrl: 'https://www.instagram.com/marudharfashionpoint/',
     customIcon: 'Instagram',
     customButtonText: 'Follow on Instagram',
     customLabel: 'Check our reels & posts',
@@ -1204,8 +1204,8 @@ export const DEFAULT_SOCIAL_PLATFORMS: import('../types').SocialPlatformConfig[]
     id: 'threads',
     name: 'Threads',
     enabled: false,
-    username: 'marudhar_fashion_point',
-    profileUrl: 'https://threads.net/@marudhar_fashion_point',
+    username: 'marudharfashionpoint',
+    profileUrl: 'https://threads.net/@marudharfashionpoint',
     customIcon: 'AtSign',
     customButtonText: 'Follow on Threads',
     customLabel: 'Styling discussions & banter',
@@ -1228,8 +1228,8 @@ export const DEFAULT_SOCIAL_PLATFORMS: import('../types').SocialPlatformConfig[]
     id: 'pinterest',
     name: 'Pinterest',
     enabled: false,
-    username: 'marudhar_fashion_point',
-    profileUrl: 'https://pinterest.com/marudhar_fashion_point',
+    username: 'marudharfashionpoint',
+    profileUrl: 'https://pinterest.com/marudharfashionpoint',
     customIcon: 'Pin',
     customButtonText: 'Follow on Pinterest',
     customLabel: 'Pin modern wedding shoe boards',
@@ -1325,11 +1325,11 @@ export const DEFAULT_SOCIAL_PLATFORMS: import('../types').SocialPlatformConfig[]
 export const DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG: import('../types').SocialMediaCenterConfig = {
   platforms: DEFAULT_SOCIAL_PLATFORMS,
   instagramHighlights: [
-    { id: 'h1', title: 'Wedding Fest', coverUrl: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=120&q=80', linkUrl: 'https://instagram.com/marudhar_fashion_point' },
-    { id: 'h2', title: 'Sneaker Drop', coverUrl: 'https://images.unsplash.com/photo-1520639888713-7851133b1ed0?auto=format&fit=crop&w=120&q=80', linkUrl: 'https://instagram.com/marudhar_fashion_point' },
-    { id: 'h3', title: 'Royal Jutis', coverUrl: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=120&q=80', linkUrl: 'https://instagram.com/marudhar_fashion_point' },
-    { id: 'h4', title: 'Kids Play', coverUrl: 'https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=120&q=80', linkUrl: 'https://instagram.com/marudhar_fashion_point' },
-    { id: 'h5', title: 'Customer Love', coverUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80', linkUrl: 'https://instagram.com/marudhar_fashion_point' }
+    { id: 'h1', title: 'Wedding Fest', coverUrl: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=120&q=80', linkUrl: 'https://www.instagram.com/marudharfashionpoint/' },
+    { id: 'h2', title: 'Sneaker Drop', coverUrl: 'https://images.unsplash.com/photo-1520639888713-7851133b1ed0?auto=format&fit=crop&w=120&q=80', linkUrl: 'https://www.instagram.com/marudharfashionpoint/' },
+    { id: 'h3', title: 'Royal Jutis', coverUrl: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=120&q=80', linkUrl: 'https://www.instagram.com/marudharfashionpoint/' },
+    { id: 'h4', title: 'Kids Play', coverUrl: 'https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=120&q=80', linkUrl: 'https://www.instagram.com/marudharfashionpoint/' },
+    { id: 'h5', title: 'Customer Love', coverUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80', linkUrl: 'https://www.instagram.com/marudharfashionpoint/' }
   ],
   instagramMedia: [
     { id: 'm1', type: 'post', imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80', caption: 'Step into royal elegance with our handcrafted wedding leather mojari collection! 👑✨ #weddingwear #mojari #royalfootwear #marudharfashion', likes: 1240, comments: 84, postUrl: 'https://instagram.com/p/mock1', createdAt: '2 hours ago' },
@@ -1444,7 +1444,7 @@ export const DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG: import('../types').SocialMediaC
   instagramReviewIntegrationEnabled: true,
 
   youtubeChannelName: 'Marudhar Fashion Point Jodhpur',
-  youtubeChannelUrl: 'https://youtube.com/@marudhar_fashion_point',
+  youtubeChannelUrl: 'https://youtube.com/@marudharfashionpoint',
   youtubeSubscribeButtonText: 'Subscribe Now',
   youtubeShortsSectionEnabled: true,
 

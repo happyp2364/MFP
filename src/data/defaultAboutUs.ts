@@ -258,7 +258,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
   ],
   gallery: [],
   socialLinks: {
-    instagram: "https://instagram.com/marudhar_fashion_point",
+    instagram: "https://www.instagram.com/marudharfashionpoint/",
     facebook: "https://facebook.com/marudharfashionpoint",
     youtube: "https://youtube.com/@marudharfashionpoint",
     whatsapp: "919829012345",

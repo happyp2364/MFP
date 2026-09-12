@@ -100,8 +100,9 @@ const VisualWebsiteBuilder = lazy(() => import('./VisualWebsiteBuilder').then(m 
 const AdminNavCustomizer = lazy(() => import('./AdminNavCustomizer').then(m => ({ default: m.AdminNavCustomizer })));
 const HeroImageSettingsCard = lazy(() => import('./HeroImageSettingsCard').then(m => ({ default: m.HeroImageSettingsCard })));
 const InstagramReelsAdminManager = lazy(() => import('./InstagramReelsAdminManager').then(m => ({ default: m.InstagramReelsAdminManager })));
+const ThemesStudioView = lazy(() => import('./ThemesStudioView').then(m => ({ default: m.ThemesStudioView })));
 import { useAdminNav } from '../../context/AdminNavContext';
-import { MapPin, Users, Volume2, Crown, Paintbrush, Layout, SlidersHorizontal, ChevronDown, ChevronRight, Boxes, PackageCheck } from 'lucide-react';
+import { MapPin, Users, Volume2, Crown, Paintbrush, Layout, SlidersHorizontal, ChevronDown, ChevronRight, Boxes, PackageCheck, Palette } from 'lucide-react';
 import { validateFileUpload } from '../../lib/security';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
 
@@ -111,7 +112,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'instagram_reels' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'logo_customization' | 'website_design' | 'visual_builder' | 'nav_customizer';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'instagram_reels' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'logo_customization' | 'themes_studio' | 'website_design' | 'visual_builder' | 'nav_customizer';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -213,6 +214,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       case 'reports': return <TrendingUp className="w-4 h-4 text-indigo-600 shrink-0" />;
       case 'overview': return <LayoutDashboard className="w-4 h-4 text-indigo-500 shrink-0" />;
       case 'website_configuration': return <Sliders className="w-4 h-4 text-neutral-600 shrink-0" />;
+      case 'themes_studio': return <Palette className="w-4 h-4 text-amber-500 shrink-0" />;
       case 'website_design': return <Paintbrush className="w-4 h-4 text-amber-500 shrink-0" />;
       case 'visual_builder': return <Layout className="w-4 h-4 text-emerald-500 shrink-0" />;
       case 'product_card_designer': return <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />;
@@ -727,6 +729,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             {activeTab === 'logo_customization' && (
               <AdminErrorBoundary fallbackTitle="Logo Customization Notice">
                 <LogoCustomizationView />
+              </AdminErrorBoundary>
+            )}
+
+            {/* ----------------- TAB: GLOBAL THEME STUDIO ----------------- */}
+            {activeTab === 'themes_studio' && (
+              <AdminErrorBoundary fallbackTitle="Theme Studio Notice">
+                <ThemesStudioView showToast={(msg) => setSaveNotification(msg)} />
               </AdminErrorBoundary>
             )}
 

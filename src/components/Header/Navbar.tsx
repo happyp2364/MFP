@@ -463,6 +463,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       <MobileSideDrawer
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
+        onOpenSearch={onOpenSearch}
+        onNavigateToSection={handleNavClick}
         onOpenStoreLocator={() => {
           if (onOpenStoreLocator) onOpenStoreLocator();
         }}

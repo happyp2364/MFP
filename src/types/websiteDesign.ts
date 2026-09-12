@@ -96,6 +96,7 @@ export interface FloatingActionDesignSettings {
 }
 
 export interface WebsiteDesignSettings {
+  activeThemeId?: string;
   header: HeaderDesignSettings;
   cards: CardDesignSettings;
   categoryCards: CategoryCardDesignSettings;

@@ -582,7 +582,7 @@ export const AboutUsSettingsView: React.FC = () => {
                   shortIntro: '',
                   experience: '10+ Years',
                   specialization: 'Royal Footwear',
-                  profilePhoto: '/images/shop/owners_vijay_parihar_viju_bhai_team.jpg',
+                  profilePhoto: '',
                   socialLinks: {},
                   enabled: true,
                   featured: true,
@@ -605,7 +605,7 @@ export const AboutUsSettingsView: React.FC = () => {
               >
                 <div className="flex gap-3.5">
                   <img
-                    src={member.profilePhoto || '/images/shop/owners_vijay_parihar_viju_bhai_team.jpg'}
+                    src={member.profilePhoto || ''}
                     alt={member.fullName}
                     className="w-16 h-16 rounded-full object-cover border-2 border-amber-500/40 shadow-md shrink-0"
                   />
@@ -830,7 +830,7 @@ export const AboutUsSettingsView: React.FC = () => {
                   category: 'shop_inside',
                   title: '',
                   caption: '',
-                  imageUrl: '/images/shop/shop_interior_illuminated_walkthrough.jpg',
+                  imageUrl: '',
                   enabled: true,
                   displayOrder: formData.gallery.length + 1
                 });

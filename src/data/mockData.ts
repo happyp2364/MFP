@@ -1419,7 +1419,7 @@ export const DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG: import('../types').SocialMediaC
   ],
   whatsappPredefinedMessage: 'Hello! I am visiting your Marudhar Fashion Point store website and want to ask about product availability.',
   whatsappSupportName: 'Viju Bhai (Founder)',
-  whatsappSupportAvatar: '/images/shop/owners_vijay_parihar_viju_bhai_team.jpg',
+  whatsappSupportAvatar: '',
   whatsappSupportRole: 'Senior Sizing Consultant',
   facebookPageLikeUrl: 'https://facebook.com/marudharfashionpoint',
   facebookMessengerUrl: 'https://m.me/marudharfashionpoint',
@@ -1438,7 +1438,7 @@ export const DEFAULT_SOCIAL_MEDIA_CENTER_CONFIG: import('../types').SocialMediaC
   whatsappAutoReplyText: 'Thank you for reaching out to Marudhar Fashion Point. We will get back to you shortly!',
 
   instagramFollowButtonText: 'Follow us on Instagram',
-  instagramProfilePictureLink: '/images/shop/marudhar_logo.png',
+  instagramProfilePictureLink: '',
   instagramFeedEnabled: true,
   instagramGalleryEnabled: true,
   instagramReviewIntegrationEnabled: true,

@@ -86,7 +86,7 @@ export const HorizontalCategoryBar: React.FC<HorizontalCategoryBarProps> = ({
                   }}
                 >
                   <img
-                    src={cat.image}
+                    src={cat.image || undefined}
                     alt={cat.name}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"

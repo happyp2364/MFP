@@ -142,7 +142,7 @@ export const HomepageBuilderTab: React.FC = () => {
     reader.readAsText(file);
   };
 
-  const handleMoveSection = (index: number, direction: 'up' | 'down') => {
+  const handleMoveSection = async (index: number, direction: 'up' | 'down') => {
     const targetIdx = direction === 'up' ? index - 1 : index + 1;
     if (targetIdx < 0 || targetIdx >= localConfig.sections.length) return;
 
@@ -150,54 +150,120 @@ export const HomepageBuilderTab: React.FC = () => {
     const [moved] = updated.splice(index, 1);
     updated.splice(targetIdx, 0, moved);
 
-    setLocalConfig((prev) => ({ ...prev, sections: updated }));
+    const targetConfig = { ...localConfig, sections: updated };
+    setIsSaving(true);
+    try {
+      const success = await updateHomepageConfig(targetConfig, `Reordered sections`);
+      if (success) {
+        setLocalConfig(targetConfig);
+        showToast('Section order updated & saved', 'success');
+      } else {
+        showToast('Failed to save section order', 'error');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleToggleSectionEnabled = (id: string) => {
-    setLocalConfig((prev) => ({
-      ...prev,
-      sections: prev.sections.map((sec) =>
-        sec.id === id ? { ...sec, enabled: !sec.enabled } : sec
-      ),
-    }));
+  const handleToggleSectionEnabled = async (id: string) => {
+    const updatedSections = localConfig.sections.map((sec) =>
+      sec.id === id ? { ...sec, enabled: !sec.enabled } : sec
+    );
+    const targetConfig = { ...localConfig, sections: updatedSections };
+    setIsSaving(true);
+    try {
+      const success = await updateHomepageConfig(targetConfig, `Toggled section visibility`);
+      if (success) {
+        setLocalConfig(targetConfig);
+        showToast('Section live state updated & saved', 'success');
+      } else {
+        showToast('Failed to update live state', 'error');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDuplicateSection = (sec: HomepageSection) => {
+  const handleDuplicateSection = async (sec: HomepageSection) => {
     const duplicated: HomepageSection = {
       ...JSON.parse(JSON.stringify(sec)),
       id: `sec_${sec.type}_${Date.now()}`,
       title: `${sec.title} (Copy)`,
     };
-    setLocalConfig((prev) => ({
-      ...prev,
-      sections: [...prev.sections, duplicated],
-    }));
-    showToast('Section duplicated', 'info');
+    const targetConfig = {
+      ...localConfig,
+      sections: [...localConfig.sections, duplicated],
+    };
+    setIsSaving(true);
+    try {
+      const success = await updateHomepageConfig(targetConfig, `Duplicated section ${sec.title}`);
+      if (success) {
+        setLocalConfig(targetConfig);
+        showToast('Section duplicated & saved', 'success');
+      } else {
+        showToast('Failed to duplicate section', 'error');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDeleteSection = (id: string) => {
-    setLocalConfig((prev) => ({
-      ...prev,
-      sections: prev.sections.filter((sec) => sec.id !== id),
-    }));
-    showToast('Section removed', 'info');
+  const handleDeleteSection = async (id: string) => {
+    const sectionToRemove = localConfig.sections.find((s) => s.id === id);
+    if (!window.confirm(`Are you sure you want to delete section "${sectionToRemove?.title || id}"? This action cannot be undone.`)) {
+      return;
+    }
+    const updated = localConfig.sections.filter((sec) => sec.id !== id);
+    const targetConfig = { ...localConfig, sections: updated };
+    setIsSaving(true);
+    try {
+      const success = await updateHomepageConfig(targetConfig, `Deleted section ${sectionToRemove?.title || id}`);
+      if (success) {
+        setLocalConfig(targetConfig);
+        showToast('Section deleted successfully & saved', 'success');
+      } else {
+        showToast('Failed to delete section', 'error');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSaveSection = (updatedSection: HomepageSection) => {
-    setLocalConfig((prev) => ({
-      ...prev,
-      sections: prev.sections.map((sec) => (sec.id === updatedSection.id ? updatedSection : sec)),
-    }));
-    setEditingSection(null);
-    showToast('Section changes saved locally', 'info');
+  const handleSaveSection = async (updatedSection: HomepageSection) => {
+    const updatedSections = localConfig.sections.map((sec) => (sec.id === updatedSection.id ? updatedSection : sec));
+    const targetConfig = { ...localConfig, sections: updatedSections };
+    setIsSaving(true);
+    try {
+      const success = await updateHomepageConfig(targetConfig, `Updated section "${updatedSection.title}"`);
+      if (success) {
+        setLocalConfig(targetConfig);
+        setEditingSection(null);
+        showToast('Section changes saved & published successfully!', 'success');
+      } else {
+        showToast('Failed to save section changes', 'error');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleAddSection = (newSection: HomepageSection) => {
-    setLocalConfig((prev) => ({
-      ...prev,
-      sections: [...prev.sections, newSection],
-    }));
-    showToast(`Added ${newSection.title} to homepage`, 'info');
+  const handleAddSection = async (newSection: HomepageSection) => {
+    const targetConfig = {
+      ...localConfig,
+      sections: [...localConfig.sections, newSection],
+    };
+    setIsSaving(true);
+    try {
+      const success = await updateHomepageConfig(targetConfig, `Added section "${newSection.title}"`);
+      if (success) {
+        setLocalConfig(targetConfig);
+        showToast(`Added ${newSection.title} and saved`, 'success');
+      } else {
+        showToast('Failed to add section', 'error');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handlePublishHomepage = async () => {

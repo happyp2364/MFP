@@ -190,7 +190,7 @@ export const FloatingActionHub: React.FC<FloatingActionHubProps> = ({
         <div className="group relative flex items-center gap-3">
           {/* Support agent chat bubble indicator (Desktop hover only) */}
           <div className="hidden sm:flex opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-neutral-900 text-white p-3 rounded-2xl shadow-xl whitespace-nowrap backdrop-blur-md items-center gap-2.5 border border-white/10 pointer-events-none">
-            <img src={waSupportAvatar} alt={waSupportName} className="w-8 h-8 rounded-full border border-neutral-700 object-cover" />
+            <img src={waSupportAvatar || undefined} alt={waSupportName} className="w-8 h-8 rounded-full border border-neutral-700 object-cover" />
             <div className="text-left leading-tight">
               <span className="font-bold text-[11px] block text-white">{waSupportName}</span>
               <span className="text-[9px] text-[#0B8F63] font-extrabold tracking-wide uppercase">व्हाट्सऐप लाइव सहायता • Live Chat</span>

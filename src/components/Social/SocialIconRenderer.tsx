@@ -93,7 +93,7 @@ export const SocialIconRenderer: React.FC<SocialIconRendererProps> = ({
   ) {
     return (
       <img 
-        src={identifier} 
+        src={identifier || undefined} 
         alt="" 
         className={`${className} object-contain`} 
         style={style}

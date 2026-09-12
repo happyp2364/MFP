@@ -75,7 +75,7 @@ export const StoreGallerySwiper: React.FC<StoreGallerySwiperProps> = ({ store })
     const fallbackImages =
       store.images && store.images.length > 0
         ? store.images
-        : ['/images/shop/shop_exterior_pipar_front.jpg'];
+        : [];
 
     return fallbackImages.map((url, idx) => {
       let cat: StoreGalleryPhotoCategory = 'exterior';
@@ -287,7 +287,7 @@ export const StoreGallerySwiper: React.FC<StoreGallerySwiperProps> = ({ store })
           {currentPhoto ? (
             <motion.img
               key={currentPhoto.id}
-              src={currentPhoto.url}
+              src={currentPhoto.url || undefined}
               alt={currentPhoto.title}
               custom={slideDirection}
               variants={slideVariants}
@@ -479,7 +479,7 @@ export const StoreGallerySwiper: React.FC<StoreGallerySwiperProps> = ({ store })
                     : 'border-transparent opacity-60 hover:opacity-100 hover:scale-102'
                 }`}
               >
-                <img src={photo.url} alt={photo.title} className="w-full h-full object-cover" />
+                <img src={photo.url || undefined} alt={photo.title} className="w-full h-full object-cover" />
                 <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-extrabold text-white">
                   {idx + 1}
                 </span>
@@ -568,7 +568,7 @@ export const StoreGallerySwiper: React.FC<StoreGallerySwiperProps> = ({ store })
                 style={{ transform: `scale(${zoomLevel})` }}
               >
                 <img
-                  src={currentPhoto.url}
+                  src={currentPhoto.url || undefined}
                   alt={currentPhoto.title}
                   className="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl border border-neutral-800"
                 />
@@ -638,7 +638,7 @@ export const StoreGallerySwiper: React.FC<StoreGallerySwiperProps> = ({ store })
                       : 'border-transparent opacity-40 hover:opacity-100'
                   }`}
                 >
-                  <img src={photo.url} alt={photo.title} className="w-full h-full object-cover" />
+                  <img src={photo.url || undefined} alt={photo.title} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

@@ -19,10 +19,17 @@ import { DEFAULT_MOBILE_CATEGORY_ICONS } from '../data/defaultMobileCategories';
 import { DEFAULT_PRODUCT_CARD_CONFIG, DEFAULT_TRENDING_SHOES_CONFIG, DEFAULT_PRICE_POINT_CONFIG } from '../types';
 import { db } from '../lib/firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import {
+  subscribeToHomepageConfig,
+  saveHomepageConfigToFirestore,
+  fetchHomepageConfigFromFirestore,
+  fetchHomepageVersionsFromFirestore,
+  rollbackHomepageVersionInFirestore,
+} from '../lib/homepageService';
 
 interface AppearanceContextType {
   homepageConfig: HomepageConfig;
-  updateHomepageConfig: (newConfig: HomepageConfig) => Promise<void>;
+  updateHomepageConfig: (newConfig: HomepageConfig, note?: string) => Promise<boolean>;
   homepageVersions: HomepageVersion[];
   fetchHomepageVersionsList: () => Promise<void>;
   rollbackHomepageVersion: (versionId: string) => Promise<boolean>;
@@ -71,6 +78,16 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const [pricePointConfig, setPricePointConfig] = useState<PricePointCollectionConfig>(DEFAULT_PRICE_POINT_CONFIG);
 
   useEffect(() => {
+    // Initial fetch from canonical Firestore / LocalStorage
+    fetchHomepageConfigFromFirestore().then((cfg) => {
+      if (cfg) setHomepageConfig(cfg);
+    });
+
+    // Realtime subscription
+    const unsubTheme = subscribeToHomepageConfig((cfg) => {
+      setHomepageConfig(cfg);
+    });
+
     const unsubHero = onSnapshot(doc(db, 'settings', 'hero_content'), (snapshot) => {
       if (snapshot.exists()) setHeroContent(snapshot.data() as HeroContent);
     }, () => {});
@@ -79,23 +96,35 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
       if (snapshot.exists()) setTopAnnouncementBarConfig(snapshot.data() as TopAnnouncementBarConfig);
     }, () => {});
 
+    fetchHomepageVersionsList();
+
     return () => {
+      unsubTheme();
       unsubHero();
       unsubTopAnnounce();
     };
   }, []);
 
-  const updateHomepageConfig = async (newConfig: HomepageConfig) => {
-    setHomepageConfig(newConfig);
-    try {
-      await setDoc(doc(db, 'settings', 'homepage_config'), newConfig, { merge: true });
-    } catch (e) {
-      console.warn('Firestore homepage config sync failed', e);
+  const updateHomepageConfig = async (newConfig: HomepageConfig, note?: string): Promise<boolean> => {
+    const success = await saveHomepageConfigToFirestore(newConfig, 'Admin User', note);
+    if (success) {
+      setHomepageConfig(newConfig);
     }
+    return success;
   };
 
-  const fetchHomepageVersionsList = async () => {};
-  const rollbackHomepageVersion = async (_versionId: string) => true;
+  const fetchHomepageVersionsList = async () => {
+    const vers = await fetchHomepageVersionsFromFirestore();
+    setHomepageVersions(vers);
+  };
+
+  const rollbackHomepageVersion = async (versionId: string): Promise<boolean> => {
+    const success = await rollbackHomepageVersionInFirestore(versionId, 'Admin User');
+    if (success) {
+      await fetchHomepageVersionsList();
+    }
+    return success;
+  };
 
   const updateHeroContent = async (content: HeroContent) => {
     setHeroContent(content);

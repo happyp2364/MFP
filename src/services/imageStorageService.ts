@@ -46,8 +46,7 @@ export function isStorageUrl(url: string | null | undefined): boolean {
     trimmed.startsWith('https://res.cloudinary.com/') ||
     trimmed.startsWith('http://res.cloudinary.com/') ||
     trimmed.startsWith('https://') ||
-    trimmed.startsWith('http://') ||
-    trimmed.startsWith('/images/shop/')
+    trimmed.startsWith('http://')
   );
 }
 

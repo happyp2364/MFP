@@ -277,11 +277,7 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                   : [];
                 const images = rawImages.length > 0
                   ? rawImages
-                  : [
-                      '/images/shop/shop_exterior_pipar_front.jpg',
-                      '/images/shop/shop_interior_illuminated_walkthrough.jpg',
-                      '/images/shop/banner_vijay_parihar_branded_shoes.jpg',
-                    ];
+                  : [];
 
                 const distanceKm = userLocation
                   ? calculateDistanceKm(userLocation.lat, userLocation.lng, store.latitude, store.longitude)
@@ -361,12 +357,12 @@ export const StoreLocatorPage: React.FC<StoreLocatorPageProps> = ({
                       className="relative mt-3 h-36 w-full rounded-xl overflow-hidden bg-neutral-900 border border-neutral-200/80 group/photo cursor-pointer"
                     >
                       <img
-                        src={images[activeImgIdx % images.length]}
+                        src={images[activeImgIdx % images.length] || undefined}
                         alt={`${store.name} storefront`}
                         className="w-full h-full object-cover group-hover/photo:scale-105 transition-transform duration-500"
                         loading="lazy"
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
+                          (e.currentTarget as HTMLImageElement).src = '';
                         }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />

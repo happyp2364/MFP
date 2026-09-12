@@ -17,10 +17,10 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
     "Handcrafted Royal Leather Juttis & Mojaris",
     "High-performance Air-Cushion Sports Shoes",
     "WhatsApp par personalized size guidance",
-    "Direct factory sourcing ki wajah se honest pricing",
+    "Direct factory sourcing ki wajah से honest pricing",
     "Fast doorstep delivery & Open Box Trial"
   ],
-  mainHeaderImage: "/images/shop/shop_interior_illuminated_walkthrough.jpg",
+  mainHeaderImage: "",
   ownersAndTeam: [
     {
       id: "owner_1",
@@ -30,7 +30,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       shortIntro: "Marudhar Fashion Point ke founder hain jinka focus hamesha customer trust, perfect fitting aur best quality footwear dene par raha hai.",
       experience: "18+ Years Retail Expertise",
       specialization: "Royal Wedding Mojaris & Customer Relationships",
-      profilePhoto: "/images/shop/owners_vijay_parihar_viju_bhai_team.jpg",
+      profilePhoto: "",
       contactNumber: "+91 9782482250",
       email: "vijubhai@marudharfashion.com",
       signature: "Viju Bhai",
@@ -52,7 +52,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       shortIntro: "Store operations, inventory management aur national athletic shoe brands ke stock selection ki responsibility sambhalte hain.",
       experience: "12+ Years Supply Chain",
       specialization: "Athletic Shoe Tech & Inventory Logistics",
-      profilePhoto: "/images/shop/banner_vijay_parihar_branded_shoes.jpg",
+      profilePhoto: "",
       contactNumber: "+91 9782482250",
       email: "rajesh@marudharfashion.com",
       socialLinks: {
@@ -71,7 +71,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       shortIntro: "Bridal collections, ethnic embroidery juttis aur kids footwear section ki curation aur selection lead karti hain.",
       experience: "10+ Years Styling",
       specialization: "Bridal Collections & Kids Sizing Ergonomics",
-      profilePhoto: "/images/shop/merchandise_viju_bhai_print.jpg",
+      profilePhoto: "",
       socialLinks: {
         instagram: "https://instagram.com/marudhar_boot_house_pipar"
       },
@@ -87,7 +87,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       shortIntro: "Ensure karte hain ki store me aane wale aur online enquiry karne wale har customer ko perfect size aur comfort mile.",
       experience: "8+ Years Fitting",
       specialization: "Custom Size Adjustments & WhatsApp Assistance",
-      profilePhoto: "/images/shop/signboard_neon_marudhar_footwear.jpg",
+      profilePhoto: "",
       socialLinks: {
         whatsapp: "919782482250"
       },
@@ -102,7 +102,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       year: "2010",
       title: "Pipar City Main Store Launch",
       description: "2010 me Viju Bhai ne Pipar City me Marudhar Fashion Point ki shuruaat ki, jiska main goal tha har customer ko best quality footwear dena.",
-      image: "/images/shop/shop_exterior_pipar_front.jpg",
+      image: "",
       icon: "store",
       enabled: true,
       displayOrder: 1
@@ -112,7 +112,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       year: "2015",
       title: "Showroom Expansion & National Brands",
       description: "Store space expand hua aur national sports sneakers aur formal leather shoe collections add kiye gaye.",
-      image: "/images/shop/banner_nike_campus_action_brands.jpg",
+      image: "",
       icon: "trending",
       enabled: true,
       displayOrder: 2
@@ -122,7 +122,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       year: "2020",
       title: "WhatsApp Express Orders & Home Dispatch",
       description: "WhatsApp ke through direct video shopping aur size guidance start ki, jisse 10,000+ families ne ghar baithe order karna shuru kiya.",
-      image: "/images/shop/merchandise_viju_bhai_print.jpg",
+      image: "",
       icon: "smartphone",
       enabled: true,
       displayOrder: 3
@@ -132,7 +132,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       year: "2024",
       title: "Smart Inventory & Digital Catalog",
       description: "Smart barcode inventory aur online catalog system implement kiya gaya, jisse stock management aur order delivery aur fast ho gayi.",
-      image: "/images/shop/signboard_neon_marudhar_footwear.jpg",
+      image: "",
       icon: "database",
       enabled: true,
       displayOrder: 4
@@ -142,7 +142,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       year: "2026",
       title: "Royal Collection Launch & Enterprise Tech",
       description: "Handcrafted royal wedding mojaris ka naya collection launch hua aur live website portal ke saath real-time store sync start hua.",
-      image: "/images/shop/banner_mbh_wooden_emblem_heritage.jpg",
+      image: "",
       icon: "sparkles",
       enabled: true,
       displayOrder: 5
@@ -156,7 +156,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       issuerOrPublisher: "Rajasthan Retail Excellence Committee",
       year: "2023",
       description: "Western Rajasthan me best customer satisfaction rating aur genuine quality assurance ke liye award se sammanit.",
-      imageUrl: "/images/shop/shop_exterior_pipar_front.jpg",
+      imageUrl: "",
       enabled: true,
       displayOrder: 1
     },
@@ -167,7 +167,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       issuerOrPublisher: "Marudhar Business Association",
       year: "2024",
       description: "Jodhpur aur Pali district ke 50,000 se zyada satisfied families ko quality service provide karne ka benchmark.",
-      imageUrl: "/images/shop/banner_vijay_parihar_branded_shoes.jpg",
+      imageUrl: "",
       enabled: true,
       displayOrder: 2
     },
@@ -178,7 +178,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       issuerOrPublisher: "Footwear Standards Trust",
       year: "2025",
       description: "Zero-defect check protocol aur 100% authentic quality assurance verified seal.",
-      imageUrl: "/images/shop/shop_interior_illuminated_walkthrough.jpg",
+      imageUrl: "",
       enabled: true,
       displayOrder: 3
     }
@@ -256,80 +256,7 @@ export const DEFAULT_ABOUT_US_CONFIG: AboutUsConfig = {
       displayOrder: 6
     }
   ],
-  gallery: [
-    {
-      id: "gal_1",
-      category: "shop_outside",
-      title: "Marudhar Boot House Main Entrance",
-      caption: "Real storefront view in Pipar City Main Market with overhead Hindi signboard and footwear displays.",
-      imageUrl: "/images/shop/shop_exterior_pipar_front.jpg",
-      enabled: true,
-      displayOrder: 1
-    },
-    {
-      id: "gal_2",
-      category: "shop_inside",
-      title: "Illuminated Showroom Interior",
-      caption: "Full interior view with LED lighting frame, green carpet aisle, and organized footwear racks.",
-      imageUrl: "/images/shop/shop_interior_illuminated_walkthrough.jpg",
-      enabled: true,
-      displayOrder: 2
-    },
-    {
-      id: "gal_3",
-      category: "shop_inside",
-      title: "Branded Footwear Destination Banner",
-      caption: "Official promotional banner featuring Viju Bhai (Vijay Parihar) and Jojri Nadi Road Pipar City location.",
-      imageUrl: "/images/shop/banner_vijay_parihar_branded_shoes.jpg",
-      enabled: true,
-      displayOrder: 3
-    },
-    {
-      id: "gal_4",
-      category: "team",
-      title: "Founder Viju Bhai & Store Leadership",
-      caption: "Real photograph of founder Viju Bhai (Vijay Parihar) representing Marudhar Fashion Point.",
-      imageUrl: "/images/shop/owners_vijay_parihar_viju_bhai_team.jpg",
-      enabled: true,
-      displayOrder: 4
-    },
-    {
-      id: "gal_5",
-      category: "festival",
-      title: "Authorized Brand Partners Showcase",
-      caption: "Official brand partner showcase featuring Nike, Campus, Lakhani, Action, Hitway, and JQR Sports.",
-      imageUrl: "/images/shop/banner_nike_campus_action_brands.jpg",
-      enabled: true,
-      displayOrder: 5
-    },
-    {
-      id: "gal_6",
-      category: "events",
-      title: "Marudhar Boot House Wooden Emblem",
-      caption: "Wooden heritage panel emblem with MBH monogram and wheat ears wreath.",
-      imageUrl: "/images/shop/banner_mbh_wooden_emblem_heritage.jpg",
-      enabled: true,
-      displayOrder: 6
-    },
-    {
-      id: "gal_7",
-      category: "shop_outside",
-      title: "Marudhar Footwear Neon Signboard",
-      caption: "Illuminated red & blue glowing neon shoe signboard on dark brick background.",
-      imageUrl: "/images/shop/signboard_neon_marudhar_footwear.jpg",
-      enabled: true,
-      displayOrder: 7
-    },
-    {
-      id: "gal_8",
-      category: "team",
-      title: "Viju Bhai Merchandise & Contact Print",
-      caption: "Store merchandise print with Viju Bhai branding and WhatsApp contact 9782482250.",
-      imageUrl: "/images/shop/merchandise_viju_bhai_print.jpg",
-      enabled: true,
-      displayOrder: 8
-    }
-  ],
+  gallery: [],
   socialLinks: {
     instagram: "https://instagram.com/marudhar_fashion_point",
     facebook: "https://facebook.com/marudharfashionpoint",

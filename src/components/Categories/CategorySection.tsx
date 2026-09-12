@@ -52,7 +52,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 {/* Background Image Container */}
                 <div className="aspect-[4/5] sm:aspect-[3/4] w-full relative overflow-hidden bg-neutral-100">
                   <img
-                    src={cat.image}
+                    src={cat.image || undefined}
                     alt={cat.title}
                     className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700 ease-out"
                     referrerPolicy="no-referrer"

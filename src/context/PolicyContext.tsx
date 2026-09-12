@@ -40,7 +40,7 @@ export const PolicyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 ...m,
                 profilePhoto: (m.profilePhoto && !m.profilePhoto.includes('unsplash'))
                   ? m.profilePhoto
-                  : (defaultMember?.profilePhoto || '/images/shop/owners_vijay_parihar_viju_bhai_team.jpg')
+                  : (defaultMember?.profilePhoto || '')
               };
             })
           : DEFAULT_ABOUT_US_CONFIG.ownersAndTeam;

@@ -43,7 +43,7 @@ export const TrendingCollections: React.FC<TrendingCollectionsProps> = ({
               }}
             >
               <img
-                src={col.image}
+                src={col.image || undefined}
                 alt={col.name}
                 className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700 opacity-80"
                 referrerPolicy="no-referrer"

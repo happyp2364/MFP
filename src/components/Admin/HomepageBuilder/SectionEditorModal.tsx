@@ -318,50 +318,60 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Main Product Image & AI Background Removal */}
-                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-xl space-y-3">
+                  {/* Main Product Image & Universal AdminImageSelector */}
+                  <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-xl space-y-3">
                     <label className="block text-xs font-bold text-neutral-800 uppercase tracking-wider">
-                      Main Centerpiece Product Image (PNG / Transparent)
+                      Hero Sneaker Main Image & Customization
                     </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={edited.contentData?.mainImage || ''}
-                        onChange={(e) =>
-                          setEdited({
-                            ...edited,
-                            contentData: { ...edited.contentData, mainImage: e.target.value },
-                          })
-                        }
-                        placeholder="https://..."
-                        className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleRemoveBackground}
-                        disabled={isProcessingBgRemoval || !edited.contentData?.mainImage}
-                        className="px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1.5 disabled:opacity-50"
-                      >
-                        {isProcessingBgRemoval ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Removing BG...
-                          </>
-                        ) : (
-                          <>
-                            <Wand2 className="w-3.5 h-3.5" /> AI Remove BG
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    {edited.contentData?.mainImage && (
-                      <div className="w-full h-28 bg-neutral-900/10 rounded-lg overflow-hidden flex items-center justify-center p-2 border border-neutral-200">
-                        <img
-                          src={edited.contentData?.mainImage}
-                          alt="Main Preview"
-                          className="max-h-full max-w-full object-contain filter drop-shadow-md"
-                        />
+
+                    <AdminImageSelector
+                      value={edited.contentData?.mainImage || ''}
+                      onChange={(url) =>
+                        setEdited({
+                          ...edited,
+                          contentData: { ...edited.contentData, mainImage: url },
+                        })
+                      }
+                      label="Centerpiece Product Image (Cloudinary / Preset / Upload / AI Generated)"
+                      description="Supports upload via Cloudinary, product catalog selection, camera capture, and AI background removal."
+                    />
+
+                    {/* Image Fit & Position Controls */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-neutral-700 mb-1">Image Fit Mode</label>
+                        <select
+                          value={edited.contentData?.imageFit || 'contain'}
+                          onChange={(e) =>
+                            setEdited({
+                              ...edited,
+                              contentData: { ...edited.contentData, imageFit: e.target.value },
+                            })
+                          }
+                          className="w-full px-3 py-1.5 border border-neutral-300 rounded-lg text-xs font-bold bg-white"
+                        >
+                          <option value="contain">Contain (Full Product Visible)</option>
+                          <option value="cover">Cover (Fill Frame)</option>
+                        </select>
                       </div>
-                    )}
+                      <div>
+                        <label className="block text-[11px] font-bold text-neutral-700 mb-1">Image Alignment Position</label>
+                        <select
+                          value={edited.contentData?.imagePosition || 'center'}
+                          onChange={(e) =>
+                            setEdited({
+                              ...edited,
+                              contentData: { ...edited.contentData, imagePosition: e.target.value },
+                            })
+                          }
+                          className="w-full px-3 py-1.5 border border-neutral-300 rounded-lg text-xs font-bold bg-white"
+                        >
+                          <option value="center">Center</option>
+                          <option value="top">Top</option>
+                          <option value="bottom">Bottom</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Headings & CTA */}

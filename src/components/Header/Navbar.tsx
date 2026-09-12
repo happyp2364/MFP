@@ -178,7 +178,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="flex items-center gap-2.5 text-left group cursor-pointer"
                   title="Click to go home (Admin: 5-tap shortcut)"
                 >
-                  {(activeLogoType === 'image' || activeLogoType === 'both' || activeLogoType === 'icon') && (
+                  {activeLogoUrl && (activeLogoType === 'image' || activeLogoType === 'both' || activeLogoType === 'icon') && (
                     <img
                       src={activeLogoUrl}
                       alt={activeLogoText}

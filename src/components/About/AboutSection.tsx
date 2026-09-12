@@ -33,28 +33,28 @@ const HERO_PERSPECTIVES = [
     id: 'exterior',
     title: 'Main Storefront & Signboard',
     subtitle: 'Pipar City Market Entrance',
-    url: '/images/shop/shop_exterior_pipar_front.jpg',
+    url: '',
     badge: '🏪 Exterior',
   },
   {
     id: 'interior',
     title: 'Illuminated Shoe Showroom',
     subtitle: 'Footwear Racks & Air-Conditioned Lounge',
-    url: '/images/shop/shop_interior_illuminated_walkthrough.jpg',
+    url: '',
     badge: '✨ Interior',
   },
   {
     id: 'founder',
     title: 'Viju Bhai (Vijay Parihar) & Team',
     subtitle: '18+ Years Retail Trust & Consultation',
-    url: '/images/shop/owners_vijay_parihar_viju_bhai_team.jpg',
+    url: '',
     badge: '👥 Leadership',
   },
   {
     id: 'banner',
     title: 'Official Footwear Destination Banner',
     subtitle: 'Jojri Nadi Road Mistri Market',
-    url: '/images/shop/banner_vijay_parihar_branded_shoes.jpg',
+    url: '',
     badge: '🏆 Banner',
   },
 ];
@@ -146,12 +146,12 @@ export const AboutSection: React.FC = () => {
               className="relative rounded-3xl overflow-hidden border border-amber-500/20 shadow-2xl bg-neutral-900 aspect-[4/5] group cursor-pointer"
             >
               <img
-                src={activeHero.url}
+                src={activeHero.url || undefined}
                 alt={activeHero.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 loading="lazy"
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
+                  (e.currentTarget as HTMLImageElement).src = '';
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent" />
@@ -195,12 +195,12 @@ export const AboutSection: React.FC = () => {
                   title={persp.title}
                 >
                   <img
-                    src={persp.url}
+                    src={persp.url || undefined}
                     alt={persp.title}
                     className="w-full h-full object-cover"
                     loading="lazy"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
+                      (e.currentTarget as HTMLImageElement).src = '';
                     }}
                   />
                   <div className="absolute inset-0 bg-black/20" />
@@ -278,66 +278,7 @@ export const AboutSection: React.FC = () => {
                   </div>
                 )}
 
-                {/* Authentic Shop Photos inside Story */}
-                <div className="space-y-2 pt-2">
-                  <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Real Storefront & Inside Glimpse</span>
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div 
-                      onClick={() => setLightboxImage({
-                        url: '/images/shop/shop_exterior_pipar_front.jpg',
-                        title: 'मरुधर बूट हाऊस — Main Storefront Signboard',
-                        caption: 'Pipar City Main Market near Jojri Nadi Road. The premier footwear showroom of Pipar City with distinctive Hindi signboard.'
-                      })}
-                      className="group relative rounded-2xl overflow-hidden border border-neutral-700/80 bg-neutral-950 aspect-[16/10] cursor-pointer hover:border-amber-400/50 transition-all shadow-md"
-                    >
-                      <img
-                        src="/images/shop/shop_exterior_pipar_front.jpg"
-                        alt="Marudhar Boot House Main Exterior Signboard"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = '/images/shop/banner_vijay_parihar_branded_shoes.jpg';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent pointer-events-none" />
-                      <div className="absolute bottom-2.5 left-3 right-3 text-white">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur-sm">
-                          📍 Pipar City Storefront
-                        </span>
-                        <p className="text-xs font-bold truncate mt-0.5">मरुधर बूट हाऊस Entrance</p>
-                      </div>
-                    </div>
 
-                    <div 
-                      onClick={() => setLightboxImage({
-                        url: '/images/shop/shop_interior_illuminated_walkthrough.jpg',
-                        title: 'Marudhar Boot House Showroom Interior Walkthrough',
-                        caption: 'Illuminated shoe aisles, LED display rows, and carpeted trial floor.'
-                      })}
-                      className="group relative rounded-2xl overflow-hidden border border-neutral-700/80 bg-neutral-950 aspect-[16/10] cursor-pointer hover:border-amber-400/50 transition-all shadow-md"
-                    >
-                      <img
-                        src="/images/shop/shop_interior_illuminated_walkthrough.jpg"
-                        alt="Marudhar Boot House Showroom Interior"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent pointer-events-none" />
-                      <div className="absolute bottom-2.5 left-3 right-3 text-white">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-emerald-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur-sm">
-                          ✨ In-Store Showroom
-                        </span>
-                        <p className="text-xs font-bold truncate mt-0.5">Shoe Trial Racks & Walkway</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   <div className="bg-neutral-800/60 border border-neutral-700/60 rounded-2xl p-4 space-y-1">
@@ -371,31 +312,11 @@ export const AboutSection: React.FC = () => {
             {/* TAB CONTENT: OWNERS & TEAM */}
             {activeTab === 'owners' && (
               <div className="py-6 space-y-5">
-                {/* Founder Spotlight Card with Real Photograph */}
+                {/* Founder Spotlight Card */}
                 <div 
-                  onClick={() => setLightboxImage({
-                    url: '/images/shop/owners_vijay_parihar_viju_bhai_team.jpg',
-                    title: 'Founder Vijay Parihar (Viju Bhai) & Leadership Team',
-                    caption: 'Proprietor of Marudhar Boot House, serving Pipar City and surrounding districts with authentic footwear since 2010.'
-                  })}
-                  className="bg-gradient-to-r from-amber-950/40 via-neutral-900 to-neutral-800/90 border border-amber-500/40 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden group cursor-pointer hover:border-amber-400 transition-all"
+                  className="bg-gradient-to-r from-amber-950/40 via-neutral-900 to-neutral-800/90 border border-amber-500/40 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden"
                 >
                   <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-                    <div className="relative shrink-0 w-28 h-36 sm:w-32 sm:h-40 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-xl bg-neutral-950">
-                      <img
-                        src="/images/shop/owners_vijay_parihar_viju_bhai_team.jpg"
-                        alt="Vijay Parihar (Viju Bhai) Marudhar Boot House Founder"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
-                        }}
-                      />
-                      <span className="absolute bottom-1 left-1 right-1 text-[8px] font-black uppercase tracking-wider bg-black/85 text-amber-300 text-center py-0.5 rounded">
-                        Founder & Team
-                      </span>
-                    </div>
-
                     <div className="flex-1 space-y-2 text-center sm:text-left">
                       <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[10px] font-black uppercase tracking-wider">
                         ⭐ Founder Spotlight
@@ -447,7 +368,7 @@ export const AboutSection: React.FC = () => {
                     >
                       <div className="flex items-center gap-3">
                         <img
-                          src={member.profilePhoto}
+                          src={member.profilePhoto || undefined}
                           alt={member.fullName}
                           className="w-14 h-14 rounded-full object-cover border-2 border-amber-500/40 shadow-md shrink-0"
                           loading="lazy"
@@ -579,7 +500,7 @@ export const AboutSection: React.FC = () => {
                       className="group relative h-36 rounded-xl overflow-hidden cursor-pointer border border-neutral-700/80 bg-neutral-950 shadow-md hover:border-amber-400/60 transition-all"
                     >
                       <img
-                        src={photo.imageUrl}
+                        src={photo.imageUrl || undefined}
                         alt={photo.title}
                         className={`w-full h-full transition-transform duration-500 group-hover:scale-105 ${
                           photo.category === 'promotional_banner' || photo.category === 'brand_emblem'
@@ -588,7 +509,7 @@ export const AboutSection: React.FC = () => {
                         }`}
                         loading="lazy"
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = '/images/shop/shop_exterior_pipar_front.jpg';
+                          (e.currentTarget as HTMLImageElement).src = '';
                         }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none" />
@@ -637,7 +558,7 @@ export const AboutSection: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
             <img
-              src={lightboxImage.url}
+              src={lightboxImage.url || undefined}
               alt={lightboxImage.title}
               className="w-full max-h-[75vh] object-contain rounded-2xl bg-neutral-950"
             />

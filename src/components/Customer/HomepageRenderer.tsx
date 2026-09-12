@@ -408,7 +408,7 @@ const SectionItem: React.FC<SectionItemProps> = ({
                     className="group relative h-56 rounded-2xl overflow-hidden bg-neutral-900 cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 border border-black/10 flex flex-col justify-end p-4"
                   >
                     <img
-                      src={coverImage}
+                      src={coverImage || undefined}
                       alt={cat.title || cat.name}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80"
                       referrerPolicy="no-referrer"
@@ -471,7 +471,7 @@ const SectionItem: React.FC<SectionItemProps> = ({
                   className="relative rounded-2xl overflow-hidden shadow-lg h-52 bg-neutral-900 text-white flex items-center p-6 sm:p-8"
                 >
                   <img
-                    src={offer.imageUrl}
+                    src={offer.imageUrl || undefined}
                     alt={offer.title}
                     className="absolute inset-0 w-full h-full object-cover opacity-50"
                   />
@@ -606,7 +606,7 @@ const HeroCarousel: React.FC<{ slides: any[] }> = ({ slides }) => {
   return (
     <div className="relative rounded-3xl overflow-hidden shadow-2xl h-[420px] sm:h-[500px] bg-neutral-900 text-white flex items-center">
       <img
-        src={slide.imageUrl}
+        src={slide.imageUrl || undefined}
         alt={slide.title}
         className="absolute inset-0 w-full h-full object-cover opacity-60 transition-all duration-700"
       />
@@ -1107,7 +1107,7 @@ const FloatingSneakerHeroSection: React.FC<{
                       : 'border-transparent opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                  <img src={img || undefined} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -1146,9 +1146,9 @@ const FloatingSneakerHeroSection: React.FC<{
             }}
           >
             <img
-              src={activeImage}
+              src={activeImage || undefined}
               alt={matchedProduct?.name || mainHeading}
-              className="max-h-[200px] sm:max-h-[280px] w-auto object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] transition-all duration-500"
+              className={`max-h-[200px] sm:max-h-[280px] w-auto filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] transition-all duration-500 object-${data.imageFit || 'contain'} object-${data.imagePosition || 'center'}`}
             />
           </div>
 
@@ -1507,7 +1507,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
                     }`}
                   >
                     <img
-                      src={slide.image}
+                      src={slide.image || undefined}
                       alt={slide.productName}
                       className="w-full h-full object-contain p-0.5"
                       loading="lazy"
@@ -1567,7 +1567,7 @@ const MBHShoeCarouselHeroSection: React.FC<{
           >
             <img
               key={activeSlide.image}
-              src={activeSlide.image}
+              src={activeSlide.image || undefined}
               alt={activeSlide.productName}
               className="max-h-[220px] sm:max-h-[280px] lg:max-h-[310px] w-auto object-contain filter drop-shadow-[0_20px_30px_rgba(0,0,0,0.6)] transition-all duration-500"
               loading="lazy"

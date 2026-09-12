@@ -832,9 +832,9 @@ export const SECTION_CATALOG_ITEMS: {
       styling: { bgColor: '#FFFFFF', paddingTop: 24, paddingBottom: 24 },
       contentData: {
         slides: [
-          { title: 'Marudhar Boot House • Pipar City', subtitle: 'ब्रांडेड जूतों का एकमात्र स्थान • प्रो. विजय परिहार', image: '/images/shop/banner_vijay_parihar_branded_shoes.jpg', cta: 'Visit Pipar Showroom' },
-          { title: 'Authorized Partner Brands', subtitle: 'Nike • Campus • Action • Lakhani • Hitway • JQR', image: '/images/shop/banner_nike_campus_action_brands.jpg', cta: 'Explore Brands' },
-          { title: 'Authentic In-Store Inventory', subtitle: 'Pipar City Market • Jojri Nadi Road', image: '/images/shop/shop_exterior_pipar_front.jpg', cta: 'Store Locator' },
+          { title: 'Marudhar Boot House • Pipar City', subtitle: 'ब्रांडेड जूतों का एकमात्र स्थान • प्रो. विजय परिहार', image: '', cta: 'Visit Pipar Showroom' },
+          { title: 'Authorized Partner Brands', subtitle: 'Nike • Campus • Action • Lakhani • Hitway • JQR', image: '', cta: 'Explore Brands' },
+          { title: 'Authentic In-Store Inventory', subtitle: 'Pipar City Market • Jojri Nadi Road', image: '', cta: 'Store Locator' },
         ],
       },
     },

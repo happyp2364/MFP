@@ -54,7 +54,7 @@ export function validateImageUrl(url: string): Promise<{ isValid: boolean; meta?
     });
   }
 
-  // Support local relative paths (e.g., /images/shop/...)
+  // Support local relative paths
   if (trimmed.startsWith('/')) {
     return new Promise((resolve) => {
       const img = new Image();

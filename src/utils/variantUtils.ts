@@ -14,8 +14,10 @@ export function getCartItemPrice(item: CartItem): number {
 export function getProductPrice(product: Product, size?: string, color?: string): number {
   if (!product) return 0;
   if (product.variants && product.variants.length > 0 && color) {
+    const targetColor = String(color).trim().toLowerCase();
+    const targetSize = size !== undefined && size !== null ? String(size) : undefined;
     const matchingVariant = product.variants.find(
-      (v) => v.color.toLowerCase() === color.toLowerCase() && (!size || v.size === size)
+      (v) => v && typeof v.color === 'string' && v.color.trim().toLowerCase() === targetColor && (!targetSize || String(v.size) === targetSize)
     );
     if (matchingVariant && matchingVariant.price !== undefined) {
       return matchingVariant.price;
@@ -30,8 +32,10 @@ export function getProductPrice(product: Product, size?: string, color?: string)
 export function getProductOriginalPrice(product: Product, size?: string, color?: string): number {
   if (!product) return 0;
   if (product.variants && product.variants.length > 0 && color) {
+    const targetColor = String(color).trim().toLowerCase();
+    const targetSize = size !== undefined && size !== null ? String(size) : undefined;
     const matchingVariant = product.variants.find(
-      (v) => v.color.toLowerCase() === color.toLowerCase() && (!size || v.size === size)
+      (v) => v && typeof v.color === 'string' && v.color.trim().toLowerCase() === targetColor && (!targetSize || String(v.size) === targetSize)
     );
     if (matchingVariant && matchingVariant.originalPrice !== undefined) {
       return matchingVariant.originalPrice;
@@ -73,8 +77,9 @@ export function getCartItemBarcode(item: CartItem): string {
 export function getProductImage(product: Product, color?: string): string {
   if (!product) return '';
   if (product.variants && product.variants.length > 0 && color) {
+    const targetColor = String(color).trim().toLowerCase();
     const matchingColorVar = product.variants.find(
-      (v) => v.color.toLowerCase() === color.toLowerCase() && v.images && v.images.length > 0
+      (v) => v && typeof v.color === 'string' && v.color.trim().toLowerCase() === targetColor && v.images && Array.isArray(v.images) && v.images.length > 0
     );
     if (matchingColorVar && matchingColorVar.images && matchingColorVar.images.length > 0) {
       return matchingColorVar.images[0];
@@ -88,13 +93,14 @@ export function getProductImage(product: Product, color?: string): string {
  */
 export function getCartItemImage(item: CartItem): string {
   if (!item || !item.product) return '';
-  if (item.selectedVariant && item.selectedVariant.images && item.selectedVariant.images.length > 0) {
+  if (item.selectedVariant && item.selectedVariant.images && Array.isArray(item.selectedVariant.images) && item.selectedVariant.images.length > 0) {
     return item.selectedVariant.images[0];
   }
   // Try to find if any variant has images for this color
-  if (item.product.variants && item.product.variants.length > 0) {
+  if (item.product.variants && item.product.variants.length > 0 && item.selectedColor) {
+    const targetColor = String(item.selectedColor).trim().toLowerCase();
     const matchingColorVar = item.product.variants.find(
-      (v) => v.color.toLowerCase() === item.selectedColor.toLowerCase() && v.images && v.images.length > 0
+      (v) => v && typeof v.color === 'string' && v.color.trim().toLowerCase() === targetColor && v.images && Array.isArray(v.images) && v.images.length > 0
     );
     if (matchingColorVar && matchingColorVar.images && matchingColorVar.images.length > 0) {
       return matchingColorVar.images[0];
@@ -108,11 +114,14 @@ export function getCartItemImage(item: CartItem): string {
  */
 export function groupVariantsByColor(variants: ProductVariant[]): Record<string, ProductVariant[]> {
   const groups: Record<string, ProductVariant[]> = {};
+  if (!variants || !Array.isArray(variants)) return groups;
   for (const v of variants) {
-    if (!groups[v.color]) {
-      groups[v.color] = [];
+    if (v && v.color) {
+      if (!groups[v.color]) {
+        groups[v.color] = [];
+      }
+      groups[v.color].push(v);
     }
-    groups[v.color].push(v);
   }
   return groups;
 }
@@ -124,16 +133,33 @@ export function getImagesForSelectedColor(product: Product, color?: string): str
   if (!product) return [];
   const targetColor = (color || product.colors?.[0]?.name || '').trim().toLowerCase();
 
+  // 1. Check variants for matching color with images
   if (product.variants && product.variants.length > 0 && targetColor) {
     const matchingVariant = product.variants.find(
-      (v) => v.color && v.color.trim().toLowerCase() === targetColor && v.images && v.images.length > 0
+      (v) => v && typeof v.color === 'string' && v.color.trim().toLowerCase() === targetColor && v.images && Array.isArray(v.images) && v.images.length > 0
     );
     if (matchingVariant && matchingVariant.images && matchingVariant.images.length > 0) {
       return matchingVariant.images;
     }
   }
 
-  if (product.images && product.images.length > 0) {
+  // 2. Check product.colors array for color-specific image/images
+  if (product.colors && product.colors.length > 0 && targetColor) {
+    const matchingColorObj = product.colors.find(
+      (c: any) => c && c.name && typeof c.name === 'string' && c.name.trim().toLowerCase() === targetColor
+    );
+    if (matchingColorObj) {
+      if ((matchingColorObj as any).images && Array.isArray((matchingColorObj as any).images) && (matchingColorObj as any).images.length > 0) {
+        return (matchingColorObj as any).images;
+      }
+      if ((matchingColorObj as any).image && typeof (matchingColorObj as any).image === 'string' && (matchingColorObj as any).image.trim() !== '') {
+        return [(matchingColorObj as any).image];
+      }
+    }
+  }
+
+  // 3. Fallback to primary product images if available
+  if (product.images && Array.isArray(product.images) && product.images.length > 0) {
     return product.images;
   }
 

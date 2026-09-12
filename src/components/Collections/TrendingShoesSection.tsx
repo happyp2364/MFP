@@ -75,17 +75,17 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
 
       case 'bestsellers':
         filtered = products.filter((p) => p.isBestSeller);
-        if (filtered.length === 0) filtered = products;
+        if (filtered.length === 0) filtered = [];
         break;
 
       case 'trending':
         filtered = products.filter((p) => p.isTrending || p.isBestSeller);
-        if (filtered.length === 0) filtered = products;
+        if (filtered.length === 0) filtered = [];
         break;
 
       case 'featured':
         filtered = products.filter((p) => p.isFeatured);
-        if (filtered.length === 0) filtered = products;
+        if (filtered.length === 0) filtered = [];
         break;
 
       case 'rating':

@@ -139,14 +139,14 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   // Compute prices dynamically
   const computedPrice = getProductPrice(product, selectedSize, selectedColor);
   const activeVariant = product.variants?.find(
-    (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize
+    (v) => v && typeof v.color === 'string' && selectedColor && typeof selectedColor === 'string' && v.color.trim().toLowerCase() === selectedColor.trim().toLowerCase() && v.size === selectedSize
   );
   const originalPrice = activeVariant?.originalPrice || product.originalPrice || product.price;
   const currentPrice = computedPrice || product.price;
 
   // Handle color variant switching with smooth slide/fade animation
   const handleColorChange = (colorName: string) => {
-    if (colorName === selectedColor) return;
+    if (!colorName || colorName === selectedColor) return;
     if (cfg.enableVariantSlideAnimation) {
       setIsImageAnimating(true);
     }

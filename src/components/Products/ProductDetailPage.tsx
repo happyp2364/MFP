@@ -90,13 +90,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       
       if (product.variants && product.variants.length > 0) {
         // Collect all available colors from variants
-        const varColors = Array.from(new Set(product.variants.map(v => v.color)));
+        const varColors = Array.from(new Set(product.variants.map(v => v?.color).filter(Boolean)));
         const firstColor = varColors[0] || 'Standard';
         setSelectedColor(firstColor);
 
         // Find sizes for this color and set the first in-stock or available size
         const sizesForFirstColor = product.variants.filter(
-          v => v.color.toLowerCase() === firstColor.toLowerCase() && v.status === 'active'
+          v => v && typeof v.color === 'string' && v.color.trim().toLowerCase() === firstColor.trim().toLowerCase() && v.status === 'active'
         );
         const inStockSizes = sizesForFirstColor.filter(v => v.stock > 0);
         if (inStockSizes.length > 0) {
@@ -108,7 +108,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         }
       } else {
         setSelectedSize(getFirstAvailableInStockSize(product));
-        setSelectedColor(product.colors.length > 0 ? product.colors[0].name : 'Standard');
+        setSelectedColor(product.colors && product.colors.length > 0 && product.colors[0]?.name ? product.colors[0].name : 'Standard');
       }
     }
   }, [product]);
@@ -117,7 +117,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   useEffect(() => {
     if (product && product.variants && product.variants.length > 0 && selectedColor) {
       const sizesForColor = product.variants.filter(
-        v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.status === 'active'
+        v => v && typeof v.color === 'string' && selectedColor && typeof selectedColor === 'string' && v.color.trim().toLowerCase() === selectedColor.trim().toLowerCase() && v.status === 'active'
       );
       // If selectedSize is not available in new color, pick one
       const exists = sizesForColor.some(v => v.size === selectedSize);
@@ -131,7 +131,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   // Find current active variant
   const activeVariant = product?.variants?.find(
     (v) =>
-      v.color.toLowerCase() === selectedColor.toLowerCase() &&
+      v && typeof v.color === 'string' && selectedColor && typeof selectedColor === 'string' &&
+      v.color.trim().toLowerCase() === selectedColor.trim().toLowerCase() &&
       v.size.toString() === selectedSize.toString()
   );
 
@@ -278,17 +279,19 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const availableColors = product.variants && product.variants.length > 0
     ? Array.from(
         new Map(
-          product.variants.map((v) => [
-            v.color.toLowerCase(),
-            { name: v.color, hex: v.colorCode || '#FFFFFF' }
-          ])
+          product.variants
+            .filter(v => v && typeof v.color === 'string')
+            .map((v) => [
+              v.color.trim().toLowerCase(),
+              { name: v.color, hex: v.colorCode || '#FFFFFF' }
+            ])
         ).values()
       )
     : product.colors;
 
   const sizeStocks = product.variants && product.variants.length > 0
     ? product.variants
-        .filter((v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.status === 'active')
+        .filter((v) => v && typeof v.color === 'string' && selectedColor && typeof selectedColor === 'string' && v.color.trim().toLowerCase() === selectedColor.trim().toLowerCase() && v.status === 'active')
         .map((v) => ({
           size: v.size,
           inStock: v.stock > 0,
@@ -406,7 +409,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           {/* Main Display Image */}
           {(() => {
             const activeVarWithImages = product?.variants?.find(
-              (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+              (v) => v && typeof v.color === 'string' && selectedColor && typeof selectedColor === 'string' && v.color.trim().toLowerCase() === selectedColor.trim().toLowerCase() && v.images && Array.isArray(v.images) && v.images.length > 0
             );
             const imageLabels = (activeVarWithImages as any)?.imageLabels || {};
             const activeLabel = imageLabels[rawImageSrc] || '';
@@ -478,7 +481,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
               {displayImages.map((img, idx) => {
                 const activeVarWithImages = product?.variants?.find(
-                  (v) => v.color.toLowerCase() === selectedColor.toLowerCase() && v.images && v.images.length > 0
+                  (v) => v && typeof v.color === 'string' && selectedColor && typeof selectedColor === 'string' && v.color.trim().toLowerCase() === selectedColor.trim().toLowerCase() && v.images && Array.isArray(v.images) && v.images.length > 0
                 );
                 const imageLabels = (activeVarWithImages as any)?.imageLabels || {};
                 const currentLabel = imageLabels[img] || '';

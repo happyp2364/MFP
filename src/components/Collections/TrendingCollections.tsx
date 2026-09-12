@@ -9,7 +9,7 @@ interface TrendingCollectionsProps {
 export const TrendingCollections: React.FC<TrendingCollectionsProps> = ({
   onSelectCollection,
 }) => {
-  const { trendingCollections } = useStore();
+  const { trendingCollections, products } = useStore();
 
   return (
     <section className="py-16 bg-[#F7F7F7]">
@@ -33,36 +33,51 @@ export const TrendingCollections: React.FC<TrendingCollectionsProps> = ({
 
         {/* Collections Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {trendingCollections.map((col) => (
-            <div
-              key={col.id}
-              onClick={() => onSelectCollection(col.id)}
-              className="group relative overflow-hidden aspect-[16/10] bg-neutral-900 cursor-pointer shadow-md hover:shadow-2xl transition-all duration-500 border border-neutral-200/80"
-              style={{
-                borderRadius: 'var(--mfp-category-radius)',
-              }}
-            >
-              <img
-                src={col.image || undefined}
-                alt={col.name}
-                className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700 opacity-80"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          {trendingCollections.map((col) => {
+            const matchingProducts = products.filter(p => 
+              p.category?.toLowerCase() === col.id.toLowerCase() ||
+              p.collectionTags?.some(t => t.toLowerCase().includes(col.id.toLowerCase()) || t.toLowerCase().includes(col.name.toLowerCase()))
+            );
+            const realCount = matchingProducts.length;
+            const cardImage = matchingProducts[0]?.images?.[0] || matchingProducts[0]?.image || null;
 
-              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md w-9 h-9 rounded-full flex items-center justify-center text-neutral-900 group-hover:bg-[#0B8F63] group-hover:text-white transition-all shadow-sm">
-                <ArrowUpRight className="w-4 h-4" />
-              </div>
+            return (
+              <div
+                key={col.id}
+                onClick={() => onSelectCollection(col.id)}
+                className="group relative overflow-hidden aspect-[16/10] bg-neutral-900 cursor-pointer shadow-md hover:shadow-2xl transition-all duration-500 border border-neutral-200/80"
+                style={{
+                  borderRadius: 'var(--mfp-category-radius)',
+                }}
+              >
+                {cardImage ? (
+                  <img
+                    src={cardImage}
+                    alt={col.name}
+                    className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700 opacity-80"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-800 to-emerald-950" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
 
-              <div className="absolute bottom-5 left-5 right-5 text-white space-y-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest bg-[#0B8F63] text-white px-2.5 py-0.5 rounded">
-                  {col.count}
-                </span>
-                <h3 className="font-serif-heading text-xl font-bold">{col.name}</h3>
-                <p className="text-xs text-white/80 line-clamp-1 font-medium">{col.tagline}</p>
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md w-9 h-9 rounded-full flex items-center justify-center text-neutral-900 group-hover:bg-[#0B8F63] group-hover:text-white transition-all shadow-sm">
+                  <ArrowUpRight className="w-4 h-4" />
+                </div>
+
+                <div className="absolute bottom-5 left-5 right-5 text-white space-y-1">
+                  {realCount > 0 && (
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest bg-[#0B8F63] text-white px-2.5 py-0.5 rounded">
+                      {realCount} {realCount === 1 ? 'Style' : 'Styles'}
+                    </span>
+                  )}
+                  <h3 className="font-serif-heading text-xl font-bold">{col.name}</h3>
+                  <p className="text-xs text-white/80 line-clamp-1 font-medium">{col.tagline}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
       </div>

@@ -713,36 +713,24 @@ function StorefrontView() {
   const bestSellers = useMemo(() => {
     const raw = products.filter((p) => p.isBestSeller);
     const unique = deduplicateProducts(raw, productFeedConfig);
-    if (unique.length === 0) {
-      return products.slice(0, 8);
-    }
     return unique.slice(0, 8);
   }, [products, productFeedConfig]);
 
   const newArrivals = useMemo(() => {
     const raw = products.filter((p) => p.isNewArrival);
     const unique = deduplicateProducts(raw, productFeedConfig);
-    if (unique.length === 0) {
-      return products.slice(4, 12);
-    }
     return unique.slice(0, 8);
   }, [products, productFeedConfig]);
 
   const featuredProducts = useMemo(() => {
     const raw = products.filter((p) => p.isFeatured);
     const unique = deduplicateProducts(raw, productFeedConfig);
-    if (unique.length === 0) {
-      return products.slice(0, 8);
-    }
     return unique.slice(0, 8);
   }, [products, productFeedConfig]);
 
   const trendingProducts = useMemo(() => {
     const raw = products.filter((p) => p.isTrending);
     const unique = deduplicateProducts(raw, productFeedConfig);
-    if (unique.length === 0) {
-      return products.slice(8, 16);
-    }
     return unique.slice(0, 8);
   }, [products, productFeedConfig]);
   const validWishlistIds = useMemo(() => {

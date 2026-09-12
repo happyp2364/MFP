@@ -31,7 +31,7 @@ export const MobileScrollableCategories: React.FC<MobileScrollableCategoriesProp
   };
 
   return (
-    <div className="w-full bg-neutral-50/90 border-b border-neutral-200/60 py-2.5 px-3 sm:px-6 relative overflow-hidden select-none">
+    <div className="w-full bg-neutral-50/90 border-b border-neutral-200/60 py-3.5 sm:py-4 px-3 sm:px-6 relative overflow-visible select-none">
       <div className="max-w-7xl mx-auto relative group/container">
         
         {/* Left Scroll Button (Visible on sm+ screens) */}
@@ -46,7 +46,7 @@ export const MobileScrollableCategories: React.FC<MobileScrollableCategoriesProp
         {/* Horizontal Scroll Track */}
         <div
           ref={scrollRef}
-          className="flex items-center gap-3.5 sm:gap-5 overflow-x-auto scrollbar-none px-1 py-0.5 snap-x snap-mandatory touch-pan-x scroll-smooth"
+          className="flex items-center gap-3.5 sm:gap-5 overflow-x-auto scrollbar-none px-2 py-2 snap-x snap-mandatory touch-pan-x scroll-smooth"
         >
           {enabledCategories.map((cat) => {
             const isActive = activeCategory === cat.categoryKey;

@@ -43,7 +43,7 @@ service cloud.firestore {
     // Reusable Product Templates (Admin Managed, Authenticated Read/Write)
     match /productTemplates/{templateId} {
       allow read: if true;
-      allow write: if isAdmin() || true;
+      allow write: if isAdmin();
     }
 
     // Public Reviews & Feedback (Public Read & Create, Admin Manage)
@@ -216,6 +216,14 @@ service cloud.firestore {
     // Store Snapshots & Recovery Backups
     match /backups/{backupId} {
       allow read, write: if isAdmin();
+    }
+
+    // Inventory Backups & Chunked Disaster Recovery (Admin Only)
+    match /inventoryBackups/{backupId} {
+      allow read, write: if isAdmin();
+      match /chunks/{chunkId} {
+        allow read, write: if isAdmin();
+      }
     }
 
     // CMS Published Version History

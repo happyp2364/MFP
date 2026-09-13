@@ -80,6 +80,7 @@ export const DEFAULT_ADMIN_NAV_CONFIG: AdminNavConfig = {
       visible: true,
       items: [
         { id: 'nav_customizer', label: 'Customize Admin Menu', iconName: 'SlidersHorizontal', visible: true, locked: true },
+        { id: 'inventory_recovery', label: 'Inventory Recovery Scanner', iconName: 'Database', visible: true },
         { id: 'admin_management', label: 'Multi Admin & RBAC', iconName: 'ShieldCheck', visible: true, locked: true },
         { id: 'audit', label: 'Audit & Security Logs', iconName: 'FileText', visible: true, locked: true },
         { id: 'backups', label: 'Backup & Disaster Recovery', iconName: 'Database', visible: true },

@@ -101,6 +101,8 @@ const AdminNavCustomizer = lazy(() => import('./AdminNavCustomizer').then(m => (
 const HeroImageSettingsCard = lazy(() => import('./HeroImageSettingsCard').then(m => ({ default: m.HeroImageSettingsCard })));
 const InstagramReelsAdminManager = lazy(() => import('./InstagramReelsAdminManager').then(m => ({ default: m.InstagramReelsAdminManager })));
 const ThemesStudioView = lazy(() => import('./ThemesStudioView').then(m => ({ default: m.ThemesStudioView })));
+const InventoryRecoveryScanner = lazy(() => import('./InventoryRecoveryScanner').then(m => ({ default: m.InventoryRecoveryScanner })));
+const GoogleDriveBackupView = lazy(() => import('./GoogleDriveBackupView').then(m => ({ default: m.GoogleDriveBackupView })));
 import { useAdminNav } from '../../context/AdminNavContext';
 import { MapPin, Users, Volume2, Crown, Paintbrush, Layout, SlidersHorizontal, ChevronDown, ChevronRight, Boxes, PackageCheck, Palette } from 'lucide-react';
 import { validateFileUpload } from '../../lib/security';
@@ -112,7 +114,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'instagram_reels' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'logo_customization' | 'themes_studio' | 'website_design' | 'visual_builder' | 'nav_customizer';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'instagram_reels' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'logo_customization' | 'themes_studio' | 'website_design' | 'visual_builder' | 'nav_customizer' | 'inventory_recovery';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -711,6 +713,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               >
             
             {/* ----------------- TAB: MULTI ADMIN & RBAC MANAGEMENT ----------------- */}
+            {activeTab === 'inventory_recovery' && (
+              <AdminErrorBoundary fallbackTitle="Inventory Recovery Scanner Error">
+                <InventoryRecoveryScanner />
+              </AdminErrorBoundary>
+            )}
+
             {activeTab === 'admin_management' && (
               <AdminManagementView
                 currentUser={currentAdminUser}
@@ -1089,85 +1097,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             )}
 
             {/* ----------------- TAB: BACKUPS ----------------- */}
-            {activeTab === 'backups' && (
-              <div className="space-y-6 max-w-4xl">
-                {/* Instant Snapshot Card */}
-                <div className="bg-white p-6 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-                        <Database className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-serif-heading font-bold text-base text-neutral-900">
-                          Create Database Backup Snapshot
-                        </h3>
-                        <p className="text-xs text-neutral-500">
-                          Generates a full JSON snapshot of catalog, reviews, hero content, and settings.
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleDownloadBackup}
-                      className="bg-[#0B8F63] hover:bg-[#086F4C] text-white font-extrabold text-xs px-5 py-3 rounded-2xl shadow-lg flex items-center gap-2 transition-all shrink-0"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>CREATE & DOWNLOAD BACKUP</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Restore Snapshot Card */}
-                <div className="bg-white p-6 rounded-2xl border border-neutral-200/80 shadow-sm space-y-4">
-                  <h3 className="font-serif-heading font-bold text-base text-neutral-900 border-b border-neutral-100 pb-2">
-                    Disaster Recovery & Restore Snapshot
-                  </h3>
-
-                  {backupRestoreError && (
-                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 shrink-0" />
-                      <span>{backupRestoreError}</span>
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    <label className="font-bold text-xs text-neutral-700 block">
-                      Select Backup JSON File to Restore:
-                    </label>
-                    <input
-                      type="file"
-                      accept=".json"
-                      onChange={handleBackupFileUpload}
-                      className="w-full text-xs text-neutral-600 cursor-pointer file:cursor-pointer file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-neutral-100 file:text-neutral-700 hover:file:bg-neutral-200"
-                    />
-
-                    {backupRestoreJson && (
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 space-y-2">
-                        <div className="font-bold flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-[#0B8F63]" />
-                          <span>Valid Backup File Loaded ({(backupRestoreJson.length / 1024).toFixed(1)} KB)</span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            triggerReAuthGuard('Restore Store Data from Snapshot', async () => {
-                              const success = await restoreStoreBackup(backupRestoreJson);
-                              if (success) {
-                                showNotification('Database restored successfully from snapshot!');
-                                setBackupRestoreJson('');
-                              }
-                            });
-                          }}
-                          className="bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow"
-                        >
-                          RESTORE DATABASE NOW
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            {activeTab === 'backups' && <GoogleDriveBackupView />}
 
             {/* ----------------- TAB: SETTINGS & 2FA ----------------- */}
             {activeTab === 'settings' && (

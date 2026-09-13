@@ -7,6 +7,19 @@ import { sanitizeForFirestore } from '../lib/tenantUtils';
 import { assertSafeFirestoreProduct, sanitizeProductImageUrls } from '../utils/firestoreGuard';
 import { processProductImagesForStorage } from '../services/imageStorageService';
 import { getProductTypes, getPrimaryProductType } from '../utils/productTypeUtils';
+import { createDurableInventoryBackup } from '../services/inventoryBackupService';
+
+let backupTimer: NodeJS.Timeout | null = null;
+const scheduleAutomaticBackup = (currentProducts: Product[]) => {
+  if (backupTimer) clearTimeout(backupTimer);
+  backupTimer = setTimeout(async () => {
+    try {
+      await createDurableInventoryBackup(currentProducts, 'System (Automatic)', 'AUTOMATIC');
+    } catch (e) {
+      console.warn('Automatic durable inventory backup failed:', e);
+    }
+  }, 5000);
+};
 
 interface ProductContextType {
   products: Product[];
@@ -182,10 +195,14 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     // Update local state and localStorage once write succeeded
     setProducts((prev) => {
       if (prev.some((item) => item.id === storageReadyProduct.id)) {
-        return prev.map((item) => (item.id === storageReadyProduct.id ? storageReadyProduct : item));
+        const next = prev.map((item) => (item.id === storageReadyProduct.id ? storageReadyProduct : item));
+        safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
+        scheduleAutomaticBackup(next);
+        return next;
       }
       const next = [storageReadyProduct, ...prev];
       safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
+      scheduleAutomaticBackup(next);
       return next;
     });
 
@@ -194,6 +211,20 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const updateProduct = async (id: string, p: Partial<Product>): Promise<void> => {
     const target = products.find((item) => item.id === id);
+
+    // Stock Integrity Guard: Never overwrite existing stock unless explicitly updated
+    const preservedInStock = (p.inStock !== undefined && p.inStock !== null)
+      ? p.inStock
+      : (target?.inStock !== undefined ? target.inStock : true);
+
+    const preservedSizeStocks = (p.sizeStocks && p.sizeStocks.length > 0)
+      ? p.sizeStocks
+      : (target?.sizeStocks && target.sizeStocks.length > 0 ? target.sizeStocks : []);
+
+    const preservedVariants = (p.variants && p.variants.length > 0)
+      ? p.variants
+      : (target?.variants && target.variants.length > 0 ? target.variants : []);
+
     const mergedTypes = (p.productTypes && p.productTypes.length > 0)
       ? getProductTypes(p)
       : (p.subcategory || p.productType)
@@ -204,6 +235,9 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     const updatedProduct: Product = {
       ...(target || {}),
       ...p,
+      inStock: preservedInStock,
+      sizeStocks: preservedSizeStocks,
+      variants: preservedVariants,
       productTypes: mergedTypes,
       productType: primaryType,
       subcategory: primaryType,
@@ -237,9 +271,14 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       throw new Error(message);
     }
 
+    const isInventoryChanged = (p as any).stockQuantity !== undefined || p.inStock !== undefined || (p.sizeStocks && p.sizeStocks.length > 0) || (p.variants && p.variants.length > 0) || p.colors !== undefined;
+
     setProducts((prev) => {
       const next = prev.map((item) => (item.id === id ? { ...item, ...sanitized } : item));
       safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
+      if (isInventoryChanged) {
+        scheduleAutomaticBackup(next);
+      }
       return next;
     });
   };

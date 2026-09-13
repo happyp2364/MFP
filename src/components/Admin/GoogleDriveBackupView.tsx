@@ -429,6 +429,72 @@ export const GoogleDriveBackupView: React.FC = () => {
         </div>
       </div>
 
+      {/* Automatic Stock Change Version History */}
+      <div className="bg-white rounded-3xl p-6 border border-neutral-200 shadow-sm mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-serif-heading font-bold text-base text-neutral-900">
+              Automatic Per-Stock-Change Version History
+            </h3>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Every successful stock/inventory update creates an immutable, verifiable recovery version.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 font-bold text-[11px] rounded-xl border border-emerald-200">
+              {backups.filter(b => b.backupType === 'AUTOMATIC_STOCK_CHANGE').length} Version Records
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-3 overflow-y-auto max-h-[400px]">
+          {backups.filter(b => b.backupType === 'AUTOMATIC_STOCK_CHANGE').map((b) => {
+            const diff = b.stockDifference ?? 0;
+            const isPositive = diff > 0;
+            return (
+              <div key={b.backupId} className="p-4 bg-neutral-50 border border-neutral-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-neutral-900">{b.productName || 'Product'}</span>
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
+                      {b.operationType || 'STOCK_CHANGE'}
+                    </span>
+                    {b.sku && <span className="text-[10px] font-mono text-neutral-400">SKU: {b.sku}</span>}
+                  </div>
+                  <p className="text-[11px] text-neutral-500 mt-1">
+                    {new Date(b.createdAt).toLocaleString()} • Actor: <span className="font-medium text-neutral-700">{b.createdBy}</span> • SHA-256: <span className="font-mono text-[10px] text-neutral-400">{b.checksum.substring(0, 10)}...</span>
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="text-right">
+                    <span className={`text-xs font-black ${isPositive ? 'text-emerald-600' : diff < 0 ? 'text-rose-600' : 'text-neutral-600'}`}>
+                      {isPositive ? `+${diff}` : diff} stock
+                    </span>
+                    <p className="text-[10px] text-neutral-400 font-mono">{b.backupId}</p>
+                  </div>
+                  <button
+                    disabled={isRestoring}
+                    onClick={() => handleSelectBackupForRestore(b)}
+                    className="bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-extrabold px-3.5 py-2 rounded-xl shadow transition-all flex items-center gap-1.5"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Restore Version</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {backups.filter(b => b.backupType === 'AUTOMATIC_STOCK_CHANGE').length === 0 && (
+            <div className="text-center py-12 text-neutral-400">
+              <History className="w-8 h-8 mx-auto mb-2 opacity-40" />
+              <p className="text-xs">No automatic stock change versions recorded yet.</p>
+              <p className="text-[10px] text-neutral-400 mt-0.5">Stock mutations in product management or checkout will automatically populate this audit trail.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Restore Preview Modal */}
       {selectedBackupMetadata && selectedBackupProducts && restorePreview && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">

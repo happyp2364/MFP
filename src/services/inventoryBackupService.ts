@@ -13,7 +13,16 @@ export interface InventoryBackupMetadata {
   status: 'CREATING' | 'SUCCESS' | 'FAILED';
   chunkCount: number;
   source: string;
-  backupType: 'AUTOMATIC' | 'MANUAL' | 'PRE_RESTORE_SAFETY';
+  backupType: 'AUTOMATIC' | 'MANUAL' | 'PRE_RESTORE_SAFETY' | 'AUTOMATIC_STOCK_CHANGE';
+  operationType?: string;
+  productId?: string;
+  productName?: string;
+  sku?: string;
+  beforeStockState?: any;
+  afterStockState?: any;
+  stockDifference?: number;
+  operationId?: string;
+  changedFields?: string[];
 }
 
 export interface InventoryBackupSchema extends InventoryBackupMetadata {
@@ -156,6 +165,96 @@ export async function createDurableInventoryBackup(
     };
   } catch (err: any) {
     console.error('Failed to create durable inventory backup:', err);
+    try {
+      await setDoc(doc(db, 'inventoryBackups', backupId), {
+        ...metadata,
+        status: 'FAILED',
+      }, { merge: true });
+    } catch {}
+    throw err;
+  }
+}
+
+export async function recordAutomaticStockChangeBackup(params: {
+  productId: string;
+  productName: string;
+  sku?: string;
+  operationType: string;
+  beforeStockState: any;
+  afterStockState: any;
+  stockDifference: number;
+  changedFields: string[];
+  operationId: string;
+  productsSnapshot: Product[];
+  userEmail?: string;
+}): Promise<string> {
+  if (!params.operationId) {
+    throw new Error('operationId is required for automatic stock change backup');
+  }
+
+  const backupId = `auto_stk_${params.operationId}`;
+
+  // Atomic Duplicate Protection & Idempotency: Check if a backup already exists for this operationId
+  try {
+    const existingDoc = await getDoc(doc(db, 'inventoryBackups', backupId));
+    if (existingDoc.exists()) {
+      const data = existingDoc.data() as InventoryBackupMetadata;
+      if (data && data.status === 'SUCCESS') {
+        console.log(`[InventoryBackup] Idempotency: backup for operationId ${params.operationId} already exists (${backupId}). Reusing.`);
+        return backupId;
+      }
+    }
+  } catch (err) {
+    console.warn('[InventoryBackup] Check existing backup error:', err);
+  }
+
+  const checksum = await calculateSHA256Checksum(params.productsSnapshot);
+  const productChunks = createByteSizeChunks(params.productsSnapshot);
+
+  let totalInventoryRecords = 0;
+  params.productsSnapshot.forEach((p) => {
+    if (p.sizeStocks && p.sizeStocks.length > 0) {
+      totalInventoryRecords += p.sizeStocks.length;
+    } else {
+      totalInventoryRecords += 1;
+    }
+  });
+
+  const metadata: InventoryBackupMetadata = {
+    schemaVersion: '2.3.0',
+    backupId,
+    createdAt: new Date().toISOString(),
+    createdBy: params.userEmail || 'System',
+    productCount: params.productsSnapshot.length,
+    inventoryRecordCount: totalInventoryRecords,
+    checksum,
+    status: 'SUCCESS',
+    chunkCount: productChunks.length,
+    source: 'Automatic Per-Stock-Change Version Engine',
+    backupType: 'AUTOMATIC_STOCK_CHANGE',
+    operationType: params.operationType,
+    productId: params.productId,
+    productName: params.productName,
+    sku: params.sku || '',
+    beforeStockState: params.beforeStockState,
+    afterStockState: params.afterStockState,
+    stockDifference: params.stockDifference,
+    operationId: params.operationId,
+    changedFields: params.changedFields,
+  };
+
+  try {
+    await setDoc(doc(db, 'inventoryBackups', backupId), metadata);
+    for (let idx = 0; idx < productChunks.length; idx++) {
+      const chunkId = `chunk_${idx + 1}`;
+      await setDoc(doc(db, 'inventoryBackups', backupId, 'chunks', chunkId), {
+        chunkIndex: idx + 1,
+        products: productChunks[idx],
+      });
+    }
+    return backupId;
+  } catch (err: any) {
+    console.error('Failed to record automatic stock change backup:', err);
     try {
       await setDoc(doc(db, 'inventoryBackups', backupId), {
         ...metadata,

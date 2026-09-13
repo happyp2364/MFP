@@ -7,9 +7,19 @@ import { sanitizeForFirestore } from '../lib/tenantUtils';
 import { assertSafeFirestoreProduct, sanitizeProductImageUrls } from '../utils/firestoreGuard';
 import { processProductImagesForStorage } from '../services/imageStorageService';
 import { getProductTypes, getPrimaryProductType } from '../utils/productTypeUtils';
-import { createDurableInventoryBackup } from '../services/inventoryBackupService';
+import { createDurableInventoryBackup, recordAutomaticStockChangeBackup } from '../services/inventoryBackupService';
 
 let backupTimer: NodeJS.Timeout | null = null;
+const getProductTotalStock = (p: Product | null | undefined): number => {
+  if (!p) return 0;
+  if (p.sizeStocks && p.sizeStocks.length > 0) {
+    return p.sizeStocks.reduce((sum, s) => sum + (typeof s.stockQuantity === 'number' ? s.stockQuantity : 0), 0);
+  }
+  if (p.variants && p.variants.length > 0) {
+    return p.variants.reduce((sum, v) => sum + (typeof v.stock === 'number' ? v.stock : 0), 0);
+  }
+  return p.inStock ? 10 : 0;
+};
 const scheduleAutomaticBackup = (currentProducts: Product[]) => {
   if (backupTimer) clearTimeout(backupTimer);
   backupTimer = setTimeout(async () => {
@@ -192,19 +202,33 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       throw new Error(message);
     }
 
+    // Generate stable operationId once before mutation
+    const operationId = `op_create_${storageReadyProduct.id}_${Math.random().toString(36).substring(2, 11)}`;
+    let latestSnapshot: Product[] = [];
+
     // Update local state and localStorage once write succeeded
     setProducts((prev) => {
-      if (prev.some((item) => item.id === storageReadyProduct.id)) {
-        const next = prev.map((item) => (item.id === storageReadyProduct.id ? storageReadyProduct : item));
-        safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
-        scheduleAutomaticBackup(next);
-        return next;
-      }
-      const next = [storageReadyProduct, ...prev];
+      const next = prev.some((item) => item.id === storageReadyProduct.id)
+        ? prev.map((item) => (item.id === storageReadyProduct.id ? storageReadyProduct : item))
+        : [storageReadyProduct, ...prev];
       safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
-      scheduleAutomaticBackup(next);
+      latestSnapshot = next;
       return next;
     });
+
+    scheduleAutomaticBackup(latestSnapshot);
+    recordAutomaticStockChangeBackup({
+      productId: storageReadyProduct.id,
+      productName: storageReadyProduct.name,
+      sku: storageReadyProduct.sku || '',
+      operationType: 'PRODUCT_CREATE',
+      beforeStockState: null,
+      afterStockState: { totalStock: getProductTotalStock(storageReadyProduct), inStock: storageReadyProduct.inStock, sizeStocks: storageReadyProduct.sizeStocks },
+      stockDifference: getProductTotalStock(storageReadyProduct),
+      changedFields: ['product_creation'],
+      operationId,
+      productsSnapshot: latestSnapshot,
+    }).catch(err => console.warn('Product create auto backup notice:', err));
 
     return storageReadyProduct;
   };
@@ -255,8 +279,11 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     const sanitized = sanitizeForFirestore(storageReadyProduct);
 
     try {
+      console.log('FIRESTORE_WRITE_STARTED', id);
       await setDoc(doc(db, 'products', id), sanitized, { merge: true });
+      console.log('FIRESTORE_WRITE_SUCCESS', id);
     } catch (err: any) {
+      console.log('FIRESTORE_WRITE_FAILED', id, err);
       console.error('[ProductContext] Firestore update failed:', err);
       const isSizeError =
         err?.message?.includes('too large') ||
@@ -271,19 +298,45 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       throw new Error(message);
     }
 
+    const beforeTotal = getProductTotalStock(target);
+    const afterTotal = getProductTotalStock(storageReadyProduct);
+    const stockDiff = afterTotal - beforeTotal;
     const isInventoryChanged = (p as any).stockQuantity !== undefined || p.inStock !== undefined || (p.sizeStocks && p.sizeStocks.length > 0) || (p.variants && p.variants.length > 0) || p.colors !== undefined;
+    
+    // Generate stable operationId once before mutation
+    const operationId = `op_upd_${id}_${Math.random().toString(36).substring(2, 11)}`;
+    let latestSnapshot: Product[] = [];
 
     setProducts((prev) => {
       const next = prev.map((item) => (item.id === id ? { ...item, ...sanitized } : item));
       safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
-      if (isInventoryChanged) {
-        scheduleAutomaticBackup(next);
-      }
+      latestSnapshot = next;
       return next;
     });
+
+    if (isInventoryChanged) {
+      scheduleAutomaticBackup(latestSnapshot);
+      const operationType = (p as any).stockQuantity !== undefined ? 'STOCK_QUANTITY_CHANGE' :
+        p.inStock !== undefined ? 'IN_STOCK_CHANGE' :
+        (p.sizeStocks && p.sizeStocks.length > 0) ? 'SIZE_STOCK_CHANGE' : 'INVENTORY_MODIFICATION';
+
+      recordAutomaticStockChangeBackup({
+        productId: id,
+        productName: storageReadyProduct.name,
+        sku: storageReadyProduct.sku || '',
+        operationType,
+        beforeStockState: { totalStock: getProductTotalStock(target), inStock: target?.inStock, sizeStocks: target?.sizeStocks },
+        afterStockState: { totalStock: getProductTotalStock(storageReadyProduct), inStock: storageReadyProduct.inStock, sizeStocks: storageReadyProduct.sizeStocks },
+        stockDifference: stockDiff,
+        changedFields: Object.keys(p),
+        operationId,
+        productsSnapshot: latestSnapshot,
+      }).catch(err => console.warn('Update stock change backup notice:', err));
+    }
   };
 
   const deleteProduct = async (id: string): Promise<void> => {
+    const target = products.find(item => item.id === id);
     try {
       await deleteDoc(doc(db, 'products', id));
     } catch (err: any) {
@@ -294,11 +347,31 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       throw new Error(message);
     }
 
+    const operationId = `op_del_${id}_${Math.random().toString(36).substring(2, 11)}`;
+    let latestSnapshot: Product[] = [];
+
     setProducts((prev) => {
       const next = prev.filter((item) => item.id !== id);
       safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
+      latestSnapshot = next;
       return next;
     });
+
+    if (target) {
+      const totalStock = getProductTotalStock(target);
+      recordAutomaticStockChangeBackup({
+        productId: id,
+        productName: target.name,
+        sku: target.sku || '',
+        operationType: 'PRODUCT_DELETE',
+        beforeStockState: { totalStock: getProductTotalStock(target), inStock: target.inStock, sizeStocks: target.sizeStocks },
+        afterStockState: null,
+        stockDifference: -totalStock,
+        changedFields: ['product_delete'],
+        operationId,
+        productsSnapshot: latestSnapshot,
+      }).catch(err => console.warn('Delete stock change backup notice:', err));
+    }
   };
 
   const toggleInStock = async (id: string) => {

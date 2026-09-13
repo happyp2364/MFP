@@ -103,6 +103,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const [isOptimizingImage, setIsOptimizingImage] = useState(false);
   const [showLivePreview, setShowLivePreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Custom Color Addition State
@@ -616,11 +617,31 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // SUBMIT HANDLER WITH AUTOMATIC BACKGROUND METADATA GENERATION
   const handleSubmitForm = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!isFormValid || isSaving) return;
+    console.log('FORM_SUBMIT');
+    console.log('VALIDATION_START');
 
-    setSubmitError(null);
+    if (isSavingRef.current || isSaving) {
+      console.log('SAVE_BLOCKED: already saving');
+      return;
+    }
+
+    if (!isFormValid) {
+      console.log('VALIDATION_FAIL: isFormValid is false', { isImagesValid, isNameValid, isProductForValid, isSubcategoryValid, isPriceValid });
+      return;
+    }
+
+    const cleanTypes = getProductTypes(productState);
+    if (cleanTypes.length === 0) {
+      console.log('VALIDATION_FAIL: no product types selected');
+      showToast('Please select at least one product type.', 'error');
+      return;
+    }
+
+    console.log('VALIDATION_PASS');
+
+    isSavingRef.current = true;
     setIsSaving(true);
-
+    setSubmitError(null);
     const cleanName = productState.name.trim();
     const catCode = productState.category.charAt(0).toUpperCase();
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
@@ -649,12 +670,6 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     // Process sizes: if no sizes selected, leave as empty array or keep current
     const activeSizes = productState.sizes || [];
 
-    const cleanTypes = getProductTypes(productState);
-    if (cleanTypes.length === 0) {
-      showToast('Please select at least one product type.', 'error');
-      setIsSaving(false);
-      return;
-    }
     const primaryType = cleanTypes[0] || '';
 
     const finalProduct: Product = {
@@ -713,6 +728,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
         : (err?.message || 'Failed to save product to database.');
       setSubmitError(friendlyMsg);
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
   };
@@ -828,7 +844,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
         </div>
 
         {/* SINGLE CLEAN SCROLLABLE FORM BODY */}
-        <form onSubmit={handleSubmitForm} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 text-xs">
+        <form id="product-edit-form" onSubmit={handleSubmitForm} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 text-xs">
           
           {/* SECTION 1: PRODUCT IMAGES */}
           <div className="bg-white p-4 rounded-2xl border border-neutral-200/90 shadow-xs space-y-3">
@@ -2304,8 +2320,9 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
               </button>
 
               <button
-                type="button"
-                onClick={handleSubmitForm}
+                type="submit"
+                form="product-edit-form"
+                onClick={() => console.log('SAVE_BUTTON_CLICKED')}
                 disabled={!isFormValid || isSaving}
                 className={`px-6 py-2.5 rounded-xl font-extrabold text-xs shadow-md transition-all flex items-center gap-2 ${
                   isFormValid && !isSaving

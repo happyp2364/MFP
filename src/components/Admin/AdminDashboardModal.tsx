@@ -374,6 +374,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   // Save Product
   const handleSaveProduct = async (updatedProd?: Product) => {
+    console.log('UPDATE_PRODUCT_CALLED', updatedProd?.id);
     const prodToSave = updatedProd || editingProduct;
     if (!prodToSave) return;
 
@@ -384,9 +385,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         showNotification('New product added and saved to cloud database!');
       } else {
         await updateProduct(prodToSave.id, prodToSave);
+        console.log('SAVE_COMPLETE', prodToSave.id);
         showNotification(`Product "${prodToSave.name}" updated successfully!`);
       }
       setEditingProduct(null);
+      console.log('MODAL_CLOSE');
       setIsCreatingProduct(false);
     } catch (err: any) {
       console.error('Failed to persist product:', err);

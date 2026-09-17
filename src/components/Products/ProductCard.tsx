@@ -21,6 +21,7 @@ import { Product, ProductCardDesignerConfig, DEFAULT_PRODUCT_CARD_CONFIG } from 
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
+import { MultiColorSwatch } from '../Common/MultiColorSwatch';
 import { useStore } from '../../context/StoreContext';
 import {
   normalizeProductSizeStocks,
@@ -554,19 +555,18 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
               <div className="flex items-center gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
                 <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">Colors:</span>
                 <div className="flex items-center gap-1.5">
-                  {product.colors.map((c, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleColorChange(c.name)}
-                      className={`w-4 h-4 rounded-full border transition-all duration-200 ${
-                        selectedColor && c.name && selectedColor.trim().toLowerCase() === c.name.trim().toLowerCase()
-                          ? 'ring-2 ring-offset-1 ring-[#0B8F63] scale-110 shadow-xs'
-                          : 'border-neutral-300 hover:scale-105'
-                      }`}
-                      style={{ backgroundColor: c.hex }}
-                      title={c.name}
-                    />
-                  ))}
+                  {product.colors.map((c, idx) => {
+                    const isSelected = selectedColor && c.name && selectedColor.trim().toLowerCase() === c.name.trim().toLowerCase();
+                    return (
+                      <MultiColorSwatch
+                        key={idx}
+                        colorObj={c}
+                        size="sm"
+                        isSelected={isSelected}
+                        onClick={() => handleColorChange(c.name)}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             )}

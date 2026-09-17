@@ -10,7 +10,7 @@ export interface InventoryBackupMetadata {
   productCount: number;
   inventoryRecordCount: number;
   checksum: string;
-  status: 'CREATING' | 'SUCCESS' | 'FAILED';
+  status: 'CREATING' | 'SUCCESS' | 'FAILED' | 'RETRYING';
   chunkCount: number;
   source: string;
   backupType: 'AUTOMATIC' | 'MANUAL' | 'PRE_RESTORE_SAFETY' | 'AUTOMATIC_STOCK_CHANGE';
@@ -23,6 +23,8 @@ export interface InventoryBackupMetadata {
   stockDifference?: number;
   operationId?: string;
   changedFields?: string[];
+  errorMessage?: string;
+  retryCount?: number;
 }
 
 export interface InventoryBackupSchema extends InventoryBackupMetadata {
@@ -46,11 +48,24 @@ export interface BackupRestorePreview {
   }[];
 }
 
-const MAX_CHUNK_BYTES = 500 * 1024; // 500 KB conservative limit (Firestore limit is 1 MiB)
+export interface InventoryBackupStatusPointer {
+  latestSuccessfulBackupId: string;
+  latestSuccessfulAt: string;
+  latestSuccessfulChecksum: string;
+  latestAttemptAt: string;
+  latestFailedAt: string;
+  pendingBackupCount: number;
+  failedBackupCount: number;
+  status: 'Healthy' | 'Pending' | 'Retry Required' | 'Out of Date' | 'Failed';
+  lastErrorCode?: string;
+  lastErrorMessage?: string;
+  inventoryChangedSinceLastSuccessfulBackup: boolean;
+}
+
+const MAX_CHUNK_BYTES = 500 * 1024; // 500 KB conservative limit
 
 // Real SHA-256 checksum generator using runtime crypto.subtle
 export async function calculateSHA256Checksum(products: Product[]): Promise<string> {
-  // Normalize ordering deterministically by product id
   const sorted = [...products].sort((a, b) => a.id.localeCompare(b.id));
   const serialized = JSON.stringify(sorted);
   const encoder = new TextEncoder();
@@ -63,7 +78,6 @@ export async function calculateSHA256Checksum(products: Product[]): Promise<stri
 
 export const calculateInventoryChecksum = calculateSHA256Checksum;
 
-// Byte-size-aware chunking
 export function createByteSizeChunks(products: Product[]): Product[][] {
   const sorted = [...products].sort((a, b) => a.id.localeCompare(b.id));
   const chunks: Product[][] = [];
@@ -95,84 +109,152 @@ export function createByteSizeChunks(products: Product[]): Product[][] {
   return chunks;
 }
 
+// Backup Queue to prevent overlapping race conditions
+let backupQueue: Promise<any> = Promise.resolve();
+
+export function queueBackupTask<T>(task: () => Promise<T>): Promise<T> {
+  const queued = backupQueue.then(task, task);
+  backupQueue = queued.catch(() => {});
+  return queued;
+}
+
+export async function updateBackupStatusPointer(): Promise<void> {
+  try {
+    const backups = await fetchDurableBackups();
+    const successList = backups.filter(b => b.status === 'SUCCESS');
+    const failedList = backups.filter(b => b.status === 'FAILED');
+    const creatingList = backups.filter(b => b.status === 'CREATING');
+
+    const latestSuccess = successList[0];
+    const latestFail = failedList[0];
+
+    const pointer: InventoryBackupStatusPointer = {
+      latestSuccessfulBackupId: latestSuccess?.backupId || '',
+      latestSuccessfulAt: latestSuccess?.createdAt || '',
+      latestSuccessfulChecksum: latestSuccess?.checksum || '',
+      latestAttemptAt: new Date().toISOString(),
+      latestFailedAt: latestFail?.createdAt || '',
+      pendingBackupCount: creatingList.length,
+      failedBackupCount: failedList.length,
+      status: successList.length > 0 ? (failedList.length > 0 ? 'Retry Required' : 'Healthy') : 'Failed',
+      lastErrorMessage: latestFail?.errorMessage || undefined,
+      inventoryChangedSinceLastSuccessfulBackup: true,
+    };
+
+    await setDoc(doc(db, 'settings', 'inventory_backup_status'), pointer);
+  } catch (err) {
+    console.warn('[InventoryBackup] Failed to update backup status pointer:', err);
+  }
+}
+
 export async function createDurableInventoryBackup(
   products: Product[],
   userEmail = 'Admin',
-  backupType: 'AUTOMATIC' | 'MANUAL' | 'PRE_RESTORE_SAFETY' = 'AUTOMATIC'
+  backupType: 'AUTOMATIC' | 'MANUAL' | 'PRE_RESTORE_SAFETY' | 'AUTOMATIC_STOCK_CHANGE' = 'AUTOMATIC',
+  extraMeta?: Partial<InventoryBackupMetadata>
 ): Promise<InventoryBackupSchema> {
-  const backupId = `bkp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-  const checksum = await calculateSHA256Checksum(products);
+  return queueBackupTask(async () => {
+    const backupId = extraMeta?.backupId || `bkp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const checksum = await calculateSHA256Checksum(products);
 
-  let totalInventoryRecords = 0;
-  products.forEach((p) => {
-    if (p.sizeStocks && p.sizeStocks.length > 0) {
-      totalInventoryRecords += p.sizeStocks.length;
-    } else {
-      totalInventoryRecords += 1;
+    let totalInventoryRecords = 0;
+    products.forEach((p) => {
+      if (p.sizeStocks && p.sizeStocks.length > 0) {
+        totalInventoryRecords += p.sizeStocks.length;
+      } else {
+        totalInventoryRecords += 1;
+      }
+    });
+
+    const productChunks = createByteSizeChunks(products);
+
+    const metadata: InventoryBackupMetadata = {
+      schemaVersion: '2.5.0',
+      backupId,
+      createdAt: new Date().toISOString(),
+      createdBy: userEmail,
+      productCount: products.length,
+      inventoryRecordCount: totalInventoryRecords,
+      checksum,
+      status: 'CREATING',
+      chunkCount: productChunks.length,
+      source: 'Firestore Byte-Size Aware Chunking Engine with Read-After-Write Verification',
+      backupType,
+      retryCount: 0,
+      ...(extraMeta || {}),
+    };
+
+    const maxRetries = 3;
+    let attempt = 0;
+    let lastError: any = null;
+
+    while (attempt < maxRetries) {
+      attempt++;
+      try {
+        // 1. Write metadata with status = 'CREATING'
+        await setDoc(doc(db, 'inventoryBackups', backupId), {
+          ...metadata,
+          status: 'CREATING',
+          retryCount: attempt - 1,
+        });
+
+        // 2. Write all chunk documents
+        for (let idx = 0; idx < productChunks.length; idx++) {
+          const chunkId = `chunk_${idx + 1}`;
+          await setDoc(doc(db, 'inventoryBackups', backupId, 'chunks', chunkId), {
+            chunkIndex: idx + 1,
+            products: productChunks[idx],
+          });
+        }
+
+        // 3. Verify chunks & SHA-256 checksum (Read-After-Write Verification)
+        const reconstructed = await fetchFullBackupWithProducts(backupId, productChunks.length);
+        if (reconstructed.length !== products.length) {
+          throw new Error('Chunk verification failed: Reconstructed product count mismatch.');
+        }
+
+        const reconstructedChecksum = await calculateSHA256Checksum(reconstructed);
+        if (reconstructedChecksum !== checksum) {
+          throw new Error('Checksum integrity verification failed after backup write.');
+        }
+
+        // 4. Mark SUCCESS only after rigorous verification passes
+        const successMeta: InventoryBackupMetadata = {
+          ...metadata,
+          status: 'SUCCESS',
+          retryCount: attempt - 1,
+        };
+        await setDoc(doc(db, 'inventoryBackups', backupId), successMeta, { merge: true });
+        await updateBackupStatusPointer();
+
+        return {
+          ...successMeta,
+          products: JSON.parse(JSON.stringify(products)),
+        };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[InventoryBackup] Attempt ${attempt} failed for backup ${backupId}:`, err?.message);
+        if (attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff: 2s, 4s, 8s
+          await new Promise((res) => setTimeout(res, delay));
+        }
+      }
     }
-  });
 
-  const productChunks = createByteSizeChunks(products);
-
-  const metadata: InventoryBackupMetadata = {
-    schemaVersion: '2.2.0',
-    backupId,
-    createdAt: new Date().toISOString(),
-    createdBy: userEmail,
-    productCount: products.length,
-    inventoryRecordCount: totalInventoryRecords,
-    checksum,
-    status: 'CREATING',
-    chunkCount: productChunks.length,
-    source: 'Firestore Byte-Size Aware Chunking Engine',
-    backupType,
-  };
-
-  try {
-    // 1. Write metadata with status = 'CREATING'
-    await setDoc(doc(db, 'inventoryBackups', backupId), metadata);
-
-    // 2. Write all chunk documents
-    for (let idx = 0; idx < productChunks.length; idx++) {
-      const chunkId = `chunk_${idx + 1}`;
-      await setDoc(doc(db, 'inventoryBackups', backupId, 'chunks', chunkId), {
-        chunkIndex: idx + 1,
-        products: productChunks[idx],
-      });
-    }
-
-    // 3. Verify chunks & SHA-256 checksum
-    const reconstructed = await fetchFullBackupWithProducts(backupId, productChunks.length);
-    if (reconstructed.length !== products.length) {
-      throw new Error('Chunk verification failed: Reconstructed product count mismatch.');
-    }
-
-    const reconstructedChecksum = await calculateSHA256Checksum(reconstructed);
-    if (reconstructedChecksum !== checksum) {
-      throw new Error('Checksum integrity verification failed after backup write.');
-    }
-
-    // 4. Mark SUCCESS only after rigorous verification passes
-    const successMeta: InventoryBackupMetadata = {
+    // If all attempts failed, record FAILED status
+    const failedMeta: InventoryBackupMetadata = {
       ...metadata,
-      status: 'SUCCESS',
+      status: 'FAILED',
+      errorMessage: lastError?.message || 'Unknown backup persistence or verification failure',
+      retryCount: maxRetries,
     };
-    await setDoc(doc(db, 'inventoryBackups', backupId), successMeta, { merge: true });
-
-    return {
-      ...successMeta,
-      products: JSON.parse(JSON.stringify(products)),
-    };
-  } catch (err: any) {
-    console.error('Failed to create durable inventory backup:', err);
     try {
-      await setDoc(doc(db, 'inventoryBackups', backupId), {
-        ...metadata,
-        status: 'FAILED',
-      }, { merge: true });
+      await setDoc(doc(db, 'inventoryBackups', backupId), failedMeta, { merge: true });
+      await updateBackupStatusPointer();
     } catch {}
-    throw err;
-  }
+
+    throw lastError || new Error('Durable backup persistence failed after max retries.');
+  });
 }
 
 export async function recordAutomaticStockChangeBackup(params: {
@@ -194,7 +276,7 @@ export async function recordAutomaticStockChangeBackup(params: {
 
   const backupId = `auto_stk_${params.operationId}`;
 
-  // Atomic Duplicate Protection & Idempotency: Check if a backup already exists for this operationId
+  // Atomic Idempotency Check
   try {
     const existingDoc = await getDoc(doc(db, 'inventoryBackups', backupId));
     if (existingDoc.exists()) {
@@ -208,66 +290,34 @@ export async function recordAutomaticStockChangeBackup(params: {
     console.warn('[InventoryBackup] Check existing backup error:', err);
   }
 
-  const checksum = await calculateSHA256Checksum(params.productsSnapshot);
-  const productChunks = createByteSizeChunks(params.productsSnapshot);
-
-  let totalInventoryRecords = 0;
-  params.productsSnapshot.forEach((p) => {
-    if (p.sizeStocks && p.sizeStocks.length > 0) {
-      totalInventoryRecords += p.sizeStocks.length;
-    } else {
-      totalInventoryRecords += 1;
-    }
-  });
-
-  const metadata: InventoryBackupMetadata = {
-    schemaVersion: '2.3.0',
-    backupId,
-    createdAt: new Date().toISOString(),
-    createdBy: params.userEmail || 'System',
-    productCount: params.productsSnapshot.length,
-    inventoryRecordCount: totalInventoryRecords,
-    checksum,
-    status: 'SUCCESS',
-    chunkCount: productChunks.length,
-    source: 'Automatic Per-Stock-Change Version Engine',
-    backupType: 'AUTOMATIC_STOCK_CHANGE',
-    operationType: params.operationType,
-    productId: params.productId,
-    productName: params.productName,
-    sku: params.sku || '',
-    beforeStockState: params.beforeStockState,
-    afterStockState: params.afterStockState,
-    stockDifference: params.stockDifference,
-    operationId: params.operationId,
-    changedFields: params.changedFields,
-  };
-
   try {
-    await setDoc(doc(db, 'inventoryBackups', backupId), metadata);
-    for (let idx = 0; idx < productChunks.length; idx++) {
-      const chunkId = `chunk_${idx + 1}`;
-      await setDoc(doc(db, 'inventoryBackups', backupId, 'chunks', chunkId), {
-        chunkIndex: idx + 1,
-        products: productChunks[idx],
-      });
-    }
-    return backupId;
+    const backup = await createDurableInventoryBackup(
+      params.productsSnapshot,
+      params.userEmail || 'System',
+      'AUTOMATIC_STOCK_CHANGE',
+      {
+        backupId,
+        operationType: params.operationType,
+        productId: params.productId,
+        productName: params.productName,
+        sku: params.sku || '',
+        beforeStockState: params.beforeStockState,
+        afterStockState: params.afterStockState,
+        stockDifference: params.stockDifference,
+        operationId: params.operationId,
+        changedFields: params.changedFields,
+      }
+    );
+    return backup.backupId;
   } catch (err: any) {
-    console.error('Failed to record automatic stock change backup:', err);
-    try {
-      await setDoc(doc(db, 'inventoryBackups', backupId), {
-        ...metadata,
-        status: 'FAILED',
-      }, { merge: true });
-    } catch {}
-    throw err;
+    console.error(`[InventoryBackup] Automatic stock change backup recorded as FAILED for op ${params.operationId}:`, err);
+    return backupId;
   }
 }
 
 export async function fetchDurableBackups(): Promise<InventoryBackupMetadata[]> {
   try {
-    const q = query(collection(db, 'inventoryBackups'), orderBy('createdAt', 'desc'), limit(50));
+    const q = query(collection(db, 'inventoryBackups'), orderBy('createdAt', 'desc'), limit(100));
     const snapshot = await getDocs(q);
     const list: InventoryBackupMetadata[] = [];
     
@@ -278,7 +328,8 @@ export async function fetchDurableBackups(): Promise<InventoryBackupMetadata[]> 
         const ageMs = Date.now() - new Date(meta.createdAt).getTime();
         if (ageMs > 10 * 60 * 1000) {
           meta.status = 'FAILED';
-          await setDoc(doc(db, 'inventoryBackups', meta.backupId), { status: 'FAILED' }, { merge: true });
+          meta.errorMessage = meta.errorMessage || 'Stale backup timed out in CREATING state';
+          await setDoc(doc(db, 'inventoryBackups', meta.backupId), { status: 'FAILED', errorMessage: meta.errorMessage }, { merge: true });
         }
       }
       list.push(meta);
@@ -318,7 +369,11 @@ export async function verifyBackupIntegrity(meta: InventoryBackupMetadata, produ
 }
 
 export async function createPreRestoreSafetyBackup(currentProducts: Product[]): Promise<InventoryBackupSchema> {
-  return await createDurableInventoryBackup(currentProducts, 'System (Pre-Restore Safety)', 'PRE_RESTORE_SAFETY');
+  const safetyId = `safety_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  return await createDurableInventoryBackup(currentProducts, 'System (Pre-Restore Safety)', 'PRE_RESTORE_SAFETY', {
+    backupId: safetyId,
+    operationType: 'PRE_RESTORE_SAFETY_SNAPSHOT',
+  });
 }
 
 export function previewBackupRestore(currentProducts: Product[], backupProducts: Product[]): BackupRestorePreview {
@@ -411,6 +466,7 @@ export async function executeRestoreFromBackup(backupProducts: Product[]): Promi
     }
 
     localStorage.setItem('mfp_products_catalog_live', JSON.stringify(backupProducts));
+    await updateBackupStatusPointer();
 
     return { success: true, restoredCount: backupProducts.length };
   } catch (err: any) {

@@ -290,24 +290,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
       )
     : product.colors;
 
-  const sizeStocks = product.variants && product.variants.length > 0
-    ? product.variants
-        .filter((v) => v && typeof v.color === 'string' && selectedColor && typeof selectedColor === 'string' && v.color.trim().toLowerCase() === selectedColor.trim().toLowerCase() && v.status === 'active')
-        .map((v) => ({
-          size: v.size,
-          inStock: v.stock > 0,
-          stockQuantity: v.stock,
-          isAvailable: true,
-        }))
-    : normalizeProductSizeStocks(product);
+  const sizeStocks = normalizeProductSizeStocks(product, selectedColor);
 
-  const isCompletelyOutOfStock = product.variants && product.variants.length > 0
-    ? !product.variants.some(v => v.stock > 0 && v.status === 'active')
-    : isProductCompletelyOutOfStock(product);
+  const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product, selectedColor);
 
-  const selectedSizeInfo = product.variants && product.variants.length > 0
-    ? sizeStocks.find(s => s.size === selectedSize)
-    : getSizeStockInfo(product, selectedSize);
+  const selectedSizeInfo = getSizeStockInfo(product, selectedSize, selectedColor);
 
   const isSelectedSizeOutOfStock = selectedSizeInfo
     ? (!selectedSizeInfo.inStock || selectedSizeInfo.stockQuantity <= 0)

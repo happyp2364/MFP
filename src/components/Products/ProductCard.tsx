@@ -78,8 +78,15 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   const [isComparing, setIsComparing] = useState(false);
   const [isImageAnimating, setIsImageAnimating] = useState(false);
 
-  const sizeStocks = normalizeProductSizeStocks(product);
-  const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
+  const [selectedColor, setSelectedColor] = useState<string>(
+    product.colors && product.colors.length > 0 ? product.colors[0].name : 'Standard'
+  );
+  const [selectedSize, setSelectedSize] = useState<string>(
+    getFirstAvailableInStockSize(product, selectedColor) || (product.sizes && product.sizes[0]) || 'Free Size'
+  );
+
+  const sizeStocks = normalizeProductSizeStocks(product, selectedColor);
+  const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product, selectedColor);
 
   const buttonRowRef = useRef<HTMLDivElement>(null);
   const [isCompactButton, setIsCompactButton] = useState<boolean>(() => {
@@ -121,13 +128,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     }
   }, []);
 
-  const [selectedSize, setSelectedSize] = useState<string>(
-    getFirstAvailableInStockSize(product) || (product.sizes && product.sizes[0]) || 'Free Size'
-  );
 
-  const [selectedColor, setSelectedColor] = useState<string>(
-    product.colors && product.colors.length > 0 ? product.colors[0].name : 'Standard'
-  );
 
   useEffect(() => {
     if (product.colors && product.colors.length > 0) {

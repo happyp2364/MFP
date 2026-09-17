@@ -63,10 +63,10 @@ const QuickViewModalContent: React.FC<{
     }
   }, [product]);
 
-  const sizeStocks = normalizeProductSizeStocks(product);
-  const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
+  const sizeStocks = normalizeProductSizeStocks(product, selectedColor);
+  const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product, selectedColor);
 
-  const selectedSizeInfo = getSizeStockInfo(product, selectedSize);
+  const selectedSizeInfo = getSizeStockInfo(product, selectedSize, selectedColor);
   const isSelectedSizeOutOfStock = selectedSizeInfo
     ? (!selectedSizeInfo.inStock || selectedSizeInfo.stockQuantity <= 0)
     : false;

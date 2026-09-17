@@ -12,7 +12,7 @@ import {
   getFirstAvailableInStockSize,
   getSizeStockInfo,
 } from '../../utils/sizeStockUtils';
-import { getProductPrice, getImagesForSelectedColor } from '../../utils/variantUtils';
+import { getProductPrice, getImagesForSelectedColor, resolveColorImageIndex } from '../../utils/variantUtils';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -23,7 +23,14 @@ interface QuickViewModalProps {
   onBuyNow?: (product: Product, size: string, color: string, quantity: number) => void;
 }
 
-export const QuickViewModal: React.FC<QuickViewModalProps> = ({
+const QuickViewModalContent: React.FC<{
+  product: Product;
+  onClose: () => void;
+  onToggleWishlist?: (product: Product) => void;
+  isWishlisted?: boolean;
+  onAddToCart?: (product: Product, size: string, color: string) => void;
+  onBuyNow?: (product: Product, size: string, color: string, quantity: number) => void;
+}> = ({
   product,
   onClose,
   onToggleWishlist,
@@ -55,8 +62,6 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
       setCopiedLink(false);
     }
   }, [product]);
-
-  if (!product) return null;
 
   const sizeStocks = normalizeProductSizeStocks(product);
   const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
@@ -108,10 +113,11 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     return getImagesForSelectedColor(product, selectedColor);
   }, [product, selectedColor]);
 
-  // Reset active image index to 0 when selectedColor changes
+  // Align active image index when selectedColor changes
   useEffect(() => {
-    setActiveImageIndex(0);
-  }, [selectedColor]);
+    const idx = resolveColorImageIndex(product, selectedColor, displayImages);
+    setActiveImageIndex(idx);
+  }, [selectedColor, product, displayImages]);
 
   const rawImageSrc = displayImages.length > 0
     ? (displayImages[activeImageIndex] || displayImages[0])
@@ -291,7 +297,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                       key={idx}
                       onClick={() => setSelectedColor(c.name)}
                       className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
-                        selectedColor === c.name
+                        selectedColor && c.name && selectedColor.trim().toLowerCase() === c.name.trim().toLowerCase()
                           ? 'border-[#0B8F63] ring-2 ring-offset-2 ring-[#0B8F63] scale-110'
                           : 'border-neutral-200'
                       }`}
@@ -305,104 +311,42 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
             {/* Size Selector */}
             {sizeStocks.length > 0 && (
-              <div className="space-y-2 pt-2">
-                <div className="flex justify-between items-center text-xs">
-                  <label className="font-bold text-neutral-800 uppercase tracking-wider flex items-center gap-2">
-                    <span>Select Size:</span>
-                    <span className="text-[#0B8F63] font-extrabold">{selectedSize}</span>
-                    {selectedSizeInfo && selectedSizeInfo.inStock && selectedSizeInfo.stockQuantity <= 5 && (
-                      <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                        Only {selectedSizeInfo.stockQuantity} left!
-                      </span>
-                    )}
+              <div className="space-y-2.5 pt-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-neutral-800 uppercase tracking-wider">
+                    Select Size (UK/India): <span className="text-[#0B8F63] font-black">{selectedSize || 'Choose Size'}</span>
                   </label>
-                  <span className="text-[11px] text-[#0B8F63] font-semibold underline cursor-pointer">
-                    Size Guide
-                  </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {sizeStocks.filter((s) => s.isAvailable).map((item) => {
-                    const isSelected = selectedSize === item.size;
-                    const isInStock = item.inStock && item.stockQuantity > 0;
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                  {sizeStocks.map((sz, idx) => {
+                    const isSelected = selectedSize === sz.size;
+                    const isAvailable = sz.inStock && sz.stockQuantity > 0;
 
                     return (
                       <button
-                        key={item.size}
-                        disabled={!isInStock}
-                        onClick={() => setSelectedSize(item.size)}
-                        className={`text-xs font-bold px-3.5 py-2 rounded-xl border transition-all relative ${
+                        key={idx}
+                        onClick={() => setSelectedSize(sz.size)}
+                        className={`py-2 px-3 rounded-xl font-bold text-xs border transition-all flex flex-col items-center justify-center relative ${
                           isSelected
-                            ? 'bg-[#0B8F63] text-white border-[#0B8F63] shadow-md ring-2 ring-[#0B8F63]/20'
-                            : isInStock
-                            ? 'bg-white text-neutral-800 border-neutral-200 hover:border-neutral-400'
-                            : 'bg-neutral-100 text-neutral-400 border-neutral-200 line-through cursor-not-allowed opacity-60'
+                            ? 'bg-[#0B8F63] border-[#0B8F63] text-white shadow-md scale-105 ring-2 ring-[#0B8F63]/30'
+                            : isAvailable
+                            ? 'bg-white border-neutral-200 text-neutral-800 hover:border-neutral-400'
+                            : 'bg-neutral-100 border-neutral-200 text-neutral-400 opacity-60'
                         }`}
                       >
-                        {item.size}
+                        <span className="text-sm font-extrabold">{sz.size}</span>
+                        <span className={`text-[9px] mt-0.5 ${isSelected ? 'text-white/90' : isAvailable ? 'text-emerald-600 font-semibold' : 'text-rose-500 font-semibold'}`}>
+                          {isAvailable ? `${sz.stockQuantity} left` : 'Sold out'}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               </div>
             )}
-
-            {/* Quantity Controls */}
-            <div className="flex items-center gap-4 pt-2">
-              <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Quantity:</span>
-              <div className="flex items-center border border-neutral-200 rounded-xl overflow-hidden bg-neutral-50">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-3 py-1.5 text-neutral-600 hover:bg-neutral-200 font-bold"
-                >
-                  -
-                </button>
-                <span className="px-4 py-1.5 text-xs font-extrabold text-neutral-900">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="px-3 py-1.5 text-neutral-600 hover:bg-neutral-200 font-bold"
-                >
-                  +
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* PREMIUM SHIPPING & RETURN POLICY CARD */}
-          <div className="p-3.5 bg-gradient-to-r from-neutral-900 via-amber-950 to-neutral-900 text-white rounded-2xl shadow-sm border border-amber-800/40 space-y-2.5 my-2">
-            <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-              <div className="flex items-center space-x-1.5">
-                <ShieldCheck className="w-4 h-4 text-amber-400" />
-                <span className="text-[11px] font-serif font-extrabold text-amber-100 uppercase tracking-wider">
-                  {paymentSettings.onlineOrderPolicy || paymentSettings.policyText || 'Online Orders: No Return • No Exchange • No Change'}
-                </span>
-              </div>
-              <span className="text-[9px] font-bold text-amber-300 bg-amber-900/60 px-2 py-0.5 rounded-full border border-amber-700/50">
-                Verified Policy
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-[11px] font-medium">
-              <div className="bg-black/40 p-2 rounded-xl border border-white/10">
-                <span className="font-extrabold text-emerald-300 block">
-                  {currentPrice >= (paymentSettings.freeShippingMinAmount ?? 999) || (paymentSettings.flatShippingRate ?? 0) === 0
-                    ? '🚚 FREE DELIVERY'
-                    : `🚚 ₹${paymentSettings.flatShippingRate ?? 0} Shipping`}
-                </span>
-                <span className="text-[9px] text-neutral-300">
-                  {currentPrice >= (paymentSettings.freeShippingMinAmount ?? 999) || (paymentSettings.flatShippingRate ?? 0) === 0
-                    ? 'Free Standard Delivery'
-                    : `Min ₹${paymentSettings.freeShippingMinAmount ?? 999} for Free Shipping`}
-                </span>
-              </div>
-
-              <div className="bg-black/40 p-2 rounded-xl border border-white/10">
-                <span className="font-extrabold text-rose-300 block">❌ NO RETURN / EXCHANGE / CHANGE</span>
-                <span className="text-[9px] text-neutral-300">Online Purchase Policy</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action CTAs */}
+          {/* Action Footer */}
           <div className="space-y-3 pt-4 border-t border-neutral-200">
             {isCompletelyOutOfStock || isSelectedSizeOutOfStock ? (
               <button
@@ -489,5 +433,27 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         </div>
       </div>
     </div>
+  );
+};
+
+export const QuickViewModal: React.FC<QuickViewModalProps> = ({
+  product,
+  onClose,
+  onToggleWishlist,
+  isWishlisted,
+  onAddToCart,
+  onBuyNow,
+}) => {
+  if (!product) return null;
+
+  return (
+    <QuickViewModalContent
+      product={product}
+      onClose={onClose}
+      onToggleWishlist={onToggleWishlist}
+      isWishlisted={isWishlisted}
+      onAddToCart={onAddToCart}
+      onBuyNow={onBuyNow}
+    />
   );
 };

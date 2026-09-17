@@ -72,6 +72,7 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   variants?: ProductVariant[];
+  hasVariantPricing?: boolean; // Explicit flag for variant-specific pricing override
   // Product-level GST override settings
   useDefaultGstRate?: boolean;
   gstRate?: number;

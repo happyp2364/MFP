@@ -29,6 +29,7 @@ import { ProductCard } from '../Products/ProductCard';
 import { TrendingShoesSection } from '../Collections/TrendingShoesSection';
 import { PricePointCollectionSection } from '../Collections/PricePointCollectionSection';
 import { RealShopShowcaseSection } from './RealShopShowcaseSection';
+import { getPublicActiveProducts } from '../../lib/tenantUtils';
 
 interface HomepageRendererProps {
   previewConfig?: HomepageConfig;
@@ -284,7 +285,7 @@ const SectionItem: React.FC<SectionItemProps> = ({
     case 'best_sellers': {
       const limit = data.limit || 8;
       const filteredCat = data.category;
-      let items = products;
+      let items = getPublicActiveProducts(products);
       if (filteredCat && filteredCat !== 'ALL') {
         items = items.filter((p) => p.category?.toLowerCase() === filteredCat.toLowerCase());
       }
@@ -331,7 +332,7 @@ const SectionItem: React.FC<SectionItemProps> = ({
     case 'flash_sale':
     case 'countdown_timer': {
       const targetDate = data.targetDate ? new Date(data.targetDate) : new Date(Date.now() + 86400000 * 2);
-      const displayProducts = products.slice(0, data.limit || 4);
+      const displayProducts = getPublicActiveProducts(products).slice(0, data.limit || 4);
 
       return (
         <div style={sectionStyle} className="w-full bg-gradient-to-r from-neutral-900 via-rose-950 to-neutral-900 text-white rounded-3xl my-4">

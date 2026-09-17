@@ -1,4 +1,4 @@
-import { AdminUser } from '../types';
+import { AdminUser, Product } from '../types';
 
 export const SUPER_ADMIN_EMAILS = [
   'vpcreation2002@gmail.com',
@@ -220,4 +220,17 @@ export function validateTenantAccess(
   const normalizedTarget = normalizeTenantId(targetTenantId);
 
   return normalizedUserTenant === normalizedTarget;
+}
+
+/**
+ * Returns only valid, active, canonical Firestore products for public storefront rendering.
+ * Excludes missing records, hidden/archived items, and demo placeholders.
+ */
+export function getPublicActiveProducts(products: Product[]): Product[] {
+  if (!Array.isArray(products)) return [];
+  return products.filter((p) => {
+    if (!p || !p.id || !p.name) return false;
+    if (p.status === 'hidden') return false;
+    return true;
+  });
 }

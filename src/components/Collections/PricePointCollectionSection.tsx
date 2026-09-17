@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Product, ProductVariant } from '../../types';
+import { getPublicActiveProducts } from '../../lib/tenantUtils';
 
 interface PricePointCollectionSectionProps {
   onQuickView?: (product: Product) => void;
@@ -54,12 +55,13 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
     return true;
   }, [config.enabled, config.scheduleStart, config.scheduleEnd]);
 
-  // Filter products specifically for Footwear / Shoes under configured price point
+  // Filter products specifically for Footwear / Shoes under configured price point using canonical public active products
   const displayProducts = useMemo(() => {
-    if (!products || products.length === 0) return [];
+    const activeCanonicalProducts = getPublicActiveProducts(products);
+    if (activeCanonicalProducts.length === 0) return [];
 
     // Filter 1: Footwear only (exclude clothing)
-    let shoeProducts = products.filter((p) => {
+    let shoeProducts = activeCanonicalProducts.filter((p) => {
       const cat = (p.category || '').toLowerCase();
       const sub = (p.subcategory || '').toLowerCase();
       const name = (p.name || '').toLowerCase();
@@ -96,7 +98,9 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
       );
     });
 
-    if (shoeProducts.length === 0) shoeProducts = products;
+    if (shoeProducts.length === 0) {
+      shoeProducts = activeCanonicalProducts;
+    }
 
     // Filter 2: Out of Stock check
     if (config.excludeOutofStock) {
@@ -106,36 +110,33 @@ export const PricePointCollectionSection: React.FC<PricePointCollectionSectionPr
     // Filter 3: Deduplication if enabled
     if (config.preventDuplicateHomepageItems && alreadyDisplayedProductIds.length > 0) {
       const deduped = shoeProducts.filter((p) => !alreadyDisplayedProductIds.includes(p.id));
-      if (deduped.length >= 2) {
+      if (deduped.length >= 1) {
         shoeProducts = deduped;
       }
     }
 
-    // Filter 4: Apply Source logic
+    // Filter 4: Apply Source logic strictly
     const limitPrice = config.priceLimit || 699;
     let filtered: Product[] = [];
 
     switch (config.source) {
       case 'price_limit':
+        // STRICT: Only products <= limitPrice. Never fallback to expensive products.
         filtered = shoeProducts.filter((p) => p.price <= limitPrice);
-        // If not enough products strictly <= limit, sort ascending by price
-        if (filtered.length === 0) {
-          filtered = [...shoeProducts].sort((a, b) => a.price - b.price);
-        }
         break;
 
       case 'manual':
         if (config.selectedProductIds && config.selectedProductIds.length > 0) {
           filtered = config.selectedProductIds
-            .map((id) => shoeProducts.find((p) => p.id === id))
+            .map((id) => activeCanonicalProducts.find((p) => p.id === id))
             .filter((p): p is Product => Boolean(p));
         } else {
-          filtered = shoeProducts;
+          filtered = [];
         }
         break;
 
       case 'featured':
-        filtered = shoeProducts.filter((p) => p.isFeatured || p.price <= limitPrice);
+        filtered = shoeProducts.filter((p) => p.isFeatured && p.price <= limitPrice + 300);
         break;
 
       case 'collection':

@@ -39,7 +39,7 @@ import { ProductCard } from './ProductCard';
 import { OpenBoxDeliveryBadge } from '../Common/OpenBoxDeliveryBadge';
 import { useStore } from '../../context/StoreContext';
 import { SEOHead } from '../SEO/SEOHead';
-import { getImagesForSelectedColor } from '../../utils/variantUtils';
+import { getImagesForSelectedColor, resolveColorImageIndex } from '../../utils/variantUtils';
 import { generateProductSchema, generateBreadcrumbSchema } from '../../utils/seo';
 
 interface ProductDetailPageProps {
@@ -146,10 +146,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     return getImagesForSelectedColor(product, selectedColor);
   }, [product, selectedColor]);
 
-  // Reset active image index to 0 when selectedColor changes
+  // Align active image index when selectedColor changes
   useEffect(() => {
-    setActiveImageIndex(0);
-  }, [selectedColor]);
+    const idx = resolveColorImageIndex(product, selectedColor, displayImages);
+    setActiveImageIndex(idx);
+  }, [selectedColor, product, displayImages]);
 
   // Touch Swiping Handlers
   const touchStartX = React.useRef<number>(0);
@@ -658,7 +659,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                     key={idx}
                     onClick={() => setSelectedColor(c.name)}
                     className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all ${
-                      selectedColor === c.name
+                      selectedColor && c.name && selectedColor.trim().toLowerCase() === c.name.trim().toLowerCase()
                         ? 'border-[#0B8F63] ring-2 ring-offset-2 ring-[#0B8F63] scale-110'
                         : 'border-neutral-200'
                     }`}

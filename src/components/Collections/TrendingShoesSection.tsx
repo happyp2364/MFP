@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Product, ProductVariant } from '../../types';
+import { getPublicActiveProducts } from '../../lib/tenantUtils';
 
 interface TrendingShoesSectionProps {
   onQuickView?: (product: Product) => void;
@@ -58,15 +59,16 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
     return true;
   }, [config.enabled, config.scheduleStart, config.scheduleEnd]);
 
-  // Filter products according to collection source
+  // Filter products according to collection source using canonical public active products
   const collectionProducts = useMemo(() => {
-    if (!products || products.length === 0) return [];
+    const activeProducts = getPublicActiveProducts(products);
+    if (activeProducts.length === 0) return [];
 
     let filtered: Product[] = [];
 
     switch (config.source) {
       case 'newest':
-        filtered = [...products].sort((a, b) => {
+        filtered = [...activeProducts].sort((a, b) => {
           const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return timeB - timeA;
@@ -74,48 +76,44 @@ export const TrendingShoesSection: React.FC<TrendingShoesSectionProps> = ({
         break;
 
       case 'bestsellers':
-        filtered = products.filter((p) => p.isBestSeller);
-        if (filtered.length === 0) filtered = [];
+        filtered = activeProducts.filter((p) => p.isBestSeller);
         break;
 
       case 'trending':
-        filtered = products.filter((p) => p.isTrending || p.isBestSeller);
-        if (filtered.length === 0) filtered = [];
+        filtered = activeProducts.filter((p) => p.isTrending || p.isBestSeller);
         break;
 
       case 'featured':
-        filtered = products.filter((p) => p.isFeatured);
-        if (filtered.length === 0) filtered = [];
+        filtered = activeProducts.filter((p) => p.isFeatured);
         break;
 
       case 'rating':
-        filtered = [...products].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        filtered = [...activeProducts].sort((a, b) => (b.rating || 0) - (a.rating || 0));
         break;
 
       case 'manual':
         if (config.selectedProductIds && config.selectedProductIds.length > 0) {
           filtered = config.selectedProductIds
-            .map((id) => products.find((p) => p.id === id))
+            .map((id) => activeProducts.find((p) => p.id === id))
             .filter((p): p is Product => Boolean(p));
         } else {
-          filtered = products;
+          filtered = [];
         }
         break;
 
       case 'seasonal':
-        filtered = products.filter((p) =>
+        filtered = activeProducts.filter((p) =>
           p.collectionTags?.some((tag) =>
             ['college', 'sports', 'festive', 'summer', 'winter', 'running', 'bestseller'].includes(
               tag.toLowerCase()
             )
           )
         );
-        if (filtered.length === 0) filtered = products;
         break;
 
       case 'ai_recommended':
       default:
-        filtered = [...products].sort((a, b) => (b.rating || 0) * (b.reviewsCount || 1) - (a.rating || 0) * (a.reviewsCount || 1));
+        filtered = [...activeProducts].sort((a, b) => (b.rating || 0) * (b.reviewsCount || 1) - (a.rating || 0) * (a.reviewsCount || 1));
         break;
     }
 

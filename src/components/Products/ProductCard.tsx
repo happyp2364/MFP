@@ -27,7 +27,7 @@ import {
   isProductCompletelyOutOfStock,
   getFirstAvailableInStockSize,
 } from '../../utils/sizeStockUtils';
-import { getProductPrice, getImagesForSelectedColor } from '../../utils/variantUtils';
+import { getProductPrice, getImagesForSelectedColor, resolveColorImageIndex } from '../../utils/variantUtils';
 
 // Authentic, recognizable WhatsApp icon (phone handset inside speech bubble)
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
@@ -129,12 +129,42 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
     product.colors && product.colors.length > 0 ? product.colors[0].name : 'Standard'
   );
 
+  useEffect(() => {
+    if (product.colors && product.colors.length > 0) {
+      if (!selectedColor || !product.colors.some(c => c.name.trim().toLowerCase() === selectedColor.trim().toLowerCase())) {
+        setSelectedColor(product.colors[0].name);
+      }
+    }
+  }, [product]);
+
   const displayImages = useMemo(() => {
-    return getImagesForSelectedColor(product, selectedColor);
+    const imgs = getImagesForSelectedColor(product, selectedColor);
+    console.log('COLOR_GALLERY_RESOLVED', {
+      productId: product.id,
+      color: selectedColor,
+      imageCount: imgs.length,
+      firstImage: imgs[0] || ''
+    });
+    return imgs;
   }, [product, selectedColor]);
+
+  useEffect(() => {
+    const idx = resolveColorImageIndex(product, selectedColor, displayImages);
+    setCurrentImageIndex(idx);
+    console.log('COLOR_IMAGE_INDEX_MATCH', {
+      color: selectedColor,
+      matchedIndex: idx,
+      matchedUrl: displayImages[idx] || displayImages[0] || ''
+    });
+  }, [selectedColor, product, displayImages]);
 
   const rawImageSrc = displayImages.length > 0 ? displayImages[currentImageIndex] || displayImages[0] : '';
   const displayImageSrc = (!rawImageSrc || imageError) ? CLEAN_IMAGE_COMING_SOON_SVG : rawImageSrc;
+
+  console.log('FINAL_VISIBLE_IMAGE', {
+    color: selectedColor,
+    imageUrl: displayImageSrc
+  });
 
   // Compute prices dynamically
   const computedPrice = getProductPrice(product, selectedSize, selectedColor);
@@ -146,7 +176,17 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
 
   // Handle color variant switching with smooth slide/fade animation
   const handleColorChange = (colorName: string) => {
-    if (!colorName || colorName === selectedColor) return;
+    if (!colorName) return;
+    const normalizedNew = colorName.trim().toLowerCase();
+    const normalizedCurrent = selectedColor.trim().toLowerCase();
+    if (normalizedNew === normalizedCurrent) return;
+
+    console.log('COLOR_CLICK', {
+      productId: product.id,
+      selectedColor: colorName,
+      resolvedImages: getImagesForSelectedColor(product, colorName)
+    });
+
     if (cfg.enableVariantSlideAnimation) {
       setIsImageAnimating(true);
     }
@@ -518,7 +558,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                       key={idx}
                       onClick={() => handleColorChange(c.name)}
                       className={`w-4 h-4 rounded-full border transition-all duration-200 ${
-                        selectedColor === c.name
+                        selectedColor && c.name && selectedColor.trim().toLowerCase() === c.name.trim().toLowerCase()
                           ? 'ring-2 ring-offset-1 ring-[#0B8F63] scale-110 shadow-xs'
                           : 'border-neutral-300 hover:scale-105'
                       }`}

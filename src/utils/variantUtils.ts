@@ -5,7 +5,10 @@ import { CartItem, Product, ProductVariant } from '../types';
  */
 export function getCartItemPrice(item: CartItem): number {
   if (!item || !item.product) return 0;
-  return item.selectedVariant ? item.selectedVariant.price : (item.product.price || 0);
+  if (item.product.hasVariantPricing === true && item.selectedVariant && item.selectedVariant.price !== undefined && item.selectedVariant.price > 0) {
+    return item.selectedVariant.price;
+  }
+  return item.product.price || 0;
 }
 
 /**
@@ -13,13 +16,15 @@ export function getCartItemPrice(item: CartItem): number {
  */
 export function getProductPrice(product: Product, size?: string, color?: string): number {
   if (!product) return 0;
-  if (product.variants && product.variants.length > 0 && color) {
+  const hasExplicitVariantPricing = product.hasVariantPricing === true;
+
+  if (hasExplicitVariantPricing && product.variants && product.variants.length > 0 && color) {
     const targetColor = String(color).trim().toLowerCase();
     const targetSize = size !== undefined && size !== null ? String(size) : undefined;
     const matchingVariant = product.variants.find(
       (v) => v && typeof v.color === 'string' && v.color.trim().toLowerCase() === targetColor && (!targetSize || String(v.size) === targetSize)
     );
-    if (matchingVariant && matchingVariant.price !== undefined) {
+    if (matchingVariant && matchingVariant.price !== undefined && matchingVariant.price > 0) {
       return matchingVariant.price;
     }
   }
@@ -31,17 +36,19 @@ export function getProductPrice(product: Product, size?: string, color?: string)
  */
 export function getProductOriginalPrice(product: Product, size?: string, color?: string): number {
   if (!product) return 0;
-  if (product.variants && product.variants.length > 0 && color) {
+  const hasExplicitVariantPricing = product.hasVariantPricing === true;
+
+  if (hasExplicitVariantPricing && product.variants && product.variants.length > 0 && color) {
     const targetColor = String(color).trim().toLowerCase();
     const targetSize = size !== undefined && size !== null ? String(size) : undefined;
     const matchingVariant = product.variants.find(
       (v) => v && typeof v.color === 'string' && v.color.trim().toLowerCase() === targetColor && (!targetSize || String(v.size) === targetSize)
     );
-    if (matchingVariant && matchingVariant.originalPrice !== undefined) {
+    if (matchingVariant && matchingVariant.originalPrice !== undefined && matchingVariant.originalPrice > 0) {
       return matchingVariant.originalPrice;
     }
   }
-  return product.originalPrice || 0;
+  return product.originalPrice || product.price || 0;
 }
 
 /**
@@ -49,7 +56,10 @@ export function getProductOriginalPrice(product: Product, size?: string, color?:
  */
 export function getCartItemOriginalPrice(item: CartItem): number {
   if (!item || !item.product) return 0;
-  return item.selectedVariant ? item.selectedVariant.originalPrice : (item.product.originalPrice || 0);
+  if (item.product.hasVariantPricing === true && item.selectedVariant && item.selectedVariant.originalPrice !== undefined && item.selectedVariant.originalPrice > 0) {
+    return item.selectedVariant.originalPrice;
+  }
+  return item.product.originalPrice || item.product.price || 0;
 }
 
 /**
@@ -139,6 +149,7 @@ export function getImagesForSelectedColor(product: Product, color?: string): str
       (v) => v && typeof v.color === 'string' && v.color.trim().toLowerCase() === targetColor && v.images && Array.isArray(v.images) && v.images.length > 0
     );
     if (matchingVariant && matchingVariant.images && matchingVariant.images.length > 0) {
+      console.log('COLOR_IMAGES_FOUND', { color: targetColor, exactUrls: matchingVariant.images, source: 'variant' });
       return matchingVariant.images;
     }
   }
@@ -150,20 +161,78 @@ export function getImagesForSelectedColor(product: Product, color?: string): str
     );
     if (matchingColorObj) {
       if ((matchingColorObj as any).images && Array.isArray((matchingColorObj as any).images) && (matchingColorObj as any).images.length > 0) {
+        console.log('COLOR_IMAGES_FOUND', { color: targetColor, exactUrls: (matchingColorObj as any).images, source: 'color.images' });
         return (matchingColorObj as any).images;
       }
       if ((matchingColorObj as any).image && typeof (matchingColorObj as any).image === 'string' && (matchingColorObj as any).image.trim() !== '') {
+        console.log('COLOR_IMAGES_FOUND', { color: targetColor, exactUrls: [(matchingColorObj as any).image], source: 'color.image' });
         return [(matchingColorObj as any).image];
       }
     }
   }
 
-  // 3. Fallback to primary product images if available
+  // 3. Check combined gallery in product.images for URL matching targetColor or index slicing
   if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+    const colorMatchedImages = product.images.filter(url => 
+      typeof url === 'string' && targetColor && url.toLowerCase().includes(targetColor)
+    );
+    if (colorMatchedImages.length > 0) {
+      console.log('COLOR_IMAGES_FOUND', { color: targetColor, exactUrls: colorMatchedImages, source: 'product.images_url_match' });
+      return colorMatchedImages;
+    }
+
+    if (product.colors && product.colors.length > 1) {
+      const colorIndex = product.colors.findIndex(c => c && c.name && c.name.trim().toLowerCase() === targetColor);
+      if (colorIndex >= 0) {
+        const totalImages = product.images.length;
+        const totalColors = product.colors.length;
+        const sliceSize = Math.max(1, Math.floor(totalImages / totalColors));
+        const startIndex = colorIndex * sliceSize;
+        const slicedImages = product.images.slice(startIndex, startIndex + sliceSize);
+        if (slicedImages.length > 0) {
+          console.log('COLOR_IMAGES_FOUND', { color: targetColor, exactUrls: slicedImages, source: 'product.images_index_slice' });
+          return slicedImages;
+        }
+      }
+    }
+
+    console.log('COLOR_IMAGES_FOUND', { color: targetColor, exactUrls: product.images, source: 'product.images_fallback' });
     return product.images;
   }
 
   return [];
+}
+
+/**
+ * Resolves the matching image index in combined gallery for the selected color.
+ */
+export function resolveColorImageIndex(product: Product, color?: string, currentDisplayImages?: string[]): number {
+  if (!product || !color) return 0;
+  const targetColor = color.trim().toLowerCase();
+
+  if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+    const matchingIdx = product.images.findIndex(url => 
+      typeof url === 'string' && url.toLowerCase().includes(targetColor)
+    );
+    if (matchingIdx >= 0) {
+      console.log('COLOR_IMAGE_INDEX_MATCH', { color: targetColor, matchedUrl: product.images[matchingIdx], matchedIndex: matchingIdx });
+      return matchingIdx;
+    }
+
+    if (product.colors && product.colors.length > 1) {
+      const colorIndex = product.colors.findIndex(c => c && c.name && c.name.trim().toLowerCase() === targetColor);
+      if (colorIndex >= 0) {
+        const totalImages = product.images.length;
+        const totalColors = product.colors.length;
+        const sliceSize = Math.max(1, Math.floor(totalImages / totalColors));
+        const idx = colorIndex * sliceSize;
+        console.log('COLOR_IMAGE_INDEX_MATCH', { color: targetColor, matchedUrl: product.images[idx] || '', matchedIndex: idx });
+        return Math.min(idx, totalImages - 1);
+      }
+    }
+  }
+
+  return 0;
 }
 
 /**

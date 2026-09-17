@@ -67,6 +67,7 @@ const StoreLocatorPage = lazyWithRetry<typeof import('./components/StoreLocator/
 );
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { useWebsiteDesign } from './context/WebsiteDesignContext';
+import { FestivalExperienceOverlay } from './components/Theme/FestivalExperienceOverlay';
 import { SectionResponsiveConfig } from './types/websiteDesign';
 import { ScratchCardPopup } from './components/Promo/ScratchCardPopup';
 import { SpinWheelPopup } from './components/Promo/SpinWheelPopup';
@@ -752,6 +753,7 @@ function StorefrontView() {
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
+      <FestivalExperienceOverlay />
       <SEOHead 
         title={seoConfig?.globalTitleTemplate?.replace('%s', 'Home') || 'Marudhar Fashion Point'}
         description={seoConfig?.globalDescription}

@@ -1,5 +1,6 @@
 import { WebsiteDesignSettings, PageSectionConfig, WebsiteLayoutConfig, SectionResponsiveConfig } from '../types/websiteDesign';
 import { THEMES_REGISTRY } from './themesRegistry';
+import { FESTIVALS_REGISTRY } from './festivalsRegistry';
 
 const createDefaultSectionConfig = (id: string, name: string, locked = false): PageSectionConfig => ({
   id,
@@ -164,6 +165,7 @@ export function sanitizeWebsiteDesignSettings(rawSettings: any): WebsiteDesignSe
 
   return {
     activeThemeId: typeof rawSettings.activeThemeId === 'string' && THEMES_REGISTRY[rawSettings.activeThemeId] ? rawSettings.activeThemeId : 'local',
+    activeFestivalId: typeof rawSettings.activeFestivalId === 'string' && FESTIVALS_REGISTRY[rawSettings.activeFestivalId] ? rawSettings.activeFestivalId : 'none',
     header: {
       height: safeNumber(rawSettings.header?.height, defaults.header.height, 40, 160),
       horizontalPadding: safeNumber(rawSettings.header?.horizontalPadding, defaults.header.horizontalPadding, 0, 80),
@@ -364,4 +366,19 @@ export function applyWebsiteDesignTokens(settings: WebsiteDesignSettings) {
   root.style.setProperty('--theme-badge-text', theme.colors.badgeText);
   root.style.setProperty('--theme-font-heading', theme.fonts.heading);
   root.style.setProperty('--theme-font-body', theme.fonts.body);
+
+  // Global Festival Experience System
+  const activeFestivalId = settings.activeFestivalId && FESTIVALS_REGISTRY[settings.activeFestivalId] ? settings.activeFestivalId : 'none';
+  const festival = FESTIVALS_REGISTRY[activeFestivalId] || FESTIVALS_REGISTRY['none'];
+  root.setAttribute('data-festival', activeFestivalId);
+
+  if (activeFestivalId !== 'none') {
+    root.style.setProperty('--festival-primary', festival.primaryColor);
+    root.style.setProperty('--festival-secondary', festival.secondaryColor);
+    root.style.setProperty('--festival-accent', festival.accentColor);
+  } else {
+    root.style.removeProperty('--festival-primary');
+    root.style.removeProperty('--festival-secondary');
+    root.style.removeProperty('--festival-accent');
+  }
 }

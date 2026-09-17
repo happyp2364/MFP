@@ -276,44 +276,6 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
     setValidationResult(null);
   }, [value]);
 
-  // Real-time URL Change / Validation debounce
-  useEffect(() => {
-    if (!urlInput || urlInput === value) {
-      setValidationResult(null);
-      return;
-    }
-
-    const delayDebounce = setTimeout(async () => {
-      setIsValidating(true);
-      const res = await validateImageUrl(urlInput);
-      setValidationResult(res);
-      setIsValidating(false);
-
-      if (res.isValid) {
-        let finalUrl = urlInput;
-        if (!isStorageUrl(urlInput)) {
-          try {
-            finalUrl = await uploadImageToStorage(urlInput, { folder: 'products' });
-            setUrlInput(finalUrl);
-          } catch (uploadErr) {
-            console.warn('Auto-upload pasted image data failed:', uploadErr);
-          }
-        }
-        onChange(finalUrl);
-        if (onSaveConfig) {
-          onSaveConfig({
-            imageUrl: finalUrl,
-            lastUpdated: new Date().toISOString(),
-            updatedBy: 'Admin Portal',
-            imageSource: 'Pasted URL',
-          });
-        }
-      }
-    }, 600);
-
-    return () => clearTimeout(delayDebounce);
-  }, [urlInput]);
-
   const handleTriggerUpload = (e?: React.MouseEvent | React.KeyboardEvent) => {
     if (e) {
       e.stopPropagation();

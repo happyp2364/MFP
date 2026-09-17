@@ -45,6 +45,8 @@ import { getProductTypes, getPrimaryProductType } from '../../utils/productTypeU
 import { listenToProductTemplates } from '../../services/productTemplateService';
 import { ApplyTemplateModal } from './ApplyTemplateModal';
 import { SaveAsTemplateModal } from './SaveAsTemplateModal';
+import { MixedColorCreatorModal } from './MixedColorCreatorModal';
+import { MultiColorSwatch } from '../Common/MultiColorSwatch';
 
 interface SmartProductFormModalProps {
   product: Product;
@@ -109,6 +111,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   // Custom Color Addition State
   const [customColorName, setCustomColorName] = useState('');
   const [customColorHex, setCustomColorHex] = useState('#1E40AF');
+  const [isMixedColorModalOpen, setIsMixedColorModalOpen] = useState(false);
 
   // --- ENTERPRISE VARIANT MATRIX STATE ---
   const [variantTab, setVariantTab] = useState<'galleries' | 'matrix' | 'ai'>('galleries');
@@ -1356,6 +1359,18 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                 Add Color
               </button>
             </div>
+
+            {/* CREATE MIXED / MULTI-COLOUR ACTION BUTTON */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setIsMixedColorModalOpen(true)}
+                className="w-full bg-gradient-to-r from-emerald-600 via-[#0B8F63] to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all transform active:scale-[0.99]"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-200 animate-pulse" />
+                <span>✨ CREATE MIXED / MULTI-COLOUR COMBINATION</span>
+              </button>
+            </div>
           </div>
 
           {/* ENTERPRISE VARIANT MANAGEMENT STUDIO */}
@@ -2355,6 +2370,25 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
           onAddToCart={() => {}}
         />
       )}
+
+      {/* MIXED COLOR CREATOR MODAL */}
+      <MixedColorCreatorModal
+        isOpen={isMixedColorModalOpen}
+        onClose={() => setIsMixedColorModalOpen(false)}
+        existingColors={productState.colors}
+        onAddMixedColor={(newCol) => {
+          if (productState.colors.some((c) => c.name.toLowerCase() === newCol.name.toLowerCase())) {
+            showToast(`Color combination "${newCol.name}" already exists!`, 'error');
+            return;
+          }
+          const updatedColors = [...productState.colors, newCol];
+          setProductState((prev) => ({
+            ...prev,
+            colors: updatedColors,
+          }));
+          showToast(`Successfully created mixed colour: ${newCol.name}!`, 'success');
+        }}
+      />
 
       {/* APPLY TEMPLATE MODAL */}
       {isApplyTemplateOpen && (

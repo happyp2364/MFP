@@ -97,7 +97,8 @@ export const ProductCarousel: React.FC<ProductCarouselProps> = ({
         {/* Carousel Scroll Container */}
         <div
           ref={carouselRef}
-          className="flex items-stretch gap-6 overflow-x-auto no-scrollbar py-2 px-1 scroll-smooth"
+          className="flex items-stretch gap-6 overflow-x-auto no-scrollbar py-2 px-1 scroll-smooth touch-pan-x"
+          style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {products.map((product) => (
             <div key={product.id} className="w-[280px] sm:w-[300px] shrink-0">

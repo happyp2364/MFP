@@ -48,7 +48,7 @@ export function getProductOriginalPrice(product: Product, size?: string, color?:
       return matchingVariant.originalPrice;
     }
   }
-  return product.originalPrice || product.price || 0;
+  return product.originalPrice || 0;
 }
 
 /**

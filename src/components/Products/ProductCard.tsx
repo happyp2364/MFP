@@ -28,7 +28,7 @@ import {
   isProductCompletelyOutOfStock,
   getFirstAvailableInStockSize,
 } from '../../utils/sizeStockUtils';
-import { getProductPrice, getImagesForSelectedColor, resolveColorImageIndex } from '../../utils/variantUtils';
+import { getProductPrice, getProductOriginalPrice, getImagesForSelectedColor, resolveColorImageIndex } from '../../utils/variantUtils';
 
 // Authentic, recognizable WhatsApp icon (phone handset inside speech bubble)
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
@@ -173,7 +173,8 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   const activeVariant = product.variants?.find(
     (v) => v && typeof v.color === 'string' && selectedColor && typeof selectedColor === 'string' && v.color.trim().toLowerCase() === selectedColor.trim().toLowerCase() && v.size === selectedSize
   );
-  const originalPrice = activeVariant?.originalPrice || product.originalPrice || product.price;
+  const resolvedOrig = getProductOriginalPrice(product, selectedSize, selectedColor);
+  const originalPrice = resolvedOrig > 0 ? resolvedOrig : undefined;
   const currentPrice = computedPrice || product.price;
 
   // Handle color variant switching with smooth slide/fade animation

@@ -26,6 +26,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { GlobalThemeToggle } from '../Theme/GlobalThemeToggle';
 
 interface MobileSideDrawerProps {
   isOpen: boolean;
@@ -95,12 +96,12 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
         className="absolute inset-0 bg-neutral-950/60 backdrop-blur-xs transition-opacity duration-300"
       />
 
-      {/* Drawer Container (Slide from Left, Light Theme) */}
+      {/* Drawer Container (Slide from Left, Theme-Aware) */}
       <div className="absolute inset-y-0 left-0 max-w-full flex">
-        <div className="w-screen max-w-[340px] sm:max-w-sm bg-white text-neutral-900 flex flex-col shadow-2xl border-r border-neutral-200 transform transition-transform duration-300 ease-out">
+        <div className="w-screen max-w-[340px] sm:max-w-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 flex flex-col shadow-2xl border-r border-neutral-200 dark:border-neutral-800 transform transition-transform duration-300 ease-out">
           
           {/* Drawer Header */}
-          <div className="p-4 bg-neutral-50 border-b border-neutral-200 flex items-center justify-between sticky top-0 z-10">
+          <div className="p-4 bg-neutral-50 dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between sticky top-0 z-10">
             <div className="flex items-center gap-2.5">
               {logoUrl ? (
                 <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain rounded" />
@@ -110,37 +111,48 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                 </div>
               )}
               <div>
-                <h2 className="font-serif font-bold text-sm text-neutral-900 tracking-tight leading-tight">
+                <h2 className="font-serif font-bold text-sm text-neutral-900 dark:text-white tracking-tight leading-tight">
                   {brandName}
                 </h2>
-                <p className="text-[10px] text-neutral-500 font-medium tracking-wide">
+                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium tracking-wide">
                   Pipar City, Jodhpur
                 </p>
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full bg-neutral-200/60 text-neutral-700 hover:bg-neutral-200 hover:text-neutral-900 transition-colors cursor-pointer"
-              aria-label="Close menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <GlobalThemeToggle variant="icon-only" />
+              <button
+                onClick={onClose}
+                className="p-2 rounded-full bg-neutral-200/60 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Drawer Scrollable Content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-5 text-xs">
             
+            {/* Quick Appearance Switcher in Mobile Drawer */}
+            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-neutral-100/80 dark:bg-neutral-800/80 border border-neutral-200/80 dark:border-neutral-700/80">
+              <div className="flex items-center gap-2 pl-1">
+                <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">Theme Mode</span>
+              </div>
+              <GlobalThemeToggle variant="segmented" />
+            </div>
+
             {/* Search Bar Trigger */}
             <div
               onClick={() => {
                 onClose();
                 if (onOpenSearch) onOpenSearch();
               }}
-              className="w-full flex items-center gap-3 bg-neutral-100 hover:bg-neutral-200/70 border border-neutral-200 text-neutral-600 px-3.5 py-3 rounded-2xl cursor-pointer transition-all shadow-2xs"
+              className="w-full flex items-center gap-3 bg-neutral-100 dark:bg-neutral-800/80 hover:bg-neutral-200/70 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 px-3.5 py-3 rounded-2xl cursor-pointer transition-all shadow-2xs"
             >
-              <Search className="w-4 h-4 text-[#0B8F63]" />
-              <span className="font-semibold text-xs text-neutral-700">Search shoes, sneakers, loafers...</span>
+              <Search className="w-4 h-4 text-[#0B8F63] dark:text-emerald-400" />
+              <span className="font-semibold text-xs text-neutral-700 dark:text-neutral-200">Search shoes, sneakers, loafers...</span>
             </div>
 
             {/* Login / Account Card */}
@@ -235,20 +247,20 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
             </div>
 
             {/* MFP CATEGORY ACCORDION */}
-            <div className="border border-neutral-200 rounded-2xl overflow-hidden bg-neutral-50">
+            <div className="border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden bg-neutral-50 dark:bg-neutral-950">
               <button
                 onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                className="w-full flex items-center justify-between p-3.5 bg-white text-neutral-800 font-bold text-xs cursor-pointer hover:bg-neutral-50 transition-colors"
+                className="w-full flex items-center justify-between p-3.5 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-100 font-bold text-xs cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <Footprints className="w-4 h-4 text-[#0B8F63]" />
+                  <Footprints className="w-4 h-4 text-[#0B8F63] dark:text-emerald-400" />
                   <span>All Categories & Collections</span>
                 </div>
                 {isCategoriesOpen ? <ChevronDown className="w-4 h-4 text-neutral-500" /> : <ChevronRight className="w-4 h-4 text-neutral-500" />}
               </button>
 
               {isCategoriesOpen && (
-                <div className="p-2 space-y-1 bg-neutral-50/80 border-t border-neutral-200">
+                <div className="p-2 space-y-1 bg-neutral-50/80 dark:bg-neutral-950/80 border-t border-neutral-200 dark:border-neutral-800">
                   {[
                     { label: 'Sneakers', cat: 'men' },
                     { label: 'Sports & Running Shoes', cat: 'men' },
@@ -261,7 +273,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                     <button
                       key={i}
                       onClick={() => handleCategoryClick(sub.cat)}
-                      className="w-full text-left px-3 py-2 rounded-xl text-neutral-700 hover:text-[#0B8F63] hover:bg-white font-medium text-xs flex items-center justify-between transition-colors cursor-pointer"
+                      className="w-full text-left px-3 py-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:text-[#0B8F63] dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-neutral-800 font-medium text-xs flex items-center justify-between transition-colors cursor-pointer"
                     >
                       <span>{sub.label}</span>
                       <ChevronRight className="w-3 h-3 text-neutral-400" />
@@ -272,8 +284,8 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
             </div>
 
             {/* ACCOUNT & QUICK ACTIONS LIST */}
-            <div className="space-y-1 border-t border-neutral-200 pt-3">
-              <div className="text-[10px] font-black uppercase text-neutral-400 tracking-wider px-1 mb-1.5">
+            <div className="space-y-1 border-t border-neutral-200 dark:border-neutral-800 pt-3">
+              <div className="text-[10px] font-black uppercase text-neutral-400 dark:text-neutral-500 tracking-wider px-1 mb-1.5">
                 My Account & Orders
               </div>
 
@@ -282,10 +294,10 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                   onClose();
                   if (onOpenOrdersModal) onOpenOrdersModal();
                 }}
-                className="w-full p-2.5 rounded-xl hover:bg-neutral-100 text-neutral-700 font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                className="w-full p-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-semibold flex items-center justify-between transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
-                  <Package className="w-4 h-4 text-amber-600" />
+                  <Package className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   <span>My Orders & Delivery Tracking</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
@@ -296,7 +308,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                   onClose();
                   if (onOpenWishlistModal) onOpenWishlistModal();
                 }}
-                className="w-full p-2.5 rounded-xl hover:bg-neutral-100 text-neutral-700 font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                className="w-full p-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-semibold flex items-center justify-between transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <Heart className="w-4 h-4 text-rose-500" />
@@ -310,10 +322,10 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                   onClose();
                   if (onOpenRewardsModal) onOpenRewardsModal();
                 }}
-                className="w-full p-2.5 rounded-xl hover:bg-neutral-100 text-neutral-700 font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                className="w-full p-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-semibold flex items-center justify-between transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
-                  <Gift className="w-4 h-4 text-purple-600" />
+                  <Gift className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   <span>Spin & Win Rewards</span>
                 </div>
                 <span className="px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 text-[9px] font-black">
@@ -323,16 +335,16 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
             </div>
 
             {/* NEARBY STORES / STORE LOCATOR */}
-            <div className="border-t border-neutral-200 pt-3">
+            <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3">
               <button
                 onClick={() => {
                   onClose();
                   if (onOpenStoreLocator) onOpenStoreLocator();
                 }}
-                className="w-full p-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-500/30 text-emerald-900 hover:bg-emerald-100/60 flex items-center justify-between transition-all cursor-pointer shadow-2xs"
+                className="w-full p-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-500/30 text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 flex items-center justify-between transition-all cursor-pointer shadow-2xs"
               >
                 <div className="flex items-center gap-2.5">
-                  <MapPin className="w-4 h-4 text-[#0B8F63]" />
+                  <MapPin className="w-4 h-4 text-[#0B8F63] dark:text-emerald-400" />
                   <span className="font-extrabold text-xs">Nearby Stores & Showroom</span>
                 </div>
                 <span className="px-2 py-0.5 rounded-full bg-[#0B8F63] text-white text-[9px] font-black">
@@ -342,12 +354,12 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
             </div>
 
             {/* FOLLOW US ON INSTAGRAM */}
-            <div className="border-t border-neutral-200 pt-3">
+            <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3">
               <a
                 href="https://www.instagram.com/marudharfashionpoint/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full p-3 rounded-2xl bg-gradient-to-r from-pink-50 via-purple-50 to-pink-50 border border-pink-500/20 text-neutral-800 hover:bg-pink-100/50 flex items-center justify-between transition-all"
+                className="w-full p-3 rounded-2xl bg-gradient-to-r from-pink-50 via-purple-50 to-pink-50 dark:from-pink-950/30 dark:via-purple-950/30 dark:to-pink-950/30 border border-pink-500/20 text-neutral-800 dark:text-neutral-200 hover:bg-pink-100/50 dark:hover:bg-pink-900/30 flex items-center justify-between transition-all"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center">
@@ -355,7 +367,7 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
                   </div>
                   <div>
                     <span className="font-extrabold text-xs block">@marudharfashionpoint</span>
-                    <span className="text-[10px] text-neutral-500">Tag #MarudharStyle to get featured</span>
+                    <span className="text-[10px] text-neutral-500 dark:text-neutral-400">Tag #MarudharStyle to get featured</span>
                   </div>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
@@ -363,36 +375,36 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
             </div>
 
             {/* HELP & SUPPORT ACCORDION */}
-            <div className="border-t border-neutral-200 pt-3 space-y-1">
+            <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3 space-y-1">
               <button
                 onClick={() => setIsHelpOpen(!isHelpOpen)}
-                className="w-full flex items-center justify-between p-2 rounded-xl text-neutral-700 hover:bg-neutral-100 font-semibold text-xs"
+                className="w-full flex items-center justify-between p-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-semibold text-xs"
               >
                 <div className="flex items-center gap-2">
-                  <HelpCircle className="w-4 h-4 text-blue-600" />
+                  <HelpCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   <span>Help, FAQ & Contact Support</span>
                 </div>
                 {isHelpOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
               </button>
 
               {isHelpOpen && (
-                <div className="pl-6 space-y-2 py-2 text-neutral-600 text-xs">
+                <div className="pl-6 space-y-2 py-2 text-neutral-600 dark:text-neutral-400 text-xs">
                   <a
                     href={`https://wa.me/91${storeInfo.phone.replace(/[^0-9]/g, '') || '9829012345'}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-emerald-700 font-semibold hover:underline"
+                    className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold hover:underline"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     <span>WhatsApp Helpline</span>
                   </a>
-                  <button onClick={() => handleNavClick('faqs')} className="block hover:text-[#0B8F63]">
+                  <button onClick={() => handleNavClick('faqs')} className="block hover:text-[#0B8F63] dark:hover:text-emerald-400">
                     Frequently Asked Questions
                   </button>
-                  <button onClick={() => handleNavClick('about_store')} className="block hover:text-[#0B8F63]">
+                  <button onClick={() => handleNavClick('about_store')} className="block hover:text-[#0B8F63] dark:hover:text-emerald-400">
                     About Our Store (Pipar City)
                   </button>
-                  <button onClick={() => handleNavClick('footer')} className="block hover:text-[#0B8F63]">
+                  <button onClick={() => handleNavClick('footer')} className="block hover:text-[#0B8F63] dark:hover:text-emerald-400">
                     Shipping, Returns & Policies
                   </button>
                 </div>
@@ -401,13 +413,13 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
 
             {/* LOGOUT BUTTON */}
             {customerUser && (
-              <div className="border-t border-neutral-200 pt-3 pb-2">
+              <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3 pb-2">
                 <button
                   onClick={() => {
                     customerSignOut();
                     onClose();
                   }}
-                  className="w-full p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  className="w-full p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Logout from Account</span>
@@ -417,8 +429,8 @@ export const MobileSideDrawer: React.FC<MobileSideDrawerProps> = ({
           </div>
 
           {/* Drawer Footer */}
-          <div className="p-3 bg-neutral-100 border-t border-neutral-200 text-center text-[10px] text-neutral-500 font-medium">
-            Marudhar Fashion Point © 2026 • Instagram Inspired Light Theme
+          <div className="p-3 bg-neutral-100 dark:bg-neutral-950 border-t border-neutral-200 dark:border-neutral-800 text-center text-[10px] text-neutral-500 dark:text-neutral-400 font-medium">
+            Marudhar Fashion Point © 2026 • Appearance Mode Support
           </div>
         </div>
       </div>

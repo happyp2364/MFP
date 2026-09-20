@@ -5,6 +5,7 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { generateGeneralInquiryWhatsAppLink } from '../../utils/whatsapp';
 import { SocialIconRenderer } from '../Social/SocialIconRenderer';
+import { GlobalThemeToggle } from '../Theme/GlobalThemeToggle';
 
 interface FooterProps {
   onOpenAdmin?: () => void;
@@ -222,8 +223,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
 
         {/* Bottom Guarantees & Copyright Bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
-          <div className="flex items-center gap-1 select-none cursor-pointer" onClick={handleCopyrightClick} onDoubleClick={onOpenAdmin}>
-            <span>{websiteConfig?.footer?.copyrightText || `© ${new Date().getFullYear()} ${websiteConfig?.businessIdentity?.businessName || storeInfo.name}. सर्वाधिकार सुरक्षित • All rights reserved.`}</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 select-none cursor-pointer" onClick={handleCopyrightClick} onDoubleClick={onOpenAdmin}>
+              <span>{websiteConfig?.footer?.copyrightText || `© ${new Date().getFullYear()} ${websiteConfig?.businessIdentity?.businessName || storeInfo.name}. सर्वाधिकार सुरक्षित • All rights reserved.`}</span>
+            </div>
+            <div className="hidden sm:block">
+              <GlobalThemeToggle variant="pill" />
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-[11px] text-neutral-400">

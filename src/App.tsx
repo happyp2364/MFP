@@ -857,8 +857,8 @@ function StorefrontView() {
       ) : showShopView ? (
         <>
           {/* Breadcrumbs with Back to Home button for Shop View */}
-          <div className="bg-white border-b border-neutral-100 py-4 sm:py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between text-xs font-bold text-neutral-500">
+          <div className="bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 py-4 sm:py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between text-xs font-bold text-neutral-500 dark:text-neutral-400">
               <div className="flex items-center gap-1.5">
                 <button 
                   onClick={handleResetFilters}
@@ -873,7 +873,7 @@ function StorefrontView() {
                 {filterState.subcategories.length > 0 && (
                   <>
                     <span>/</span>
-                    <span className="text-neutral-900 capitalize">
+                    <span className="text-neutral-900 dark:text-neutral-100 capitalize">
                       {filterState.subcategories[0]}
                     </span>
                   </>

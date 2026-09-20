@@ -39,6 +39,7 @@ import { useStore } from '../../context/StoreContext';
 import { generateGeneralInquiryWhatsAppLink } from '../../utils/whatsapp';
 import { GoogleAuthButton } from '../GoogleWorkspace/GoogleAuthButton';
 import { ThemeToggleWidget } from '../Theme/ThemeToggleWidget';
+import { GlobalThemeToggle } from '../Theme/GlobalThemeToggle';
 import { MobileSideDrawer } from './MobileSideDrawer';
 
 interface NavbarProps {
@@ -146,8 +147,8 @@ export const Navbar: React.FC<NavbarProps> = ({
       <header
         className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 flex items-center ${
           isScrolled
-            ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-neutral-100'
-            : 'bg-white/90 backdrop-blur-sm'
+            ? 'bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-sm border-b border-neutral-100 dark:border-neutral-800'
+            : 'bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm'
         }`}
         style={{
           minHeight: 'var(--mfp-header-height)',
@@ -165,7 +166,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Mobile Hamburger Drawer Trigger */}
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden p-2 rounded-xl text-neutral-800 hover:bg-neutral-100 active:scale-95 transition-all"
+                className="md:hidden p-2 rounded-xl text-neutral-800 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-95 transition-all"
                 aria-label="Open Side Navigation Drawer"
               >
                 <Menu style={{ width: 'var(--mfp-icon-header-size)', height: 'var(--mfp-icon-header-size)' }} />
@@ -195,11 +196,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {(showBrandName || activeLogoType === 'text') && (
                     <div>
                       <div className="flex items-center gap-1">
-                        <span className="font-serif-heading font-extrabold text-base sm:text-lg text-neutral-900 tracking-tight leading-snug">
+                        <span className="font-serif-heading font-extrabold text-base sm:text-lg text-neutral-900 dark:text-white tracking-tight leading-snug">
                           {activeLogoText}
                         </span>
                       </div>
-                      <p className="text-[9px] sm:text-[10px] text-neutral-500 font-medium tracking-wide hidden xs:block leading-none">
+                      <p className="text-[9px] sm:text-[10px] text-neutral-500 dark:text-neutral-400 font-medium tracking-wide hidden xs:block leading-none">
                         {activeTagline}
                       </p>
                     </div>
@@ -212,7 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <nav className="hidden md:flex items-center" style={{ gap: 'var(--mfp-nav-gap)' }}>
               <button
                 onClick={() => handleNavClick('hero')}
-                className="text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors"
+                className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 hover:text-[#0B8F63] dark:hover:text-emerald-400 transition-colors"
                 title="Home"
               >
                 Home
@@ -227,7 +228,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <button
                     onClick={() => handleNavClick('products')}
-                    className="flex items-center gap-1 text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors py-2"
+                    className="flex items-center gap-1 text-sm font-semibold text-neutral-700 dark:text-neutral-200 hover:text-[#0B8F63] dark:hover:text-emerald-400 transition-colors py-2"
                   >
                     <span>Categories</span>
                     <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${megaMenuOpen ? 'rotate-180 text-[#0B8F63]' : ''}`} />
@@ -290,7 +291,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 onClick={() => handleNavClick('reviews')}
-                className="text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors"
+                className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 hover:text-[#0B8F63] dark:hover:text-emerald-400 transition-colors"
                 title="Reviews"
               >
                 Reviews
@@ -298,7 +299,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 onClick={() => handleNavClick('about')}
-                className="text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors"
+                className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 hover:text-[#0B8F63] dark:hover:text-emerald-400 transition-colors"
                 title="About Us"
               >
                 About Us
@@ -306,7 +307,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               <button
                 onClick={() => handleNavClick('contact')}
-                className="text-sm font-semibold text-neutral-700 hover:text-[#0B8F63] transition-colors"
+                className="text-sm font-semibold text-neutral-700 dark:text-neutral-200 hover:text-[#0B8F63] dark:hover:text-emerald-400 transition-colors"
                 title="Contact"
               >
                 Contact
@@ -329,16 +330,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Right Utilities Icons */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* Dynamic Theme & Time Toggle */}
+              {/* Direct Global Light / Dark Mode Toggle */}
               <div className="hidden xs:block">
-                <ThemeToggleWidget compact />
+                <GlobalThemeToggle variant="icon-only" />
               </div>
 
               {/* Search Trigger */}
               {storeInfo?.showHeaderSearch !== false && (
                 <button
                   onClick={onOpenSearch}
-                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-100 transition-all active:scale-95"
+                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 dark:text-neutral-200 hover:text-[#0B8F63] dark:hover:text-emerald-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all active:scale-95"
                   aria-label="Search products"
                 >
                   <Search className="w-5 h-5" />
@@ -349,11 +350,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               {onOpenStoreLocator && (
                 <button
                   onClick={onOpenStoreLocator}
-                  className="p-2 sm:p-2.5 rounded-full text-emerald-700 hover:bg-emerald-50 transition-all relative active:scale-95"
+                  className="p-2 sm:p-2.5 rounded-full text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-all relative active:scale-95"
                   aria-label="Nearby Stores & Outlets"
                   title="Find Nearby Physical Stores & Outlets"
                 >
-                  <MapPin className="w-5 h-5 text-emerald-600" />
+                  <MapPin className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 </button>
               )}
@@ -362,7 +363,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {storeInfo?.showHeaderWishlist !== false && (
                 <button
                   onClick={onOpenWishlist}
-                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-100 transition-all relative active:scale-95"
+                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 dark:text-neutral-200 hover:text-[#0B8F63] dark:hover:text-emerald-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all relative active:scale-95"
                   aria-label="View Wishlist"
                 >
                   <Heart className="w-5 h-5" />
@@ -380,8 +381,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={onOpenSoundSettings}
                   className={`p-2 sm:p-2.5 rounded-full transition-all relative active:scale-95 ${
                     customerSoundSettings?.muted
-                      ? 'text-rose-500 hover:bg-rose-50'
-                      : 'text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50'
+                      ? 'text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                      : 'text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                   }`}
                   aria-label="Sound Settings"
                   title={customerSoundSettings?.muted ? 'Sound Muted - Click to adjust' : `Sound Active (${customerSoundSettings?.volume}%)`}
@@ -389,7 +390,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {customerSoundSettings?.muted ? (
                     <VolumeX className="w-5 h-5 text-rose-500" />
                   ) : (
-                    <Volume2 className="w-5 h-5 text-emerald-600" />
+                    <Volume2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   )}
                 </button>
               )}
@@ -398,11 +399,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               {storeInfo?.showHeaderAccount !== false && onOpenCustomerAccount && (
                 <button
                   onClick={onOpenCustomerAccount}
-                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-amber-800 hover:bg-amber-50 transition-all relative active:scale-95"
+                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 dark:text-neutral-200 hover:text-amber-800 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-all relative active:scale-95"
                   aria-label="My Account & Orders"
                   title="My Account & Live Order Tracking"
                 >
-                  <User className="w-5 h-5 text-amber-900" />
+                  <User className="w-5 h-5 text-amber-900 dark:text-amber-400" />
                 </button>
               )}
 
@@ -410,7 +411,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {storeInfo?.showHeaderCart !== false && (
                 <button
                   onClick={onOpenOrderSheet}
-                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 hover:text-[#0B8F63] hover:bg-neutral-100 transition-all relative active:scale-95"
+                  className="p-2 sm:p-2.5 rounded-full text-neutral-700 dark:text-neutral-200 hover:text-[#0B8F63] dark:hover:text-emerald-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all relative active:scale-95"
                   aria-label="View Order Bag"
                 >
                   <ShoppingBag className="w-5 h-5" />

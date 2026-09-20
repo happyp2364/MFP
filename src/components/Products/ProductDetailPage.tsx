@@ -372,21 +372,21 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         ]}
       />
       {/* Breadcrumb Navigation & Back Button */}
-      <div className="flex items-center justify-between border-b border-neutral-200/80 pb-4">
+      <div className="flex items-center justify-between border-b border-neutral-200/80 dark:border-neutral-800 pb-4">
         <button
           onClick={onBackToHome}
-          className="inline-flex items-center gap-2 text-xs font-bold text-neutral-700 hover:text-[#0B8F63] bg-white px-3.5 py-2 rounded-xl border border-neutral-200 shadow-sm transition-all"
+          className="inline-flex items-center gap-2 text-xs font-bold text-neutral-700 dark:text-neutral-200 hover:text-[#0B8F63] dark:hover:text-emerald-400 bg-white dark:bg-neutral-800 px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm transition-all"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Catalog</span>
         </button>
 
-        <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-neutral-500">
+        <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
           <span className="hover:underline cursor-pointer" onClick={onBackToHome}>Home</span>
           <span>/</span>
           <span className="capitalize">{product.category}</span>
           <span>/</span>
-          <span className="text-neutral-900 font-bold truncate max-w-[200px]">{product.name}</span>
+          <span className="text-neutral-900 dark:text-white font-bold truncate max-w-[200px]">{product.name}</span>
         </div>
       </div>
 
@@ -407,15 +407,15 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                className="relative aspect-square w-full rounded-3xl overflow-hidden bg-neutral-100 border border-neutral-200/80 shadow-md flex items-center justify-center group cursor-zoom-in"
+                className="relative aspect-square w-full rounded-3xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-md flex items-center justify-center group cursor-zoom-in"
               >
                 {(!rawImageSrc || imageError) ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-50">
+                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-neutral-50 dark:bg-neutral-950">
                     <div className="w-16 h-16 rounded-2xl bg-[#0B8F63]/10 text-[#0B8F63] flex items-center justify-center mb-2">
                       <ImageOff className="w-8 h-8" />
                     </div>
-                    <span className="text-xs font-bold text-neutral-800 uppercase tracking-wider">Product Image Coming Soon</span>
-                    <span className="text-[10px] font-medium text-neutral-400">Marudhar Fashion Point</span>
+                    <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 uppercase tracking-wider">Product Image Coming Soon</span>
+                    <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500">Marudhar Fashion Point</span>
                   </div>
                 ) : (
                   <img
@@ -522,20 +522,20 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
           {/* Title & Permanent Product ID / SKU */}
           <div className="space-y-2">
-            <h1 className="font-serif-heading font-extrabold text-3xl sm:text-4xl text-neutral-900 leading-tight">
+            <h1 className="font-serif-heading font-extrabold text-3xl sm:text-4xl text-neutral-900 dark:text-white leading-tight">
               {product.name}
             </h1>
 
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="bg-emerald-50 text-emerald-900 font-mono font-extrabold text-xs px-3 py-1 rounded-xl border border-emerald-200 flex items-center gap-1.5">
+              <span className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-mono font-extrabold text-xs px-3 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5">
                 <span>Product ID / SKU:</span>
-                <span className="text-[#0B8F63]">{activeVariant && activeVariant.sku ? activeVariant.sku : getProductSKU(product)}</span>
+                <span className="text-[#0B8F63] dark:text-emerald-400">{activeVariant && activeVariant.sku ? activeVariant.sku : getProductSKU(product)}</span>
               </span>
 
               {activeVariant && activeVariant.barcode && (
-                <span className="bg-blue-50 text-blue-900 font-mono font-extrabold text-xs px-3 py-1 rounded-xl border border-blue-200 flex items-center gap-1.5">
+                <span className="bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 font-mono font-extrabold text-xs px-3 py-1 rounded-xl border border-blue-200 dark:border-blue-800 flex items-center gap-1.5">
                   <span>Barcode:</span>
-                  <span className="text-blue-700">{activeVariant.barcode}</span>
+                  <span className="text-blue-700 dark:text-blue-400">{activeVariant.barcode}</span>
                 </span>
               )}
 
@@ -547,13 +547,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   setCopiedLink(true);
                   setTimeout(() => setCopiedLink(false), 2000);
                 }}
-                className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold px-3 py-1 rounded-xl flex items-center gap-1.5 transition-colors border border-neutral-200"
+                className="bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs font-bold px-3 py-1 rounded-xl flex items-center gap-1.5 transition-colors border border-neutral-200 dark:border-neutral-700"
                 title="Copy permanent shareable product link"
               >
                 {copiedLink ? (
                   <>
                     <Check className="w-4 h-4 text-emerald-600" />
-                    <span className="text-emerald-700 font-extrabold">Link Copied!</span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-extrabold">Link Copied!</span>
                   </>
                 ) : (
                   <>
@@ -570,11 +570,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               if (!types || types.length === 0) return null;
               return (
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Type:</span>
+                  <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Type:</span>
                   {types.map((t, idx) => (
                     <span
                       key={idx}
-                      className="text-xs font-bold text-neutral-700 bg-neutral-100 px-2.5 py-0.5 rounded-lg border border-neutral-200"
+                      className="text-xs font-bold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded-lg border border-neutral-200 dark:border-neutral-700"
                     >
                       {t}
                     </span>
@@ -586,35 +586,35 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
           {/* Rating Summary */}
           {product.rating && product.rating > 0 ? (
-            <div className="flex items-center gap-2 text-sm font-bold text-neutral-800 bg-amber-50/80 border border-amber-200 px-3.5 py-1.5 rounded-xl w-fit">
+            <div className="flex items-center gap-2 text-sm font-bold text-neutral-800 dark:text-neutral-200 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3.5 py-1.5 rounded-xl w-fit">
               <div className="flex items-center text-amber-500">
                 <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span className="ml-1 text-neutral-900 font-extrabold">{product.rating}</span>
+                <span className="ml-1 text-neutral-900 dark:text-white font-extrabold">{product.rating}</span>
               </div>
               {product.reviewsCount && product.reviewsCount > 0 && (
-                <span className="text-neutral-500 text-xs font-semibold">({product.reviewsCount} customer reviews)</span>
+                <span className="text-neutral-500 dark:text-neutral-400 text-xs font-semibold">({product.reviewsCount} customer reviews)</span>
               )}
             </div>
           ) : null}
 
           {/* Price Box */}
-          <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200/80 space-y-1">
+          <div className="p-4 bg-neutral-50 dark:bg-neutral-800/80 rounded-2xl border border-neutral-200/80 dark:border-neutral-700/80 space-y-1">
             <div className="flex items-baseline gap-3">
-              <span className="font-serif-heading font-extrabold text-3xl sm:text-4xl text-neutral-900">
+              <span className="font-serif-heading font-extrabold text-3xl sm:text-4xl text-neutral-900 dark:text-white">
                 ₹{(displayPrice ?? 0).toLocaleString('en-IN')}
               </span>
               {displayOriginalPrice > displayPrice && (
-                <span className="text-lg text-neutral-400 line-through">
+                <span className="text-lg text-neutral-400 dark:text-neutral-500 line-through">
                   ₹{(displayOriginalPrice ?? 0).toLocaleString('en-IN')}
                 </span>
               )}
               {displayDiscountPercent > 0 && (
-                <span className="text-xs font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-lg">
+                <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-1 rounded-lg">
                   {displayDiscountPercent}% OFF
                 </span>
               )}
             </div>
-            <p className="text-xs text-neutral-500 font-medium">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">
               Inclusive of all taxes • Free Shipping on orders over ₹999
             </p>
           </div>

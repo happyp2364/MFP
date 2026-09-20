@@ -58,6 +58,11 @@
     color: var(--theme-text, #111111);
   }
 
+  html.dark body {
+    background-color: var(--theme-background-dark, #0f1715);
+    color: var(--theme-text-dark, #f1f5f9);
+  }
+
   h1, h2, h3, .font-serif-heading {
     font-family: 'Playfair Display', 'Noto Sans Devanagari', Georgia, serif;
   }

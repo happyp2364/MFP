@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Palette, Check, Sparkles, Eye, ShieldCheck, RefreshCw, X, ArrowRight, PartyPopper } from 'lucide-react';
+import { Palette, Check, Sparkles, Eye, ShieldCheck, RefreshCw, X, ArrowRight, PartyPopper, SunMoon } from 'lucide-react';
 import { useWebsiteDesign } from '../../context/WebsiteDesignContext';
 import { THEMES_REGISTRY, ThemeDefinition } from '../../data/themesRegistry';
 import { FESTIVALS_REGISTRY, FestivalExperience } from '../../data/festivalsRegistry';
+import { GlobalThemeToggle } from '../Theme/GlobalThemeToggle';
 
 interface ThemesStudioViewProps {
   showToast: (msg: string) => void;
@@ -85,6 +86,15 @@ export const ThemesStudioView: React.FC<ThemesStudioViewProps> = ({ showToast })
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Global Light / Dark Mode Appearance Switcher */}
+          <div className="flex items-center gap-3 bg-neutral-800/80 border border-neutral-700/80 px-4 py-3 rounded-2xl">
+            <div>
+              <span className="text-[10px] text-neutral-400 uppercase tracking-wider block font-bold">Appearance</span>
+              <span className="text-xs font-semibold text-neutral-300">Light / Dark</span>
+            </div>
+            <GlobalThemeToggle variant="segmented" />
+          </div>
+
           <div className="flex items-center gap-3 bg-neutral-800/80 border border-neutral-700/80 px-4 py-3 rounded-2xl">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg">
               {THEMES_REGISTRY[activeThemeId]?.decoration.icon || '✨'}

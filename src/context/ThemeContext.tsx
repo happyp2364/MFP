@@ -7,6 +7,7 @@ export type TimePeriod = 'morning' | 'afternoon' | 'evening' | 'night';
 interface ThemeContextType {
   themeMode: ThemeMode;
   setThemeMode: (mode: ThemeMode) => void;
+  toggleTheme: () => void;
   activePeriod: TimePeriod;
   isDark: boolean;
   backgroundGradientClass: string;
@@ -55,6 +56,12 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
     safeStorage.setItem(LOCAL_STORAGE_KEY, mode);
+  };
+
+  const toggleTheme = () => {
+    // If currently dark, switch to light; if currently light or auto, switch to dark
+    const nextMode: ThemeMode = isDark ? 'light' : 'dark';
+    setThemeMode(nextMode);
   };
 
   // Determine if effectively dark theme
@@ -106,6 +113,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       value={{
         themeMode,
         setThemeMode,
+        toggleTheme,
         activePeriod,
         isDark,
         backgroundGradientClass,

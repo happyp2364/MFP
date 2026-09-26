@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 import { AnnouncementBar } from './components/Header/AnnouncementBar';
 import { Navbar } from './components/Header/Navbar';
+import { MobileBottomNav } from './components/Header/MobileBottomNav';
 import { HorizontalCategoryBar } from './components/Header/HorizontalCategoryBar';
 import { MobileScrollableCategories } from './components/Categories/MobileScrollableCategories';
 import { HeroSection } from './components/Hero/HeroSection';
@@ -19,7 +20,6 @@ import { InstagramPhoneReelSection } from './components/Social/InstagramPhoneRee
 import { SocialFollowCTA } from './components/Social/SocialFollowCTA';
 import { Footer } from './components/Footer/Footer';
 import { FloatingActionHub } from './components/FloatingActions/FloatingActionHub';
-import { AIPetShoeMascot } from './components/Mascot/AIPetShoeMascot';
 import { QuickViewModal } from './components/Products/QuickViewModal';
 import { OrderSheet } from './components/Cart/OrderSheet';
 import { LiveSearchModal } from './components/Search/LiveSearchModal';
@@ -74,7 +74,7 @@ import { SpinWheelPopup } from './components/Promo/SpinWheelPopup';
 import { OrderSuccessCelebration } from './components/Promo/OrderSuccessCelebration';
 import { useStore } from './context/StoreContext';
 import { Product, FilterState, GenderCategory, CartItem, ProductVariant } from './types';
-import { findProductBySlugOrId, getProductSlug } from './utils/productUtils';
+import { findProductBySlugOrId, getProductSlug, getPublicActiveProducts } from './utils/productUtils';
 import { deduplicateProducts, sortProductsWithSmartMix } from './utils/productFeedOptimizer';
 import { getCartItemPrice } from './utils/variantUtils';
 import { SEOHead } from './components/SEO/SEOHead';
@@ -117,6 +117,7 @@ function PaymentRouteView({ orderId, onBackHome }: PaymentRouteViewProps) {
 // =============================================================
 function StorefrontView() {
   const { products, isAdmin, toastMessage, productFeedConfig, seoConfig, customerUser, showToast, playSiteSound } = useStore();
+  const activeProducts = useMemo(() => getPublicActiveProducts(products), [products]);
   const { backgroundGradientClass } = useTheme();
   const { draftDesignSettings } = useWebsiteDesign();
 
@@ -231,6 +232,7 @@ function StorefrontView() {
   const [customerAccountOpen, setCustomerAccountOpen] = useState(false);
   const [soundSettingsOpen, setSoundSettingsOpen] = useState(false);
   const [storeLocatorOpen, setStoreLocatorOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Google Workspace Modals
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
@@ -310,9 +312,9 @@ function StorefrontView() {
 
   // Matched product for active URL route
   const activeRouteProduct = useMemo(() => {
-    if (!productRouteSlug || !products || products.length === 0) return null;
-    return findProductBySlugOrId(products, productRouteSlug);
-  }, [products, productRouteSlug]);
+    if (!productRouteSlug || !activeProducts || activeProducts.length === 0) return null;
+    return findProductBySlugOrId(activeProducts, productRouteSlug);
+  }, [activeProducts, productRouteSlug]);
 
   // Sync address bar URL when quickViewProduct opens or closes
   React.useEffect(() => {
@@ -610,9 +612,9 @@ function StorefrontView() {
 
   // --- FILTERED SUBCATEGORIES & PRODUCT TYPES ---
   const availableSubcategories = useMemo(() => {
-    let relevantProducts = products;
+    let relevantProducts = activeProducts;
     if (filterState.category !== 'all') {
-      relevantProducts = products.filter((p) => p.category === filterState.category);
+      relevantProducts = activeProducts.filter((p) => p.category === filterState.category);
     }
     const subs = new Set<string>();
     relevantProducts.forEach((p) => {
@@ -620,11 +622,11 @@ function StorefrontView() {
       types.forEach((t) => subs.add(t));
     });
     return Array.from(subs);
-  }, [filterState.category, products]);
+  }, [filterState.category, activeProducts]);
 
   // --- FILTERED PRODUCTS ---
   const filteredProducts = useMemo(() => {
-    const rawFiltered = products.filter((p) => {
+    const rawFiltered = activeProducts.filter((p) => {
       // Gender Category
       if (filterState.category !== 'all' && p.category !== filterState.category) {
         return false;
@@ -697,7 +699,7 @@ function StorefrontView() {
 
     // Default 'featured' ranking utilizes the smart mix weighted algorithm
     return sortProductsWithSmartMix(unique, productFeedConfig, filterState.sortBy);
-  }, [filterState, products, productFeedConfig]);
+  }, [filterState, activeProducts, productFeedConfig]);
 
   const showShopView = useMemo(() => {
     return isShopActive ||
@@ -712,31 +714,31 @@ function StorefrontView() {
 
   // Carousels Products (Limited to 8 products per homepage limit as requested)
   const bestSellers = useMemo(() => {
-    const raw = products.filter((p) => p.isBestSeller);
+    const raw = activeProducts.filter((p) => p.isBestSeller);
     const unique = deduplicateProducts(raw, productFeedConfig);
     return unique.slice(0, 8);
-  }, [products, productFeedConfig]);
+  }, [activeProducts, productFeedConfig]);
 
   const newArrivals = useMemo(() => {
-    const raw = products.filter((p) => p.isNewArrival);
+    const raw = activeProducts.filter((p) => p.isNewArrival);
     const unique = deduplicateProducts(raw, productFeedConfig);
     return unique.slice(0, 8);
-  }, [products, productFeedConfig]);
+  }, [activeProducts, productFeedConfig]);
 
   const featuredProducts = useMemo(() => {
-    const raw = products.filter((p) => p.isFeatured);
+    const raw = activeProducts.filter((p) => p.isFeatured);
     const unique = deduplicateProducts(raw, productFeedConfig);
     return unique.slice(0, 8);
-  }, [products, productFeedConfig]);
+  }, [activeProducts, productFeedConfig]);
 
   const trendingProducts = useMemo(() => {
-    const raw = products.filter((p) => p.isTrending);
+    const raw = activeProducts.filter((p) => p.isTrending);
     const unique = deduplicateProducts(raw, productFeedConfig);
     return unique.slice(0, 8);
-  }, [products, productFeedConfig]);
+  }, [activeProducts, productFeedConfig]);
   const validWishlistIds = useMemo(() => {
-    if (!products || products.length === 0) return [];
-    const productSet = new Set(products.map((p) => String(p.id)));
+    if (!activeProducts || activeProducts.length === 0) return [];
+    const productSet = new Set(activeProducts.map((p) => String(p.id)));
     return Array.from(
       new Set(
         wishlistIds
@@ -744,15 +746,15 @@ function StorefrontView() {
           .filter((id) => Boolean(id) && productSet.has(id))
       )
     );
-  }, [wishlistIds, products]);
+  }, [wishlistIds, activeProducts]);
 
   const wishlistedProducts = useMemo(
-    () => products.filter((p) => validWishlistIds.includes(String(p.id))),
-    [validWishlistIds, products]
+    () => activeProducts.filter((p) => validWishlistIds.includes(String(p.id))),
+    [validWishlistIds, activeProducts]
   );
 
   return (
-    <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden ${backgroundGradientClass}`}>
+    <div className={`min-h-screen flex flex-col transition-colors duration-1000 selection:bg-[#0B8F63] selection:text-white relative overflow-x-hidden pb-20 md:pb-0 ${backgroundGradientClass}`}>
       <FestivalExperienceOverlay />
       <SEOHead 
         title={seoConfig?.globalTitleTemplate?.replace('%s', 'Home') || 'Marudhar Fashion Point'}
@@ -765,6 +767,8 @@ function StorefrontView() {
 
       {/* 2. Navigation Header */}
       <Navbar
+        mobileMenuOpen={mobileMenuOpen}
+        onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
         onOpenSearch={() => setSearchModalOpen(true)}
         onOpenStoreLocator={() => setStoreLocatorOpen(true)}
         onOpenOrderSheet={() => setOrderSheetOpen(true)}
@@ -805,6 +809,22 @@ function StorefrontView() {
           handleNavigateToSection(sec);
         }}
         onSelectSubcategory={handleSelectSubcategory}
+      />
+
+      {/* Mobile Sticky Bottom Navigation Bar */}
+      <MobileBottomNav
+        wishlistCount={validWishlistIds.length}
+        cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+        onNavigateHome={() => {
+          setIsShopActive(false);
+          handleSelectCategory('all');
+          handleResetFilters();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenSearch={() => setSearchModalOpen(true)}
+        onOpenWishlist={() => setWishlistModalOpen(true)}
+        onOpenCart={() => setOrderSheetOpen(true)}
+        onOpenMenu={() => setMobileMenuOpen(true)}
       />
 
       {/* Mobile Category Slider & Desktop Horizontal Category Bar */}
@@ -1146,9 +1166,6 @@ function StorefrontView() {
 
       <SEOLiveScoreWidget />
       <SEOSchemaInjector />
-
-      {/* Interactive AI Pet Shoe Brand Mascot */}
-      <AIPetShoeMascot />
 
       {/* --- MODALS & DRAWERS --- */}
       {/* Quick View Modal */}

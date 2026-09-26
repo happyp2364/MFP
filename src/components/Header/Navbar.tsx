@@ -61,6 +61,8 @@ interface NavbarProps {
   onSelectCategory: (cat: GenderCategory) => void;
   onNavigateToSection: (sectionId: string) => void;
   onSelectSubcategory?: (sub: string, cat: GenderCategory) => void;
+  mobileMenuOpen?: boolean;
+  onToggleMobileMenu?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -82,10 +84,22 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectCategory,
   onNavigateToSection,
   onSelectSubcategory,
+  mobileMenuOpen: propsMobileMenuOpen,
+  onToggleMobileMenu,
 }) => {
   const { storeInfo, websiteConfig, logoConfig, isAdmin, customerSoundSettings, megaMenuCategories } = useStore();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [internalMobileMenuOpen, setInternalMobileMenuOpen] = useState(false);
+  
+  const mobileMenuOpen = propsMobileMenuOpen !== undefined ? propsMobileMenuOpen : internalMobileMenuOpen;
+  const setMobileMenuOpen = (val: boolean) => {
+    if (onToggleMobileMenu) {
+      onToggleMobileMenu();
+    } else {
+      setInternalMobileMenuOpen(val);
+    }
+  };
+
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [adminExpanded, setAdminExpanded] = useState(false);

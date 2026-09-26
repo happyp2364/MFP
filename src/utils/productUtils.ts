@@ -210,3 +210,23 @@ export function findProductBySlugOrId(products: Product[], targetSlugOrId: strin
     );
   });
 }
+
+/**
+ * Canonical helper to filter products for the public storefront.
+ * Ensures ONLY real Firestore products are displayed.
+ * Rejects demo, mock, test, or inactive products.
+ */
+export function getPublicActiveProducts(products: Product[]): Product[] {
+  if (!Array.isArray(products)) return [];
+  return products.filter((p) => {
+    if (!p || !p.id) return false;
+    const idStr = String(p.id).trim().toLowerCase();
+    if (idStr === 'p1' || idStr === 'p2' || idStr === 'p3' || idStr === 'p4' || idStr === 'p5' || idStr === 'p6' || idStr.startsWith('mock-') || idStr.startsWith('demo-')) {
+      return false;
+    }
+    if (p.status === 'hidden' || p.status === 'out_of_stock') {
+      return false;
+    }
+    return true;
+  });
+}

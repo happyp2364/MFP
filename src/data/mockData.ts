@@ -947,7 +947,7 @@ export const DEFAULT_HANGING_SNEAKER_CONFIG = {
 };
 
 export const DEFAULT_PET_SHOE_CONFIG: import('../types').PetShoeConfig = {
-  enabled: true,
+  enabled: false,
   imageUri: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80',
   wingsEnabled: true,
   wingColor: '#F59E0B',

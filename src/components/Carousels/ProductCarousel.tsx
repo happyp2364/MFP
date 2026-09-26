@@ -101,7 +101,7 @@ export const ProductCarousel: React.FC<ProductCarouselProps> = ({
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {products.map((product) => (
-            <div key={product.id} className="w-[280px] sm:w-[300px] shrink-0">
+            <div key={product.id} className="w-[84vw] sm:w-[300px] shrink-0">
               <ProductCard
                 product={product}
                 onQuickView={onQuickView}

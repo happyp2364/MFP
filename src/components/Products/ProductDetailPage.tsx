@@ -80,6 +80,19 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [isBuyNowLoading, setIsBuyNowLoading] = useState(false);
+  const [showStickyBuyBar, setShowStickyBuyBar] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 280) {
+        setShowStickyBuyBar(true);
+      } else {
+        setShowStickyBuyBar(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Sync state when product loads or changes
   useEffect(() => {
@@ -998,6 +1011,33 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Mobile Sticky Bottom Action Bar */}
+      {showStickyBuyBar && product && (
+        <div className="fixed bottom-14 left-0 right-0 z-30 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md border-t border-neutral-200 dark:border-neutral-800 p-3 sm:hidden flex items-center gap-2.5 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-200 safe-area-bottom">
+          <div className="flex-1 truncate">
+            <span className="text-xs font-bold text-neutral-900 dark:text-white truncate block">
+              {product.name}
+            </span>
+            <span className="text-xs font-extrabold text-[#0B8F63]">
+              ₹{displayPrice.toLocaleString('en-IN')}
+            </span>
+          </div>
+          <button
+            onClick={handleAddBag}
+            className="bg-[#171717] dark:bg-neutral-100 text-white dark:text-neutral-900 font-bold text-xs py-2 px-3 rounded-xl shadow-sm shrink-0 active:scale-95 transition-transform"
+          >
+            {addedNotice ? 'Added!' : 'Add to Bag'}
+          </button>
+          <button
+            onClick={handleBuyNow}
+            disabled={isBuyNowLoading}
+            className="bg-[#0B8F63] text-white font-extrabold text-xs py-2 px-3 rounded-xl shadow-md shrink-0 active:scale-95 transition-transform"
+          >
+            {isBuyNowLoading ? '...' : 'Buy Now'}
+          </button>
         </div>
       )}
     </div>

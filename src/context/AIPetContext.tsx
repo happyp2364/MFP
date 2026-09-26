@@ -19,7 +19,14 @@ export const AIPetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [petShoeConfig, setPetShoeConfig] = useState<PetShoeConfig>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PET_SHOE_CONFIG);
-      return saved ? JSON.parse(saved) : DEFAULT_PET_SHOE_CONFIG;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.enabled === true && !localStorage.getItem('mfp_pet_shoe_explicitly_enabled')) {
+          parsed.enabled = false;
+        }
+        return parsed;
+      }
+      return DEFAULT_PET_SHOE_CONFIG;
     } catch {
       return DEFAULT_PET_SHOE_CONFIG;
     }

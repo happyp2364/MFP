@@ -113,6 +113,22 @@ export const DEFAULT_MOBILE_CATEGORY_ICONS: MobileCategoryIcon[] = [
     enabled: true,
   },
   {
+    id: 'cat-accessories-socks',
+    name: "एसेसरीज़ व सॉक्स • Accessories & Socks",
+    iconName: 'Package',
+    image: 'https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?auto=format&fit=crop&w=600&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=600&q=80',
+    ],
+    categoryKey: 'Accessories',
+    badge: 'NEW',
+    badgeColor: 'bg-indigo-600 text-white',
+    backgroundColor: '#EEF2FF',
+    order: 8,
+    enabled: true,
+  },
+  {
     id: 'cat-running',
     name: 'रनिंग शूज • Running Shoes',
     iconName: 'Flame',

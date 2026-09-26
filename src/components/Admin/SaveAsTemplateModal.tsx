@@ -75,6 +75,7 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
         collectionTags: initialTemplateData.collectionTags || [],
         metaTitle: initialTemplateData.metaTitle || '',
         metaDescription: initialTemplateData.metaDescription || '',
+        sizeMode: initialTemplateData.sizeMode || 'standard',
         sizes: includeStock && initialTemplateData.sizes ? initialTemplateData.sizes : [],
         sizeStocks: includeStock && initialTemplateData.sizeStocks ? initialTemplateData.sizeStocks : [],
         colors: includeStock && initialTemplateData.colors ? initialTemplateData.colors : [],

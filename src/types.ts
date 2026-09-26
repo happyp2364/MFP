@@ -59,6 +59,7 @@ export interface Product {
   features?: string[];        // Key product highlights / bullet points
   sizes: string[];
   sizeStocks?: SizeStock[];
+  sizeMode?: 'standard' | 'free_size' | 'no_size';
   colors: ProductColor[];
   isBestSeller?: boolean;
   isNewArrival?: boolean;
@@ -98,6 +99,7 @@ export interface ProductTemplate {
   metaDescription?: string;
   sizes?: string[];
   sizeStocks?: SizeStock[];
+  sizeMode?: 'standard' | 'free_size' | 'no_size';
   colors?: ProductColor[];
   variants?: ProductVariant[];
   createdAt: string;

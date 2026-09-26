@@ -28,6 +28,21 @@ function sortSizeStocks(stocks: SizeStock[]): SizeStock[] {
 export function normalizeProductSizeStocks(product: Product, selectedColor?: string): SizeStock[] {
   if (!product) return [];
 
+  if (product.sizeMode === 'no_size') {
+    return [];
+  }
+
+  if (product.sizeMode === 'free_size' || (product.sizes && product.sizes.length === 1 && product.sizes[0] === 'Free Size')) {
+    const qty = product.sizeStocks?.[0]?.stockQuantity ?? (product.inStock ? 25 : 0);
+    return [{
+      size: 'Free Size',
+      isAvailable: true,
+      inStock: product.inStock && qty > 0,
+      stockQuantity: qty,
+      system: 'Free Size',
+    }];
+  }
+
   // 1. If variants are present, filter/map based on selectedColor and master allowed sizes
   if (product.variants && product.variants.length > 0) {
     const targetColor = selectedColor ? selectedColor.trim().toLowerCase() : null;

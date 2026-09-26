@@ -85,6 +85,7 @@ export function normalizeProductTemplate(rawTemplate: any): ProductTemplate {
     collectionTags: Array.isArray(rawTemplate.collectionTags) ? rawTemplate.collectionTags.map(String).filter(Boolean) : [],
     metaTitle: String(rawTemplate.metaTitle || '').trim(),
     metaDescription: String(rawTemplate.metaDescription || '').trim(),
+    sizeMode: ['standard', 'free_size', 'no_size'].includes(rawTemplate.sizeMode) ? rawTemplate.sizeMode : (rawTemplate.sizes?.length === 1 && rawTemplate.sizes[0] === 'Free Size' ? 'free_size' : (rawTemplate.sizes?.length === 0 ? 'no_size' : 'standard')),
     sizes,
     sizeStocks,
     colors,

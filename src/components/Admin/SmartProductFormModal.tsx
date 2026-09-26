@@ -80,11 +80,13 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const [productState, setProductState] = useState<Product>(() => {
     const types = getProductTypes(initialProduct);
     const primary = types[0] || '';
+    const derivedSizeMode = initialProduct.sizeMode || (initialProduct.sizes?.length === 1 && initialProduct.sizes[0] === 'Free Size' ? 'free_size' : (initialProduct.sizes?.length === 0 ? 'no_size' : 'standard'));
     return {
       ...initialProduct,
       productTypes: types,
       productType: initialProduct.productType || primary,
       subcategory: initialProduct.subcategory || primary,
+      sizeMode: derivedSizeMode,
     };
   });
 
@@ -112,6 +114,18 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   const [customColorName, setCustomColorName] = useState('');
   const [customColorHex, setCustomColorHex] = useState('#1E40AF');
   const [isMixedColorModalOpen, setIsMixedColorModalOpen] = useState(false);
+
+  // Custom Product Types State
+  const [customProductTypes, setCustomProductTypes] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('mfp_custom_product_types');
+      return saved ? JSON.parse(saved) : ['Socks', 'Belt', 'Wallet', 'Cap', 'Shoe Care', 'Accessories'];
+    } catch {
+      return ['Socks', 'Belt', 'Wallet', 'Cap', 'Shoe Care', 'Accessories'];
+    }
+  });
+  const [showCustomTypeInput, setShowCustomTypeInput] = useState(false);
+  const [customTypeNameInput, setCustomTypeNameInput] = useState('');
 
   // --- ENTERPRISE VARIANT MATRIX STATE ---
   const [variantTab, setVariantTab] = useState<'galleries' | 'matrix' | 'ai'>('galleries');
@@ -406,14 +420,33 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     }
   };
 
-  const handleResetToOneProductType = () => {
-    const defaultOne = availableSubcategories.all[0] || '';
-    setProductState((prev) => ({
-      ...prev,
-      productTypes: defaultOne ? [defaultOne] : [],
-      productType: defaultOne,
-      subcategory: defaultOne,
-    }));
+  const allAvailableProductTypes = Array.from(new Set([...availableSubcategories.all, ...customProductTypes]));
+
+  const handleAddNewCustomType = () => {
+    const trimmed = customTypeNameInput.trim();
+    if (!trimmed) {
+      showToast('Please enter a valid product type name.', 'error');
+      return;
+    }
+    const exists = allAvailableProductTypes.some((t) => t.toLowerCase() === trimmed.toLowerCase());
+    let updatedCustom = [...customProductTypes];
+    if (!exists) {
+      updatedCustom.push(trimmed);
+      setCustomProductTypes(updatedCustom);
+      localStorage.setItem('mfp_custom_product_types', JSON.stringify(updatedCustom));
+    }
+    if (!selectedProductTypes.includes(trimmed)) {
+      const updatedSelected = [...selectedProductTypes, trimmed];
+      setProductState((prev) => ({
+        ...prev,
+        productTypes: updatedSelected,
+        productType: updatedSelected[0],
+        subcategory: updatedSelected[0],
+      }));
+    }
+    setCustomTypeNameInput('');
+    setShowCustomTypeInput(false);
+    showToast(`Added and selected product type: "${trimmed}"`, 'success');
   };
 
   // Legacy single subcategory select support
@@ -685,6 +718,25 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     // Process sizes: if no sizes selected, leave as empty array or keep current
     const activeSizes = productState.sizes || [];
 
+    const sizeMode = productState.sizeMode || 'standard';
+    let finalSizes = activeSizes;
+    let finalSizeStocks = productState.sizeStocks;
+
+    if (sizeMode === 'free_size') {
+      finalSizes = ['Free Size'];
+      const qty = productState.sizeStocks?.[0]?.stockQuantity ?? 25;
+      finalSizeStocks = [{ size: 'Free Size', isAvailable: true, inStock: qty > 0, stockQuantity: qty, system: 'Free Size' }];
+    } else if (sizeMode === 'no_size') {
+      finalSizes = [];
+      finalSizeStocks = [];
+    } else {
+      if (!activeSizes || activeSizes.length === 0) {
+        setSubmitError('Please select at least one available size for Standard size mode.');
+        setIsSaving(false);
+        return;
+      }
+    }
+
     const primaryType = cleanTypes[0] || '';
 
     const finalProduct: Product = {
@@ -710,7 +762,9 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
       isLimitedStock: !!productState.isLimitedStock,
       inStock: productState.inStock !== false,
       status: productState.status || 'active',
-      sizes: activeSizes,
+      sizeMode,
+      sizes: finalSizes,
+      sizeStocks: finalSizeStocks,
       colors: productState.colors || [],
       sku: autoSku,
       slug: autoSlug,
@@ -1080,8 +1134,8 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                 </div>
 
                 {/* Options Selector Grid */}
-                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 bg-neutral-50 rounded-xl border border-neutral-200">
-                  {availableSubcategories.all.map((sub) => {
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-neutral-50 rounded-xl border border-neutral-200">
+                  {allAvailableProductTypes.map((sub) => {
                     const isSel = selectedProductTypes.includes(sub);
                     return (
                       <button
@@ -1099,6 +1153,54 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                       </button>
                     );
                   })}
+                </div>
+
+                {/* + Add Custom Product Type Toggle / Input */}
+                <div className="mt-2">
+                  {!showCustomTypeInput ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomTypeInput(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-[#0B8F63] text-[#0B8F63] hover:bg-emerald-50 text-xs font-bold transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Custom Product Type</span>
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-neutral-50 rounded-xl border border-neutral-200">
+                      <input
+                        type="text"
+                        placeholder="e.g. Socks, Belt, Slippers"
+                        value={customTypeNameInput}
+                        onChange={(e) => setCustomTypeNameInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddNewCustomType();
+                          }
+                        }}
+                        autoFocus
+                        className="flex-1 bg-white border border-neutral-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-neutral-900 outline-none focus:ring-2 focus:ring-[#0B8F63]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddNewCustomType}
+                        className="px-3 py-1.5 bg-[#0B8F63] text-white rounded-lg text-xs font-bold hover:bg-[#097551] shadow-2xs"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCustomTypeInput(false);
+                          setCustomTypeNameInput('');
+                        }}
+                        className="px-2.5 py-1.5 bg-neutral-200 text-neutral-700 rounded-lg text-xs font-bold hover:bg-neutral-300"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <p className="text-[10px] text-neutral-400 mt-1">
                   Click any type to toggle. Products with multiple types appear under each corresponding category filter and search query.
@@ -1227,76 +1329,139 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                 4. Available Sizes & Stock Quantity
               </span>
 
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <button
-                  type="button"
-                  onClick={handleBulkSelectAllSizes}
-                  className="px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg font-bold text-[10px] transition-colors"
-                >
-                  Select All
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleBulkSetAllInStock(10)}
-                  className="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-lg font-extrabold text-[10px] transition-colors"
-                >
-                  Preset 10 Pcs All
-                </button>
-                <button
-                  type="button"
-                  onClick={handleBulkDeselectAllSizes}
-                  className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold text-[10px] transition-colors"
-                >
-                  Clear All
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-              {standardSizeOptions.map((szStr) => {
-                const stockObj = currentSizeStocks.find((s) => s.size === szStr) || {
-                  size: szStr,
-                  isAvailable: true,
-                  inStock: true,
-                  stockQuantity: 10,
-                };
-
-                return (
-                  <div
-                    key={szStr}
-                    className={`p-2.5 rounded-xl border transition-all ${
-                      stockObj.isAvailable
-                        ? 'bg-neutral-50 border-neutral-200'
-                        : 'bg-neutral-100/50 border-neutral-200/60 opacity-50'
-                    }`}
+              {(!productState.sizeMode || productState.sizeMode === 'standard') && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleBulkSelectAllSizes}
+                    className="px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg font-bold text-[10px] transition-colors"
                   >
-                    <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-1.5 cursor-pointer font-extrabold text-xs text-neutral-900">
-                        <input
-                          type="checkbox"
-                          checked={stockObj.isAvailable}
-                          onChange={() => handleToggleSizeAvailable(szStr)}
-                          className="w-3.5 h-3.5 rounded text-[#0B8F63] focus:ring-[#0B8F63]"
-                        />
-                        <span>
-                          {currentSizeType === 'clothing_waist' ? `W${szStr}"` : `Size ${szStr}`}
-                        </span>
-                      </label>
-
-                      {stockObj.isAvailable && (
-                        <input
-                          type="number"
-                          min={0}
-                          value={stockObj.stockQuantity}
-                          onChange={(e) => handleSizeQuantityChange(szStr, Number(e.target.value))}
-                          className="w-14 bg-white border border-neutral-200 rounded-lg p-1 text-center font-bold text-xs outline-none focus:ring-2 focus:ring-[#0B8F63]"
-                        />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBulkSetAllInStock(10)}
+                    className="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-lg font-extrabold text-[10px] transition-colors"
+                  >
+                    Preset 10 Pcs All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkDeselectAllSizes}
+                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold text-[10px] transition-colors"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Size Mode Selector */}
+            <div className="flex items-center gap-1.5 p-1 bg-neutral-100 rounded-xl w-fit">
+              {(['standard', 'free_size', 'no_size'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => {
+                    setProductState((prev) => {
+                      let newSizes = prev.sizes;
+                      let newStock = prev.sizeStocks;
+                      if (mode === 'free_size') {
+                        newSizes = ['Free Size'];
+                        newStock = [{ size: 'Free Size', isAvailable: true, inStock: true, stockQuantity: 25, system: 'Free Size' }];
+                      } else if (mode === 'no_size') {
+                        newSizes = [];
+                        newStock = [];
+                      } else {
+                        const defSizes = getStandardSizesForCategory(prev.category, prev.subcategory);
+                        newSizes = defSizes;
+                        newStock = defSizes.map(sz => ({ size: sz, isAvailable: true, inStock: true, stockQuantity: 10, system: 'UK' }));
+                      }
+                      return { ...prev, sizeMode: mode, sizes: newSizes, sizeStocks: newStock };
+                    });
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    (productState.sizeMode || 'standard') === mode
+                      ? 'bg-[#0B8F63] text-white shadow-xs'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  {mode === 'standard' ? 'Standard Sizes' : mode === 'free_size' ? 'Free Size' : 'No Size'}
+                </button>
+              ))}
+            </div>
+
+            {productState.sizeMode === 'free_size' ? (
+              <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200 space-y-2">
+                <label className="text-xs font-bold text-neutral-800 block">Free Size Stock Quantity</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={productState.sizeStocks?.[0]?.stockQuantity ?? 25}
+                  onChange={(e) => {
+                    const qty = Math.max(0, Number(e.target.value));
+                    setProductState(prev => ({
+                      ...prev,
+                      sizes: ['Free Size'],
+                      sizeStocks: [{ size: 'Free Size', isAvailable: true, inStock: qty > 0, stockQuantity: qty, system: 'Free Size' }]
+                    }));
+                  }}
+                  className="w-full sm:w-48 bg-white border border-neutral-200 rounded-xl p-2.5 font-bold text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-[#0B8F63]"
+                />
+                <p className="text-[11px] text-neutral-500">Customers will automatically see "FREE SIZE" and no manual size selection will be required.</p>
+              </div>
+            ) : productState.sizeMode === 'no_size' ? (
+              <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200 space-y-1">
+                <p className="text-xs font-bold text-neutral-800">No Size Required</p>
+                <p className="text-[11px] text-neutral-500">This product has no sizes (e.g. Shoe Care Kit, Accessories). Customers can add to bag directly without selecting a size.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                {standardSizeOptions.map((szStr) => {
+                  const stockObj = currentSizeStocks.find((s) => s.size === szStr) || {
+                    size: szStr,
+                    isAvailable: true,
+                    inStock: true,
+                    stockQuantity: 10,
+                  };
+
+                  return (
+                    <div
+                      key={szStr}
+                      className={`p-2.5 rounded-xl border transition-all ${
+                        stockObj.isAvailable
+                          ? 'bg-neutral-50 border-neutral-200'
+                          : 'bg-neutral-100/50 border-neutral-200/60 opacity-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-1.5 cursor-pointer font-extrabold text-xs text-neutral-900">
+                          <input
+                            type="checkbox"
+                            checked={stockObj.isAvailable}
+                            onChange={() => handleToggleSizeAvailable(szStr)}
+                            className="w-3.5 h-3.5 rounded text-[#0B8F63] focus:ring-[#0B8F63]"
+                          />
+                          <span>
+                            {currentSizeType === 'clothing_waist' ? `W${szStr}"` : `Size ${szStr}`}
+                          </span>
+                        </label>
+
+                        {stockObj.isAvailable && (
+                          <input
+                            type="number"
+                            min={0}
+                            value={stockObj.stockQuantity}
+                            onChange={(e) => handleSizeQuantityChange(szStr, Number(e.target.value))}
+                            className="w-14 bg-white border border-neutral-200 rounded-lg p-1 text-center font-bold text-xs outline-none focus:ring-2 focus:ring-[#0B8F63]"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* SECTION 5: AVAILABLE COLOURS */}

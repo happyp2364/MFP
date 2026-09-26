@@ -34,6 +34,8 @@ export const MEN_CLOTHING_SUBCATEGORIES = [
   'Jackets',
   'Hoodies',
   'Lower',
+  'Socks',
+  'Accessories',
 ];
 
 export const WOMEN_SUBCATEGORIES = [
@@ -42,6 +44,8 @@ export const WOMEN_SUBCATEGORIES = [
   'Sneakers',
   'Casual Shoes',
   'Slip-ons',
+  'Socks',
+  'Accessories',
 ];
 
 export const KIDS_SUBCATEGORIES = [
@@ -52,6 +56,8 @@ export const KIDS_SUBCATEGORIES = [
   'Sandals',
   'Slippers',
   'Party Shoes',
+  'Socks',
+  'Accessories',
 ];
 
 // SIZE ARRAYS AS PER SPECIFICATION

@@ -1010,6 +1010,7 @@ export const DEFAULT_PAYMENT_SETTINGS: import('../types').PaymentSettings = {
   autoApprovePaidOrders: true,
   currencySymbol: '₹',
   gstPercent: 0,
+  deliveryChargeEnabled: true,
   flatShippingRate: 80,
   standardDeliveryCharge: 80,
   freeShippingMinAmount: 999,

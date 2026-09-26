@@ -96,6 +96,10 @@ export interface ProductTemplate {
   collectionTags?: string[];
   metaTitle?: string;
   metaDescription?: string;
+  sizes?: string[];
+  sizeStocks?: SizeStock[];
+  colors?: ProductColor[];
+  variants?: ProductVariant[];
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -713,6 +717,7 @@ export interface PaymentSettings {
   autoApprovePaidOrders?: boolean;
   currencySymbol?: string;
   gstPercent?: number;
+  deliveryChargeEnabled?: boolean;
   flatShippingRate?: number;
   standardDeliveryCharge?: number;
   freeShippingMinAmount?: number;

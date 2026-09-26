@@ -28,6 +28,7 @@ import { useStore } from '../../context/StoreContext';
 import { PaymentSettings } from '../../types';
 import { generateUPILink, getQRCodeImageUrl, cleanAndSanitizeUPIId, isValidUPIIdFormat } from '../../utils/qrCode';
 import { optimizeImageFile } from '../../utils/imageOptimizer';
+import { calculateOrderPricing } from '../../utils/taxUtils';
 
 export const PaymentSettingsView: React.FC = () => {
   const { paymentSettings, updatePaymentSettings, showToast } = useStore();
@@ -90,6 +91,9 @@ export const PaymentSettingsView: React.FC = () => {
   );
   const [flatShippingRate, setFlatShippingRate] = useState<number>(
     paymentSettings.flatShippingRate ?? 80
+  );
+  const [deliveryChargeEnabled, setDeliveryChargeEnabled] = useState<boolean>(
+    paymentSettings.deliveryChargeEnabled !== false
   );
   const [noReturnPolicyEnabled, setNoReturnPolicyEnabled] = useState<boolean>(
     paymentSettings.noReturnPolicyEnabled !== false
@@ -203,6 +207,7 @@ export const PaymentSettingsView: React.FC = () => {
     setMaxOrderAmount(paymentSettings.maxOrderAmount ?? 0);
     setFreeShippingMinAmount(paymentSettings.freeShippingMinAmount ?? 999);
     setFlatShippingRate(paymentSettings.flatShippingRate ?? 80);
+    setDeliveryChargeEnabled(paymentSettings.deliveryChargeEnabled !== false);
     setNoReturnPolicyEnabled(paymentSettings.noReturnPolicyEnabled !== false);
     setNoExchangePolicyEnabled(paymentSettings.noExchangePolicyEnabled !== false);
     setPolicyText(paymentSettings.policyText || 'No Return & No Exchange Policy');
@@ -356,6 +361,7 @@ export const PaymentSettingsView: React.FC = () => {
       applyFeeToOnlineOnly,
       freeShippingMinAmount: Math.max(0, Number(freeShippingMinAmount) || 0),
       flatShippingRate: Math.max(0, Number(flatShippingRate) || 0),
+      deliveryChargeEnabled,
       standardDeliveryCharge: Math.max(0, Number(flatShippingRate) || 0),
       noReturnPolicyEnabled,
       noExchangePolicyEnabled,
@@ -976,21 +982,105 @@ export const PaymentSettingsView: React.FC = () => {
                 </p>
               </div>
 
-              {/* Standard Delivery Charge */}
+              {/* Delivery Charge Enable / Disable Toggle */}
+              <div className="space-y-1.5 md:col-span-2 p-4 rounded-2xl bg-neutral-100/80 border border-neutral-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold text-neutral-900 block">
+                      Delivery Charge System
+                    </label>
+                    <p className="text-[11px] text-neutral-600">
+                      Enable or disable standard delivery charges across all customer checkouts.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryChargeEnabled(!deliveryChargeEnabled)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      deliveryChargeEnabled ? 'bg-[#0B8F63]' : 'bg-neutral-300'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        deliveryChargeEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Free Delivery Threshold */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-neutral-800 block">
-                  Standard Delivery Charge (₹)
+                  Free Delivery Threshold Above (₹)
                 </label>
                 <input
                   type="number"
-                  value={flatShippingRate}
-                  onChange={(e) => setFlatShippingRate(Number(e.target.value))}
-                  placeholder="80"
+                  value={freeShippingMinAmount}
+                  onChange={(e) => setFreeShippingMinAmount(Number(e.target.value))}
+                  placeholder="999"
                   className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 font-mono text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none"
                 />
                 <p className="text-[10px] text-neutral-500">
-                  Delivery fee applied to orders below the Free Delivery threshold. Default: ₹80.
+                  Orders equal to or above this amount receive 🚚 FREE DELIVERY. Default: ₹999.
                 </p>
+              </div>
+
+              {/* Standard Delivery Charge */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-800 block">
+                  Standard Delivery Charge Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  disabled={!deliveryChargeEnabled}
+                  value={flatShippingRate}
+                  onChange={(e) => setFlatShippingRate(Number(e.target.value))}
+                  placeholder="80"
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-xl py-2.5 px-3.5 font-mono text-xs text-neutral-900 focus:ring-2 focus:ring-emerald-600 outline-none disabled:opacity-50"
+                />
+                <p className="text-[10px] text-neutral-500">
+                  Delivery fee applied to orders below the Free Delivery threshold (when Delivery is ON).
+                </p>
+              </div>
+
+              {/* Live Calculation Preview Box */}
+              <div className="md:col-span-2 p-4 rounded-2xl bg-emerald-50 border border-emerald-200/80 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#0B8F63]" />
+                  <h4 className="text-xs font-bold text-emerald-900">Live Delivery & Checkout Calculation Preview</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {/* Preview 1: ₹500 Order */}
+                  <div className="bg-white p-3 rounded-xl border border-emerald-100 shadow-xs space-y-1">
+                    <div className="font-bold text-neutral-900">Order Subtotal: ₹500 (Below ₹{freeShippingMinAmount})</div>
+                    <div className="text-neutral-600 flex justify-between">
+                      <span>Delivery Fee:</span>
+                      <span className="font-bold font-mono">
+                        {!deliveryChargeEnabled ? '₹0 (OFF)' : `₹${flatShippingRate}`}
+                      </span>
+                    </div>
+                    <div className="text-neutral-900 font-extrabold flex justify-between pt-1 border-t border-neutral-100">
+                      <span>Total:</span>
+                      <span className="font-mono text-[#0B8F63]">
+                        ₹{500 + (!deliveryChargeEnabled ? 0 : Number(flatShippingRate) || 0)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Preview 2: ₹999+ Order */}
+                  <div className="bg-white p-3 rounded-xl border border-emerald-100 shadow-xs space-y-1">
+                    <div className="font-bold text-neutral-900">Order Subtotal: ₹{freeShippingMinAmount} (Threshold Met)</div>
+                    <div className="text-neutral-600 flex justify-between">
+                      <span>Delivery Fee:</span>
+                      <span className="font-bold font-mono text-emerald-600">FREE (₹0)</span>
+                    </div>
+                    <div className="text-neutral-900 font-extrabold flex justify-between pt-1 border-t border-neutral-100">
+                      <span>Total:</span>
+                      <span className="font-mono text-[#0B8F63]">₹{freeShippingMinAmount}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Policy Toggles */}

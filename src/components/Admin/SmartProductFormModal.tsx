@@ -428,6 +428,10 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
   ) => {
     const templateTypes = getProductTypes(template);
     const primaryType = templateTypes[0] || '';
+    const hasTemplateStock = Array.isArray(template.sizeStocks) && template.sizeStocks.length > 0;
+    const hasTemplateColors = Array.isArray(template.colors) && template.colors.length > 0;
+    const hasTemplateVariants = Array.isArray(template.variants) && template.variants.length > 0;
+    const hasTemplateSizes = Array.isArray(template.sizes) && template.sizes.length > 0;
 
     setProductState((prev) => {
       if (overwriteMode === 'fillEmpty') {
@@ -458,9 +462,13 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
           metaDescription: prev.metaDescription?.trim()
             ? prev.metaDescription
             : template.metaDescription,
+          sizes: prev.sizes && prev.sizes.length > 0 ? prev.sizes : (hasTemplateSizes ? template.sizes! : prev.sizes),
+          sizeStocks: prev.sizeStocks && prev.sizeStocks.length > 0 ? prev.sizeStocks : (hasTemplateStock ? template.sizeStocks! : prev.sizeStocks),
+          colors: prev.colors && prev.colors.length > 0 ? prev.colors : (hasTemplateColors ? template.colors! : prev.colors),
+          variants: prev.variants && prev.variants.length > 0 ? prev.variants : (hasTemplateVariants ? template.variants! : prev.variants),
         };
       } else {
-        // overwriteAll (replaces reusable specs only, NEVER touches name, sku, price, images, sizes, stock!)
+        // overwriteAll
         return {
           ...prev,
           category: template.category,
@@ -477,6 +485,10 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
           collectionTags: template.collectionTags || prev.collectionTags,
           metaTitle: template.metaTitle || prev.metaTitle,
           metaDescription: template.metaDescription || prev.metaDescription,
+          sizes: hasTemplateSizes ? template.sizes! : prev.sizes,
+          sizeStocks: hasTemplateStock ? template.sizeStocks! : prev.sizeStocks,
+          colors: hasTemplateColors ? template.colors! : prev.colors,
+          variants: hasTemplateVariants ? template.variants! : prev.variants,
         };
       }
     });
@@ -2419,6 +2431,10 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
             collectionTags: productState.collectionTags,
             metaTitle: productState.metaTitle,
             metaDescription: productState.metaDescription,
+            sizes: productState.sizes,
+            sizeStocks: productState.sizeStocks,
+            colors: productState.colors,
+            variants: productState.variants,
           }}
           onSuccess={(newTemplate) => {
             showToast(`Saved new template: "${newTemplate.name}"!`, 'success');

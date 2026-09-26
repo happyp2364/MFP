@@ -19,6 +19,10 @@ interface SaveAsTemplateModalProps {
     collectionTags?: string[];
     metaTitle?: string;
     metaDescription?: string;
+    sizes?: string[];
+    sizeStocks?: any[];
+    colors?: any[];
+    variants?: any[];
   };
   onSuccess?: (newTemplate: ProductTemplate) => void;
 }
@@ -34,6 +38,7 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
   } Template`;
 
   const [templateName, setTemplateName] = useState(defaultName);
+  const [includeStock, setIncludeStock] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,6 +75,10 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
         collectionTags: initialTemplateData.collectionTags || [],
         metaTitle: initialTemplateData.metaTitle || '',
         metaDescription: initialTemplateData.metaDescription || '',
+        sizes: includeStock && initialTemplateData.sizes ? initialTemplateData.sizes : [],
+        sizeStocks: includeStock && initialTemplateData.sizeStocks ? initialTemplateData.sizeStocks : [],
+        colors: includeStock && initialTemplateData.colors ? initialTemplateData.colors : [],
+        variants: includeStock && initialTemplateData.variants ? initialTemplateData.variants : [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -132,6 +141,19 @@ export const SaveAsTemplateModal: React.FC<SaveAsTemplateModalProps> = ({
               className="w-full bg-[#F7F7F7] border border-neutral-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-neutral-900 outline-none focus:ring-2 focus:ring-[#0B8F63]"
             />
           </div>
+
+          <label className="flex items-center gap-2.5 p-3 rounded-xl bg-neutral-50 border border-neutral-200 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeStock}
+              onChange={(e) => setIncludeStock(e.target.checked)}
+              className="w-4 h-4 rounded text-[#0B8F63] focus:ring-[#0B8F63]"
+            />
+            <div>
+              <span className="text-xs font-bold text-neutral-900 block">Include Sizes & Size Stocks</span>
+              <span className="text-[10px] text-neutral-500">Save current size matrix and stock counts into the template.</span>
+            </div>
+          </label>
 
           {/* Included Specs Summary */}
           <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200/80 space-y-2 text-xs">

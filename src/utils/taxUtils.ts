@@ -110,6 +110,8 @@ export function calculateOrderTax(
   const gstEnabled = Boolean(paymentSettings?.gstEnabled);
   const defaultRate = paymentSettings?.defaultGstRate ?? 18;
   const taxMode = paymentSettings?.taxMode ?? 'CGST_SGST';
+  const deliveryEnabled = paymentSettings?.deliveryChargeEnabled !== false;
+  const deliveryAmount = Number(paymentSettings?.flatShippingRate ?? paymentSettings?.standardDeliveryCharge ?? 80);
   const freeThreshold = paymentSettings?.freeShippingMinAmount !== undefined ? paymentSettings.freeShippingMinAmount : 999;
 
   let rawSubtotal = 0;
@@ -122,16 +124,18 @@ export function calculateOrderTax(
   const discount = Math.max(0, Math.min(discountAmount, rawSubtotal));
   const netDiscountedSubtotal = Math.max(0, rawSubtotal - discount);
 
-  // Determine actual delivery charge respecting the free delivery threshold post-discount
+  // Determine actual delivery charge respecting deliveryChargeEnabled and free delivery threshold post-discount
   const isThresholdMet = freeThreshold > 0 && netDiscountedSubtotal >= freeThreshold;
   let effectiveDelivery = 0;
 
-  if (isExplicitFreeShipping || isThresholdMet) {
+  if (!deliveryEnabled) {
+    effectiveDelivery = 0;
+  } else if (isExplicitFreeShipping || isThresholdMet) {
     effectiveDelivery = 0;
   } else if (deliveryCharge !== undefined && Number(deliveryCharge) >= 0) {
     effectiveDelivery = Number(deliveryCharge);
-  } else if (paymentSettings?.flatShippingRate !== undefined && Number(paymentSettings.flatShippingRate) >= 0) {
-    effectiveDelivery = Number(paymentSettings.flatShippingRate);
+  } else if (deliveryAmount >= 0) {
+    effectiveDelivery = Number(deliveryAmount);
   } else {
     effectiveDelivery = 80;
   }
@@ -205,6 +209,8 @@ export function calculateOrderPricing({
   paymentMethod?: PaymentMethodType | string;
   paymentSettings?: PaymentSettings | null;
 }) {
+  const deliveryEnabled = paymentSettings?.deliveryChargeEnabled !== false;
+  const deliveryAmount = Number(paymentSettings?.flatShippingRate ?? paymentSettings?.standardDeliveryCharge ?? 80);
   const freeThreshold = paymentSettings?.freeShippingMinAmount !== undefined ? paymentSettings.freeShippingMinAmount : (freeShippingMinAmount ?? 999);
   const validatedDiscount = Math.max(0, Math.min(discountAmount, subtotal));
   const netMerchandise = Math.max(0, subtotal - validatedDiscount);
@@ -213,12 +219,14 @@ export function calculateOrderPricing({
   const isThresholdMet = freeThreshold > 0 && netMerchandise >= freeThreshold;
 
   let effectiveDelivery = 0;
-  if (isExplicitFreeShipping || isThresholdMet) {
+  if (!deliveryEnabled) {
+    effectiveDelivery = 0;
+  } else if (isExplicitFreeShipping || isThresholdMet) {
     effectiveDelivery = 0;
   } else if (shippingFee !== undefined && Number(shippingFee) >= 0) {
     effectiveDelivery = Number(shippingFee);
-  } else if (paymentSettings?.flatShippingRate !== undefined && Number(paymentSettings.flatShippingRate) >= 0) {
-    effectiveDelivery = Number(paymentSettings.flatShippingRate);
+  } else if (deliveryAmount >= 0) {
+    effectiveDelivery = Number(deliveryAmount);
   } else {
     effectiveDelivery = 80;
   }

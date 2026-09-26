@@ -1,3 +1,5 @@
+import { ProductTemplate, SizeStock, ProductColor, ProductVariant } from '../types';
+
 /**
  * Enterprise Product Types Utilities
  * 
@@ -9,6 +11,88 @@ export interface ProductTypeCompatible {
   productTypes?: string[];
   productType?: string;
   subcategory?: string;
+}
+
+/**
+ * Normalizes any legacy or current Firestore product template structure into a consistent ProductTemplate object,
+ * ensuring sizes, sizeStocks, colors, and variants are correctly mapped without data loss.
+ */
+export function normalizeProductTemplate(rawTemplate: any): ProductTemplate {
+  if (!rawTemplate) {
+    return {
+      id: `tpl_${Date.now()}`,
+      name: 'Untitled Template',
+      category: 'men',
+      productTypes: [],
+      brand: 'Marudhar Fashion',
+      description: '',
+      sizes: [],
+      sizeStocks: [],
+      colors: [],
+      variants: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  const productTypes = getProductTypes(rawTemplate);
+  const sizes = Array.isArray(rawTemplate.sizes) ? rawTemplate.sizes.map(String).filter(Boolean) : [];
+  const sizeStocks: SizeStock[] = Array.isArray(rawTemplate.sizeStocks)
+    ? rawTemplate.sizeStocks.map((st: any) => ({
+        size: String(st.size || ''),
+        isAvailable: st.isAvailable !== false,
+        inStock: st.inStock !== false,
+        stockQuantity: Number(st.stockQuantity ?? st.stock ?? 10),
+        price: st.price !== undefined ? Number(st.price) : undefined,
+      }))
+    : [];
+
+  const colors: ProductColor[] = Array.isArray(rawTemplate.colors)
+    ? rawTemplate.colors.map((c: any) => ({
+        id: String(c.id || Math.random().toString(36).substring(2, 7)),
+        name: String(c.name || 'Color'),
+        hexCode: String(c.hexCode || c.hex || '#000000'),
+        images: Array.isArray(c.images) ? c.images : (c.image ? [c.image] : []),
+        sizes: Array.isArray(c.sizes) ? c.sizes : undefined,
+      }))
+    : [];
+
+  const variants: ProductVariant[] = Array.isArray(rawTemplate.variants)
+    ? rawTemplate.variants.map((v: any) => ({
+        id: String(v.id || Math.random().toString(36).substring(2, 7)),
+        color: String(v.color || ''),
+        size: String(v.size || ''),
+        stock: Number(v.stock ?? v.stockQuantity ?? 10),
+        images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
+        sku: String(v.sku || ''),
+      }))
+    : [];
+
+  return {
+    id: String(rawTemplate.id || `tpl_${Date.now()}`),
+    name: String(rawTemplate.name || rawTemplate.title || 'Untitled Template').trim(),
+    descriptionPreview: String(rawTemplate.descriptionPreview || rawTemplate.shortDescription || rawTemplate.description || '').substring(0, 160).trim(),
+    category: ['men', 'women', 'kids'].includes(rawTemplate.category) ? rawTemplate.category : 'men',
+    productTypes,
+    subcategory: rawTemplate.subcategory || productTypes[0] || '',
+    brand: String(rawTemplate.brand || 'Marudhar Fashion').trim(),
+    description: String(rawTemplate.description || '').trim(),
+    shortDescription: String(rawTemplate.shortDescription || '').trim(),
+    material: String(rawTemplate.material || '').trim(),
+    fitGuide: String(rawTemplate.fitGuide || '').trim(),
+    careInstructions: String(rawTemplate.careInstructions || '').trim(),
+    features: Array.isArray(rawTemplate.features) ? rawTemplate.features.map(String).filter(Boolean) : [],
+    collectionTags: Array.isArray(rawTemplate.collectionTags) ? rawTemplate.collectionTags.map(String).filter(Boolean) : [],
+    metaTitle: String(rawTemplate.metaTitle || '').trim(),
+    metaDescription: String(rawTemplate.metaDescription || '').trim(),
+    sizes,
+    sizeStocks,
+    colors,
+    variants,
+    createdAt: rawTemplate.createdAt || new Date().toISOString(),
+    updatedAt: rawTemplate.updatedAt || new Date().toISOString(),
+    createdBy: rawTemplate.createdBy,
+  };
 }
 
 /**

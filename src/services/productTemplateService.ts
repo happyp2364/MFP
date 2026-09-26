@@ -10,13 +10,13 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Product, ProductTemplate } from '../types';
-import { getProductTypes } from '../utils/productTypeUtils';
+import { getProductTypes, normalizeProductTemplate } from '../utils/productTypeUtils';
 
 const COLLECTION_NAME = 'productTemplates';
 const LOCAL_STORAGE_KEY = 'mfp_product_templates_cache';
 
 export const DEFAULT_PRODUCT_TEMPLATES: ProductTemplate[] = [
-  {
+  normalizeProductTemplate({
     id: 'tpl_sports_running_marudhar',
     name: 'Marudhar Sports & Running Shoes',
     descriptionPreview: 'Standard configuration for high-performance sports, running shoes & training sneakers.',
@@ -40,10 +40,17 @@ export const DEFAULT_PRODUCT_TEMPLATES: ProductTemplate[] = [
     collectionTags: ['Sports Collection', 'New Arrival', 'Bestseller'],
     metaTitle: 'Marudhar Sports Running Shoes | Best Price & Fast Delivery',
     metaDescription: 'Shop high-performance sports and running shoes at Marudhar Fashion Point. Engineered for comfort, durability, and daily training.',
+    sizes: ['7', '8', '9', '10'],
+    sizeStocks: [
+      { size: '7', isAvailable: true, inStock: true, stockQuantity: 10 },
+      { size: '8', isAvailable: true, inStock: true, stockQuantity: 15 },
+      { size: '9', isAvailable: true, inStock: true, stockQuantity: 12 },
+      { size: '10', isAvailable: true, inStock: true, stockQuantity: 8 },
+    ],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
+  }),
+  normalizeProductTemplate({
     id: 'tpl_casual_sneakers_daily',
     name: 'Daily Casual Sneakers & Walking',
     descriptionPreview: 'Modern lifestyle sneakers with cushioned cupsoles and versatile styling.',
@@ -66,10 +73,17 @@ export const DEFAULT_PRODUCT_TEMPLATES: ProductTemplate[] = [
     collectionTags: ['Casual Shoes', 'Trending Now'],
     metaTitle: 'Casual Streetwear Sneakers | Marudhar Fashion Point',
     metaDescription: 'Discover everyday sneakers built for comfort and timeless style. Order online with Free Shipping & COD.',
+    sizes: ['7', '8', '9', '10'],
+    sizeStocks: [
+      { size: '7', isAvailable: true, inStock: true, stockQuantity: 10 },
+      { size: '8', isAvailable: true, inStock: true, stockQuantity: 10 },
+      { size: '9', isAvailable: true, inStock: true, stockQuantity: 10 },
+      { size: '10', isAvailable: true, inStock: true, stockQuantity: 10 },
+    ],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
+  }),
+  normalizeProductTemplate({
     id: 'tpl_formal_loafers_premium',
     name: 'Executive Formal Shoes & Loafers',
     descriptionPreview: 'Handcrafted formal and slip-on loafers tailored for office, wedding, and formal occasions.',
@@ -92,9 +106,16 @@ export const DEFAULT_PRODUCT_TEMPLATES: ProductTemplate[] = [
     collectionTags: ['Formal Shoes', 'Premium Collection'],
     metaTitle: 'Executive Formal Shoes & Loafers | Marudhar Fashion Point',
     metaDescription: 'Step up your professional wardrobe with Marudhar handcrafted formal shoes and loafers.',
+    sizes: ['7', '8', '9', '10'],
+    sizeStocks: [
+      { size: '7', isAvailable: true, inStock: true, stockQuantity: 5 },
+      { size: '8', isAvailable: true, inStock: true, stockQuantity: 8 },
+      { size: '9', isAvailable: true, inStock: true, stockQuantity: 6 },
+      { size: '10', isAvailable: true, inStock: true, stockQuantity: 4 },
+    ],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
-  },
+  }),
 ];
 
 /**
@@ -114,27 +135,7 @@ export function listenToProductTemplates(
           const items: ProductTemplate[] = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            items.push({
-              id: docSnap.id,
-              name: data.name || 'Untitled Template',
-              descriptionPreview: data.descriptionPreview || '',
-              category: data.category || 'men',
-              productTypes: getProductTypes(data),
-              subcategory: data.subcategory || (data.productTypes && data.productTypes[0]) || '',
-              brand: data.brand || 'Marudhar Fashion',
-              description: data.description || '',
-              shortDescription: data.shortDescription || '',
-              material: data.material || '',
-              fitGuide: data.fitGuide || '',
-              careInstructions: data.careInstructions || '',
-              features: Array.isArray(data.features) ? data.features : [],
-              collectionTags: Array.isArray(data.collectionTags) ? data.collectionTags : [],
-              metaTitle: data.metaTitle || '',
-              metaDescription: data.metaDescription || '',
-              createdAt: data.createdAt || new Date().toISOString(),
-              updatedAt: data.updatedAt || new Date().toISOString(),
-              createdBy: data.createdBy,
-            });
+            items.push(normalizeProductTemplate({ id: docSnap.id, ...data }));
           });
           onUpdate(items);
           try {
@@ -147,7 +148,9 @@ export function listenToProductTemplates(
           try {
             const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (cached) {
-              onUpdate(JSON.parse(cached));
+              const parsed = JSON.parse(cached);
+              const normalized = Array.isArray(parsed) ? parsed.map(normalizeProductTemplate) : DEFAULT_PRODUCT_TEMPLATES;
+              onUpdate(normalized);
               return;
             }
           } catch {
@@ -161,7 +164,9 @@ export function listenToProductTemplates(
         try {
           const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
           if (cached) {
-            onUpdate(JSON.parse(cached));
+            const parsed = JSON.parse(cached);
+            const normalized = Array.isArray(parsed) ? parsed.map(normalizeProductTemplate) : DEFAULT_PRODUCT_TEMPLATES;
+            onUpdate(normalized);
             return;
           }
         } catch {
@@ -207,6 +212,10 @@ export async function saveProductTemplate(
     collectionTags: Array.isArray(template.collectionTags) ? template.collectionTags.filter(Boolean) : [],
     metaTitle: (template.metaTitle || '').trim(),
     metaDescription: (template.metaDescription || '').trim(),
+    sizes: Array.isArray(template.sizes) ? template.sizes : [],
+    sizeStocks: Array.isArray(template.sizeStocks) ? template.sizeStocks : [],
+    colors: Array.isArray(template.colors) ? template.colors : [],
+    variants: Array.isArray(template.variants) ? template.variants : [],
     createdAt: template.createdAt || now,
     updatedAt: now,
     createdBy: template.createdBy || 'admin',
@@ -282,6 +291,10 @@ export async function createTemplateFromProduct(
     collectionTags: product.collectionTags || [],
     metaTitle: product.metaTitle || '',
     metaDescription: product.metaDescription || '',
+    sizes: product.sizes || [],
+    sizeStocks: product.sizeStocks || [],
+    colors: product.colors || [],
+    variants: product.variants || [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     createdBy: createdBy || 'admin',

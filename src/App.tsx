@@ -219,6 +219,14 @@ function StorefrontView() {
   const [wishlistModalOpen, setWishlistModalOpen] = useState(false);
   const [adminLoginOpen, setAdminLoginOpen] = useState(false);
   const [adminDashboardOpen, setAdminDashboardOpen] = useState(false);
+  const handleSetAdminDashboardOpen = (isOpen: boolean, reason?: string) => {
+    console.log(`[ADMIN FORENSIC] previous state: ${adminDashboardOpen} -> next state: ${isOpen} | reason: ${reason || 'unknown'} | stack:`, new Error().stack);
+    setAdminDashboardOpen(isOpen);
+    if (!isOpen) {
+      document.body.style.pointerEvents = 'auto';
+      document.body.style.overflow = 'auto';
+    }
+  };
   const [adminActiveTab, setAdminActiveTab] = useState<any>(undefined);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
@@ -776,7 +784,7 @@ function StorefrontView() {
         onOpenAdmin={() => {
           setAdminActiveTab(undefined);
           if (isAdmin) {
-            setAdminDashboardOpen(true);
+            handleSetAdminDashboardOpen(true, 'Header onOpenAdmin');
           } else {
             setAdminLoginOpen(true);
           }
@@ -784,7 +792,7 @@ function StorefrontView() {
         onOpenAdminWithTab={(tab) => {
           setAdminActiveTab(tab);
           if (isAdmin) {
-            setAdminDashboardOpen(true);
+            handleSetAdminDashboardOpen(true, 'Header onOpenAdminWithTab');
           } else {
             setAdminLoginOpen(true);
           }
@@ -1149,7 +1157,7 @@ function StorefrontView() {
         onOpenAdmin={() => {
           setAdminActiveTab(undefined);
           if (isAdmin) {
-            setAdminDashboardOpen(true);
+            handleSetAdminDashboardOpen(true, 'FloatingAdminButton onOpenAdmin');
           } else {
             setAdminLoginOpen(true);
           }
@@ -1157,7 +1165,7 @@ function StorefrontView() {
         onOpenAdminWithTab={(tab) => {
           setAdminActiveTab(tab as any);
           if (isAdmin) {
-            setAdminDashboardOpen(true);
+            handleSetAdminDashboardOpen(true, 'FloatingAdminButton onOpenAdminWithTab');
           } else {
             setAdminLoginOpen(true);
           }
@@ -1265,14 +1273,14 @@ function StorefrontView() {
         <AdminLoginModal
           isOpen={adminLoginOpen}
           onClose={() => setAdminLoginOpen(false)}
-          onLoginSuccess={() => setAdminDashboardOpen(true)}
+          onLoginSuccess={() => handleSetAdminDashboardOpen(true, 'AdminLoginModal onLoginSuccess')}
         />
 
         {/* Admin Dashboard Modal */}
         <AdminErrorBoundary fallbackTitle="Admin Panel Shell Notice">
           <AdminDashboardModal
             isOpen={adminDashboardOpen}
-            onClose={() => setAdminDashboardOpen(false)}
+            onClose={() => handleSetAdminDashboardOpen(false, 'AdminDashboardModal onClose')}
             initialTab={adminActiveTab}
           />
         </AdminErrorBoundary>

@@ -271,6 +271,21 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     return null;
   };
 
+  React.useEffect(() => {
+    console.log('[ADMIN FORENSIC] AdminDashboardModal MOUNT / isOpen:', isOpen, 'initialTab:', initialTab);
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+      document.body.style.pointerEvents = 'auto';
+    }
+    return () => {
+      console.log('[ADMIN FORENSIC] AdminDashboardModal UNMOUNT');
+      document.body.style.overflow = 'auto';
+      document.body.style.pointerEvents = 'auto';
+    };
+  }, [isOpen]);
+
   const isGoogleUser = auth.currentUser?.providerData.some((p) => p.providerId === 'google.com');
 
   const unreadNotifCount = notifications.filter((n) => !n.read).length;

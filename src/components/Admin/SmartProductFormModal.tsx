@@ -102,6 +102,14 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
     return () => unsub();
   }, []);
 
+  useEffect(() => {
+    console.log('[PRODUCT FORM FORENSIC] SmartProductFormModal MOUNT', { isCreating, productId: initialProduct?.id });
+    return () => {
+      console.log('[PRODUCT FORM FORENSIC] SmartProductFormModal UNMOUNT');
+      document.body.style.pointerEvents = 'auto';
+    };
+  }, []);
+
   const [hasDraft, setHasDraft] = useState(false);
   const [imageInputUrl, setImageInputUrl] = useState('');
   const [isOptimizingImage, setIsOptimizingImage] = useState(false);
@@ -418,6 +426,17 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
         subcategory: allSubs[0],
       }));
     }
+  };
+
+  const handleResetToOneProductType = () => {
+    if (selectedProductTypes.length === 0) return;
+    const first = selectedProductTypes[0];
+    setProductState((prev) => ({
+      ...prev,
+      productTypes: [first],
+      productType: first,
+      subcategory: first,
+    }));
   };
 
   const allAvailableProductTypes = Array.from(new Set([...availableSubcategories.all, ...customProductTypes]));

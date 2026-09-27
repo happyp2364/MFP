@@ -21,6 +21,7 @@ interface SaveAsTemplateModalProps {
     metaDescription?: string;
     sizes?: string[];
     sizeStocks?: any[];
+    sizeMode?: 'standard' | 'free_size' | 'no_size';
     colors?: any[];
     variants?: any[];
   };

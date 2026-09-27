@@ -30,7 +30,7 @@ export interface SizeStock {
   isAvailable: boolean;
   inStock: boolean;
   stockQuantity: number;
-  system?: 'UK' | 'EU' | 'US' | 'Clothing' | 'Kids' | 'Custom';
+  system?: 'UK' | 'EU' | 'US' | 'Clothing' | 'Kids' | 'Custom' | 'Free Size';
 }
 
 export interface Product {

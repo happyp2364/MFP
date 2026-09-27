@@ -62,11 +62,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onExploreClick }) => {
   const slides: HeroSlide[] = [
     {
       id: 'slide-1',
-      badge: '👑 शाही कलेक्शन • Royal Collection',
-      title: 'शाही आराम व असली भारतीय स्टाइल • Royal Comfort & Authentic Style',
-      subtitle: 'मरुधर फैशन पॉइंट के खास स्पोर्ट्स स्नीकर्स, फॉर्मल लेदर शूज और वेडिंग फुटवियर का अनूठा संग्रह। Explore athletic sneakers, formal loafers & festive shoes.',
-      image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80',
-      ctaText: 'कलेक्शन देखें • Explore Range',
+      badge: heroContent?.badge || '👑 शाही कलेक्शन • Royal Collection',
+      title: heroContent?.headlineMain ? `${heroContent.headlineMain} ${heroContent.headlineHighlight || ''}` : 'शाही आराम व असली भारतीय स्टाइल • Royal Comfort & Authentic Style',
+      subtitle: heroContent?.subtitle || 'मरुधर फैशन पॉइंट के खास स्पोर्ट्स स्नीकर्स, फॉर्मल लेदर शूज और वेडिंग फुटवियर का अनूठा संग्रह। Explore athletic sneakers, formal loafers & festive shoes.',
+      image: resolvedHeroImage || 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=80',
+      ctaText: heroContent?.primaryBtnText || 'कलेक्शन देखें • Explore Range',
       ctaActionId: 'products',
       accentColor: 'from-emerald-500/20 to-amber-500/20',
       priceTag: 'मात्र ₹499 से शुरू • From ₹499'

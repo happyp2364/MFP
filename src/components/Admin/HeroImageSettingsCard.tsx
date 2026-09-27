@@ -26,6 +26,12 @@ export const HeroImageSettingsCard: React.FC = () => {
   const { heroContent, updateHeroContent, products, showToast } = useStore();
 
   // Local state for Hero Product / Shoe Image settings
+  const [badgeText, setBadgeText] = useState<string>(heroContent?.badge || '✨ NEW COLLECTION 2026');
+  const [headline, setHeadline] = useState<string>(heroContent?.headlineMain || 'Walk in Style.');
+  const [highlightText, setHighlightText] = useState<string>(heroContent?.headlineHighlight || 'Royal Comfort & Authentic Fashion.');
+  const [subText, setSubText] = useState<string>(heroContent?.subtitle || 'Exclusive lineup of high-grade athletic sneakers, royal leather loafers & party wear.');
+  const [btnText, setBtnText] = useState<string>(heroContent?.primaryBtnText || 'Shop Now');
+
   const [mode, setMode] = useState<'product' | 'custom'>(heroContent?.heroImageMode || 'custom');
   const [selectedProductId, setSelectedProductId] = useState<string>(heroContent?.heroProductId || '');
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(heroContent?.heroProductImageIndex || 0);
@@ -49,6 +55,11 @@ export const HeroImageSettingsCard: React.FC = () => {
   // Sync state when heroContent updates from Firestore
   useEffect(() => {
     if (heroContent) {
+      setBadgeText(heroContent.badge || '✨ NEW COLLECTION 2026');
+      setHeadline(heroContent.headlineMain || 'Walk in Style.');
+      setHighlightText(heroContent.headlineHighlight || 'Royal Comfort & Authentic Fashion.');
+      setSubText(heroContent.subtitle || 'Exclusive lineup of high-grade athletic sneakers, royal leather loafers & party wear.');
+      setBtnText(heroContent.primaryBtnText || 'Shop Now');
       setMode(heroContent.heroImageMode || 'custom');
       setSelectedProductId(heroContent.heroProductId || '');
       setSelectedImageIndex(heroContent.heroProductImageIndex || 0);
@@ -124,6 +135,11 @@ export const HeroImageSettingsCard: React.FC = () => {
           primaryBtnText: 'Shop Now',
           primaryBtnLink: '#products',
         }),
+        badge: badgeText,
+        headlineMain: headline,
+        headlineHighlight: highlightText,
+        subtitle: subText,
+        primaryBtnText: btnText,
         heroImage: previewImageUrl,
         heroImageMode: mode,
         heroProductId: mode === 'product' ? selectedProductId : '',
@@ -227,7 +243,73 @@ export const HeroImageSettingsCard: React.FC = () => {
         {/* LEFT COLUMN: Controls & Settings */}
         <div className="lg:col-span-7 space-y-5">
           
-          {/* 1. Source Mode Selection */}
+          {/* 1. Hero Text & Content Customization */}
+          <div className="bg-neutral-50 p-4.5 rounded-2xl border border-neutral-200/80 space-y-3.5">
+            <label className="text-xs font-black uppercase tracking-wider text-neutral-700 block flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#0B8F63]" />
+              <span>1. Hero Text, Badge & Button Customization</span>
+            </label>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-neutral-700 block mb-1">Top Badge Text</label>
+                <input
+                  type="text"
+                  value={badgeText}
+                  onChange={(e) => setBadgeText(e.target.value)}
+                  placeholder="e.g. ✨ NEW COLLECTION 2026"
+                  className="w-full bg-white border border-neutral-200 rounded-xl p-2.5 font-medium outline-none focus:border-[#0B8F63]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">Main Headline</label>
+                  <input
+                    type="text"
+                    value={headline}
+                    onChange={(e) => setHeadline(e.target.value)}
+                    placeholder="e.g. Walk in Style."
+                    className="w-full bg-white border border-neutral-200 rounded-xl p-2.5 font-medium outline-none focus:border-[#0B8F63]"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">Highlight / Sub-Headline</label>
+                  <input
+                    type="text"
+                    value={highlightText}
+                    onChange={(e) => setHighlightText(e.target.value)}
+                    placeholder="e.g. Royal Comfort & Authentic Fashion."
+                    className="w-full bg-white border border-neutral-200 rounded-xl p-2.5 font-medium outline-none focus:border-[#0B8F63]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-neutral-700 block mb-1">Hero Subtitle / Description</label>
+                <textarea
+                  value={subText}
+                  onChange={(e) => setSubText(e.target.value)}
+                  rows={2}
+                  placeholder="Exclusive lineup of high-grade athletic sneakers..."
+                  className="w-full bg-white border border-neutral-200 rounded-xl p-2.5 font-medium outline-none focus:border-[#0B8F63]"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-neutral-700 block mb-1">Primary Call-to-Action (CTA) Button Text</label>
+                <input
+                  type="text"
+                  value={btnText}
+                  onChange={(e) => setBtnText(e.target.value)}
+                  placeholder="Shop Now"
+                  className="w-full bg-white border border-neutral-200 rounded-xl p-2.5 font-medium outline-none focus:border-[#0B8F63]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Source Mode Selection */}
           <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200/80">
             <label className="text-xs font-black uppercase tracking-wider text-neutral-700 block mb-3">
               1. Choose Hero Visual Source

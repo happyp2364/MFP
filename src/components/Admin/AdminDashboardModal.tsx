@@ -859,6 +859,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </select>
 
                     <button
+                      type="button"
                       onClick={() => {
                         setIsCreatingProduct(true);
                         setEditingProduct({
@@ -948,6 +949,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             <td className="p-3.5 text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     setIsCreatingProduct(false);
                                     setEditingProduct({ ...p });
@@ -958,6 +960,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                   <Edit className="w-3.5 h-3.5" />
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => handleDuplicateProduct(p)}
                                   className="p-1.5 rounded-lg bg-neutral-100 hover:bg-amber-500 hover:text-white transition-colors text-amber-700"
                                   title="Duplicate Product"
@@ -965,6 +968,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                                   <Copy className="w-3.5 h-3.5" />
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     triggerReAuthGuard(`Delete Product "${p.name}"`, () => deleteProduct(p.id));
                                   }}

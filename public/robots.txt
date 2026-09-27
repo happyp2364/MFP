@@ -1,0 +1,12 @@
+# Marudhar Fashion Point Robots.txt
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /login
+Disallow: /checkout
+Disallow: /cart
+Disallow: /account
+Disallow: /orders
+Disallow: /private
+
+Sitemap: https://marudhar-fashion-point-1.vercel.app/sitemap.xml

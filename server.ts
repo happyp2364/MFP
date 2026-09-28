@@ -2232,11 +2232,39 @@ ${customerMessage || 'Please confirm availability.'}`;
     res.send(`User-agent: *\nAllow: /\nSitemap: ${protocol}://${host}/sitemap.xml`);
   });
 
-  app.get("/sitemap.xml", (req, res) => {
+  app.get("/sitemap.xml", async (req, res) => {
     const host = req.get("host") || "marudhar-fashion-point-1.vercel.app";
     const protocol = req.protocol || "https";
     const baseUrl = `${protocol}://${host}`;
-    
+
+    let productUrls: string[] = [];
+
+    try {
+      const firestoreListUrl = 'https://firestore.googleapis.com/v1/projects/gen-lang-client-0934233443/databases/ai-studio-marudharfashionp-84582cae-673f-469e-bad0-503eef199989/documents/products?pageSize=300';
+      const fsRes = await fetch(firestoreListUrl);
+      if (fsRes.ok) {
+        const data = await fsRes.json();
+        const docs = data.documents || [];
+        docs.forEach((doc: any) => {
+          const namePath = doc.name || '';
+          const docId = namePath.split('/').pop();
+          const fields = doc.fields || {};
+          
+          const status = fields.status?.stringValue || 'active';
+          const isArchived = fields.isArchived?.booleanValue === true;
+          
+          if (docId && status !== 'deleted' && !isArchived) {
+            productUrls.push(`${baseUrl}/product/${docId}`);
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('[Dynamic Sitemap Error]:', e);
+      SERVER_PRODUCT_CATALOG.forEach(p => {
+        productUrls.push(`${baseUrl}/product/${p.id}`);
+      });
+    }
+
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -2251,19 +2279,18 @@ ${customerMessage || 'Please confirm availability.'}`;
   </url>
 `;
 
-    // Add products
-    SERVER_PRODUCT_CATALOG.forEach(p => {
-      xml += `
-  <url>
-    <loc>${baseUrl}/product/${p.slug || p.id}</loc>
-    <changefreq>weekly</changefreq>
+    productUrls.forEach(url => {
+      xml += `  <url>
+    <loc>${url}</loc>
+    <changefreq>daily</changefreq>
     <priority>0.8</priority>
-  </url>`;
+  </url>\n`;
     });
 
-    xml += `\n</urlset>`;
-    
-    res.type('application/xml');
+    xml += `</urlset>`;
+
+    res.setHeader('Content-Type', 'application/xml; charset=UTF-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
     res.send(xml);
   });
 

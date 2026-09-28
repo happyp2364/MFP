@@ -32,16 +32,20 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   const fullTitle = finalTitle.includes(siteName) ? finalTitle : `${finalTitle} | ${siteName}`;
   const finalCanonicalUrl = canonicalUrl || (typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '');
 
-  // Default organization schema
-  const defaultSchema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": siteName,
-    "url": typeof window !== 'undefined' ? window.location.origin : '',
-    "logo": typeof window !== 'undefined' ? `${window.location.origin}/logo.png` : '',
-  };
-
-  const finalSchemas = [defaultSchema, ...schemas];
+  // Default organization schema only if not already provided and not on product detail page
+  const hasOrganizationSchema = schemas.some(s => s && s['@type'] === 'Organization');
+  const finalSchemas = (!hasOrganizationSchema && type !== 'product')
+    ? [
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": siteName,
+          "url": typeof window !== 'undefined' ? window.location.origin : '',
+          "logo": typeof window !== 'undefined' ? `${window.location.origin}/logo.png` : '',
+        },
+        ...schemas
+      ]
+    : schemas;
 
   // Safely inject Google Analytics without triggering React script rendering warning
   useEffect(() => {

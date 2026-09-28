@@ -91,7 +91,16 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
     enabled: true,
   }));
   const [announcementsList, setAnnouncementsListState] = useState<AnnouncementItem[]>(defaultAnnouncements);
-  const [categoryHighlights, setCategoryHighlightsState] = useState<CategoryHighlight[]>(CATEGORY_HIGHLIGHTS);
+  const [categoryHighlights, setCategoryHighlightsState] = useState<CategoryHighlight[]>(() => {
+    try {
+      const saved = localStorage.getItem('mfp_category_highlights');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return CATEGORY_HIGHLIGHTS;
+  });
   const [trendingCollections, setTrendingCollectionsState] = useState<TrendingCollectionItem[]>(TRENDING_COLLECTIONS);
 
   const [topAnnouncementBarConfig, setTopAnnouncementBarConfig] = useState<TopAnnouncementBarConfig>(() => {
@@ -105,7 +114,16 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
     return DEFAULT_TOP_ANNOUNCEMENT_BAR_CONFIG;
   });
   const [megaMenuCategories, setMegaMenuCategoriesState] = useState<MegaMenuCategory[]>(DEFAULT_MEGA_MENU_CATEGORIES);
-  const [mobileCategories, setMobileCategoriesState] = useState<MobileCategoryIcon[]>(DEFAULT_MOBILE_CATEGORY_ICONS);
+  const [mobileCategories, setMobileCategoriesState] = useState<MobileCategoryIcon[]>(() => {
+    try {
+      const saved = localStorage.getItem('mfp_mobile_categories');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_MOBILE_CATEGORY_ICONS;
+  });
   const [productCardDesignerConfig, setProductCardDesignerConfig] = useState<ProductCardDesignerConfig>(DEFAULT_PRODUCT_CARD_CONFIG);
   const [trendingShoesConfig, setTrendingShoesConfig] = useState<TrendingShoesCollectionConfig>(DEFAULT_TRENDING_SHOES_CONFIG);
   const [pricePointConfig, setPricePointConfig] = useState<PricePointCollectionConfig>(DEFAULT_PRICE_POINT_CONFIG);
@@ -129,12 +147,34 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
       if (snapshot.exists()) setTopAnnouncementBarConfig(snapshot.data() as TopAnnouncementBarConfig);
     }, () => {});
 
+    const unsubCategoryHighlights = onSnapshot(doc(db, 'settings', 'category_highlights'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && Array.isArray(data.items)) {
+          setCategoryHighlightsState(data.items);
+          localStorage.setItem('mfp_category_highlights', JSON.stringify(data.items));
+        }
+      }
+    }, () => {});
+
+    const unsubMobileCategories = onSnapshot(doc(db, 'settings', 'mobile_categories'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && Array.isArray(data.items)) {
+          setMobileCategoriesState(data.items);
+          localStorage.setItem('mfp_mobile_categories', JSON.stringify(data.items));
+        }
+      }
+    }, () => {});
+
     fetchHomepageVersionsList();
 
     return () => {
       unsubTheme();
       unsubHero();
       unsubTopAnnounce();
+      unsubCategoryHighlights();
+      unsubMobileCategories();
     };
   }, []);
 
@@ -176,10 +216,22 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const updateCategoryHighlight = async (highlight: CategoryHighlight) => {
     const updated = categoryHighlights.map((ch) => (ch.id === highlight.id ? highlight : ch));
     setCategoryHighlightsState(updated);
+    localStorage.setItem('mfp_category_highlights', JSON.stringify(updated));
+    try {
+      await setDoc(doc(db, 'settings', 'category_highlights'), { items: updated }, { merge: true });
+    } catch (e) {
+      console.warn('Firestore category_highlights sync failed', e);
+    }
   };
 
   const saveCategoryHighlights = async (highlights: CategoryHighlight[]) => {
     setCategoryHighlightsState(highlights);
+    localStorage.setItem('mfp_category_highlights', JSON.stringify(highlights));
+    try {
+      await setDoc(doc(db, 'settings', 'category_highlights'), { items: highlights }, { merge: true });
+    } catch (e) {
+      console.warn('Firestore category_highlights sync failed', e);
+    }
   };
 
   const updateTrendingCollection = async (item: TrendingCollectionItem) => {
@@ -203,6 +255,12 @@ export const AppearanceProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const updateMobileCategories = async (categories: MobileCategoryIcon[]) => {
     setMobileCategoriesState(categories);
+    localStorage.setItem('mfp_mobile_categories', JSON.stringify(categories));
+    try {
+      await setDoc(doc(db, 'settings', 'mobile_categories'), { items: categories }, { merge: true });
+    } catch (e) {
+      console.warn('Firestore mobile_categories sync failed', e);
+    }
   };
 
   const updateProductCardDesignerConfig = async (config: ProductCardDesignerConfig) => {

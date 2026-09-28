@@ -79,10 +79,10 @@ export const generateProductSchema = (product: any) => {
         "name": "Marudhar Fashion Point"
       }
     },
-    "aggregateRating": product.rating ? {
+    "aggregateRating": (product.rating && product.reviewsCount && product.reviewsCount > 0) ? {
       "@type": "AggregateRating",
       "ratingValue": product.rating,
-      "reviewCount": product.reviewsCount || 1
+      "reviewCount": product.reviewsCount
     } : undefined
   };
 };

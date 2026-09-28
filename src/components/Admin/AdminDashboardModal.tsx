@@ -67,7 +67,6 @@ import { AdminErrorBoundary } from './AdminErrorBoundary';
 const OrderManagementView = lazy(() => import('./OrderManagementView').then(m => ({ default: m.OrderManagementView })));
 const PaymentSettingsView = lazy(() => import('./PaymentSettingsView').then(m => ({ default: m.PaymentSettingsView })));
 const ReportsAnalyticsView = lazy(() => import('./ReportsAnalyticsView').then(m => ({ default: m.ReportsAnalyticsView })));
-const AIShoePetSettingsView = lazy(() => import('./AIShoePetSettingsView').then(m => ({ default: m.AIShoePetSettingsView })));
 const MarketingCenterView = lazy(() => import('./MarketingCenterView').then(m => ({ default: m.MarketingCenterView })));
 const CategoriesSettingsView = lazy(() => import('./CategoriesSettingsView').then(m => ({ default: m.CategoriesSettingsView })));
 const ReviewsSettingsView = lazy(() => import('./ReviewsSettingsView').then(m => ({ default: m.ReviewsSettingsView })));
@@ -100,7 +99,6 @@ const VisualWebsiteBuilder = lazy(() => import('./VisualWebsiteBuilder').then(m 
 const AdminNavCustomizer = lazy(() => import('./AdminNavCustomizer').then(m => ({ default: m.AdminNavCustomizer })));
 const HeroImageSettingsCard = lazy(() => import('./HeroImageSettingsCard').then(m => ({ default: m.HeroImageSettingsCard })));
 const InstagramReelsAdminManager = lazy(() => import('./InstagramReelsAdminManager').then(m => ({ default: m.InstagramReelsAdminManager })));
-const ThemesStudioView = lazy(() => import('./ThemesStudioView').then(m => ({ default: m.ThemesStudioView })));
 const InventoryRecoveryScanner = lazy(() => import('./InventoryRecoveryScanner').then(m => ({ default: m.InventoryRecoveryScanner })));
 const GoogleDriveBackupView = lazy(() => import('./GoogleDriveBackupView').then(m => ({ default: m.GoogleDriveBackupView })));
 import { useAdminNav } from '../../context/AdminNavContext';
@@ -114,7 +112,7 @@ interface AdminDashboardModalProps {
   initialTab?: TabType;
 }
 
-type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'ai_pet_shoe' | 'instagram' | 'instagram_reels' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'logo_customization' | 'themes_studio' | 'website_design' | 'visual_builder' | 'nav_customizer' | 'inventory_recovery';
+type TabType = 'orders' | 'open_box_delivery' | 'marketing' | 'whatsapp_templates' | 'payment_settings' | 'reports' | 'products' | 'categories' | 'reviews' | 'homepage' | 'about_us' | 'top_announcement_bar' | 'instagram' | 'instagram_reels' | 'overview' | 'settings' | 'audit' | 'backups' | 'password' | 'versions' | 'coupons' | 'spin_wheel' | 'engagement_analytics' | 'lucky_box' | 'order_celebration' | 'admin_management' | 'product_feed_settings' | 'product_card_designer' | 'trending_shoes' | 'price_point_699' | 'store_management' | 'seo_local_business' | 'ai_marketing_growth' | 'customer_crm' | 'sound' | 'website_configuration' | 'logo_customization' | 'website_design' | 'visual_builder' | 'nav_customizer' | 'inventory_recovery';
 
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen,
@@ -209,14 +207,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       case 'engagement_analytics': return <TrendingUp className="w-4 h-4 text-blue-500 shrink-0" />;
       case 'instagram': return <Share2 className="w-4 h-4 text-emerald-500 shrink-0" />;
       case 'instagram_reels': return <Instagram className="w-4 h-4 text-pink-500 shrink-0" />;
-      case 'ai_pet_shoe': return <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />;
       case 'trending_shoes': return <Flame className="w-4 h-4 text-[#0B8F63] shrink-0" />;
       case 'price_point_699': return <Zap className="w-4 h-4 text-emerald-500 shrink-0" />;
       case 'payment_settings': return <CreditCard className="w-4 h-4 text-emerald-600 shrink-0" />;
       case 'reports': return <TrendingUp className="w-4 h-4 text-indigo-600 shrink-0" />;
       case 'overview': return <LayoutDashboard className="w-4 h-4 text-indigo-500 shrink-0" />;
       case 'website_configuration': return <Sliders className="w-4 h-4 text-neutral-600 shrink-0" />;
-      case 'themes_studio': return <Palette className="w-4 h-4 text-amber-500 shrink-0" />;
       case 'website_design': return <Paintbrush className="w-4 h-4 text-amber-500 shrink-0" />;
       case 'visual_builder': return <Layout className="w-4 h-4 text-emerald-500 shrink-0" />;
       case 'product_card_designer': return <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />;
@@ -758,13 +754,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               </AdminErrorBoundary>
             )}
 
-            {/* ----------------- TAB: GLOBAL THEME STUDIO ----------------- */}
-            {activeTab === 'themes_studio' && (
-              <AdminErrorBoundary fallbackTitle="Theme Studio Notice">
-                <ThemesStudioView showToast={(msg) => setSaveNotification(msg)} />
-              </AdminErrorBoundary>
-            )}
-
             {/* ----------------- TAB: STORE IDENTITY & CONFIGURATION ----------------- */}
             {activeTab === 'website_configuration' && (
               <AdminErrorBoundary fallbackTitle="Store Configuration Notice">
@@ -822,9 +811,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             {/* ----------------- TAB: TOP ANNOUNCEMENT BAR CUSTOMIZER ----------------- */}
             {activeTab === 'top_announcement_bar' && <TopAnnouncementBarSettingsView />}
-
-            {/* ----------------- TAB: AI PET SHOE MASCOT ----------------- */}
-            {activeTab === 'ai_pet_shoe' && <AIShoePetSettingsView />}
 
             {/* ----------------- TAB: LIVE INSTAGRAM INTEGRATION ----------------- */}
             {activeTab === 'instagram' && <SocialMediaSettingsView />}
@@ -1478,11 +1464,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         </div>
                       )}
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
                         {/* File Upload Button */}
                         <div>
                           <label className="font-bold text-neutral-700 text-xs block mb-1">Upload Logo Photo / Image</label>
-                          <label className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-emerald-400 rounded-xl text-xs font-extrabold text-emerald-800 hover:bg-emerald-100/50 cursor-pointer transition-colors shadow-xs">
+                          <label className="flex items-center justify-center gap-2 px-3 py-2.5 bg-white border border-dashed border-emerald-400 rounded-xl text-xs font-extrabold text-emerald-800 hover:bg-emerald-100/50 cursor-pointer transition-colors shadow-xs">
                             <Upload className="w-4 h-4 text-emerald-600" />
                             <span>Select Image File</span>
                             <input
@@ -1492,18 +1478,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                               className="hidden"
                             />
                           </label>
-                        </div>
-
-                        {/* Direct URL Input */}
-                        <div>
-                          <label className="font-bold text-neutral-700 text-xs block mb-1">Or Paste Image URL</label>
-                          <input
-                            type="text"
-                            value={storeInfoForm.logoUrl || ''}
-                            onChange={(e) => setStoreInfoForm({ ...storeInfoForm, logoUrl: e.target.value })}
-                            placeholder="https://example.com/logo.png"
-                            className="w-full bg-white border border-neutral-200 rounded-xl p-2 outline-none text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
-                          />
                         </div>
                       </div>
 

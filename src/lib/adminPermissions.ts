@@ -262,8 +262,6 @@ export function mapTabToModule(tab: string): AdminModule {
     case 'homepage':
     case 'top_announcement_bar':
       return 'hero';
-    case 'ai_pet_shoe':
-      return 'ai_features';
     case 'instagram':
       return 'marketing';
     case 'settings':

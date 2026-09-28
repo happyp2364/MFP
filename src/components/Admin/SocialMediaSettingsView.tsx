@@ -1531,7 +1531,7 @@ export const SocialMediaSettingsView: React.FC = () => {
                   value={instaProfilePic}
                   onChange={(url) => setInstaProfilePic(url)}
                   label="Instagram Custom Profile Picture"
-                  description="Upload, paste URL, capture, or generate an Instagram profile image."
+                  description="Upload, capture, or generate an Instagram profile image."
                 />
               </div>
             </div>

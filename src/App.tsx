@@ -807,6 +807,7 @@ function StorefrontView() {
         activeCategory={activeCategory}
         onSelectCategory={handleSelectCategory}
         onNavigateToSection={(sec) => {
+          setProductRouteSlug(null);
           if (sec === 'hero') {
             setIsShopActive(false);
             handleSelectCategory('all');
@@ -824,6 +825,7 @@ function StorefrontView() {
         wishlistCount={validWishlistIds.length}
         cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
         onNavigateHome={() => {
+          setProductRouteSlug(null);
           setIsShopActive(false);
           handleSelectCategory('all');
           handleResetFilters();

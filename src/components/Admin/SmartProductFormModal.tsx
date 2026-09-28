@@ -1787,44 +1787,6 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                           </button>
                         </div>
 
-                        {/* Bulk URL Import */}
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">Or Bulk Paste Image URLs (One link per line):</label>
-                          <div className="flex gap-2">
-                            <textarea
-                              rows={2}
-                              value={bulkUrlInput}
-                              onChange={(e) => setBulkUrlInput(e.target.value)}
-                              placeholder="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=60"
-                              className="flex-1 bg-white border border-neutral-200 rounded-xl p-2 text-xs font-mono outline-none focus:ring-2 focus:ring-emerald-600"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const urls = bulkUrlInput
-                                  .split(/[\n,]/)
-                                  .map(u => u.trim())
-                                  .filter(u => u.startsWith('http'));
-                                if (urls.length === 0) {
-                                  showToast?.('Please enter valid HTTP/HTTPS image links.', 'error');
-                                  return;
-                                }
-                                const existingImages = (productState.variants || [])
-                                  .find(v => v.color.toLowerCase() === selectedColorForGallery.toLowerCase())
-                                  ?.images || [];
-                                const merged = [...existingImages, ...urls];
-                                updateColorGalleryImages(selectedColorForGallery, merged);
-                                setBulkUrlInput('');
-                                showToast?.(`Added ${urls.length} images successfully!`, 'success');
-                              }}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-3.5 rounded-xl transition-colors self-end h-fit py-3"
-                            >
-                              Import
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
                       {/* AI Generator Tool Mock */}
                       <div className="bg-[#0B8F63]/5 p-3 rounded-xl border border-[#0B8F63]/20 flex items-center justify-between gap-2">
                         <div className="space-y-0.5">
@@ -1859,6 +1821,7 @@ export const SmartProductFormModal: React.FC<SmartProductFormModalProps> = ({
                         </button>
                       </div>
                     </div>
+                  </div>
 
                     {/* RENDER ACTIVE COLOR GALLERY LIST */}
                     <div className="space-y-2">

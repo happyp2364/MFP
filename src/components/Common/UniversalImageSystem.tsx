@@ -247,10 +247,10 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
   onChange,
   onSaveConfig,
   defaultValue = CLEAN_IMAGE_COMING_SOON_SVG,
-  label = "Image URL Settings",
-  description = "Support for uploading files, pasting direct URLs, capturing with camera, or generating with AI."
+  label = "Image Settings",
+  description = "Support for uploading files, capturing with camera, or generating with AI."
 }) => {
-  const [activeTab, setActiveTab] = useState<'upload' | 'url' | 'camera' | 'ai' | 'preset'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'camera' | 'ai' | 'preset'>('upload');
   const [urlInput, setUrlInput] = useState(value);
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<{ isValid: boolean; meta?: ImageMetaData; error?: string } | null>(null);
@@ -508,7 +508,7 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
           {/* Selector Tabs */}
           <div className="flex bg-neutral-100 p-1 rounded-xl border border-neutral-200 overflow-x-auto no-scrollbar">
             {[
-              { id: 'url', label: 'Paste URL', icon: Link2 },
+
               { id: 'upload', label: 'Upload', icon: Upload },
               { id: 'camera', label: 'Camera', icon: Camera },
               { id: 'ai', label: 'AI Gen', icon: Sparkles },
@@ -539,59 +539,7 @@ export const AdminImageSelector: React.FC<AdminImageSelectorProps> = ({
           {/* Active Tab Panel */}
           <div className="min-h-24 bg-neutral-50 p-4 rounded-xl border border-neutral-150 flex flex-col justify-center">
             
-            {/* TAB: URL Paste */}
-            {activeTab === 'url' && (
-              <div className="space-y-3">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-xs pr-8 font-medium outline-none focus:ring-2 focus:ring-[#0B8F63]"
-                  />
-                  {isValidating && (
-                    <div className="absolute right-2.5 top-2.5">
-                      <Loader2 className="w-4 h-4 text-[#0B8F63] animate-spin" />
-                    </div>
-                  )}
-                </div>
 
-                {/* Validation Banner */}
-                {urlInput && (
-                  <div className="pt-1.5">
-                    {validationResult ? (
-                      validationResult.isValid ? (
-                        <div className="flex items-start gap-2 text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-100 p-2.5 rounded-xl">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                          <div className="space-y-0.5">
-                            <span className="font-bold">Image URL Verified Successfully</span>
-                            <div className="flex gap-2.5 text-[10px] text-emerald-600">
-                              <span>Dims: <strong>{validationResult.meta?.width} x {validationResult.meta?.height} px</strong></span>
-                              <span>•</span>
-                              <span>Size: <strong>{getReadableSize(validationResult.meta?.sizeBytes)}</strong></span>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-start gap-2 text-[11px] bg-red-50 text-red-800 border border-red-100 p-2.5 rounded-xl">
-                          <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                          <div className="space-y-0.5">
-                            <span className="font-bold">Invalid Image URL</span>
-                            <span className="block text-[10px] text-red-600 font-medium">Reason: {validationResult.error}</span>
-                          </div>
-                        </div>
-                      )
-                    ) : (
-                      <div className="flex items-center gap-2 text-[11px] text-neutral-500 bg-neutral-100 p-2.5 rounded-xl">
-                        <Loader2 className="w-3.5 h-3.5 text-[#0B8F63] animate-spin" />
-                        <span>Validating image URL online...</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* TAB: Local Upload */}
             {activeTab === 'upload' && (

@@ -960,32 +960,7 @@ export const StoreManagementAdmin: React.FC = () => {
                       tabIndex={-1}
                       aria-hidden="true"
                     />
-                  </div>
-
-                  {/* Direct URL Fallback */}
-                  <div className="pt-2 border-t border-neutral-200/70">
-                    <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1.5">
-                      Or Add by Direct Image URL:
-                    </span>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newImageUrl}
-                        onChange={(e) => setNewImageUrl(e.target.value)}
-                        placeholder="https://images.unsplash.com/... or direct image link"
-                        className="flex-1 px-3 py-2 border border-neutral-200 bg-white rounded-xl focus:outline-none focus:border-emerald-500 text-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddImage}
-                        disabled={!newImageUrl.trim()}
-                        className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-40 text-white font-bold rounded-xl cursor-pointer text-xs shrink-0 flex items-center gap-1"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Add URL</span>
-                      </button>
-                    </div>
-                  </div>
+                   </div>
 
                   {/* Uploaded Photos Grid */}
                   {(formData.images || []).length > 0 && (

@@ -849,13 +849,7 @@ export const CategoriesSettingsView: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <span className="text-[10px] font-bold text-emerald-800 uppercase block">Active Thumbnail</span>
-                          <input
-                            type="text"
-                            value={mobileImage}
-                            onChange={(e) => setMobileImage(e.target.value)}
-                            placeholder="Image URL..."
-                            className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-1 text-[11px] font-mono mt-1"
-                          />
+                          <span className="text-[11px] font-mono text-neutral-600 truncate block mt-0.5">{mobileImage || 'No image selected'}</span>
                         </div>
                       </div>
 
@@ -928,23 +922,6 @@ export const CategoriesSettingsView: React.FC = () => {
                               </button>
                             </div>
                           ))}
-                        </div>
-
-                        <div className="flex gap-1.5">
-                          <input
-                            type="text"
-                            value={newGalleryUrl}
-                            onChange={(e) => setNewGalleryUrl(e.target.value)}
-                            placeholder="Add alternative image URL..."
-                            className="flex-1 bg-white border border-neutral-200 rounded-xl p-1.5 text-[11px]"
-                          />
-                          <button
-                            type="button"
-                            onClick={handleAddGalleryUrl}
-                            className="px-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-bold text-[11px]"
-                          >
-                            Add
-                          </button>
                         </div>
                       </div>
                     </div>

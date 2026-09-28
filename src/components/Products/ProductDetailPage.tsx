@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { Product, ProductVariant } from '../../types';
 import { generateProductWhatsAppLink } from '../../utils/whatsapp';
-import { getProductSKU, getProductUrl } from '../../utils/productUtils';
+import { getProductSKU, getProductUrl, isImageOwnedByProduct } from '../../utils/productUtils';
 import { getProductTypes } from '../../utils/productTypeUtils';
 import { CLEAN_IMAGE_COMING_SOON_SVG } from '../../utils/imageOptimizer';
 import {
@@ -124,7 +124,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
         setSelectedColor(product.colors && product.colors.length > 0 && product.colors[0]?.name ? product.colors[0].name : 'Standard');
       }
     }
-  }, [product]);
+  }, [product?.id]);
 
   // Sync size when selectedColor changes
   useEffect(() => {
@@ -317,9 +317,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     ? (displayImages[activeImageIndex] || displayImages[0])
     : '';
 
-  const displayImageSrc = (!rawImageSrc || imageError)
+  const isOwned = isImageOwnedByProduct(product, rawImageSrc);
+  const validImageSrc = isOwned ? rawImageSrc : (product?.images?.[0] || '');
+
+  const displayImageSrc = (!validImageSrc || imageError || !isImageOwnedByProduct(product, validImageSrc))
     ? CLEAN_IMAGE_COMING_SOON_SVG
-    : rawImageSrc;
+    : validImageSrc;
 
   const handleWhatsAppBuy = () => {
     const link = generateProductWhatsAppLink(product, selectedSize, selectedColor, quantity);

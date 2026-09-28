@@ -1,5 +1,4 @@
 import { WebsiteDesignSettings, PageSectionConfig, WebsiteLayoutConfig, SectionResponsiveConfig } from '../types/websiteDesign';
-import { THEMES_REGISTRY } from './themesRegistry';
 import { FESTIVALS_REGISTRY } from './festivalsRegistry';
 
 const createDefaultSectionConfig = (id: string, name: string, locked = false): PageSectionConfig => ({
@@ -164,7 +163,7 @@ export function sanitizeWebsiteDesignSettings(rawSettings: any): WebsiteDesignSe
   const defaults = DEFAULT_WEBSITE_DESIGN_SETTINGS;
 
   return {
-    activeThemeId: typeof rawSettings.activeThemeId === 'string' && THEMES_REGISTRY[rawSettings.activeThemeId] ? rawSettings.activeThemeId : 'local',
+    activeThemeId: 'local',
     activeFestivalId: typeof rawSettings.activeFestivalId === 'string' && FESTIVALS_REGISTRY[rawSettings.activeFestivalId] ? rawSettings.activeFestivalId : 'none',
     header: {
       height: safeNumber(rawSettings.header?.height, defaults.header.height, 40, 160),
@@ -343,29 +342,26 @@ export function applyWebsiteDesignTokens(settings: WebsiteDesignSettings) {
   root.style.setProperty('--mfp-floating-icon-size', `${settings.floatingActions.iconSize}px`);
   root.style.setProperty('--mfp-floating-btn-gap', `${settings.floatingActions.gap}px`);
 
-  // Global Theme System (Seasonal, Festival, Nature, Weather)
-  const activeThemeId = settings.activeThemeId && THEMES_REGISTRY[settings.activeThemeId] ? settings.activeThemeId : 'local';
-  const theme = THEMES_REGISTRY[activeThemeId] || THEMES_REGISTRY['local'];
-  root.setAttribute('data-theme', activeThemeId);
-
-  root.style.setProperty('--theme-background', theme.colors.background);
-  root.style.setProperty('--theme-surface', theme.colors.surface);
-  root.style.setProperty('--theme-surface-secondary', theme.colors.surfaceSecondary);
-  root.style.setProperty('--theme-text', theme.colors.text);
-  root.style.setProperty('--theme-text-muted', theme.colors.textMuted);
-  root.style.setProperty('--theme-primary', theme.colors.primary);
-  root.style.setProperty('--theme-primary-hover', theme.colors.primaryHover);
-  root.style.setProperty('--theme-secondary', theme.colors.secondary);
-  root.style.setProperty('--theme-accent', theme.colors.accent);
-  root.style.setProperty('--theme-border', theme.colors.border);
-  root.style.setProperty('--theme-card', theme.colors.card);
-  root.style.setProperty('--theme-card-hover', theme.colors.cardHover);
-  root.style.setProperty('--theme-button', theme.colors.button);
-  root.style.setProperty('--theme-button-text', theme.colors.buttonText);
-  root.style.setProperty('--theme-badge', theme.colors.badge);
-  root.style.setProperty('--theme-badge-text', theme.colors.badgeText);
-  root.style.setProperty('--theme-font-heading', theme.fonts.heading);
-  root.style.setProperty('--theme-font-body', theme.fonts.body);
+  // Global Theme System
+  root.setAttribute('data-theme', 'local');
+  root.style.setProperty('--theme-background', '#FFFFFF');
+  root.style.setProperty('--theme-surface', '#F8FAFC');
+  root.style.setProperty('--theme-surface-secondary', '#F1F5F9');
+  root.style.setProperty('--theme-text', '#0F172A');
+  root.style.setProperty('--theme-text-muted', '#64748B');
+  root.style.setProperty('--theme-primary', '#0B8F63');
+  root.style.setProperty('--theme-primary-hover', '#086F4C');
+  root.style.setProperty('--theme-secondary', '#1E293B');
+  root.style.setProperty('--theme-accent', '#F59E0B');
+  root.style.setProperty('--theme-border', '#E2E8F0');
+  root.style.setProperty('--theme-card', '#FFFFFF');
+  root.style.setProperty('--theme-card-hover', '#F8FAFC');
+  root.style.setProperty('--theme-button', '#0B8F63');
+  root.style.setProperty('--theme-button-text', '#FFFFFF');
+  root.style.setProperty('--theme-badge', '#ECFDF5');
+  root.style.setProperty('--theme-badge-text', '#065F46');
+  root.style.setProperty('--theme-font-heading', 'Playfair Display, serif');
+  root.style.setProperty('--theme-font-body', 'Plus Jakarta Sans, sans-serif');
 
   // Global Festival Experience System
   const activeFestivalId = settings.activeFestivalId && FESTIVALS_REGISTRY[settings.activeFestivalId] ? settings.activeFestivalId : 'none';

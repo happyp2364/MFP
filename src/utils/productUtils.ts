@@ -180,7 +180,7 @@ export function sanitizeWhatsAppText(raw: string): string {
 }
 
 /**
- * Matches a product by Firebase ID, slug, or SKU with full decoder support
+ * Matches a product by Firebase ID, slug, or SKU strictly and canonically
  */
 export function findProductBySlugOrId(products: Product[], targetSlugOrId: string): Product | undefined {
   if (!targetSlugOrId) return undefined;
@@ -203,12 +203,43 @@ export function findProductBySlugOrId(products: Product[], targetSlugOrId: strin
     return (
       id === cleanTarget ||
       slug === cleanTarget ||
-      sku === cleanTarget ||
-      (id.length > 0 && cleanTarget.endsWith(id)) ||
-      (slug.length > 0 && slug.endsWith(`-${cleanTarget}`)) ||
-      (cleanTarget.length > 0 && cleanTarget.includes(id))
+      sku === cleanTarget
     );
   });
+}
+
+/**
+ * Validates whether an image URL actually belongs to the specified product data.
+ */
+export function isImageOwnedByProduct(product: Product | null, imageUrl?: string): boolean {
+  if (!product || !imageUrl) return false;
+  const target = imageUrl.trim();
+  if (target.includes('coming-soon') || target.startsWith('data:image/svg+xml')) return true;
+
+  if (Array.isArray(product.images) && product.images.some(img => typeof img === 'string' && img.trim() === target)) {
+    return true;
+  }
+
+  if (Array.isArray(product.colors)) {
+    for (const c of product.colors) {
+      if ((c as any)?.image && typeof (c as any).image === 'string' && (c as any).image.trim() === target) return true;
+      if (Array.isArray((c as any)?.images) && (c as any).images.some((img: string) => typeof img === 'string' && img.trim() === target)) return true;
+    }
+  }
+
+  if (Array.isArray(product.variants)) {
+    for (const v of product.variants) {
+      if (v && Array.isArray(v.images) && v.images.some((img: string) => typeof img === 'string' && img.trim() === target)) {
+        return true;
+      }
+    }
+  }
+
+  if (product.ogImage && typeof product.ogImage === 'string' && product.ogImage.trim() === target) {
+    return true;
+  }
+
+  return false;
 }
 
 /**

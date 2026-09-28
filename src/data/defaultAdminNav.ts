@@ -33,7 +33,6 @@ export const DEFAULT_ADMIN_NAV_CONFIG: AdminNavConfig = {
         { id: 'engagement_analytics', label: 'Reward Analytics', iconName: 'TrendingUp', visible: true },
         { id: 'instagram', label: 'Social Media Center', iconName: 'Share2', visible: true },
         { id: 'instagram_reels', label: 'Instagram Reels', iconName: 'Instagram', visible: true },
-        { id: 'ai_pet_shoe', label: 'AI Pet Shoe Mascot', iconName: 'Sparkles', visible: true },
         { id: 'trending_shoes', label: '🔥 Trending Shoes Manager', iconName: 'Flame', visible: true },
         { id: 'price_point_699', label: '🔥 ₹699 Collection Manager', iconName: 'Zap', visible: true },
       ],
@@ -58,7 +57,6 @@ export const DEFAULT_ADMIN_NAV_CONFIG: AdminNavConfig = {
       visible: true,
       items: [
         { id: 'logo_customization', label: 'Logo Customization', iconName: 'Image', visible: true },
-        { id: 'themes_studio', label: 'Global Theme Studio', iconName: 'Palette', visible: true },
         { id: 'website_configuration', label: 'Store Identity & Config', iconName: 'Sliders', visible: true },
         { id: 'website_design', label: 'Design & UI Customizer', iconName: 'Paintbrush', visible: true },
         { id: 'visual_builder', label: 'Visual Website Builder', iconName: 'Layout', visible: true },

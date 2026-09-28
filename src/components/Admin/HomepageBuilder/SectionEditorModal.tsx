@@ -850,7 +850,7 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                               });
                             }}
                             label="Shoe Image (PNG / Transparent PNG / WEBP)"
-                            description="Supports upload, paste URL, camera capture, preset images, auto background removal & AI image generation."
+                            description="Supports upload, camera capture, preset images, auto background removal & AI image generation."
                           />
 
                           {/* Slide Details */}
@@ -1035,7 +1035,7 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                               value={slide.imageUrl || ''}
                               onChange={(url) => handleUpdateSlideItem(idx, 'imageUrl', url)}
                               label="Slide Image"
-                              description="Supports upload, paste URL, capture with camera, presets, and AI generation."
+                              description="Supports upload, capture with camera, presets, and AI generation."
                             />
                           </div>
                           <div>
@@ -1230,7 +1230,7 @@ export const SectionEditorModal: React.FC<SectionEditorModalProps> = ({
                                 setEdited({ ...edited, contentData: { ...edited.contentData, categoryItems: list } });
                               }}
                               label="Category Item Image"
-                              description="Supports upload, paste URL, capture, presets, and AI generation."
+                              description="Supports upload, capture, presets, and AI generation."
                             />
                           </div>
                           <div>

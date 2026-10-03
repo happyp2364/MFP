@@ -1488,12 +1488,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
             {/* Selectable Payment Method Cards */}
             <div className="grid grid-cols-1 gap-2.5">
-              {paymentSettings.enableUPI !== false && (
+               {paymentSettings.enableUPI !== false && (
                 <div
                   onClick={() => setSelectedMethod('ONLINE_UPI')}
                   className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                     selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD'
-                      ? 'border-neutral-900 bg-neutral-50/90 shadow-xs ring-1 ring-neutral-900/10'
+                      ? 'border-[#0B8F63] bg-emerald-50/70 dark:bg-emerald-950/30 shadow-xs ring-2 ring-[#0B8F63]/30 text-neutral-900 dark:text-white'
                       : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50/50'
                   }`}
                 >
@@ -1501,7 +1501,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <div
                       className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                         selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD'
-                          ? 'bg-neutral-900 text-white'
+                          ? 'bg-[#0B8F63] text-white'
                           : 'bg-neutral-100 text-neutral-700'
                       }`}
                     >
@@ -1509,14 +1509,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-xs sm:text-sm font-bold text-neutral-900 tracking-tight">
+                        <h4 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white tracking-tight">
                           UPI / ऑनलाइन भुगतान
                         </h4>
                         <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-1.5 py-0.2 rounded">
                           Razorpay सुरक्षित भुगतान
                         </span>
                       </div>
-                      <p className="text-[11px] sm:text-xs text-neutral-500 font-medium truncate">
+                      <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 font-medium truncate">
                         Google Pay • PhonePe • Paytm • Cards
                       </p>
                     </div>
@@ -1524,7 +1524,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <div
                     className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
                       selectedMethod === 'ONLINE_UPI' || selectedMethod === 'CARD'
-                        ? 'border-neutral-900 bg-neutral-900 text-white'
+                        ? 'border-[#0B8F63] bg-[#0B8F63] text-white'
                         : 'border-neutral-300 bg-white'
                     }`}
                   >
@@ -1540,7 +1540,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={() => setSelectedMethod('QR_SCAN')}
                   className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                     selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
-                      ? 'border-neutral-900 bg-neutral-50/90 shadow-xs ring-1 ring-neutral-900/10'
+                      ? 'border-[#0B8F63] bg-emerald-50/70 dark:bg-emerald-950/30 shadow-xs ring-2 ring-[#0B8F63]/30 text-neutral-900 dark:text-white'
                       : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50/50'
                   }`}
                 >
@@ -1548,7 +1548,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <div
                       className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                         selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
-                          ? 'bg-neutral-900 text-white'
+                          ? 'bg-[#0B8F63] text-white'
                           : 'bg-neutral-100 text-neutral-700'
                       }`}
                     >
@@ -1556,14 +1556,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-xs sm:text-sm font-bold text-neutral-900 tracking-tight">
+                        <h4 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white tracking-tight">
                           📱 Direct QR / Manual UPI
                         </h4>
                         <span className="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 px-1.5 py-0.2 rounded">
                           No Razorpay checkout
                         </span>
                       </div>
-                      <p className="text-[11px] sm:text-xs text-neutral-500 font-medium truncate">
+                      <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 font-medium truncate">
                         QR Code scan करके सीधे भुगतान करें
                       </p>
                     </div>
@@ -1571,7 +1571,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <div
                     className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
                       selectedMethod === 'QR_SCAN' || selectedMethod === 'UPI'
-                        ? 'border-neutral-900 bg-neutral-900 text-white'
+                        ? 'border-[#0B8F63] bg-[#0B8F63] text-white'
                         : 'border-neutral-300 bg-white'
                     }`}
                   >
@@ -1587,7 +1587,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   onClick={() => setSelectedMethod('COD')}
                   className={`p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                     selectedMethod === 'COD'
-                      ? 'border-neutral-900 bg-neutral-50/90 shadow-xs ring-1 ring-neutral-900/10'
+                      ? 'border-[#0B8F63] bg-emerald-50/70 dark:bg-emerald-950/30 shadow-xs ring-2 ring-[#0B8F63]/30 text-neutral-900 dark:text-white'
                       : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50/50'
                   }`}
                 >
@@ -1595,17 +1595,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <div
                       className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                         selectedMethod === 'COD'
-                          ? 'bg-neutral-900 text-white'
+                          ? 'bg-[#0B8F63] text-white'
                           : 'bg-neutral-100 text-neutral-700'
                       }`}
                     >
                       <Truck className="w-5 h-5" />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-xs sm:text-sm font-bold text-neutral-900 tracking-tight">
+                      <h4 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white tracking-tight">
                         🚚 कैश ऑन डिलीवरी
                       </h4>
-                      <p className="text-[11px] sm:text-xs text-neutral-500 font-medium truncate">
+                      <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 font-medium truncate">
                         डिलीवरी के समय भुगतान करें
                       </p>
                     </div>
@@ -1613,7 +1613,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <div
                     className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
                       selectedMethod === 'COD'
-                        ? 'border-neutral-900 bg-neutral-900 text-white'
+                        ? 'border-[#0B8F63] bg-[#0B8F63] text-white'
                         : 'border-neutral-300 bg-white'
                     }`}
                   >
@@ -1703,16 +1703,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         Scan with GPay, PhonePe, Paytm, BHIM or any Banking UPI App
                       </p>
 
-                      {/* Mobile One-Tap UPI Deep Link Button */}
-                      {upiLink && (
-                        <a
-                          href={upiLink}
-                          className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
-                        >
-                          <Smartphone className="w-4 h-4" />
-                          <span>⚡ Pay via Any UPI App (GPay / PhonePe / Paytm / BHIM)</span>
-                        </a>
-                      )}
+
                     </div>
 
                     {/* 2. UPI ID below QR Code with Copy Button */}

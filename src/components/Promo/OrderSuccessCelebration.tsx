@@ -3,12 +3,13 @@ import { useStore } from '../../context/StoreContext';
 import { Check } from 'lucide-react';
 
 export const OrderSuccessCelebration: React.FC = () => {
-  const { isCelebrating, orderCelebrationConfig } = useStore();
+  const { isCelebrating, setIsCelebrating, orderCelebrationConfig } = useStore();
   const [shouldRender, setShouldRender] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Maintain local state for timing and cleanup
   useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
     if (isCelebrating && orderCelebrationConfig?.enabled) {
       // Device filter checks
       const width = window.innerWidth;
@@ -21,10 +22,21 @@ export const OrderSuccessCelebration: React.FC = () => {
       if (orderCelebrationConfig.sound) {
         playCelebrationSound();
       }
+
+      // Auto-dismiss after configured duration in seconds -> milliseconds
+      const durationSec = Number(orderCelebrationConfig.duration) || 5;
+      timer = setTimeout(() => {
+        setShouldRender(false);
+        setIsCelebrating(false);
+      }, durationSec * 1000);
     } else {
       setShouldRender(false);
     }
-  }, [isCelebrating, orderCelebrationConfig]);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isCelebrating, orderCelebrationConfig, setIsCelebrating]);
 
   // 1. Web Audio API Triumphant Synthesizer
   const playCelebrationSound = () => {

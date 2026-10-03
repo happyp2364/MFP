@@ -809,16 +809,7 @@ Payment ID: ${verifiedPaymentId || order.razorpayPaymentId || 'N/A'}
               </div>
             </div>
 
-            {/* MOBILE DIRECT DEEP LINK BUTTON */}
-            {upiLink && (
-              <a
-                href={upiLink}
-                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
-              >
-                <Smartphone className="w-4 h-4" />
-                <span>⚡ किसी भी UPI ऐप (GPay/PhonePe/Paytm) से तुरंत भुगतान करें</span>
-              </a>
-            )}
+
 
             {/* MERCHANT UPI ID WITH COPY */}
             <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-200 gap-2">

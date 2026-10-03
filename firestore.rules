@@ -84,9 +84,23 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Real Client Collections
+    // Real Client Collections (Default-Deny + Explicit Public Allowlist for Settings)
     match /settings/{id} {
-      allow read: if true;
+      allow read: if isAdmin() || id in [
+        'storefront',
+        'public_storefront',
+        'storeInfo',
+        'siteSettings',
+        'paymentSettings',
+        'seo',
+        'theme',
+        'about',
+        'navigation',
+        'footer',
+        'social',
+        'announcement',
+        'hero'
+      ];
       allow write: if isAdmin();
     }
     match /homepage/{id} {
@@ -223,7 +237,7 @@ service cloud.firestore {
     }
 
     match /admin_users/{adminId} {
-      allow read: if isSignedIn();
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == adminId);
       allow write: if isAdmin();
     }
 
@@ -250,7 +264,11 @@ service cloud.firestore {
 
     match /analytics/{id} {
       allow read: if true;
-      allow create: if true;
+      allow create: if request.resource.data.keys().hasAll(['eventType', 'timestamp']) &&
+                       request.resource.data.keys().hasOnly(['eventType', 'timestamp', 'path', 'sessionId', 'metadata', 'userId']) &&
+                       request.resource.data.eventType is string &&
+                       request.resource.data.eventType.size() <= 64 &&
+                       request.resource.data.size() <= 2048;
       allow update, delete: if isAdmin();
     }
   }
